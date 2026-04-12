@@ -1,6 +1,5 @@
 // src/index.ts
 
-import * as fs from 'node:fs';
 import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
 
 import { GeneratorConfig, SwaggerSpec } from '@src/core/types/index.js';
@@ -73,8 +72,11 @@ export async function generateFromConfig(
             },
         });
 
-    if (!isTestEnv && !fs.existsSync(config.output)) {
-        fs.mkdirSync(config.output, { recursive: true });
+    if (!isTestEnv) {
+        const fs = activeProject.getFileSystem();
+        if (!fs.directoryExistsSync(config.output)) {
+            fs.mkdirSync(config.output);
+        }
     }
 
     if (!isTestEnv) {
