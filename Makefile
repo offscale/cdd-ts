@@ -41,7 +41,7 @@ run: build
 
 build_wasm:
 	@echo "Building WASM (browser bundle)..."
-	npx esbuild dist/index.js --bundle --platform=browser --target=es2020 --external:node:fs --external:node:path --external:node:url --external:node:crypto --external:node:os --outfile=bin/cdd-ts.js
+	npx esbuild dist/index.js --bundle --platform=browser --target=es2020 --alias:node:path=path-browserify --alias:node:url=./wasm-stubs/node-url.js --alias:node:fs=./wasm-stubs/node-fs.js --alias:node:fs/promises=./wasm-stubs/node-fs-promises.js --alias:node:os=./wasm-stubs/node-os.js --outfile=bin/cdd-ts.js
 	@echo "Compiling to WebAssembly..."
 	npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts.wasm
 build_docker:
