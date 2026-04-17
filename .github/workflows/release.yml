@@ -34,8 +34,8 @@ jobs:
               with:
                   files: |
                       dist.tar.gz
-                      wasm/cdd-ts.js
-                      wasm/cdd-ts.wasm
+                      bin/cdd-ts.js
+                      bin/cdd-ts.wasm
                   generate_release_notes: true
 
     verify_release:
