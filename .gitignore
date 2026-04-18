@@ -54,3 +54,6 @@ test-spec.json
 typedoc.log
 wasm/
 bin/
+
+# ts-morph Go Wasm Migration overrides
+WASM_FILESIZE_IMPACT.md

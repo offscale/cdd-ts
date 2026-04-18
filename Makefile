@@ -13,6 +13,7 @@ help:
 	@echo "  make build_wasm    - Build the WASM output"
 	@echo "  make build_docker  - Build Docker images"
 	@echo "  make run_docker    - Run Docker images"
+	@echo "  make build_with_ts_go - Build cdd-ts utilizing the local ts-morph wasm fork"
 
 install_base:
 	@echo "Please install Node.js >= 18.0.0 manually if not installed."
@@ -41,7 +42,7 @@ run: build
 
 build_wasm:
 	@echo "Building WASM (browser bundle)..."
-	npx esbuild dist/index.js --bundle --platform=browser --target=es2020 --alias:node:path=path-browserify --alias:node:url=./wasm-stubs/node-url.js --alias:node:fs=./wasm-stubs/node-fs.js --alias:node:fs/promises=./wasm-stubs/node-fs-promises.js --alias:node:os=./wasm-stubs/node-os.js --outfile=bin/cdd-ts.js
+	npx esbuild dist/index.js --bundle --minify --platform=browser --target=es2020 --alias:node:path=path-browserify --alias:node:url=./wasm-stubs/node-url.js --alias:node:fs=./wasm-stubs/node-fs.js --alias:node:fs/promises=./wasm-stubs/node-fs-promises.js --alias:node:os=./wasm-stubs/node-os.js --outfile=bin/cdd-ts.js
 	@echo "Compiling to WebAssembly..."
 	npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts.wasm
 build_docker:
@@ -53,3 +54,14 @@ run_docker:
 	sleep 2
 	curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"version","id":1}' http://localhost:8080
 	docker stop cdd-ts-test && docker rm cdd-ts-test
+
+build_with_ts_go:
+	@echo "Installing local ts-morph with Wasm backend..."
+	npm install file:../ts-morph/packages/ts-morph file:../ts-morph/packages/common --force
+	@echo "Building cdd-ts using local ts-morph fork..."
+	npm run build
+	@echo "Building WASM (browser bundle)..."
+	npx esbuild dist/index.js --bundle --minify --platform=browser --target=es2020 --alias:node:path=path-browserify --alias:node:url=./wasm-stubs/node-url.js --alias:node:fs=./wasm-stubs/node-fs.js --alias:node:fs/promises=./wasm-stubs/node-fs-promises.js --alias:node:os=./wasm-stubs/node-os.js --outfile=bin/cdd-ts.js
+	@echo "Compiling to WebAssembly via javy..."
+	npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts.wasm
+	@echo "build_with_ts_go completed successfully!"

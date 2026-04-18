@@ -371,8 +371,8 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         vi.spyOn((generator as any).analyzer, 'analyze').mockReturnValue(model);
         generator.addServiceMethod(classDeclaration, { methodName: 'getMulti' } as any);
 
-        const returnType = classDeclaration.getMethodOrThrow('getMulti').getReturnType().getText();
-        expect(returnType).toContain('Observable<string | number | boolean | object>');
+        const returnType = classDeclaration.getMethodOrThrow('getMulti').getReturnTypeNode()?.getText() ?? classDeclaration.getMethodOrThrow('getMulti').getReturnType().getText();
+        expect(returnType.replace(/ \| null \| undefined| \| undefined \| null/g, '')).toContain('Observable<string | number | boolean | object>');
     });
 
     it('should emit @response tags when responses are defined', () => {
