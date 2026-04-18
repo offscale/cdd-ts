@@ -73,7 +73,7 @@ describe('Emitter: Response Header Type Generation', () => {
         expect(headersInterface.isExported()).toBe(true);
 
         const rateLimit = headersInterface.getPropertyOrThrow("'X-Rate-Limit'");
-        expect(rateLimit.getType().getText()).toBe('number');
+        expect(rateLimit.getTypeNode()?.getText() ?? '').toBe('number');
 
         const totalCount = headersInterface.getPropertyOrThrow("'X-Total-Count'");
         expect(totalCount.getJsDocs()[0].getDescription().trim()).toBe('Total number of items');
@@ -88,8 +88,8 @@ describe('Emitter: Response Header Type Generation', () => {
 
         // Verify generated type matches the schema inside the content map
         // { id?: string }
-        const typeText = complexHeader.getType().getText();
-        expect(typeText).toContain('{ id?: string; }'); // or just check for structure
+        const typeText = complexHeader.getTypeNode()?.getText() ?? '';
+        expect(typeText.replace(';', '')).toContain('{ id?: string }'); // or just check for structure
         expect(complexHeader.getJsDocs()[0].getDescription().trim()).toBe('Header defined via content map');
     });
 
@@ -147,7 +147,7 @@ describe('Emitter: Response Header Type Generation', () => {
         };
         const sourceFile = runGenerator(spec);
         const headersInterface = sourceFile.getInterfaceOrThrow('GetLegacy200Headers');
-        expect(headersInterface.getProperty("'X-Legacy'")?.getType().getText()).toBe('string');
+        expect(headersInterface.getProperty("'X-Legacy'")?.getTypeNode()?.getText() ?? '').toBe('string');
     });
 
     it('should model Set-Cookie as a string array', () => {
@@ -172,7 +172,7 @@ describe('Emitter: Response Header Type Generation', () => {
         };
         const sourceFile = runGenerator(spec);
         const headersInterface = sourceFile.getInterfaceOrThrow('GetCookies200Headers');
-        expect(headersInterface.getProperty("'Set-Cookie'")?.getType().getText()).toBe('string[]');
+        expect(headersInterface.getProperty("'Set-Cookie'")?.getTypeNode()?.getText() ?? '').toBe('string[]');
     });
 
     it('should ignore Content-Type response headers', () => {

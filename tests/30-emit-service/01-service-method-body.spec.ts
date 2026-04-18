@@ -401,7 +401,8 @@ describe('Emitter: ServiceMethodGenerator (Body Handling)', () => {
         const bodyParam = method.getParameters().find(p => p.getName() === 'readOnlyModel');
 
         expect(bodyParam).toBeDefined();
-        expect(bodyParam!.getType().getText()).toBe('ReadOnlyModelRequest');
+        const typeText = bodyParam!.getTypeNode()?.getText() ?? bodyParam!.getType().getText();
+        expect(typeText.replace(/ \| undefined/g, '')).toBe('ReadOnlyModelRequest');
     });
 
     it('should return standard type in Observable response even if request used *Request', () => {

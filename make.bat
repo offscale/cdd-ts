@@ -11,6 +11,7 @@ if "%1"=="run" goto run
 if "%1"=="build_wasm" goto build_wasm
 if "%1"=="build_docker" goto build_docker
 if "%1"=="run_docker" goto run_docker
+if "%1"=="build_with_ts_go" goto build_with_ts_go
 
 :help
 echo Available commands:
@@ -23,6 +24,7 @@ echo   make.bat run           - Run the CLI
 echo   make.bat build_wasm    - Build the WASM output
 echo   make.bat build_docker  - Build Docker images
 echo   make.bat run_docker    - Run Docker images
+echo   make.bat build_with_ts_go - Build cdd-ts utilizing the local ts-morph wasm fork
 goto end
 
 :install_base
@@ -72,3 +74,15 @@ docker rm cdd-ts-test
 goto end
 
 :end
+
+:build_with_ts_go
+echo Installing local ts-morph with Wasm backend...
+call npm install file:..\ts-morph\packages\ts-morph file:..\ts-morph\packages\common --force
+echo Building cdd-ts using local ts-morph fork...
+call npm run build
+echo Building WASM (browser bundle)...
+call npx esbuild dist\index.js --bundle --platform=browser --target=es2020 --external:node:fs --external:node:path --external:node:url --external:node:crypto --external:node:os --outfile=wasm\cdd-ts.js
+echo Compiling to WebAssembly via javy...
+call npx -y javy-cli compile wasm\cdd-ts.js -o wasm\cdd-ts.wasm
+echo build_with_ts_go completed successfully!
+goto end

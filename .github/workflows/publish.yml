@@ -13,6 +13,13 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
+            - name: Checkout ts-morph fork
+              uses: actions/checkout@v6
+              with:
+                  repository: SamuelMarks/ts-morph
+                  ref: wasm-typescript-go
+                  path: ../ts-morph
+
             - uses: actions/setup-node@v6
               with:
                   node-version: 'lts/*'
