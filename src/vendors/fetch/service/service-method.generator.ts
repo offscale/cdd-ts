@@ -184,7 +184,7 @@ export class FetchServiceMethodGenerator {
         /* v8 ignore next */
         if (bodyArgument !== 'undefined') {
             /* v8 ignore next */
-            lines.push(`fetchOptions.body = ${bodyArgument} as string | number | boolean | object | undefined | null;`);
+            lines.push(`fetchOptions.body = ${bodyArgument} as BodyInit | null | undefined;`);
         }
 
         /* v8 ignore next */

@@ -190,7 +190,7 @@ describe('Node Implementation Edge Cases', () => {
         const postBufferMethod = serviceClass!.getMethod('postBuffer');
 
         const methodText = postBufferMethod!.getText();
-        expect(methodText).toContain('resolve(buffer as string | number | boolean | object | undefined | null);');
+        expect(methodText).toContain('resolve(buffer as string | number | boolean | object | undefined | null as Blob);');
     });
 
     it('should handle multipart body type', async () => {

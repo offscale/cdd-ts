@@ -314,9 +314,9 @@ export class ParameterSerializerGenerator {
         
         if (style === 'deepObject' && typeof value === 'object' && value !== null) {
              const processDeep = (obj: string | number | boolean | object | undefined | null, prefix: string) => {
-                 Object.keys(obj as string | number | boolean | object | undefined | null).forEach(k => {
+                 Object.keys(obj as Record<string, string | number | boolean | object | undefined | null>).forEach(k => {
                      const keyPath = \`\${prefix}[\${k}]\`;
-                     const v = (obj as string | number | boolean | object | undefined | null)[k];
+                     const v = (obj as Record<string, string | number | boolean | object | undefined | null>)[k];
                      if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
                          processDeep(v, keyPath);
                      } else {
