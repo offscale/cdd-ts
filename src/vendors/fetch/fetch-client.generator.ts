@@ -30,6 +30,10 @@ import { RequestBodiesGenerator } from '@src/openapi/emit_request_bodies.js';
 import { ResponsesGenerator } from '@src/openapi/emit_responses.js';
 import { SpecSnapshotGenerator } from '@src/openapi/emit_snapshot.js';
 import { DocumentMetaGenerator } from '@src/openapi/emit_document_meta.js';
+import { ContentEncoderGenerator } from '@src/openapi/emit_content_encoder.js';
+import { ContentDecoderGenerator } from '@src/openapi/emit_content_decoder.js';
+import { XmlParserGenerator } from '@src/openapi/emit_xml_parser.js';
+import { MultipartBuilderGenerator } from '@src/functions/emit_multipart.js';
 import { FetchServiceIndexGenerator, FetchMainIndexGenerator } from './utils/index.generator.js';
 import { VanillaAdminGenerator } from '../vanilla/admin/admin.generator.js';
 
@@ -128,6 +132,14 @@ export class FetchClientGenerator extends AbstractClientGenerator {
         new DocumentMetaGenerator(parser, project).generate(outputRoot);
         /* v8 ignore next */
         new SpecSnapshotGenerator(parser, project).generate(outputRoot);
+        /* v8 ignore next */
+        new ContentEncoderGenerator(project).generate(outputRoot);
+        /* v8 ignore next */
+        new ContentDecoderGenerator(project).generate(outputRoot);
+        /* v8 ignore next */
+        new XmlParserGenerator(project).generate(outputRoot);
+        /* v8 ignore next */
+        new MultipartBuilderGenerator(project).generate(outputRoot);
 
         // 3. Services and Fetch Specifics
         /* v8 ignore next */
