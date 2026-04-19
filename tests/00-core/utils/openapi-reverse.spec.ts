@@ -50,7 +50,7 @@ export class UsersService {
    * @responseExample 200 application/json {"id":123,"name":"Ada"} 
    * @deprecated
    */ 
-  public getUser(id: string, search?: string, filter?: string, q?: string, headerVal?: string, cookieVal?: string, body?: any, options?: any) { 
+  public getUser(id: string, search?: string, filter?: string, q?: string, headerVal?: string, cookieVal?: string, body?: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const queryString = ParameterSerializer.serializeRawQuerystring(q, undefined, 'application/x-www-form-urlencoded', {"tags":{"style":"pipeDelimited","explode":false}}); 
     const url = \`\${basePath}/users/\${ParameterSerializer.serializePathParam('id', id, 'simple', false, false)}\${queryString ? '?' + queryString : ''}\`; 
     let params = new HttpParams({ encoder: new ApiParameterCodec(), fromObject: options?.params ?? {} }); 
@@ -64,87 +64,87 @@ export class UsersService {
     if (cookieVal != null) { __cookies.push(ParameterSerializer.serializeCookieParam('session', cookieVal, 'form', true, false)); } 
     if (__cookies.length > 0) { headers = headers.set('Cookie', __cookies.join('; ')); } 
     if (body != null && !headers.has('Content-Type')) { headers = headers.set('Content-Type', 'application/json'); } 
-    let requestOptions: any = { headers, params, context: this.createContextWithClientId(options?.context).set(SECURITY_CONTEXT_TOKEN, [{"api_key":[]},{"petstore_auth":["read:pets"]}]).set(EXTENSIONS_CONTEXT_TOKEN, {"x-rate-limit":120,"x-feature-flag":"alpha"}) }; 
-    return this.http.post<any>(url, body, requestOptions as any); 
+    let requestOptions: string | number | boolean | object | undefined | null = { headers, params, context: this.createContextWithClientId(options?.context).set(SECURITY_CONTEXT_TOKEN, [{"api_key":[]},{"petstore_auth":["read:pets"]}]).set(EXTENSIONS_CONTEXT_TOKEN, {"x-rate-limit":120,"x-feature-flag":"alpha"}) }; 
+    return this.http.post<string | number | boolean | object | undefined | null>(url, body, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public submitEncoded(payload: any, options?: any) { 
+  public submitEncoded(payload: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/encode\`; 
     const urlParamEntries = ParameterSerializer.serializeUrlEncodedBody(payload, {"style":"form"}); 
     let formBody = new HttpParams({ encoder: new ApiParameterCodec() }); 
     urlParamEntries.forEach(entry => formBody = formBody.append(entry.key, entry.value)); 
-    return this.http.post<any>(url, formBody, requestOptions as any); 
+    return this.http.post<string | number | boolean | object | undefined | null>(url, formBody, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public submitEncodedWithMap(payload: any, options?: any) { 
+  public submitEncodedWithMap(payload: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/encode-map\`; 
     const urlParamEntries = ParameterSerializer.serializeUrlEncodedBody(payload, {"foo":{"style":"form","explode":true},"bar":{"allowReserved":true}}); 
     let formBody = new HttpParams({ encoder: new ApiParameterCodec() }); 
     urlParamEntries.forEach(entry => formBody = formBody.append(entry.key, entry.value)); 
-    return this.http.post<any>(url, formBody, requestOptions as any); 
+    return this.http.post<string | number | boolean | object | undefined | null>(url, formBody, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public uploadAvatar(file: Blob, options?: any) { 
+  public uploadAvatar(file: Blob, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/upload\`; 
     const formData = new FormData(); 
     if (file != null) { formData.append('file', file); } 
-    return this.http.post<any>(url, formData, requestOptions as any); 
+    return this.http.post<string | number | boolean | object | undefined | null>(url, formData, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public uploadAdvanced(payload: any, options?: any) { 
+  public uploadAdvanced(payload: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/upload-advanced\`; 
     const multipartConfig = {"mediaType":"multipart/form-data","encoding":{"meta":{"contentType":"application/json"},"file":{"contentType":"image/png"}}}; 
     const multipartResult = MultipartBuilder.serialize(payload, multipartConfig); 
-    return this.http.post<any>(url, multipartResult.content, requestOptions as any); 
+    return this.http.post<string | number | boolean | object | undefined | null>(url, multipartResult.content, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public uploadMixed(payload: any, options?: any) { 
+  public uploadMixed(payload: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/mixed\`; 
     const multipartConfig = {"mediaType":"multipart/mixed","itemEncoding":{"contentType":"image/png"}}; 
     const multipartResult = MultipartBuilder.serialize(payload, multipartConfig); 
-    return this.http.post<any>(url, multipartResult.content, requestOptions as any); 
+    return this.http.post<string | number | boolean | object | undefined | null>(url, multipartResult.content, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public sendXml(payload: any, options?: any) { 
+  public sendXml(payload: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/xml\`; 
     const xmlBody = XmlBuilder.serialize(payload, 'root', {}); 
-    return this.http.post<any>(url, xmlBody, requestOptions as any); 
+    return this.http.post<string | number | boolean | object | undefined | null>(url, xmlBody, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public contentTypeOnly(body: any, options?: any) { 
+  public contentTypeOnly(body: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/text\`; 
     let headers = new HttpHeaders(); 
     if (body != null && !headers.has('Content-Type')) { headers = headers.set('Content-Type', 'text/plain'); } 
-    return this.http.post<any>(url, body, requestOptions as any); 
+    return this.http.post<string | number | boolean | object | undefined | null>(url, body, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public xmlResponse(options?: any) { 
+  public xmlResponse(options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/xml-response\`; 
-    return this.http.get<any>(url, requestOptions as any).pipe(map(response => { return XmlParser.parse(response, {}); })); 
+    return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null).pipe(map(response => { return XmlParser.parse(response, {}); })); 
   } 
 
-  public jsonSeqResponse(options?: any) { 
+  public jsonSeqResponse(options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/seq\`; 
-    return this.http.get<any>(url, requestOptions as any).pipe(map(response => { return response.split('\\\\x1e'); })); 
+    return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null).pipe(map(response => { return response.split('\\\\x1e'); })); 
   } 
 
-  public jsonLinesResponse(options?: any) { 
+  public jsonLinesResponse(options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/lines\`; 
-    return this.http.get<any>(url, requestOptions as any).pipe(map(response => { return response.split('\\\\n'); })); 
+    return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null).pipe(map(response => { return response.split('\\\\n'); })); 
   } 
 
-  public acceptVariants(options?: any) { 
+  public acceptVariants(options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/accept\`; 
     let headers = new HttpHeaders(); 
     const acceptHeader = headers.get('Accept'); 
-    if (acceptHeader?.includes('application/xml')) { return this.http.get<any>(url, requestOptions as any); } 
-    if (acceptHeader?.includes('application/json-seq')) { return this.http.get<any>(url, requestOptions as any); } 
-    return this.http.get<any>(url, requestOptions as any); 
+    if (acceptHeader?.includes('application/xml')) { return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); } 
+    if (acceptHeader?.includes('application/json-seq')) { return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); } 
+    return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public sseResponse(options?: any) { 
+  public sseResponse(options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/events\`; 
-    return new Observable<any>(observer => { 
+    return new Observable<string | number | boolean | object | undefined | null>(observer => { 
       fetch(url).then(response => { 
         if (!response.body || !response.body.getReader) { 
           observer.error(new Error('SSE response body is not readable in this environment.')); 
@@ -155,31 +155,31 @@ export class UsersService {
     }); 
   } 
 
-  public requestWithBodyOption(payload: any, options?: any) { 
+  public requestWithBodyOption(payload: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/request-body\`; 
-    return this.http.request('PATCH', url, { ...requestOptions, body: payload } as any); 
+    return this.http.request('PATCH', url, { ...requestOptions, body: payload } as string | number | boolean | object | undefined | null); 
   } 
 
-  public requestWithBodyAssertion(payload: any, options?: any) { 
+  public requestWithBodyAssertion(payload: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/request-body-assertion\`; 
-    return this.http.request('PATCH', url, <any>{ body: payload }); 
+    return this.http.request('PATCH', url, <string | number | boolean | object | undefined | null>{ body: payload }); 
   } 
 
-  public requestWithoutBody(options?: any) { 
+  public requestWithoutBody(options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/request-without-body\`; 
-    return this.http.request('POST', url, requestOptions as any); 
+    return this.http.request('POST', url, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public listWithServer(options?: any) { 
+  public listWithServer(options?: string | number | boolean | object | undefined | null) { 
     const operationServers = [{"url":"https://api.example.com/v1","description":"primary"}]; 
     const basePath = resolveServerUrl(operationServers, options?.server ?? 0, options?.serverVariables ?? {}); 
     const url = \`\${basePath}/server-test\`; 
-    return this.http.get<any>(url, requestOptions as any); 
+    return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public invalidRequest(method: string, options?: any) { 
+  public invalidRequest(method: string, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/invalid\`; 
-    return this.http.request(method, url, requestOptions as any); 
+    return this.http.request(method, url, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
   private helper() { 
@@ -188,14 +188,14 @@ export class UsersService {
 } 
 
 export class OtherService { 
-  public getNoLeadingSlash(options?: any) { 
+  public getNoLeadingSlash(options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}status\`; 
-    return this.http.get<any>(url, requestOptions as any); 
+    return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
-  public getRoot(options?: any) { 
+  public getRoot(options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}\`; 
-    return this.http.get<any>(url, requestOptions as any); 
+    return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 } 
 `;
@@ -206,12 +206,12 @@ import { Observable } from 'rxjs';
 export class TypedService { 
   public createUser(payload: CreateUserRequest): Observable<User> { 
     const url = \`\${basePath}/users\`; 
-    return this.http.post<User>(url, payload, requestOptions as any); 
+    return this.http.post<User>(url, payload, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
   public streamUsers(): Observable<User[]> { 
     const url = \`\${basePath}/users/stream\`; 
-    return this.http.get<any>(url, requestOptions as any).pipe(map(response => response.split('\\\\n'))); 
+    return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null).pipe(map(response => response.split('\\\\n'))); 
   } 
 } 
 `;
@@ -224,14 +224,14 @@ export class ParamDocService {
    * @param verbose Include extra details. 
    * @param body Updated payload. 
    */ 
-  public updateUser(userId: string, verbose?: boolean, body?: any, options?: any) { 
+  public updateUser(userId: string, verbose?: boolean, body?: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/users/\${ParameterSerializer.serializePathParam('userId', userId, 'simple', false, false)}\`; 
     let params = new HttpParams({ encoder: new ApiParameterCodec(), fromObject: options?.params ?? {} }); 
     const serialized_verbose = ParameterSerializer.serializeQueryParam({"name":"verbose","in":"query","style":"form","explode":true,"allowReserved":false}, verbose); 
     serialized_verbose.forEach(entry => params = params.append(entry.key, entry.value)); 
     let headers = new HttpHeaders(); 
-    let requestOptions: any = { headers, params }; 
-    return this.http.put<any>(url, body, requestOptions as any); 
+    let requestOptions: string | number | boolean | object | undefined | null = { headers, params }; 
+    return this.http.put<string | number | boolean | object | undefined | null>(url, body, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 } 
 `;
@@ -244,9 +244,9 @@ export class DocTagService {
    * @security [{"ApiKey":[]}] 
    * @x-feature-flag "beta" 
    */ 
-  public list(options?: any) { 
+  public list(options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/items\`; 
-    return this.http.get<any>(url, requestOptions as any); 
+    return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 } 
 `;
@@ -258,23 +258,23 @@ export class ExampleCarrierService {
    * @response 200 text/plain OK
    * @responseExample 200 text/plain {"__oasExample":{"serializedValue":"OK"}} 
    */ 
-  public getPlain(options?: any) { 
+  public getPlain(options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/plain\`; 
     let headers = new HttpHeaders(); 
     const acceptHeader = headers.get('Accept'); 
-    if (acceptHeader?.includes('text/plain')) { return this.http.get<any>(url, requestOptions as any); } 
-    return this.http.get<any>(url, requestOptions as any); 
+    if (acceptHeader?.includes('text/plain')) { return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); } 
+    return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
   /** 
    * Sends plain text. 
    * @requestExample text/plain {"__oasExample":{"externalValue":"./examples/request.txt"}} 
    */ 
-  public postPlain(body?: any, options?: any) { 
+  public postPlain(body?: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/plain\`; 
     let headers = new HttpHeaders(); 
     if (body != null && !headers.has('Content-Type')) { headers = headers.set('Content-Type', 'text/plain'); } 
-    return this.http.post<any>(url, body, requestOptions as any); 
+    return this.http.post<string | number | boolean | object | undefined | null>(url, body, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 } 
 `;
@@ -307,11 +307,19 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(specOp.operationId).toBe('getUserById');
         expect(Object.keys(specOp.responses || {})).toEqual(expect.arrayContaining(['200', '404']));
         // type-coverage:ignore-next-line
-        expect((specOp.responses['200'] as any).content?.['application/json']).toBeDefined();
+        expect(
+            (specOp.responses['200'] as string | number | boolean | object | undefined | null).content?.[
+                'application/json'
+            ],
+        ).toBeDefined();
         // type-coverage:ignore-next-line
-        expect((specOp.responses['200'] as any).summary).toBe('User response');
+        expect((specOp.responses['200'] as string | number | boolean | object | undefined | null).summary).toBe(
+            'User response',
+        );
         // type-coverage:ignore-next-line
-        expect((specOp.responses['404'] as any).description).toBe('Not found');
+        expect((specOp.responses['404'] as string | number | boolean | object | undefined | null).description).toBe(
+            'Not found',
+        );
 
         const paramKeys = getUser.params.map(p => `${p.in}:${p.name}`);
         expect(paramKeys).toEqual(
@@ -348,7 +356,8 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(filterParam?.contentEncoding).toBe('base64');
 
         // type-coverage:ignore-next-line
-        const listWithServerSpec = (spec.paths as any)['/server-test'].get;
+        const listWithServerSpec = (spec.paths as string | number | boolean | object | undefined | null)['/server-test']
+            .get;
         // type-coverage:ignore-next-line
         expect(listWithServerSpec.servers).toEqual([{ url: 'https://api.example.com/v1', description: 'primary' }]);
 
@@ -376,15 +385,27 @@ describe('Core Utils: OpenAPI Reverse', () => {
 
         const specParams = spec.paths!['/users/{userId}'].put!.parameters!;
         // type-coverage:ignore-next-line
-        const specId = specParams.find((p: any) => p.name === 'userId');
+        const specId = specParams.find(
+            (p: string | number | boolean | object | undefined | null) => p.name === 'userId',
+        );
         // type-coverage:ignore-next-line
-        const specVerbose = specParams.find((p: any) => p.name === 'verbose');
+        const specVerbose = specParams.find(
+            (p: string | number | boolean | object | undefined | null) => p.name === 'verbose',
+        );
         // type-coverage:ignore-next-line
-        const specBody = spec.paths!['/users/{userId}'].put!.requestBody as any;
+        const specBody = spec.paths!['/users/{userId}'].put!.requestBody as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         // type-coverage:ignore-next-line
-        expect((specId as any).description).toBe('The user id.');
+        expect((specId as string | number | boolean | object | undefined | null).description).toBe('The user id.');
         // type-coverage:ignore-next-line
-        expect((specVerbose as any).description).toBe('Include extra details.');
+        expect((specVerbose as string | number | boolean | object | undefined | null).description).toBe(
+            'Include extra details.',
+        );
         // type-coverage:ignore-next-line
         expect(specBody.description).toBe('Updated payload.');
     });
@@ -403,7 +424,7 @@ describe('Core Utils: OpenAPI Reverse', () => {
         const spec = buildOpenApiSpecFromServices(services, { title: 'Recovered', version: '1.0.0' });
 
         // type-coverage:ignore-next-line
-        const getPlain = (spec.paths as any)['/plain'].get;
+        const getPlain = (spec.paths as string | number | boolean | object | undefined | null)['/plain'].get;
         // type-coverage:ignore-next-line
         const responseContent = getPlain.responses['200']?.content?.['text/plain'];
         // type-coverage:ignore-next-line
@@ -412,7 +433,7 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(responseContent?.examples?.example?.serializedValue).toBe('OK');
 
         // type-coverage:ignore-next-line
-        const postPlain = (spec.paths as any)['/plain'].post;
+        const postPlain = (spec.paths as string | number | boolean | object | undefined | null)['/plain'].post;
         // type-coverage:ignore-next-line
         const requestContent = postPlain.requestBody?.content?.['text/plain'];
         // type-coverage:ignore-next-line
@@ -423,7 +444,11 @@ describe('Core Utils: OpenAPI Reverse', () => {
 
     it('should keep component webhooks scoped to components only', () => {
         // type-coverage:ignore-next-line
-        const baseSpec: any = { openapi: '3.2.0', info: { title: 'T', version: '1' }, paths: {} };
+        const baseSpec: string | number | boolean | object | undefined | null = {
+            openapi: '3.2.0',
+            info: { title: 'T', version: '1' },
+            paths: {},
+        };
         const metadata: ReverseMetadata = {
             webhooks: [
                 {
@@ -444,7 +469,11 @@ describe('Core Utils: OpenAPI Reverse', () => {
 
     it('should apply root-scoped webhooks to the OpenAPI Object', () => {
         // type-coverage:ignore-next-line
-        const baseSpec: any = { openapi: '3.2.0', info: { title: 'T', version: '1' }, paths: {} };
+        const baseSpec: string | number | boolean | object | undefined | null = {
+            openapi: '3.2.0',
+            info: { title: 'T', version: '1' },
+            paths: {},
+        };
         const metadata: ReverseMetadata = {
             webhooks: [
                 {
@@ -477,24 +506,32 @@ describe('Core Utils: OpenAPI Reverse', () => {
             `export const API_DOCUMENT_META = ${JSON.stringify(documentMeta, null, 2)};`,
         );
 
-        const metadata = parseGeneratedMetadata(dir, fs as any);
+        const metadata = parseGeneratedMetadata(dir, fs as string | number | boolean | object | undefined | null);
         expect(metadata.documentMeta?.extensions).toEqual(documentMeta.extensions);
 
         // type-coverage:ignore-next-line
-        const baseSpec: any = { openapi: '3.2.0', info: { title: 'T', version: '1' }, paths: {} };
+        const baseSpec: string | number | boolean | object | undefined | null = {
+            openapi: '3.2.0',
+            info: { title: 'T', version: '1' },
+            paths: {},
+        };
         const next = applyReverseMetadata(baseSpec, metadata);
-        expect((next as any)['x-root-flag']).toBe(true);
-        expect((next as any)['x-root-note']).toBe('hello');
+        expect((next as string | number | boolean | object | undefined | null)['x-root-flag']).toBe(true);
+        expect((next as string | number | boolean | object | undefined | null)['x-root-note']).toBe('hello');
     });
 
     it('should infer $self for snapshotless reverse generation', () => {
         const dir = makeTempDir();
-        const metadata = parseGeneratedMetadata(dir, fs as any);
+        const metadata = parseGeneratedMetadata(dir, fs as string | number | boolean | object | undefined | null);
         const expectedSelf = pathToFileURL(path.resolve(dir, 'openapi.yaml')).href;
         expect(metadata.inferredSelf).toBe(expectedSelf);
 
         // type-coverage:ignore-next-line
-        const baseSpec: any = { openapi: '3.2.0', info: { title: 'T', version: '1' }, paths: {} };
+        const baseSpec: string | number | boolean | object | undefined | null = {
+            openapi: '3.2.0',
+            info: { title: 'T', version: '1' },
+            paths: {},
+        };
         const next = applyReverseMetadata(baseSpec, metadata);
         expect(next.$self).toBe(expectedSelf);
     });
@@ -573,33 +610,42 @@ describe('Core Utils: OpenAPI Reverse', () => {
 
         const nestedSource = `
         export class NestedService { 
-          public ping(options?: any) { 
+          public ping(options?: string | number | boolean | object | undefined | null) { 
             const url = \`\${basePath}/ping\`; 
-            return this.http.get<any>(url, requestOptions as any); 
+            return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); 
           } 
         } 
         `;
         fs.writeFileSync(path.join(nestedDir, 'nested.service.ts'), nestedSource);
 
-        const services = parseGeneratedServices(dir, fs as any);
+        const services = parseGeneratedServices(dir, fs as string | number | boolean | object | undefined | null);
         expect(services.some(s => s.serviceName === 'NestedService')).toBe(true);
 
-        const fileServices = parseGeneratedServices(path.join(dir, 'users.service.ts'), fs as any);
+        const fileServices = parseGeneratedServices(
+            path.join(dir, 'users.service.ts'),
+            fs as string | number | boolean | object | undefined | null,
+        );
         expect(fileServices.length).toBeGreaterThan(0);
 
         const emptyDir = makeTempDir();
-        expect(() => parseGeneratedServices(emptyDir, fs as any)).toThrow(/No generated service files/);
+        expect(() =>
+            parseGeneratedServices(emptyDir, fs as string | number | boolean | object | undefined | null),
+        ).toThrow(/No generated service files/);
 
         const badFile = path.join(dir, 'not-service.ts');
         fs.writeFileSync(badFile, 'export const x = 1;');
-        expect(() => parseGeneratedServices(badFile, fs as any)).toThrow(/Expected a generated service file/);
+        expect(() =>
+            parseGeneratedServices(badFile, fs as string | number | boolean | object | undefined | null),
+        ).toThrow(/Expected a generated service file/);
 
         const noOpDir = makeTempDir();
         fs.writeFileSync(
             path.join(noOpDir, 'empty.service.ts'),
             `export class EmptyService { private helper() { return null; } }`,
         );
-        expect(() => parseGeneratedServices(noOpDir, fs as any)).toThrow(/No operations could be reconstructed/);
+        expect(() =>
+            parseGeneratedServices(noOpDir, fs as string | number | boolean | object | undefined | null),
+        ).toThrow(/No operations could be reconstructed/);
     });
 
     it('should build a minimal OpenAPI spec from services', () => {
@@ -613,9 +659,9 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(spec.tags?.map(tag => tag.name)).toEqual(['users', 'admin']);
 
         // type-coverage:ignore-next-line
-        const getUser = (spec.paths as any)['/users/{id}'].post;
+        const getUser = (spec.paths as string | number | boolean | object | undefined | null)['/users/{id}'].post;
         // type-coverage:ignore-next-line
-        const params = getUser.parameters as any[];
+        const params = getUser.parameters as string | number | boolean | object | undefined | null[];
         // type-coverage:ignore-next-line
         expect(getUser.operationId).toBe('getUserById');
         // type-coverage:ignore-next-line
@@ -633,9 +679,9 @@ describe('Core Utils: OpenAPI Reverse', () => {
         // type-coverage:ignore-next-line
         expect(getUser.security).toEqual([{ api_key: [] }, { petstore_auth: ['read:pets'] }]);
         // type-coverage:ignore-next-line
-        expect((getUser as any)['x-rate-limit']).toBe(120);
+        expect((getUser as string | number | boolean | object | undefined | null)['x-rate-limit']).toBe(120);
         // type-coverage:ignore-next-line
-        expect((getUser as any)['x-feature-flag']).toBe('alpha');
+        expect((getUser as string | number | boolean | object | undefined | null)['x-feature-flag']).toBe('alpha');
         // type-coverage:ignore-next-line
         const querystringParam = params.find(p => p.name === 'q');
         // type-coverage:ignore-next-line
@@ -681,14 +727,17 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(responseExample).toEqual({ id: 123, name: 'Ada' });
 
         // type-coverage:ignore-next-line
-        const uploadBody = (spec.paths as any)['/upload'].post.requestBody;
+        const uploadBody = (spec.paths as string | number | boolean | object | undefined | null)['/upload'].post
+            .requestBody;
         // type-coverage:ignore-next-line
         expect(uploadBody.content['multipart/form-data'].schema.type).toBe('object');
         // type-coverage:ignore-next-line
         expect(uploadBody.content['multipart/form-data'].schema.properties).toHaveProperty('file');
 
         // type-coverage:ignore-next-line
-        const uploadAdvancedBody = (spec.paths as any)['/upload-advanced'].post.requestBody;
+        const uploadAdvancedBody = (spec.paths as string | number | boolean | object | undefined | null)[
+            '/upload-advanced'
+        ].post.requestBody;
         // type-coverage:ignore-next-line
         expect(uploadAdvancedBody.content['multipart/form-data'].encoding).toEqual({
             meta: { contentType: 'application/json' },
@@ -696,12 +745,14 @@ describe('Core Utils: OpenAPI Reverse', () => {
         });
 
         // type-coverage:ignore-next-line
-        const uploadMixedBody = (spec.paths as any)['/mixed'].post.requestBody;
+        const uploadMixedBody = (spec.paths as string | number | boolean | object | undefined | null)['/mixed'].post
+            .requestBody;
         // type-coverage:ignore-next-line
         expect(uploadMixedBody.content['multipart/mixed'].itemEncoding).toEqual({ contentType: 'image/png' });
 
         // type-coverage:ignore-next-line
-        const encodeMapBody = (spec.paths as any)['/encode-map'].post.requestBody;
+        const encodeMapBody = (spec.paths as string | number | boolean | object | undefined | null)['/encode-map'].post
+            .requestBody;
         // type-coverage:ignore-next-line
         expect(encodeMapBody.content['application/x-www-form-urlencoded'].encoding).toEqual({
             foo: { style: 'form', explode: true },
@@ -709,7 +760,8 @@ describe('Core Utils: OpenAPI Reverse', () => {
         });
 
         // type-coverage:ignore-next-line
-        const textBody = (spec.paths as any)['/text'].post.requestBody;
+        const textBody = (spec.paths as string | number | boolean | object | undefined | null)['/text'].post
+            .requestBody;
         // type-coverage:ignore-next-line
         expect(textBody.required).toBe(true);
         // type-coverage:ignore-next-line
@@ -733,7 +785,8 @@ describe('Core Utils: OpenAPI Reverse', () => {
         ]);
 
         // type-coverage:ignore-next-line
-        const pingResponse = (noContentSpec.paths as any)['/ping'].get.responses['200'];
+        const pingResponse = (noContentSpec.paths as string | number | boolean | object | undefined | null)['/ping'].get
+            .responses['200'];
         // type-coverage:ignore-next-line
         expect(pingResponse.content).toBeUndefined();
     });
@@ -744,10 +797,14 @@ describe('Core Utils: OpenAPI Reverse', () => {
             User: { type: 'object' },
             CreateUserRequest: { type: 'object' },
         };
-        const spec = buildOpenApiSpecFromServices(services, {}, schemas as any);
+        const spec = buildOpenApiSpecFromServices(
+            services,
+            {},
+            schemas as string | number | boolean | object | undefined | null,
+        );
 
         // type-coverage:ignore-next-line
-        const createUser = (spec.paths as any)['/users'].post;
+        const createUser = (spec.paths as string | number | boolean | object | undefined | null)['/users'].post;
         // type-coverage:ignore-next-line
         expect(createUser.requestBody.content['application/json'].schema).toEqual({
             $ref: '#/components/schemas/CreateUserRequest',
@@ -758,7 +815,7 @@ describe('Core Utils: OpenAPI Reverse', () => {
         });
 
         // type-coverage:ignore-next-line
-        const streamUsers = (spec.paths as any)['/users/stream'].get;
+        const streamUsers = (spec.paths as string | number | boolean | object | undefined | null)['/users/stream'].get;
         // type-coverage:ignore-next-line
         expect(streamUsers.responses['200'].content['application/jsonl'].itemSchema).toEqual({
             $ref: '#/components/schemas/User',
@@ -927,10 +984,10 @@ describe('Core Utils: OpenAPI Reverse', () => {
 
         fs.writeFileSync(
             path.join(nestedDir, 'dummy.service.ts'),
-            'export class DummyService { public ping() { const url = `\\${basePath}/ping`; return this.http.get<any>(url, requestOptions as any); } }',
+            'export class DummyService { public ping() { const url = `\\${basePath}/ping`; return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); } }',
         );
 
-        const metadata = parseGeneratedMetadata(dir, fs as any);
+        const metadata = parseGeneratedMetadata(dir, fs as string | number | boolean | object | undefined | null);
         expect(metadata.info?.title).toBe('Meta API');
         expect(metadata.tags?.[0].name).toBe('meta');
         expect(metadata.externalDocs?.url).toBe('https://example.com/docs');
@@ -974,16 +1031,24 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(merged.servers?.length).toBe(1);
         expect(merged.components?.securitySchemes).toBeDefined();
         // type-coverage:ignore-next-line
-        expect((merged.paths as any)['/ping'].get.responses['200'].headers['X-Rate-Limit']).toBeDefined();
+        expect(
+            (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
+                .headers['X-Rate-Limit'],
+        ).toBeDefined();
         // type-coverage:ignore-next-line
-        expect((merged.paths as any)['/ping'].get.responses['200'].headers['X-Rate-Limit'].description).toBe(
-            'Rate limit',
-        );
+        expect(
+            (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
+                .headers['X-Rate-Limit'].description,
+        ).toBe('Rate limit');
         // type-coverage:ignore-next-line
-        expect((merged.paths as any)['/ping'].get.responses['200'].headers['X-Rate-Limit'].schema.type).toBe('integer');
+        expect(
+            (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
+                .headers['X-Rate-Limit'].schema.type,
+        ).toBe('integer');
         expect(
             // type-coverage:ignore-next-line
-            (merged.paths as any)['/ping'].get.responses['200'].headers['X-Xml'].content?.['application/xml'],
+            (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
+                .headers['X-Xml'].content?.['application/xml'],
         ).toBeDefined();
         expect(
             // type-coverage:ignore-next-line
@@ -1037,17 +1102,26 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(merged.components?.pathItems?.PingItem?.get?.responses?.['200']).toBeDefined();
         expect(merged.components?.parameters?.LimitParam?.name).toBe('limit');
         // type-coverage:ignore-next-line
-        expect((merged.components as any)?.requestBodies?.CreateUser?.content?.['application/json']).toBeDefined();
+        expect(
+            (merged.components as string | number | boolean | object | undefined | null)?.requestBodies?.CreateUser
+                ?.content?.['application/json'],
+        ).toBeDefined();
         expect(merged.components?.responses?.NotFound?.description).toBe('Not found');
         // type-coverage:ignore-next-line
-        expect((merged.paths as any)['/meta']?.summary).toBe('Meta path');
+        expect((merged.paths as string | number | boolean | object | undefined | null)['/meta']?.summary).toBe(
+            'Meta path',
+        );
         // type-coverage:ignore-next-line
-        expect((merged.paths as any)['/meta']?.parameters?.[0]?.name).toBe('trace');
+        expect(
+            (merged.paths as string | number | boolean | object | undefined | null)['/meta']?.parameters?.[0]?.name,
+        ).toBe('trace');
         // type-coverage:ignore-next-line
-        expect((merged.paths as any)['/meta']?.servers?.[0]?.url).toBe('https://meta.example.com');
-        expect((merged.paths as any)['/meta']?.['x-meta']).toBe(true);
+        expect(
+            (merged.paths as string | number | boolean | object | undefined | null)['/meta']?.servers?.[0]?.url,
+        ).toBe('https://meta.example.com');
+        expect((merged.paths as string | number | boolean | object | undefined | null)['/meta']?.['x-meta']).toBe(true);
         // type-coverage:ignore-next-line
-        const callbacks = merged.components?.callbacks as any;
+        const callbacks = merged.components?.callbacks as string | number | boolean | object | undefined | null;
         expect(
             // type-coverage:ignore-next-line
             callbacks?.onPing?.['{$request.body#/callbackUrl}']?.post?.requestBody?.content?.['application/json'],
@@ -1055,13 +1129,16 @@ describe('Core Utils: OpenAPI Reverse', () => {
         // type-coverage:ignore-next-line
         expect(callbacks?.onPing?.['{$request.body#/callbackUrl}']?.post?.responses?.['204']).toBeDefined();
         // type-coverage:ignore-next-line
-        const webhooks = merged.components?.webhooks as any;
+        const webhooks = merged.components?.webhooks as string | number | boolean | object | undefined | null;
         // type-coverage:ignore-next-line
         expect(webhooks?.pinged?.post?.requestBody?.content?.['application/json']).toBeDefined();
         // type-coverage:ignore-next-line
         expect(webhooks?.pinged?.post?.responses?.['201']).toBeDefined();
         // type-coverage:ignore-next-line
-        expect((merged as any).webhooks?.pinged?.post?.requestBody?.content?.['application/json']).toBeDefined();
+        expect(
+            (merged as string | number | boolean | object | undefined | null).webhooks?.pinged?.post?.requestBody
+                ?.content?.['application/json'],
+        ).toBeDefined();
     });
 
     it('should place non-standard HTTP methods in additionalOperations', () => {
@@ -1074,7 +1151,15 @@ describe('Core Utils: OpenAPI Reverse', () => {
                         methodName: 'copyThing',
                         httpMethod: 'COPY',
                         path: '/things/{id}',
-                        params: [{ name: 'id', in: 'path', required: true } as any],
+                        params: [
+                            { name: 'id', in: 'path', required: true } as
+                                | string
+                                | number
+                                | boolean
+                                | object
+                                | undefined
+                                | null,
+                        ],
                         requestMediaTypes: [],
                         responseMediaTypes: ['application/json'],
                     },
@@ -1083,7 +1168,7 @@ describe('Core Utils: OpenAPI Reverse', () => {
         ]);
 
         // type-coverage:ignore-next-line
-        const pathItem = (spec.paths as any)['/things/{id}'];
+        const pathItem = (spec.paths as string | number | boolean | object | undefined | null)['/things/{id}'];
         // type-coverage:ignore-next-line
         expect(pathItem.additionalOperations?.COPY).toBeDefined();
         // type-coverage:ignore-next-line

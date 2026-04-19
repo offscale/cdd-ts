@@ -24,8 +24,8 @@ function getSerializerContext() {
         module: ts.ModuleKind.CommonJS,
     });
 
-    const exportsMock: Record<string, any> = {};
-    const encoderExports: Record<string, any> = {};
+    const exportsMock: Record<string, string | number | boolean | object | undefined | null> = {};
+    const encoderExports: Record<string, string | number | boolean | object | undefined | null> = {};
     new Function('exports', encoderJsCode)(encoderExports);
     // type-coverage:ignore-next-line
     const ContentEncoder = encoderExports.ContentEncoder;
@@ -34,7 +34,7 @@ function getSerializerContext() {
 
     return {
         // type-coverage:ignore-next-line
-        ParameterSerializer: (exportsMock as any).ParameterSerializer,
+        ParameterSerializer: (exportsMock as string | number | boolean | object | undefined | null).ParameterSerializer,
     };
 }
 

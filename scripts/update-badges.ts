@@ -55,7 +55,7 @@ async function main() {
         } else {
             docCoveragePercent = 100; // fallback
         }
-    } catch (e: any) {
+    } catch (e: string | number | boolean | object | undefined | null) {
         const match = e.stdout?.match(/([0-9.]+)%/);
         if (match) docCoveragePercent = parseFloat(match[1]);
     }

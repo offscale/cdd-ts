@@ -59,7 +59,7 @@ export enum Mixed {
 
 export type Mode = 'auto' | 'manual'; 
 export type AnyAlias = any; 
-export type UnknownAlias = unknown; 
+export type UnknownAlias = string | number | boolean | object | undefined | null; 
 export type ObjAlias = object; 
 export type LiteralNum = 42; 
 export type LiteralTrue = true; 

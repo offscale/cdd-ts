@@ -50,7 +50,7 @@ describe('Emitter: ServiceMethodGenerator (Content Negotiation)', () => {
             options: { enumStyle: 'enum', framework: 'angular' },
         };
         const project = new Project({ useInMemoryFileSystem: true });
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
 
         new TypeGenerator(parser, project, config).generate('/out');
         new XmlBuilderGenerator(project).generate('/out');

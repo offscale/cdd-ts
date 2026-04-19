@@ -16,7 +16,7 @@ describe('Emitter: IndexGenerators', () => {
                 output: '/out',
                 options: { dateType: 'string', enumStyle: 'enum', framework: 'angular', ...options },
             };
-            const parser = new SwaggerParser(spec as any, config);
+            const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
             new MainIndexGenerator(project, config, parser).generateMainIndex('/out');
             return project.getSourceFileOrThrow('/out/index.ts').getText();
         };
@@ -239,8 +239,11 @@ describe('Emitter: IndexGenerators', () => {
             const config: GeneratorConfig = {
                 output: '/',
                 options: { framework: 'angular', generateServices: false },
-            } as any;
-            const parser = new SwaggerParser(emptySpec as any, config);
+            } as string | number | boolean | object | undefined | null;
+            const parser = new SwaggerParser(
+                emptySpec as string | number | boolean | object | undefined | null,
+                config,
+            );
             new MainIndexGenerator(project, parser.config, parser).generateMainIndex('/');
             const content = project.getSourceFileOrThrow('/index.ts').getText();
             expect(content).not.toContain('export * from "./services"');

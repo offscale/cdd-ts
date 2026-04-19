@@ -15,8 +15,16 @@ describe('Admin: Form HTML Builders', () => {
     } as const;
 
     it('should return null when control or schema is missing', () => {
-        expect(buildFormControl(null as any)).toBeNull();
-        expect(buildFormControl({ ...baseControl, name: 'missing', schema: undefined } as any)).toBeNull();
+        expect(buildFormControl(null as string | number | boolean | object | undefined | null)).toBeNull();
+        expect(
+            buildFormControl({ ...baseControl, name: 'missing', schema: undefined } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null),
+        ).toBeNull();
     });
 
     it('should render a readonly textarea', () => {
@@ -24,7 +32,7 @@ describe('Admin: Form HTML Builders', () => {
             ...baseControl,
             name: 'notes',
             schema: { type: 'string', format: 'textarea', readOnly: true },
-        } as any;
+        } as string | number | boolean | object | undefined | null;
         const html = buildFormControl(control)!.render();
         expect(html).toContain('textarea');
         expect(html).toContain('[readonly]');
@@ -36,7 +44,7 @@ describe('Admin: Form HTML Builders', () => {
             name: 'nested',
             schema: { type: 'object' },
             controlType: 'control',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         const groupControl: FormControlModel = {
             ...baseControl,
@@ -44,7 +52,7 @@ describe('Admin: Form HTML Builders', () => {
             schema: { type: 'object' },
             controlType: 'group',
             nestedControls: [nullNested],
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         const groupHtml = buildFormControl(groupControl)!.render();
         expect(groupHtml).not.toContain('nested');
@@ -55,7 +63,7 @@ describe('Admin: Form HTML Builders', () => {
             schema: { type: 'array', items: { type: 'object' } },
             controlType: 'array',
             nestedControls: [nullNested],
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         const arrayHtml = buildFormControl(arrayControl)!.render();
         expect(arrayHtml).not.toContain('nested');
@@ -68,7 +76,7 @@ describe('Admin: Form HTML Builders', () => {
             schema: { type: 'object' },
             controlType: 'map',
             mapValueControl: undefined,
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         const mapHtml = buildFormControl(mapControlNoValue)!.render();
         expect(mapHtml).not.toContain('map-key-field');
@@ -80,8 +88,14 @@ describe('Admin: Form HTML Builders', () => {
             schema: { type: 'object' },
             controlType: 'map',
             // type-coverage:ignore-next-line
-            mapValueControl: { ...baseControl, name: 'value', schema: { type: 'object' } } as any,
-        } as any;
+            mapValueControl: { ...baseControl, name: 'value', schema: { type: 'object' } } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
+        } as string | number | boolean | object | undefined | null;
 
         const mapHtmlNullValue = buildFormControl(mapControlNullValue)!.render();
         expect(mapHtmlNullValue).not.toContain('map-key-field');
@@ -97,7 +111,7 @@ describe('Admin: Form HTML Builders', () => {
                     name: 'kind',
                     schema: { type: 'object' },
                     controlType: 'group',
-                } as any,
+                } as string | number | boolean | object | undefined | null,
             ],
             usesCustomValidators: false,
             hasFormArrays: false,
@@ -108,8 +122,8 @@ describe('Admin: Form HTML Builders', () => {
                     propertyName: 'kind',
                     discriminatorOptions: [],
                     // type-coverage:ignore-next-line
-                    options: undefined as any,
-                } as any,
+                    options: undefined as string | number | boolean | object | undefined | null,
+                } as string | number | boolean | object | undefined | null,
             ],
             dependencyRules: [],
         };

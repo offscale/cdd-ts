@@ -121,7 +121,10 @@ describe('Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)', () => {
             options: { enumStyle: 'enum', framework: 'angular' },
         };
         const project = new Project({ useInMemoryFileSystem: true });
-        const parser = new SwaggerParser(encodedContentSpec as any, config);
+        const parser = new SwaggerParser(
+            encodedContentSpec as string | number | boolean | object | undefined | null,
+            config,
+        );
 
         new TypeGenerator(parser, project, config).generate('/out');
         new ParameterSerializerGenerator(project).generate('/out');
@@ -150,7 +153,7 @@ describe('Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)', () => {
     it('should generate ContentDecoder.decode call for contentSchema fields', () => {
         const { methodGen, serviceClass } = createTestEnv();
         // type-coverage:ignore-next-line
-        const op: any = {
+        const op: string | number | boolean | object | undefined | null = {
             method: 'GET',
             path: '/blob-data',
             methodName: 'getBlobData',
@@ -172,7 +175,7 @@ describe('Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)', () => {
     it('should generate correct return type signature for contentSchema', () => {
         const { methodGen, serviceClass } = createTestEnv();
         // type-coverage:ignore-next-line
-        const op: any = {
+        const op: string | number | boolean | object | undefined | null = {
             method: 'GET',
             path: '/blob-data',
             methodName: 'getBlobData',
@@ -193,7 +196,7 @@ describe('Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)', () => {
     it('should generate XML decoding config for contentMediaType="application/xml"', () => {
         const { methodGen, serviceClass } = createTestEnv();
         // type-coverage:ignore-next-line
-        const op: any = {
+        const op: string | number | boolean | object | undefined | null = {
             method: 'GET',
             path: '/xml-embedded',
             methodName: 'getXmlEmbedded',
@@ -216,7 +219,13 @@ describe('Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)', () => {
             method: 'GET',
             path: '/json-param',
             methodName: 'getWithJsonParam',
-            parameters: encodedContentSpec.paths['/json-param'].get.parameters as any,
+            parameters: encodedContentSpec.paths['/json-param'].get.parameters as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             responses: encodedContentSpec.paths['/json-param'].get.responses,
         };
 
@@ -232,7 +241,7 @@ describe('Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)', () => {
     it('should include contentEncoding in response decoding config', () => {
         const { methodGen, serviceClass } = createTestEnv();
         // type-coverage:ignore-next-line
-        const op: any = {
+        const op: string | number | boolean | object | undefined | null = {
             method: 'GET',
             path: '/base64-response',
             methodName: 'getBase64Response',

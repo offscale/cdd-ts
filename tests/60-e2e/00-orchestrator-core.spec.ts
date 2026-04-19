@@ -27,8 +27,14 @@ describe('E2E: Core Orchestrator Flow', () => {
         const errorMessage = 'Disk is full';
         const project = createTestProject();
         const saveSpy = vi.spyOn(project, 'save').mockRejectedValue(new Error(errorMessage));
-        const config: GeneratorConfig = { input: '', output: '/generated', options: { generateServices: true } as any };
-        vi.spyOn(SwaggerParser, 'create').mockResolvedValue(new SwaggerParser(emptySpec as any, config));
+        const config: GeneratorConfig = {
+            input: '',
+            output: '/generated',
+            options: { generateServices: true } as string | number | boolean | object | undefined | null,
+        };
+        vi.spyOn(SwaggerParser, 'create').mockResolvedValue(
+            new SwaggerParser(emptySpec as string | number | boolean | object | undefined | null, config),
+        );
 
         await expect(generateFromConfig(config, project)).rejects.toThrow(errorMessage);
         expect(saveSpy).toHaveBeenCalled();
@@ -39,7 +45,7 @@ describe('E2E: Core Orchestrator Flow', () => {
         const config: GeneratorConfig = {
             input: '',
             output: '/generated',
-            options: { framework: 'react' as any }, // Type cast for testing invalid runtime option
+            options: { framework: 'react' as string | number | boolean | object | undefined | null }, // Type cast for testing invalid runtime option
         };
 
         await expect(generateFromConfig(config, project, { spec: emptySpec })).rejects.toThrow(

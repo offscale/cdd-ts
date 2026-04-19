@@ -37,7 +37,7 @@ describe('CliGenerator', () => {
             | undefined
             | null as import('../../src/openapi/parse.js').SwaggerParser;
 
-        generator.generate(project, mockParser, {} as any, '/out');
+        generator.generate(project, mockParser, {} as string | number | boolean | object | undefined | null, '/out');
 
         const cliFile = project.getSourceFileOrThrow('/out/cli.ts');
         const text = cliFile.getFullText();

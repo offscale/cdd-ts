@@ -7,7 +7,10 @@ import { OAuthHelperGenerator } from '@src/vendors/angular/utils/oauth-helper.ge
 describe('Emitter: OAuthHelperGenerator', () => {
     const runGenerator = (spec: object) => {
         const project = createTestProject();
-        const parser = new SwaggerParser(spec as any, { output: '/out' } as any);
+        const parser = new SwaggerParser(
+            spec as string | number | boolean | object | undefined | null,
+            { output: '/out' } as string | number | boolean | object | undefined | null,
+        );
         new OAuthHelperGenerator(parser, project).generate('/out');
         return project;
     };

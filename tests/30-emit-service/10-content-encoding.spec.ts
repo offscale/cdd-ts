@@ -97,7 +97,7 @@ describe('Emitter: ServiceMethodGenerator (Request Encoding)', () => {
             options: { enumStyle: 'enum', framework: 'angular' },
         };
         const project = new Project({ useInMemoryFileSystem: true });
-        const parser = new SwaggerParser(encodingSpec as any, config);
+        const parser = new SwaggerParser(encodingSpec as string | number | boolean | object | undefined | null, config);
 
         new TypeGenerator(parser, project, config).generate('/out');
 
@@ -125,7 +125,7 @@ describe('Emitter: ServiceMethodGenerator (Request Encoding)', () => {
     it('should apply ContentEncoder.encode to request body with encoded properties', () => {
         const { methodGen, serviceClass } = createTestEnv();
         // type-coverage:ignore-next-line
-        const op: any = {
+        const op: string | number | boolean | object | undefined | null = {
             method: 'POST',
             path: '/encode-request',
             methodName: 'postEncodedData',
@@ -146,7 +146,7 @@ describe('Emitter: ServiceMethodGenerator (Request Encoding)', () => {
     it('should apply ContentEncoder.encode recursively for nested arrays', () => {
         const { methodGen, serviceClass } = createTestEnv();
         // type-coverage:ignore-next-line
-        const op: any = {
+        const op: string | number | boolean | object | undefined | null = {
             method: 'POST',
             path: '/nested-encoding',
             methodName: 'postNested',
@@ -168,7 +168,7 @@ describe('Emitter: ServiceMethodGenerator (Request Encoding)', () => {
     it('should include contentEncoding in ContentEncoder config', () => {
         const { methodGen, serviceClass } = createTestEnv();
         // type-coverage:ignore-next-line
-        const op: any = {
+        const op: string | number | boolean | object | undefined | null = {
             method: 'POST',
             path: '/base64-request',
             methodName: 'postBase64',

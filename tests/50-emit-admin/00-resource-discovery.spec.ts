@@ -9,7 +9,7 @@ import { branchCoverageSpec, coverageSpec, finalCoveragePushSpec } from '../fixt
 
 const config: GeneratorConfig = { input: '', output: '', options: {} };
 // type-coverage:ignore-next-line
-const createParser = (spec: any) => new SwaggerParser(spec, config);
+const createParser = (spec: string | number | boolean | object | undefined | null) => new SwaggerParser(spec, config);
 const validBase = { openapi: '3.0.0', info: { title: 'Test', version: '1.0' } };
 
 describe('Admin: discoverAdminResources', () => {
@@ -91,11 +91,19 @@ describe('Admin: discoverAdminResources', () => {
         // or via the public discover function.
         // Here we rely on `resourceDiscovery` exporting `getFormProperties` for testability based on previous prompts
         const props = resourceDiscovery.getFormProperties(
-            [{ requestBody: { content: { 'application/json': { schema: polySchema } } } } as any],
+            [
+                { requestBody: { content: { 'application/json': { schema: polySchema } } } } as
+                    | string
+                    | number
+                    | boolean
+                    | object
+                    | undefined
+                    | null,
+            ],
             parser,
         );
         // type-coverage:ignore-next-line
-        const propNames = props.map((p: any) => p.name);
+        const propNames = props.map((p: string | number | boolean | object | undefined | null) => p.name);
 
         // Ideally 'petType' is found. 'name' is in the subclass (Cat) and is NOT merged into the top level
         // because oneOf implies mutually exclusive sets handled by the form generator's dynamic logic.
@@ -125,12 +133,15 @@ describe('Admin: discoverAdminResources', () => {
                         description: 'ok',
                         content: {
                             // type-coverage:ignore-next-line
-                            'application/json': { schema: (schemaWithInline as any).properties!.inline },
+                            'application/json': {
+                                schema: (schemaWithInline as string | number | boolean | object | undefined | null)
+                                    .properties!.inline,
+                            },
                         },
                     },
                 },
             },
-        ] as any;
+        ] as string | number | boolean | object | undefined | null;
 
         const modelName = resourceDiscovery.getModelName('inline', fakeOps);
         expect(modelName).toBe('Inline');

@@ -16,7 +16,7 @@ import { branchCoverageSpec, coverageSpec, fullCRUD_Users } from '../shared/spec
 
 describe('Generators (Angular): ServiceGenerator', () => {
     // type-coverage:ignore-next-line
-    const ensureResponses = (spec: any) => {
+    const ensureResponses = (spec: string | number | boolean | object | undefined | null) => {
         // type-coverage:ignore-next-line
         if (!spec?.paths) return spec;
         const methods = ['get', 'post', 'put', 'delete', 'options', 'head', 'patch', 'trace', 'query'];
@@ -25,7 +25,7 @@ describe('Generators (Angular): ServiceGenerator', () => {
             if (!pathItem || typeof pathItem !== 'object') continue;
             for (const method of methods) {
                 // type-coverage:ignore-next-line
-                const operation = (pathItem as any)[method];
+                const operation = (pathItem as string | number | boolean | object | undefined | null)[method];
                 // type-coverage:ignore-next-line
                 if (operation && operation.responses === undefined) {
                     // type-coverage:ignore-next-line
@@ -33,13 +33,20 @@ describe('Generators (Angular): ServiceGenerator', () => {
                 }
             }
             // type-coverage:ignore-next-line
-            if ((pathItem as any).additionalOperations) {
+            if ((pathItem as string | number | boolean | object | undefined | null).additionalOperations) {
                 // type-coverage:ignore-next-line
-                for (const operation of Object.values((pathItem as any).additionalOperations)) {
+                for (const operation of Object.values(
+                    (pathItem as string | number | boolean | object | undefined | null).additionalOperations,
+                )) {
                     // type-coverage:ignore-next-line
-                    if (operation && (operation as any).responses === undefined) {
+                    if (
+                        operation &&
+                        (operation as string | number | boolean | object | undefined | null).responses === undefined
+                    ) {
                         // type-coverage:ignore-next-line
-                        (operation as any).responses = { '200': { description: 'ok' } };
+                        (operation as string | number | boolean | object | undefined | null).responses = {
+                            '200': { description: 'ok' },
+                        };
                     }
                 }
             }
@@ -49,7 +56,10 @@ describe('Generators (Angular): ServiceGenerator', () => {
     };
 
     // type-coverage:ignore-next-line
-    const createTestEnvironment = (spec: any, configOverrides: Partial<GeneratorConfig['options']> = {}) => {
+    const createTestEnvironment = (
+        spec: string | number | boolean | object | undefined | null,
+        configOverrides: Partial<GeneratorConfig['options']> = {},
+    ) => {
         const project = new Project({ useInMemoryFileSystem: true });
         const config: GeneratorConfig = {
             input: '',

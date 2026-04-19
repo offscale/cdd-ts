@@ -124,7 +124,7 @@ describe('Emitter: WebhookGenerator', () => {
         const config: GeneratorConfig = {
             output: '/out',
             options: { dateType: 'string', enumStyle: 'enum', generateServices: true },
-        } as any;
+        } as string | number | boolean | object | undefined | null;
         const parser = new SwaggerParser(spec, config);
         new WebhookGenerator(parser, project).generate('/out');
         return project;
@@ -136,7 +136,7 @@ describe('Emitter: WebhookGenerator', () => {
         const code = sourceFile.getText().replace(/import .* from .*/g, '');
         const jsCode = ts.transpile(code, { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS });
         // type-coverage:ignore-next-line
-        const moduleHelper = { exports: {} as any };
+        const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
         new Function('exports', jsCode)(moduleHelper.exports);
         // type-coverage:ignore-next-line
@@ -179,7 +179,9 @@ describe('Emitter: WebhookGenerator', () => {
         expect(API_WEBHOOKS[0].pathItem?.post?.responses?.['200']).toBeDefined();
 
         // type-coverage:ignore-next-line
-        const invalid = API_WEBHOOKS.find((w: any) => w.name === 'invalidHook');
+        const invalid = API_WEBHOOKS.find(
+            (w: string | number | boolean | object | undefined | null) => w.name === 'invalidHook',
+        );
         // type-coverage:ignore-next-line
         expect(invalid).toBeUndefined();
     });

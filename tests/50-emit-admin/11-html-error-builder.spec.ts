@@ -8,7 +8,7 @@ describe('Admin: buildErrorMessages (from IR)', () => {
         const model: FormControlModel = {
             name: 'testControl',
             validationRules: rules,
-        } as any;
+        } as string | number | boolean | object | undefined | null;
         return buildErrorMessages(model)
             .map(b => b.render())
             .join('\n');

@@ -21,7 +21,7 @@ function getXmlParser() {
     });
 
     // type-coverage:ignore-next-line
-    const moduleScope = { exports: {} as any };
+    const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
 
     // Mock DOMParser environment
     const DOMParserMock = class {
@@ -30,7 +30,7 @@ function getXmlParser() {
         }
     };
 
-    global.DOMParser = DOMParserMock as any;
+    global.DOMParser = DOMParserMock as string | number | boolean | object | undefined | null;
 
     // Very basic XML parser mock for unit testing traversal logic
     function parseXmlSimple(xml: string) {
@@ -44,10 +44,10 @@ function getXmlParser() {
         const createNode = (
             tagName: string,
             // type-coverage:ignore-next-line
-            attributes: any,
-            children: any[],
+            attributes: string | number | boolean | object | undefined | null,
+            children: string | number | boolean | object | undefined | null[],
             textContent: string | null,
-            childNodes?: any[],
+            childNodes?: string | number | boolean | object | undefined | null[],
         ) => ({
             tagName,
             nodeType: 1,

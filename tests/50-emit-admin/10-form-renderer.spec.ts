@@ -7,7 +7,7 @@ describe('Admin: FormRenderer', () => {
     describe('ValidationRenderer', () => {
         it('should return an empty string for empty or null rules', () => {
             expect(ValidationRenderer.render([])).toBe('');
-            expect(ValidationRenderer.render(null as any)).toBe('');
+            expect(ValidationRenderer.render(null as string | number | boolean | object | undefined | null)).toBe('');
         });
 
         it('should render all standard validation rules correctly', () => {
@@ -67,7 +67,7 @@ describe('Admin: FormRenderer', () => {
 
         it('should throw an error on unhandled validation rule type', () => {
             // type-coverage:ignore-next-line
-            const badRule = { type: 'futureValidator' } as any;
+            const badRule = { type: 'futureValidator' } as string | number | boolean | object | undefined | null;
             expect(() => ValidationRenderer.render([badRule])).toThrow(
                 'Unhandled validation rule type: futureValidator',
             );
@@ -135,7 +135,15 @@ describe('Admin: FormRenderer', () => {
                 propertyName: 'restricted',
                 dataType: 'string',
                 defaultValue: null,
-                validationRules: [{ type: 'not', rules: [{ type: 'pattern', value: 'foo' }] } as any],
+                validationRules: [
+                    { type: 'not', rules: [{ type: 'pattern', value: 'foo' }] } as
+                        | string
+                        | number
+                        | boolean
+                        | object
+                        | undefined
+                        | null,
+                ],
                 controlType: 'control',
             };
             const result = FormInitializerRenderer.renderControlInitializer(control);
@@ -318,7 +326,9 @@ describe('Admin: FormRenderer', () => {
         });
 
         it('should render empty form array item initializer when controls are undefined', () => {
-            const result = FormInitializerRenderer.renderFormArrayItemInitializer(undefined as any);
+            const result = FormInitializerRenderer.renderFormArrayItemInitializer(
+                undefined as string | number | boolean | object | undefined | null,
+            );
             expect(result).toMatch(/new FormGroup\(\{\s*\}\)/);
         });
     });

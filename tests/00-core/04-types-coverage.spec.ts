@@ -67,7 +67,8 @@ describe('Core: Types & Interfaces Coverage', () => {
         };
 
         // type-coverage:ignore-next-line
-        const param = (spec.paths as any)['/search'].get.parameters[0];
+        const param = (spec.paths as string | number | boolean | object | undefined | null)['/search'].get
+            .parameters[0];
         // type-coverage:ignore-next-line
         expect(param.examples.example.dataValue).toBe('cats');
     });
@@ -98,7 +99,9 @@ describe('Core: Types & Interfaces Coverage', () => {
         };
 
         // type-coverage:ignore-next-line
-        const header = (spec.paths as any)['/status'].get.responses['200'].headers['X-Rate-Limit'];
+        const header = (spec.paths as string | number | boolean | object | undefined | null)['/status'].get.responses[
+            '200'
+        ].headers['X-Rate-Limit'];
         // type-coverage:ignore-next-line
         expect(header.examples.example.serializedValue).toBe('100');
     });

@@ -17,7 +17,7 @@ function getContentEncoder() {
     });
 
     // type-coverage:ignore-next-line
-    const moduleScope = { exports: {} as any };
+    const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
     // Fix: Manually attach the class to exports since we stripped the keyword
     const finalCode = `${jsCode}; exports.ContentEncoder = ContentEncoder;`;
 

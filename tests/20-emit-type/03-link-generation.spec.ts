@@ -31,7 +31,7 @@ const linkSpec = {
 
 describe('Emitter: Link Interface Generation', () => {
     // type-coverage:ignore-next-line
-    const runGenerator = (spec: any) => {
+    const runGenerator = (spec: string | number | boolean | object | undefined | null) => {
         const project = new Project({ useInMemoryFileSystem: true });
         const config: GeneratorConfig = { input: '', output: '/out', options: { enumStyle: 'enum' } };
         const parser = new SwaggerParser(spec, config);

@@ -16,7 +16,9 @@ describe('Input Validation: additionalOperations', () => {
             },
         };
 
-        expect(() => validateSpec(spec as any)).toThrow(/additionalOperations method "POST"/);
+        expect(() => validateSpec(spec as string | number | boolean | object | undefined | null)).toThrow(
+            /additionalOperations method "POST"/,
+        );
     });
 
     it('should allow non-standard methods in additionalOperations', () => {
@@ -32,7 +34,7 @@ describe('Input Validation: additionalOperations', () => {
             },
         };
 
-        expect(() => validateSpec(spec as any)).not.toThrow();
+        expect(() => validateSpec(spec as string | number | boolean | object | undefined | null)).not.toThrow();
     });
 
     it('should reject additionalOperations with invalid HTTP method tokens', () => {
@@ -48,6 +50,8 @@ describe('Input Validation: additionalOperations', () => {
             },
         };
 
-        expect(() => validateSpec(spec as any)).toThrow(/not a valid HTTP method token/i);
+        expect(() => validateSpec(spec as string | number | boolean | object | undefined | null)).toThrow(
+            /not a valid HTTP method token/i,
+        );
     });
 });

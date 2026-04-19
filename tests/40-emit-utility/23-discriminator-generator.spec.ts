@@ -64,12 +64,18 @@ const swagger2Spec: SwaggerSpec = {
             allOf: [{ $ref: '#/definitions/Animal' }],
         },
     },
-} as any;
+} as string | number | boolean | object | undefined | null;
 
 describe('Emitter: DiscriminatorGenerator', () => {
     const runGenerator = (spec: SwaggerSpec) => {
         const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out', options: {} } as any;
+        const config: GeneratorConfig = { output: '/out', options: {} } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const parser = new SwaggerParser(spec, config);
 
         if (spec.components?.schemas) {
@@ -92,7 +98,7 @@ describe('Emitter: DiscriminatorGenerator', () => {
         const code = sourceFile.getText();
         const jsCode = ts.transpile(code, { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS });
         // type-coverage:ignore-next-line
-        const moduleHelper = { exports: {} as any };
+        const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
         new Function('exports', jsCode)(moduleHelper.exports);
         // type-coverage:ignore-next-line
@@ -180,7 +186,13 @@ describe('Emitter: DiscriminatorGenerator', () => {
         };
 
         const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out', options: {} } as any;
+        const config: GeneratorConfig = { output: '/out', options: {} } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const parser = new SwaggerParser(uriSpec, config);
 
         const externalDef = uriSpec.components!.schemas!.ExternalModel;
@@ -223,7 +235,7 @@ describe('Emitter: DiscriminatorGenerator', () => {
                     },
                 },
             },
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         const project = runGenerator(fallbackSpec);
         // type-coverage:ignore-next-line
@@ -257,7 +269,7 @@ describe('Emitter: DiscriminatorGenerator', () => {
                     },
                 },
             },
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         const project = runGenerator(spec);
         // type-coverage:ignore-next-line
@@ -278,7 +290,7 @@ describe('Emitter: DiscriminatorGenerator', () => {
                     },
                 },
             },
-        } as any;
+        } as string | number | boolean | object | undefined | null;
         expect(() => runGenerator(spec)).toThrow(/propertyName/i);
     });
 
@@ -303,13 +315,25 @@ describe('Emitter: DiscriminatorGenerator', () => {
                     },
                 },
             },
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out', options: {} } as any;
+        const config: GeneratorConfig = { output: '/out', options: {} } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const parser = new SwaggerParser(spec, config);
 
-        vi.spyOn(parser, 'resolveReference').mockReturnValue({ type: 'object' } as any);
+        vi.spyOn(parser, 'resolveReference').mockReturnValue({ type: 'object' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null);
 
         new DiscriminatorGenerator(parser, project).generate('/out');
         // type-coverage:ignore-next-line

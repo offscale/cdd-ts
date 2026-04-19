@@ -43,7 +43,10 @@ describe('Emitter: ServiceMethodGenerator (XML Response Parsing)', () => {
             options: { enumStyle: 'enum', framework: 'angular' },
         };
         const project = new Project({ useInMemoryFileSystem: true });
-        const parser = new SwaggerParser(xmlResponseSpec as any, config);
+        const parser = new SwaggerParser(
+            xmlResponseSpec as string | number | boolean | object | undefined | null,
+            config,
+        );
 
         new TypeGenerator(parser, project, config).generate('/out');
 
@@ -71,7 +74,7 @@ describe('Emitter: ServiceMethodGenerator (XML Response Parsing)', () => {
     it('should set responseType to text and pipe through XmlParser.parse', () => {
         const { methodGen, serviceClass } = createTestEnv();
         // type-coverage:ignore-next-line
-        const op: any = {
+        const op: string | number | boolean | object | undefined | null = {
             method: 'GET',
             path: '/xml-data',
             methodName: 'getXmlData',

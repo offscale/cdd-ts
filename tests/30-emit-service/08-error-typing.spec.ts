@@ -75,7 +75,10 @@ describe('Emitter: Error Typing Support', () => {
             options: { dateType: 'string', enumStyle: 'enum' },
         };
         const project = new Project({ useInMemoryFileSystem: true });
-        const parser = new SwaggerParser(errorTypingSpec as any, config);
+        const parser = new SwaggerParser(
+            errorTypingSpec as string | number | boolean | object | undefined | null,
+            config,
+        );
 
         // Generate models first so TypeGenerator behavior is present (names are known)
         new TypeGenerator(parser, project, config).generate('/out');

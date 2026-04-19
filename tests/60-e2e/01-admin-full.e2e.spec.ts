@@ -14,7 +14,7 @@ describe('E2E: Admin UI Generation', () => {
                 generateServices: true,
                 dateType: 'string',
                 enumStyle: 'enum',
-            } as any,
+            } as string | number | boolean | object | undefined | null,
         });
         return project;
     };

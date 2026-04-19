@@ -24,7 +24,7 @@ describe('Emitter: ServiceMethodGenerator (Response Precedence)', () => {
         const config: GeneratorConfig = { input: '', output: '/out', options: { dateType: 'Date', enumStyle: 'enum' } };
 
         const project = new Project({ useInMemoryFileSystem: true });
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
 
         // Pre-generate types so the generator recognizes "SpecificModel" as a type name
         new TypeGenerator(parser, project, config).generate('/out');
@@ -51,7 +51,7 @@ describe('Emitter: ServiceMethodGenerator (Response Precedence)', () => {
                     content: { 'application/json': { schema: { $ref: '#/components/schemas/SpecificModel' } } },
                 },
             },
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         const { methodGen, serviceClass } = createTestEnv();
         methodGen.addServiceMethod(serviceClass, op);
@@ -73,7 +73,7 @@ describe('Emitter: ServiceMethodGenerator (Response Precedence)', () => {
                 },
                 '400': { description: 'Bad Request' },
             },
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         const { methodGen, serviceClass } = createTestEnv();
         methodGen.addServiceMethod(serviceClass, op);
@@ -93,7 +93,7 @@ describe('Emitter: ServiceMethodGenerator (Response Precedence)', () => {
                 },
                 '500': { description: 'Server Error' },
             },
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         const { methodGen, serviceClass } = createTestEnv();
         methodGen.addServiceMethod(serviceClass, op);

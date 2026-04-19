@@ -96,7 +96,10 @@ describe('Fetch Implementation Edge Cases', () => {
     });
 
     it('should handle analyzer returning null (e.g. invalid operation)', () => {
-        const generator = new FetchServiceMethodGenerator({} as any, { paths: {} } as any);
+        const generator = new FetchServiceMethodGenerator(
+            {} as string | number | boolean | object | undefined | null,
+            { paths: {} } as string | number | boolean | object | undefined | null,
+        );
         // We mock analyzer so we can force it to return null
         (
             generator as string | number | boolean | object | undefined | null as { analyzer: { analyze: () => null } }
@@ -106,7 +109,9 @@ describe('Fetch Implementation Edge Cases', () => {
         const cls = sf.getClass('Test')!;
 
         // Should not throw, should just return early
-        expect(() => generator.addServiceMethod(cls, {} as any)).not.toThrow();
+        expect(() =>
+            generator.addServiceMethod(cls, {} as string | number | boolean | object | undefined | null),
+        ).not.toThrow();
         expect(cls.getMethods().length).toBe(0);
     });
 });

@@ -58,6 +58,7 @@
     "dependencies": {
         "@ts-morph/common": "file:../ts-morph/packages/common",
         "@typescript/native-preview": "^7.0.0-dev.20260418.1",
+        "as-wasi": "^0.6.0",
         "commander": "^14",
         "js-yaml": "^4.1.0",
         "path-browserify": "^1.0.1",

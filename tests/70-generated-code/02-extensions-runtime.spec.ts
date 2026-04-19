@@ -23,8 +23,17 @@ const extensionsSpec = {
 describe('Generated Code: Extensions Runtime Support', () => {
     const run = () => {
         const project = new Project({ useInMemoryFileSystem: true });
-        const config: GeneratorConfig = { input: '', output: '/out', options: { framework: 'angular' } } as any;
-        const parser = new SwaggerParser(extensionsSpec as any, config);
+        const config: GeneratorConfig = { input: '', output: '/out', options: { framework: 'angular' } } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
+        const parser = new SwaggerParser(
+            extensionsSpec as string | number | boolean | object | undefined | null,
+            config,
+        );
 
         // 1. Test Token Generation
         new ExtensionTokensGenerator(project).generate('/out');

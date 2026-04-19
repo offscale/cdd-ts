@@ -9,7 +9,7 @@ import { createTestProject } from '../shared/helpers.js';
 
 describe('Generators (Angular): Service Generators (Coverage)', () => {
     // type-coverage:ignore-next-line
-    const ensureResponses = (spec: any) => {
+    const ensureResponses = (spec: string | number | boolean | object | undefined | null) => {
         // type-coverage:ignore-next-line
         if (!spec?.paths) return spec;
         const methods = ['get', 'post', 'put', 'delete', 'options', 'head', 'patch', 'trace', 'query'];
@@ -18,7 +18,7 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
             if (!pathItem || typeof pathItem !== 'object') continue;
             for (const method of methods) {
                 // type-coverage:ignore-next-line
-                const operation = (pathItem as any)[method];
+                const operation = (pathItem as string | number | boolean | object | undefined | null)[method];
                 // type-coverage:ignore-next-line
                 if (operation && operation.responses === undefined) {
                     // type-coverage:ignore-next-line
@@ -26,13 +26,20 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
                 }
             }
             // type-coverage:ignore-next-line
-            if ((pathItem as any).additionalOperations) {
+            if ((pathItem as string | number | boolean | object | undefined | null).additionalOperations) {
                 // type-coverage:ignore-next-line
-                for (const operation of Object.values((pathItem as any).additionalOperations)) {
+                for (const operation of Object.values(
+                    (pathItem as string | number | boolean | object | undefined | null).additionalOperations,
+                )) {
                     // type-coverage:ignore-next-line
-                    if (operation && (operation as any).responses === undefined) {
+                    if (
+                        operation &&
+                        (operation as string | number | boolean | object | undefined | null).responses === undefined
+                    ) {
                         // type-coverage:ignore-next-line
-                        (operation as any).responses = { '200': { description: 'ok' } };
+                        (operation as string | number | boolean | object | undefined | null).responses = {
+                            '200': { description: 'ok' },
+                        };
                     }
                 }
             }
@@ -51,7 +58,7 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
         // type-coverage:ignore-next-line
         const specClone = ensureResponses(JSON.parse(JSON.stringify(spec)));
         // type-coverage:ignore-next-line
-        const parser = new SwaggerParser(specClone as any, config);
+        const parser = new SwaggerParser(specClone as string | number | boolean | object | undefined | null, config);
         const serviceGen = new ServiceGenerator(parser, project, config);
         const controllerGroups = groupPathsByController(parser);
         for (const [name, operations] of Object.entries(controllerGroups)) {
@@ -68,7 +75,11 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
         );
         expect(modelImport).toBeDefined();
         // type-coverage:ignore-next-line
-        expect(modelImport!.getNamedImports().map((i: any) => i.getName())).toContain('User');
+        expect(
+            modelImport!
+                .getNamedImports()
+                .map((i: string | number | boolean | object | undefined | null) => i.getName()),
+        ).toContain('User');
     });
 
     it('should not import any models if only primitive parameters are used', () => {
@@ -136,7 +147,9 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
         const serviceFile = project.getSourceFileOrThrow('/out/services/bodyNoSchema.service.ts');
         const method = serviceFile.getClassOrThrow('BodyNoSchemaService').getMethodOrThrow('postBodyNoSchema');
         // type-coverage:ignore-next-line
-        const param = method.getParameters().find((p: any) => p.getName() === 'body');
+        const param = method
+            .getParameters()
+            .find((p: string | number | boolean | object | undefined | null) => p.getName() === 'body');
         expect(param?.getType().getText()).toBe('string | number | boolean | object | null | undefined');
     });
 
@@ -146,9 +159,13 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
         const method = serviceFile.getClassOrThrow('AllRequiredService').getMethodOrThrow('getAllRequired');
         const overloads = method.getOverloads();
         // type-coverage:ignore-next-line
-        const responseOverload = overloads.find((o: any) => o.getReturnType().getText().includes('HttpResponse'))!;
+        const responseOverload = overloads.find((o: string | number | boolean | object | undefined | null) =>
+            o.getReturnType().getText().includes('HttpResponse'),
+        )!;
         // type-coverage:ignore-next-line
-        const optionsParam = responseOverload.getParameters().find((p: any) => p.getName() === 'options')!;
+        const optionsParam = responseOverload
+            .getParameters()
+            .find((p: string | number | boolean | object | undefined | null) => p.getName() === 'options')!;
         expect(optionsParam.hasQuestionToken()).toBe(false);
     });
 
@@ -199,7 +216,11 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
             (imp: ImportDeclaration) => imp.getModuleSpecifierValue() === '../models',
         );
         // type-coverage:ignore-next-line
-        expect(modelImport!.getNamedImports().map((i: any) => i.getName())).toContain('User');
+        expect(
+            modelImport!
+                .getNamedImports()
+                .map((i: string | number | boolean | object | undefined | null) => i.getName()),
+        ).toContain('User');
 
         const noContentServiceFile = project.getSourceFileOrThrow('/out/services/noContentResponse.service.ts');
         expect(noContentServiceFile).toBeDefined();

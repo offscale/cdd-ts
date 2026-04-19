@@ -215,7 +215,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             output: '/out',
             options: { dateType: 'Date', enumStyle: 'enum', platform: 'browser' },
         };
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
         new TypeGenerator(parser, project, config).generate('/out');
         new ParameterSerializerGenerator(project).generate('/out');
 
@@ -247,7 +247,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             method: 'GET',
             path: opKey,
             methodName: 'getXmlParams',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const body = serviceClass.getMethodOrThrow('getXmlParams').getBodyText()!;
@@ -270,7 +270,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             method: 'GET',
             path: opKey,
             methodName: 'getSoapParams',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const body = serviceClass.getMethodOrThrow('getSoapParams').getBodyText()!;
@@ -292,7 +292,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             path: '/deprecated-endpoint',
             method: 'GET',
             methodName: 'getDeprecated',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const method = serviceClass.getMethodOrThrow('getDeprecated');
@@ -343,11 +343,11 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
         const { methodGen, serviceClass } = createTestEnvironment(spec);
         const op: PathInfo = {
             // type-coverage:ignore-next-line
-            ...(spec as any).paths['/users/{id}'].post,
+            ...(spec as string | number | boolean | object | undefined | null).paths['/users/{id}'].post,
             path: '/users/{id}',
             method: 'POST',
             methodName: 'updateUser',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const docs = serviceClass
@@ -366,7 +366,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             path: '/deprecated-param',
             method: 'GET',
             methodName: 'getDeprecatedParam',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const method = serviceClass.getMethodOrThrow('getDeprecatedParam');
@@ -382,7 +382,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             path: '/cookie-test',
             method: 'GET',
             methodName: 'getWithCookies',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const body = serviceClass.getMethodOrThrow('getWithCookies').getBodyText()!;
@@ -397,7 +397,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             path: '/cookie-strict-defaults',
             method: 'GET',
             methodName: 'getWithCookieDefaults',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const body = serviceClass.getMethodOrThrow('getWithCookieDefaults').getBodyText()!;
@@ -425,7 +425,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             path: '/query-string',
             methodName: 'getWithQuerystring',
             parameters: specParamTests.paths['/query-string'].get.parameters,
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const body = serviceClass.getMethodOrThrow('getWithQuerystring').getBodyText()!;
@@ -440,7 +440,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             path: '/query-form',
             methodName: 'getWithFormQuerystring',
             parameters: specParamTests.paths['/query-form'].get.parameters,
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const body = serviceClass.getMethodOrThrow('getWithFormQuerystring').getBodyText()!;
@@ -456,7 +456,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             path: '/query-form-encoded',
             methodName: 'getWithFormQuerystringEncoding',
             parameters: specParamTests.paths['/query-form-encoded'].get.parameters,
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const body = serviceClass.getMethodOrThrow('getWithFormQuerystringEncoding').getBodyText()!;
@@ -472,7 +472,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             path: '/search/{filter}',
             methodName: 'search',
             parameters: specParamTests.paths['/search/{filter}'].get.parameters,
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const body = serviceClass.getMethodOrThrow('search').getBodyText()!;
@@ -488,7 +488,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             path: '/info',
             methodName: 'getInfo',
             parameters: specParamTests.paths['/info'].get.parameters,
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const body = serviceClass.getMethodOrThrow('getInfo').getBodyText()!;
@@ -502,7 +502,7 @@ describe('Emitter: ServiceMethodGenerator (Parameters)', () => {
             path: '/query-content',
             methodName: 'getWithContentQueryParam',
             parameters: specParamTests.paths['/query-content'].get.parameters,
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const body = serviceClass.getMethodOrThrow('getWithContentQueryParam').getBodyText()!;

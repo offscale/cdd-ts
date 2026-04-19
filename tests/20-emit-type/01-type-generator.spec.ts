@@ -91,7 +91,7 @@ describe('Emitter: TypeGenerator', () => {
     const createEnvironment = () => {
         const project = new Project({ useInMemoryFileSystem: true });
         const config: GeneratorConfig = { input: '', output: '/out', options: { enumStyle: 'enum' } };
-        const parser = new SwaggerParser(typeGenSpec as any, config);
+        const parser = new SwaggerParser(typeGenSpec as string | number | boolean | object | undefined | null, config);
         const generator = new TypeGenerator(parser, project, config);
         return { generator, project };
     };

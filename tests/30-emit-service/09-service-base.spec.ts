@@ -23,14 +23,34 @@ class TestServiceGenerator extends AbstractServiceGenerator {
 describe('Generators: Service Base', () => {
     it('should sanitize invalid provided method names', () => {
         const project = new Project({ useInMemoryFileSystem: true });
-        const config: GeneratorConfig = { input: '', output: '/out', options: {} } as any;
+        const config: GeneratorConfig = { input: '', output: '/out', options: {} } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'Test', version: '1' }, paths: {} } as any,
+            { openapi: '3.0.0', info: { title: 'Test', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
 
         const generator = new TestServiceGenerator(parser, project, config);
-        const operations = [{ method: 'get', path: '/test', methodName: 'bad-name' } as any];
+        const operations = [
+            { method: 'get', path: '/test', methodName: 'bad-name' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
+        ];
 
         generator.generate('/out', { Test: operations });
 

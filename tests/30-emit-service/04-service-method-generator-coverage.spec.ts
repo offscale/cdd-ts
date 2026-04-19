@@ -12,12 +12,18 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         input: '',
         output: '/out',
         options: { dateType: 'string', enumStyle: 'enum' },
-    } as any;
+    } as string | number | boolean | object | undefined | null;
 
     it('should include docs when provided', () => {
         const project = new Project({ useInMemoryFileSystem: true });
         const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
@@ -48,8 +54,17 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         const classDeclaration = sourceFile.addClass({ name: 'TestService' });
 
         // type-coverage:ignore-next-line
-        vi.spyOn((generator as any).analyzer, 'analyze').mockReturnValue(model);
-        generator.addServiceMethod(classDeclaration, { methodName: 'doThing' } as any);
+        vi.spyOn(
+            (generator as string | number | boolean | object | undefined | null).analyzer,
+            'analyze',
+        ).mockReturnValue(model);
+        generator.addServiceMethod(classDeclaration, { methodName: 'doThing' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null);
 
         const docs = classDeclaration.getMethodOrThrow('doThing').getJsDocs();
         expect(docs[0].getText()).toContain('Doc string');
@@ -58,7 +73,13 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
     it('should emit @operationId when provided on the operation', () => {
         const project = new Project({ useInMemoryFileSystem: true });
         const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
@@ -89,8 +110,17 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         const classDeclaration = sourceFile.addClass({ name: 'TestService' });
 
         // type-coverage:ignore-next-line
-        vi.spyOn((generator as any).analyzer, 'analyze').mockReturnValue(model);
-        generator.addServiceMethod(classDeclaration, { methodName: 'doThing', operationId: 'getThing' } as any);
+        vi.spyOn(
+            (generator as string | number | boolean | object | undefined | null).analyzer,
+            'analyze',
+        ).mockReturnValue(model);
+        generator.addServiceMethod(classDeclaration, { methodName: 'doThing', operationId: 'getThing' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null);
 
         const docText = classDeclaration.getMethodOrThrow('doThing').getJsDocs()[0].getText();
         expect(docText).toContain('@operationId getThing');
@@ -140,7 +170,7 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
                 },
             },
         };
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
         const generator = new ServiceMethodGenerator(config, parser);
 
         const model: ServiceMethodModel = {
@@ -168,7 +198,10 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         const classDeclaration = sourceFile.addClass({ name: 'TestService' });
 
         // type-coverage:ignore-next-line
-        vi.spyOn((generator as any).analyzer, 'analyze').mockReturnValue(model);
+        vi.spyOn(
+            (generator as string | number | boolean | object | undefined | null).analyzer,
+            'analyze',
+        ).mockReturnValue(model);
         generator.addServiceMethod(classDeclaration, parser.operations[0]);
 
         const docText = classDeclaration.getMethodOrThrow('listItems').getJsDocs()[0].getText();
@@ -227,7 +260,7 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
                 },
             },
         };
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
         const generator = new ServiceMethodGenerator(config, parser);
 
         const model: ServiceMethodModel = {
@@ -259,7 +292,10 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         const classDeclaration = sourceFile.addClass({ name: 'TestService' });
 
         // type-coverage:ignore-next-line
-        vi.spyOn((generator as any).analyzer, 'analyze').mockReturnValue(model);
+        vi.spyOn(
+            (generator as string | number | boolean | object | undefined | null).analyzer,
+            'analyze',
+        ).mockReturnValue(model);
         generator.addServiceMethod(classDeclaration, parser.operations[0]);
 
         const docText = classDeclaration.getMethodOrThrow('createItem').getJsDocs()[0].getText();
@@ -298,7 +334,7 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
             },
             components: {},
         };
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
         const generator = new ServiceMethodGenerator(config, parser);
 
         const model: ServiceMethodModel = {
@@ -324,7 +360,10 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         const classDeclaration = sourceFile.addClass({ name: 'TestService' });
 
         // type-coverage:ignore-next-line
-        vi.spyOn((generator as any).analyzer, 'analyze').mockReturnValue(model);
+        vi.spyOn(
+            (generator as string | number | boolean | object | undefined | null).analyzer,
+            'analyze',
+        ).mockReturnValue(model);
         generator.addServiceMethod(classDeclaration, parser.operations[0]);
 
         const docText = classDeclaration.getMethodOrThrow('getText').getJsDocs()[0].getText();
@@ -337,7 +376,13 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
     it('should widen return type when multiple success response types exist', () => {
         const project = new Project({ useInMemoryFileSystem: true });
         const parser = new SwaggerParser(
-            { openapi: '3.2.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.2.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
@@ -368,8 +413,17 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         const classDeclaration = sourceFile.addClass({ name: 'TestService' });
 
         // type-coverage:ignore-next-line
-        vi.spyOn((generator as any).analyzer, 'analyze').mockReturnValue(model);
-        generator.addServiceMethod(classDeclaration, { methodName: 'getMulti' } as any);
+        vi.spyOn(
+            (generator as string | number | boolean | object | undefined | null).analyzer,
+            'analyze',
+        ).mockReturnValue(model);
+        generator.addServiceMethod(classDeclaration, { methodName: 'getMulti' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null);
 
         const returnType =
             classDeclaration.getMethodOrThrow('getMulti').getReturnTypeNode()?.getText() ??
@@ -382,7 +436,13 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
     it('should emit @response tags when responses are defined', () => {
         const project = new Project({ useInMemoryFileSystem: true });
         const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
@@ -413,7 +473,10 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         const classDeclaration = sourceFile.addClass({ name: 'TestService' });
 
         // type-coverage:ignore-next-line
-        vi.spyOn((generator as any).analyzer, 'analyze').mockReturnValue(model);
+        vi.spyOn(
+            (generator as string | number | boolean | object | undefined | null).analyzer,
+            'analyze',
+        ).mockReturnValue(model);
         generator.addServiceMethod(classDeclaration, {
             methodName: 'withResponses',
             responses: {
@@ -429,7 +492,7 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
                     description: 'Not found',
                 },
             },
-        } as any);
+        } as string | number | boolean | object | undefined | null);
 
         const docText = classDeclaration.getMethodOrThrow('withResponses').getJsDocs()[0].getText();
         expect(docText).toContain('@response 200 application/json OK');
@@ -441,7 +504,13 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
     it('should omit docs when none are provided', () => {
         const project = new Project({ useInMemoryFileSystem: true });
         const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
@@ -472,15 +541,30 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         const classDeclaration = sourceFile.addClass({ name: 'TestService' });
 
         // type-coverage:ignore-next-line
-        vi.spyOn((generator as any).analyzer, 'analyze').mockReturnValue(model);
-        generator.addServiceMethod(classDeclaration, { methodName: 'noDocs' } as any);
+        vi.spyOn(
+            (generator as string | number | boolean | object | undefined | null).analyzer,
+            'analyze',
+        ).mockReturnValue(model);
+        generator.addServiceMethod(classDeclaration, { methodName: 'noDocs' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null);
 
         expect(classDeclaration.getMethodOrThrow('noDocs').getJsDocs().length).toBe(0);
     });
 
     it('should generate body logic for xml, json-seq, json-lines, and decoding variants', () => {
         const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
@@ -515,13 +599,13 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
                 },
                 {
                     mediaType: 'application/json-seq',
-                    type: 'any[]',
+                    type: '(string | number | boolean | object | undefined | null)[]',
                     serialization: 'json-seq',
                     isDefault: false,
                 },
                 {
                     mediaType: 'application/json-lines',
-                    type: 'any[]',
+                    type: '(string | number | boolean | object | undefined | null)[]',
                     serialization: 'json-lines',
                     isDefault: false,
                 },
@@ -573,10 +657,15 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
                     content: { 'application/json': { schema: { type: 'string' } } },
                 },
             ],
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         // type-coverage:ignore-next-line
-        const body = (generator as any).emitMethodBody(model, rawOp, false, true);
+        const body = (generator as string | number | boolean | object | undefined | null).emitMethodBody(
+            model,
+            rawOp,
+            false,
+            true,
+        );
 
         // type-coverage:ignore-next-line
         expect(body).toContain("serializeRawQuerystring(qs, 'json')");
@@ -600,7 +689,13 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
 
     it('should omit json hints for querystring and header params when not using json serialization', () => {
         const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
@@ -641,10 +736,15 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
             path: '/qs',
             method: 'GET',
             parameters: [{ name: 'qs', in: 'querystring', schema: { type: 'string' } }],
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         // type-coverage:ignore-next-line
-        const body = (generator as any).emitMethodBody(model, rawOp, false, false);
+        const body = (generator as string | number | boolean | object | undefined | null).emitMethodBody(
+            model,
+            rawOp,
+            false,
+            false,
+        );
         // type-coverage:ignore-next-line
         expect(body).toContain('serializeRawQuerystring(qs)');
         // type-coverage:ignore-next-line
@@ -657,7 +757,13 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
 
     it('should keep responseType as options when content negotiation has no xml/seq variants', () => {
         const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
@@ -685,9 +791,14 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         };
 
         // type-coverage:ignore-next-line
-        const rawOp = { path: '/neg', method: 'GET' } as any;
+        const rawOp = { path: '/neg', method: 'GET' } as string | number | boolean | object | undefined | null;
         // type-coverage:ignore-next-line
-        const body = (generator as any).emitMethodBody(model, rawOp, false, true);
+        const body = (generator as string | number | boolean | object | undefined | null).emitMethodBody(
+            model,
+            rawOp,
+            false,
+            true,
+        );
 
         // type-coverage:ignore-next-line
         expect(body).toContain("const acceptHeader = headers.get('Accept');");
@@ -699,7 +810,13 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
 
     it('should default responseType to blob for binary responses', () => {
         const parser = new SwaggerParser(
-            { openapi: '3.2.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.2.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
@@ -724,9 +841,14 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         };
 
         // type-coverage:ignore-next-line
-        const rawOp = { path: '/download', method: 'GET' } as any;
+        const rawOp = { path: '/download', method: 'GET' } as string | number | boolean | object | undefined | null;
         // type-coverage:ignore-next-line
-        const body = (generator as any).emitMethodBody(model, rawOp, false, false);
+        const body = (generator as string | number | boolean | object | undefined | null).emitMethodBody(
+            model,
+            rawOp,
+            false,
+            false,
+        );
 
         // type-coverage:ignore-next-line
         expect(body).toContain("responseType: 'blob'");
@@ -734,7 +856,13 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
 
     it('should leave body null for unsupported body types', () => {
         const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
@@ -755,16 +883,21 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
             queryParams: [],
             headerParams: [],
             cookieParams: [],
-            body: { type: 'binary', paramName: 'payload' } as any,
+            body: { type: 'binary', paramName: 'payload' } as string | number | boolean | object | undefined | null,
             security: [],
             extensions: {},
             hasServers: false,
         };
 
         // type-coverage:ignore-next-line
-        const rawOp = { path: '/weird', method: 'POST' } as any;
+        const rawOp = { path: '/weird', method: 'POST' } as string | number | boolean | object | undefined | null;
         // type-coverage:ignore-next-line
-        const body = (generator as any).emitMethodBody(model, rawOp, false, false);
+        const body = (generator as string | number | boolean | object | undefined | null).emitMethodBody(
+            model,
+            rawOp,
+            false,
+            false,
+        );
         // type-coverage:ignore-next-line
         expect(body).toContain(
             'this.http.post<string | number | boolean | object | undefined | null>(url, null, requestOptions as object)',
@@ -773,7 +906,13 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
 
     it('should set Content-Type when requestContentType is provided', () => {
         const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
@@ -802,9 +941,14 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
         };
 
         // type-coverage:ignore-next-line
-        const rawOp = { path: '/text', method: 'POST' } as any;
+        const rawOp = { path: '/text', method: 'POST' } as string | number | boolean | object | undefined | null;
         // type-coverage:ignore-next-line
-        const body = (generator as any).emitMethodBody(model, rawOp, false, false);
+        const body = (generator as string | number | boolean | object | undefined | null).emitMethodBody(
+            model,
+            rawOp,
+            false,
+            false,
+        );
 
         // type-coverage:ignore-next-line
         expect(body).toContain("headers = headers.set('Content-Type', 'text/plain')");
@@ -814,15 +958,26 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
 
     it('should fall back to unknown when responseType is empty', () => {
         const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             config,
         );
         const generator = new ServiceMethodGenerator(config, parser);
 
         // type-coverage:ignore-next-line
-        const overloads = (generator as any).emitOverloads('doThing', '', [], false, false, [
-            { mediaType: 'application/json', type: 'any', serialization: 'json', isDefault: true },
-        ]);
+        const overloads = (generator as string | number | boolean | object | undefined | null).emitOverloads(
+            'doThing',
+            '',
+            [],
+            false,
+            false,
+            [{ mediaType: 'application/json', type: 'any', serialization: 'json', isDefault: true }],
+        );
         // type-coverage:ignore-next-line
         expect(overloads[0].returnType).toContain(
             'Record<string, string | number | boolean | object | undefined | null>',

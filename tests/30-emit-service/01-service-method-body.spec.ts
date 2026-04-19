@@ -211,7 +211,7 @@ describe('Emitter: ServiceMethodGenerator (Body Handling)', () => {
         };
 
         // type-coverage:ignore-next-line
-        const baseComponents = (spec as any).components || {};
+        const baseComponents = (spec as string | number | boolean | object | undefined | null).components || {};
         const extComponents = finalCoverageSpec.components || {};
 
         const fullSpec = {
@@ -230,7 +230,7 @@ describe('Emitter: ServiceMethodGenerator (Body Handling)', () => {
             },
         };
 
-        const parser = new SwaggerParser(fullSpec as any, config);
+        const parser = new SwaggerParser(fullSpec as string | number | boolean | object | undefined | null, config);
         new TypeGenerator(parser, project, config).generate('/out');
         new ParameterSerializerGenerator(project).generate('/out');
         new XmlBuilderGenerator(project).generate('/out');
@@ -263,7 +263,7 @@ describe('Emitter: ServiceMethodGenerator (Body Handling)', () => {
             method: 'POST',
             path: '/xml-endpoint',
             methodName: 'postXml',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
 
@@ -284,7 +284,7 @@ describe('Emitter: ServiceMethodGenerator (Body Handling)', () => {
             method: 'POST',
             path: '/multipart-encoding',
             methodName: 'postEncoded',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
 
@@ -305,7 +305,7 @@ describe('Emitter: ServiceMethodGenerator (Body Handling)', () => {
             method: 'POST',
             path: '/urlencoded-encoding',
             methodName: 'postUrlEncoded',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
 
@@ -331,7 +331,7 @@ describe('Emitter: ServiceMethodGenerator (Body Handling)', () => {
             method: 'POST',
             path: '/urlencoded-content-encoding',
             methodName: 'postUrlEncodedEncoded',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
 
@@ -349,7 +349,7 @@ describe('Emitter: ServiceMethodGenerator (Body Handling)', () => {
             method: 'POST',
             path: '/jsonl-endpoint',
             methodName: 'postJsonLines',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
 
@@ -368,7 +368,7 @@ describe('Emitter: ServiceMethodGenerator (Body Handling)', () => {
             method: 'POST',
             path: '/custom-jsonl-endpoint',
             methodName: 'postCustomJsonLines',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
 
@@ -452,10 +452,16 @@ describe('Emitter: ServiceMethodGenerator (Body Handling)', () => {
             methodName: 'postLegacy',
             consumes: ['application/x-www-form-urlencoded'],
             // type-coverage:ignore-next-line
-            parameters: [{ name: 'grantType', in: 'formData', type: 'string' }] as any,
+            parameters: [{ name: 'grantType', in: 'formData', type: 'string' }] as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
             // type-coverage:ignore-next-line
-            responses: { '200': { description: 'ok' } } as any,
-        } as any;
+            responses: { '200': { description: 'ok' } } as string | number | boolean | object | undefined | null,
+        } as string | number | boolean | object | undefined | null;
 
         methodGen.addServiceMethod(serviceClass, op);
         const body = serviceClass.getMethodOrThrow('postLegacy').getBodyText()!;

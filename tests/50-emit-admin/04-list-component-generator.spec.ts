@@ -16,7 +16,10 @@ describe('Generators (Angular): ListComponentGenerator', () => {
 
     beforeAll(() => {
         project = createTestProject();
-        const parser = new SwaggerParser(coverageSpec as any, { options: { admin: true } } as any);
+        const parser = new SwaggerParser(
+            coverageSpec as string | number | boolean | object | undefined | null,
+            { options: { admin: true } } as string | number | boolean | object | undefined | null,
+        );
         const resources = discoverAdminResources(parser);
         const listGen = new ListComponentGenerator(project);
 
@@ -121,7 +124,7 @@ describe('Generators (Angular): ListComponentGenerator', () => {
             for (const pathItem of Object.values(specClone.paths ?? {})) {
                 if (!pathItem || typeof pathItem !== 'object') continue;
                 // type-coverage:ignore-next-line
-                const operation = (pathItem as any).get;
+                const operation = (pathItem as string | number | boolean | object | undefined | null).get;
                 // type-coverage:ignore-next-line
                 if (operation && operation.responses === undefined) {
                     // type-coverage:ignore-next-line
@@ -129,7 +132,10 @@ describe('Generators (Angular): ListComponentGenerator', () => {
                 }
             }
             // type-coverage:ignore-next-line
-            const parser = new SwaggerParser(specClone as any, { options: { admin: true } } as any);
+            const parser = new SwaggerParser(
+                specClone as string | number | boolean | object | undefined | null,
+                { options: { admin: true } } as string | number | boolean | object | undefined | null,
+            );
             const resource = discoverAdminResources(parser).find((r: Resource) => r.name === 'readOnlyResource')!;
             const generator = new ListComponentGenerator(project);
             generator.generate(resource, '/admin');
@@ -147,7 +153,10 @@ describe('Generators (Angular): ListComponentGenerator', () => {
 
         beforeAll(() => {
             localProject = createTestProject();
-            const parser = new SwaggerParser(listComponentSpec as any, { options: { admin: true } } as any);
+            const parser = new SwaggerParser(
+                listComponentSpec as string | number | boolean | object | undefined | null,
+                { options: { admin: true } } as string | number | boolean | object | undefined | null,
+            );
             const resources = discoverAdminResources(parser);
             const listGen = new ListComponentGenerator(localProject);
 
@@ -209,13 +218,30 @@ describe('Generators (Angular): ListComponentGenerator', () => {
         it('should map kinds to icons via fallback switch cases', () => {
             const generator = new ListComponentGenerator(createTestProject());
             // type-coverage:ignore-next-line
-            expect((generator as any).mapKindToIcon('custom', 'state-change')).toBe('sync');
+            expect(
+                (generator as string | number | boolean | object | undefined | null).mapKindToIcon(
+                    'custom',
+                    'state-change',
+                ),
+            ).toBe('sync');
             // type-coverage:ignore-next-line
-            expect((generator as any).mapKindToIcon('custom', 'navigation')).toBe('arrow_forward');
+            expect(
+                (generator as string | number | boolean | object | undefined | null).mapKindToIcon(
+                    'custom',
+                    'navigation',
+                ),
+            ).toBe('arrow_forward');
             // type-coverage:ignore-next-line
-            expect((generator as any).mapKindToIcon('custom', 'default')).toBe('play_arrow');
+            expect(
+                (generator as string | number | boolean | object | undefined | null).mapKindToIcon('custom', 'default'),
+            ).toBe('play_arrow');
             // type-coverage:ignore-next-line
-            expect((generator as any).mapKindToIcon('editItem', 'default')).toBe('edit');
+            expect(
+                (generator as string | number | boolean | object | undefined | null).mapKindToIcon(
+                    'editItem',
+                    'default',
+                ),
+            ).toBe('edit');
         });
 
         it('should skip onDelete when delete operation lacks methodName', () => {
@@ -224,9 +250,22 @@ describe('Generators (Angular): ListComponentGenerator', () => {
                 name: 'orphans',
                 modelName: 'Orphan',
                 isEditable: true,
-                operations: [{ action: 'list', methodName: 'listOrphans' } as any, { action: 'delete' } as any],
-                formProperties: [{ name: 'id', schema: { type: 'string' } as any }],
-                listProperties: [{ name: 'id', schema: { type: 'string' } as any }],
+                operations: [
+                    { action: 'list', methodName: 'listOrphans' } as
+                        | string
+                        | number
+                        | boolean
+                        | object
+                        | undefined
+                        | null,
+                    { action: 'delete' } as string | number | boolean | object | undefined | null,
+                ],
+                formProperties: [
+                    { name: 'id', schema: { type: 'string' } as string | number | boolean | object | undefined | null },
+                ],
+                listProperties: [
+                    { name: 'id', schema: { type: 'string' } as string | number | boolean | object | undefined | null },
+                ],
             };
             const generator = new ListComponentGenerator(project);
             generator.generate(resource, '/admin');

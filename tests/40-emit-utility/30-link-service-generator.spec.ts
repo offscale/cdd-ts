@@ -6,7 +6,8 @@ import ts from 'typescript';
 
 describe('Emitter: LinkServiceGenerator', () => {
     // type-coverage:ignore-next-line
-    const createParser = (spec: any) => new SwaggerParser(spec, { options: {} } as any);
+    const createParser = (spec: string | number | boolean | object | undefined | null) =>
+        new SwaggerParser(spec, { options: {} } as string | number | boolean | object | undefined | null);
 
     it('should skip generation if no links defined in spec', () => {
         const project = createTestProject();
@@ -76,11 +77,11 @@ describe('Emitter: LinkServiceGenerator', () => {
         };
 
         // type-coverage:ignore-next-line
-        const moduleScope = { exports: {} as any };
+        const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
 
         // Returns a decorator function that does nothing, satisfying usage like @Injectable()
         // type-coverage:ignore-next-line
-        const mockInjectable = () => (target: any) => target;
+        const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
 
         // Inject mock API_LINKS into global scope of evaluation
         const wrappedCode = `
@@ -149,9 +150,9 @@ describe('Emitter: LinkServiceGenerator', () => {
         };
 
         // type-coverage:ignore-next-line
-        const moduleScope = { exports: {} as any };
+        const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
-        const mockInjectable = () => (target: any) => target;
+        const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
@@ -223,9 +224,9 @@ describe('Emitter: LinkServiceGenerator', () => {
         const responseMock = { status: 201, headers: {}, body: {} };
 
         // type-coverage:ignore-next-line
-        const moduleScope = { exports: {} as any };
+        const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
-        const mockInjectable = () => (target: any) => target;
+        const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
@@ -301,9 +302,9 @@ describe('Emitter: LinkServiceGenerator', () => {
         const responseMock = { status: 200, headers: {}, body: {} };
 
         // type-coverage:ignore-next-line
-        const moduleScope = { exports: {} as any };
+        const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
-        const mockInjectable = () => (target: any) => target;
+        const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
@@ -368,9 +369,9 @@ describe('Emitter: LinkServiceGenerator', () => {
 
         const responseMock = { status: 200, headers: {}, body: {} };
         // type-coverage:ignore-next-line
-        const moduleScope = { exports: {} as any };
+        const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
-        const mockInjectable = () => (target: any) => target;
+        const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
@@ -426,9 +427,9 @@ describe('Emitter: LinkServiceGenerator', () => {
 
         const responseMock = { status: 200, headers: {}, body: {} };
         // type-coverage:ignore-next-line
-        const moduleScope = { exports: {} as any };
+        const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
-        const mockInjectable = () => (target: any) => target;
+        const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
@@ -486,9 +487,9 @@ describe('Emitter: LinkServiceGenerator', () => {
 
         const responseMock = { status: 200, headers: {}, body: { 'a/b': 42 } };
         // type-coverage:ignore-next-line
-        const moduleScope = { exports: {} as any };
+        const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
-        const mockInjectable = () => (target: any) => target;
+        const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
@@ -548,9 +549,9 @@ describe('Emitter: LinkServiceGenerator', () => {
 
         const responseMock = { status: 200, headers: {}, body: {} };
         // type-coverage:ignore-next-line
-        const moduleScope = { exports: {} as any };
+        const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
-        const mockInjectable = () => (target: any) => target;
+        const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)};
             ${jsCode}
