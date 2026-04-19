@@ -59,7 +59,7 @@ goto end
 echo Building WASM (browser bundle)...
 call npx esbuild dist\index.js --bundle --platform=browser --target=es2020 --external:node:fs --external:node:path --external:node:url --external:node:crypto --external:node:os --outfile=wasm\cdd-ts.js
 echo Compiling to WebAssembly...
-call npx -y javy-cli compile wasm\cdd-ts.js -o wasm\cdd-ts.wasm
+call npx -y javy-cli compile wasm\cdd-ts.js -o wasm\cdd-ts-javy.wasm
 goto end
 
 :build_docker
@@ -85,16 +85,17 @@ call npm run build
 echo Building WASM (browser bundle)...
 call npx esbuild dist\index.js --bundle --platform=browser --target=es2020 --external:node:fs --external:node:path --external:node:url --external:node:crypto --external:node:os --outfile=wasm\cdd-ts.js
 echo Compiling to WebAssembly via javy...
-call npx -y javy-cli compile wasm\cdd-ts.js -o wasm\cdd-ts.wasm
+call npx -y javy-cli compile wasm\cdd-ts.js -o wasm\cdd-ts-go-javy.wasm
 echo build_with_ts_go completed successfully!
 goto end
 
 :build_with_ts_go_assemblyscript
 echo Building Go engine (WASM)...
+if not exist wasm mkdir wasm
 cd ..\ts-morph\packages\compiler-go-source
 set GOOS=wasip1
 set GOARCH=wasm
-call go build -o test.wasm .\cmd\wasm-wasi
+call go build -o ..\..\..\cdd-ts\wasm\typescript-go.wasm .\cmd\wasm-wasi
 set GOOS=
 set GOARCH=
 cd ..\..\..\cdd-ts
@@ -102,11 +103,12 @@ cd ..\..\..\cdd-ts
 echo Building AssemblyScript bridge (WASM)...
 cd ..\ts-morph\packages\ts-morph-as
 call npm run asbuild:release
+copy /Y build\release.wasm ..\..\..\cdd-ts\wasm\cdd-ts.wasm
 cd ..\..\..\cdd-ts
 
 echo ================================
 echo Success! Compare filesizes:
-dir ..\ts-morph\packages\compiler-go-source\test.wasm
-dir ..\ts-morph\packages\ts-morph-as\build\release.wasm
+dir wasm\typescript-go.wasm
+dir wasm\cdd-ts.wasm
 echo ================================
 goto end

@@ -180,5 +180,5 @@ export function generateDocsJson(
         endpoints[path][method] = finalCode;
     }
 
-    return { endpoints } as string | number | boolean | object | undefined | null;
+    return { endpoints } as unknown as Record<string, Record<string, string>>;
 }
