@@ -140,7 +140,7 @@ function getXmlParser() {
 
     const finalCode = `${jsCode}\nmoduleScope.exports.XmlParser = XmlParser;`;
 
-    new Function('moduleScope', finalCode)(moduleScope);
+    new Function('moduleScope', 'exports', 'require', finalCode)(moduleScope, (moduleScope as any).exports, () => ({}));
     // type-coverage:ignore-next-line
     return moduleScope.exports.XmlParser;
 }

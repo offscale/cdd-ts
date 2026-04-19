@@ -19,24 +19,9 @@ export class XmlParserGenerator {
         sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
         /* v8 ignore next */
-        sourceFile.addInterface({
-            name: 'XmlPropertyConfig',
-            isExported: true,
-            properties: [
-                { name: 'name', type: 'string', hasQuestionToken: true },
-                { name: 'prefix', type: 'string', hasQuestionToken: true },
-                { name: 'namespace', type: 'string', hasQuestionToken: true },
-                { name: 'attribute', type: 'boolean', hasQuestionToken: true },
-                { name: 'wrapped', type: 'boolean', hasQuestionToken: true },
-                {
-                    name: 'nodeType',
-                    type: "'element' | 'attribute' | 'text' | 'cdata' | 'none' | string",
-                    hasQuestionToken: true,
-                },
-                { name: 'properties', type: 'Record<string, XmlPropertyConfig>', hasQuestionToken: true },
-                { name: 'items', type: 'XmlPropertyConfig', hasQuestionToken: true },
-                { name: 'prefixItems', type: 'XmlPropertyConfig[]', hasQuestionToken: true },
-            ],
+        sourceFile.addImportDeclaration({
+            namedImports: ['XmlPropertyConfig'],
+            moduleSpecifier: './xml-builder',
         });
 
         /* v8 ignore next */

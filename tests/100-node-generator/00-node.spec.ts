@@ -286,7 +286,9 @@ describe('Node Implementation', () => {
                     .getStatements()
                     .map(s => s.getText())
                     .join('\\n'),
-            ).toContain("resolve(buffer.toString('utf-8') as string | number | boolean | object | undefined | null as string)");
+            ).toContain(
+                "resolve(buffer.toString('utf-8') as string | number | boolean | object | undefined | null as string)",
+            );
         });
 
         it('should generate properly without services when generateServices is false', async () => {

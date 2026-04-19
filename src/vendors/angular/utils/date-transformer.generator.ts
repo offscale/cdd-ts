@@ -51,10 +51,11 @@ export class DateTransformerGenerator {
         sourceFile.addFunction({
             name: 'transformDates',
             isExported: true,
+            typeParameters: ['T'],
             parameters: [
-                { name: 'body', type: 'Record<string, string | number | boolean | object | undefined | null>' },
+                { name: 'body', type: 'T' },
             ],
-            returnType: 'Record<string, string | number | boolean | object | undefined | null>',
+            returnType: 'T',
             docs: ['Recursively traverses an object or array and converts ISO date strings to Date objects.'],
             statements: `
     if (body === null || body === undefined || typeof body !== 'object') { 
@@ -62,12 +63,12 @@ export class DateTransformerGenerator {
     } 
 
     if (Array.isArray(body)) { 
-        return body.map(item => transformDates(item)); 
+        return (body as (string | number | boolean | object | undefined | null)[]).map(item => transformDates(item)) as T; 
     } 
 
     const transformedBody: Record<string, string | number | boolean | object | undefined | null> = {};
-    for (const key of Object.keys(body)) { 
-        const value = body[key]; 
+    for (const key of Object.keys(body as Record<string, string | number | boolean | object | undefined | null>)) { 
+        const value = (body as Record<string, string | number | boolean | object | undefined | null>)[key]; 
         if (typeof value === 'string' && ISO_DATE_REGEX.test(value)) { 
             transformedBody[key] = new Date(value); 
         } else if (typeof value === 'object' && value !== null) { 
@@ -76,7 +77,7 @@ export class DateTransformerGenerator {
             transformedBody[key] = value; 
         } 
     } 
-    return transformedBody;`,
+    return transformedBody as T;`,
         });
 
         /* v8 ignore next */

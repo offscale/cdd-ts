@@ -111,7 +111,9 @@ export function parseGeneratedCliSource(sourceText: string, filePath = 'cli.ts')
 
                         let parent = call.getParent();
                         while (parent && parent.getKind() === SyntaxKind.PropertyAccessExpression) {
-                            const pCall = parent.getParentIfKind(SyntaxKind.CallExpression) as CallExpression | undefined;
+                            const pCall = parent.getParentIfKind(SyntaxKind.CallExpression) as
+                                | CallExpression
+                                | undefined;
                             if (!pCall) {
                                 break;
                             }

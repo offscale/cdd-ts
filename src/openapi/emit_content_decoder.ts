@@ -81,8 +81,8 @@ export class ContentDecoderGenerator {
             else if (pad === 3) normalized += '=';
         }
 
-        if (typeof (globalThis as any).Buffer !== 'undefined') {
-            return Uint8Array.from((globalThis as any).Buffer.from(normalized, 'base64'));
+        if (typeof (globalThis as { Buffer?: { from: (data: string | Uint8Array, encoding?: string) => Uint8Array } }).Buffer !== 'undefined') {
+            return Uint8Array.from((globalThis as { Buffer: { from: (data: string, encoding: string) => Uint8Array } }).Buffer.from(normalized, 'base64'));
         }
         const binary = atob(normalized);
         const bytes = new Uint8Array(binary.length);
@@ -103,8 +103,8 @@ export class ContentDecoderGenerator {
         if (typeof TextDecoder !== 'undefined') {
             return new TextDecoder().decode(bytes);
         }
-        if (typeof (globalThis as any).Buffer !== 'undefined') {
-            return (globalThis as any).Buffer.from(bytes).toString('utf-8');
+        if (typeof (globalThis as { Buffer?: { from: (data: string | Uint8Array, encoding?: string) => { toString: (enc: string) => string } } }).Buffer !== 'undefined') {
+            return (globalThis as { Buffer: { from: (data: Uint8Array) => { toString: (enc: string) => string } } }).Buffer.from(bytes).toString('utf-8');
         }
         let result = '';
         for (let i = 0; i < bytes.length; i++) {
@@ -144,7 +144,7 @@ export class ContentDecoderGenerator {
             try {
                 if (config.decode === 'xml') {
                     // Use XmlParser for XML content
-                    return XmlParser.parse(current, (config.xmlConfig as any) || {});
+                    return XmlParser.parse(current, (config.xmlConfig as Record<string, string | number | boolean | object | undefined | null>) || {});
                 }
 
                 // Default to JSON parsing
@@ -170,7 +170,7 @@ export class ContentDecoderGenerator {
         // 3. Objects
         if (typeof current === 'object') {
             if (config.properties) {
-                const result = { ...current };
+                const result: Record<string, string | number | boolean | object | undefined | null> = { ...current };
                 Object.keys(config.properties).forEach(key => {
                     if (Object.prototype.hasOwnProperty.call(current, key)) {
                         result[key] = this.decode((current as string | number | boolean | object | undefined | null)[key], config.properties![key]);
