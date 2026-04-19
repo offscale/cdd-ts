@@ -49,7 +49,7 @@ jobs:
               run: |
                   npx -p @angular/cli ng new angular-client --defaults --skip-git
                   cd angular-client
-                  npx ng add @angular/material --skip-confirmation
+                  npx ng add @angular/material --skip-confirmation --defaults
 
             - name: Fetch Petstore JSON
               run: curl -s https://petstore.swagger.io/v2/swagger.json > petstore.json
