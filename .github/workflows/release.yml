@@ -66,7 +66,7 @@ jobs:
                   sleep 10
                   gh release download ${{ github.ref_name }} -p "cdd-ts.wasm"
                   gh release download ${{ github.ref_name }} -p "cdd-ts.tsc.wasm"
-                  
+
                   if [ ! -f "cdd-ts.wasm" ]; then
                       echo "Failed to download cdd-ts.wasm"
                       exit 1
@@ -75,17 +75,17 @@ jobs:
                       echo "Failed to download cdd-ts.tsc.wasm"
                       exit 1
                   fi
-                  
+
                   SIZE=$(stat -c%s "cdd-ts.wasm")
                   if [ "$SIZE" -lt 10000000 ]; then
                       echo "WASM file is too small ($SIZE bytes), likely a stub!"
                       exit 1
                   fi
-                  
+
                   SIZE_TSC=$(stat -c%s "cdd-ts.tsc.wasm")
                   if [ "$SIZE_TSC" -lt 10000000 ]; then
                       echo "Legacy WASM file is too small ($SIZE_TSC bytes), likely a stub!"
                       exit 1
                   fi
-                  
+
                   echo "Successfully downloaded and verified non-stub WASM ($SIZE bytes) and legacy WASM ($SIZE_TSC bytes)"

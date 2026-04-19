@@ -175,7 +175,7 @@ export class ParameterSerializerGenerator {
             if (Array.isArray(value)) {
                 // @ts-ignore
                 return value.map(v => encode(String(v))).join(',');
-            } else if (typeof value === 'object') {
+            } else if (typeof value === 'object' && value !== null) {
                 if (explode) {
                     // @ts-ignore
                     return Object.entries(value).map(([k, v]) => \`\${encode(k)}=\${encode(String(v))}\`).join(',');
@@ -193,7 +193,7 @@ export class ParameterSerializerGenerator {
             if (Array.isArray(value)) {
                 // @ts-ignore
                 return prefix + value.map(v => encode(String(v))).join(explode ? prefix : ',');
-            } else if (typeof value === 'object') {
+            } else if (typeof value === 'object' && value !== null) {
                 if (explode) {
                     // @ts-ignore
                     return prefix + Object.entries(value).map(([k, v]) => \`\${encode(k)}=\${encode(String(v))}\`).join(prefix);
@@ -216,7 +216,7 @@ export class ParameterSerializerGenerator {
                    // @ts-ignore
                    return prefix + \`\${encode(key)}=\` + value.map(v => encode(String(v))).join(',');
                 }
-            } else if (typeof value === 'object') {
+            } else if (typeof value === 'object' && value !== null) {
                 if (explode) {
                     // @ts-ignore
                     return prefix + Object.entries(value).map(([k, v]) => \`\${encode(k)}=\${encode(String(v))}\`).join(prefix);
@@ -312,11 +312,11 @@ export class ParameterSerializerGenerator {
         // @ts-ignore
         const explode = config.explode ?? true;
         
-        if (style === 'deepObject' && typeof value === 'object') {
+        if (style === 'deepObject' && typeof value === 'object' && value !== null) {
              const processDeep = (obj: string | number | boolean | object | undefined | null, prefix: string) => {
-                 Object.keys(obj).forEach(k => {
+                 Object.keys(obj as any).forEach(k => {
                      const keyPath = \`\${prefix}[\${k}]\`;
-                     const v = obj[k];
+                     const v = (obj as any)[k];
                      if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
                          processDeep(v, keyPath);
                      } else {
@@ -360,7 +360,7 @@ export class ParameterSerializerGenerator {
             return result;
         }
 
-        if (typeof value === 'object') {
+        if (typeof value === 'object' && value !== null) {
              if (style === 'form') {
                  if (explode) {
                      // @ts-ignore
@@ -440,7 +440,7 @@ export class ParameterSerializerGenerator {
                 (normalizedContentType === 'application/json' || normalizedContentType.endsWith('+json')));
 
         if (normalizedContentType === 'application/x-www-form-urlencoded') {
-            if (typeof value === 'object') {
+            if (typeof value === 'object' && value !== null) {
                 return this.serializeUrlEncodedBody(value, encoding || {})
                     .map(p => \`\${p.key}=\${p.value}\`)
                     .join('&');
@@ -455,7 +455,7 @@ export class ParameterSerializerGenerator {
 
         if (Array.isArray(value)) return value.join(',');
         
-        if (typeof value === 'object') {
+        if (typeof value === 'object' && value !== null) {
             if (explode) {
                 return Object.entries(value).map(([k, v]) => \`\${k}=\${v}\`).join(',');
             }
@@ -513,7 +513,7 @@ export class ParameterSerializerGenerator {
             return \`\${encodedKey}=\${value.map(v => encode(v)).join(joinChar)}\`;
         }
         
-        if (typeof value === 'object') {
+        if (typeof value === 'object' && value !== null) {
             if (explode) {
                 return Object.entries(value)
                     // @ts-ignore
@@ -575,7 +575,7 @@ export class ParameterSerializerGenerator {
 
         const isFormUrlEncoded = normalizedContentType === 'application/x-www-form-urlencoded';
         if (isFormUrlEncoded) {
-            if (typeof value === 'object') {
+            if (typeof value === 'object' && value !== null) {
                 const parts = this.serializeUrlEncodedBody(value, encodings || {});
                 return parts.map(p => \`\${p.key}=\${p.value}\`).join('&');
             }
@@ -586,7 +586,7 @@ export class ParameterSerializerGenerator {
             // @ts-ignore
             return encodeURIComponent(raw);
         }
-        if (typeof value === 'object') {
+        if (typeof value === 'object' && value !== null) {
             return Object.entries(value).map(([k, v]) => \`\${k}=\${v}\`).join('&');
         }
         return String(value);`,

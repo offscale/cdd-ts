@@ -89,9 +89,7 @@ describe('E2E: Full Generation Orchestrator', () => {
         const logCalls = consoleSpy.mock.calls.flat();
 
         expect(logCalls).toEqual(expect.arrayContaining(['🚀 Generating Admin UI...']));
-        expect(logCalls).toEqual(
-            expect.arrayContaining([expect.stringContaining('Generating tests for admin UI...')]),
-        );
+        expect(logCalls).toEqual(expect.arrayContaining([expect.stringContaining('Generating tests for admin UI...')]));
 
         consoleSpy.mockRestore();
     });

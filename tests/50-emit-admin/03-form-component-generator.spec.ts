@@ -683,9 +683,14 @@ describe('Generators (Angular): FormComponentGenerator', () => {
             // type-coverage:ignore-next-line
             (generator as any).addPatchForm(classDeclaration, { name: 'test', modelName: '' } as any, analysisComplex);
             const patchMethod = classDeclaration.getMethodOrThrow('patchForm');
-            expect((patchMethod.getParameters()[0].getTypeNode()?.getText() ?? patchMethod.getParameters()[0].getType().getText()).replace(/ \| null/g, '').replace(/ \| undefined/g, '')).toBe(
-                'Record<string, string | number | boolean | object>',
-            );
+            expect(
+                (
+                    patchMethod.getParameters()[0].getTypeNode()?.getText() ??
+                    patchMethod.getParameters()[0].getType().getText()
+                )
+                    .replace(/ \| null/g, '')
+                    .replace(/ \| undefined/g, ''),
+            ).toBe('Record<string, string | number | boolean | object>');
         });
     });
 });

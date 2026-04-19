@@ -93,21 +93,22 @@ generate();
 
 ## 🏗 Supported Conversions for TypeScript
 
-*(The boxes below reflect the features supported by this specific `cdd-ts` implementation)*
+_(The boxes below reflect the features supported by this specific `cdd-ts` implementation)_
 
-| Features | Parse (From) | Emit (To) |
-| --- | --- | --- |
-| OpenAPI 3.2.0 | ✅ | ✅ |
-| API Client SDK | ✅ | ✅ |
-| API Client CLI | [ ] | ✅ |
-| Server Routes / Endpoints | ✅ | ✅ |
-| ORM / DB Schema | [ ] | [ ] |
-| Mocks + Tests | [ ] | [ ] |
-| Model Context Protocol (MCP) | [ ] | [ ] |
+| Features                     | Parse (From) | Emit (To) |
+| ---------------------------- | ------------ | --------- |
+| OpenAPI 3.2.0                | ✅           | ✅        |
+| API Client SDK               | ✅           | ✅        |
+| API Client CLI               | [ ]          | ✅        |
+| Server Routes / Endpoints    | ✅           | ✅        |
+| ORM / DB Schema              | [ ]          | [ ]       |
+| Mocks + Tests                | [ ]          | [ ]       |
+| Model Context Protocol (MCP) | [ ]          | [ ]       |
 
 ### Uncommon Features
 
 `cdd-ts` supports extensive auto-generation features beyond the standard suite:
+
 - **Auto-Admin UI:** Generates fully functional, component-based administration dashboards (Angular or Vanilla Web Components) mapped directly from the OpenAPI schema using the `--admin` flag.
 
 ---
@@ -182,6 +183,7 @@ Options:
                        (env: CDD_NO_WRAPPING)
   -h, --help           display help for command
 ```
+
 ```
 
 ---
@@ -200,3 +202,4 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
+```

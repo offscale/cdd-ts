@@ -203,7 +203,10 @@ async function runToOpenApi(options: ToActionOptions, returnObject = false): Pro
     let spec: OpenApiValue;
     try {
         // type-coverage:ignore-next-line
-        ({ spec } = readOpenApiSnapshot(options.input, fs as OpenApiValue as Parameters<typeof readOpenApiSnapshot>[1]));
+        ({ spec } = readOpenApiSnapshot(
+            options.input,
+            fs as OpenApiValue as Parameters<typeof readOpenApiSnapshot>[1],
+        ));
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         const shouldFallback =

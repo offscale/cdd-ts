@@ -117,7 +117,11 @@ function getMethodName(op: PathInfo, config: GeneratorConfig): string {
  * @returns An array of DocLanguage objects.
  */
 
-export function generateDocsJson(parser: SwaggerParser, config: GeneratorConfig, options: DocsOptions): Record<string, Record<string, string>> {
+export function generateDocsJson(
+    parser: SwaggerParser,
+    config: GeneratorConfig,
+    options: DocsOptions,
+): Record<string, Record<string, string>> {
     const useImports = options.imports ?? false;
     const useWrapping = options.wrapping ?? false;
 
@@ -161,9 +165,12 @@ export function generateDocsJson(parser: SwaggerParser, config: GeneratorConfig,
 
         let innerCode = `const response = await this.service.${methodName}(${args});\nconsole.log(response);`;
         if (useWrapping) {
-            innerCode = innerCode.split('\n').map(l => `        ${l}`).join('\n');
+            innerCode = innerCode
+                .split('\n')
+                .map(l => `        ${l}`)
+                .join('\n');
         }
-        
+
         finalCode += innerCode;
 
         if (useWrapping) {

@@ -246,7 +246,7 @@ export class MultipartBuilderGenerator {
                     return;
                 }
 
-                if (typeof value === 'object') {
+                if (typeof value === 'object' && value !== null) {
                     if (explode) {
                         Object.entries(value).forEach(([entryKey, entryValue]) => {
                             const entryDisp = \`Content-Disposition: form-data; name="\${entryKey}"\`;

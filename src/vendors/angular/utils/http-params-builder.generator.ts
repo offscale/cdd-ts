@@ -103,7 +103,7 @@ export class HttpParamsBuilderGenerator {
             if (Array.isArray(value)) {
                 // @ts-ignore
                 return value.map(v => encode(String(v))).join(',');
-            } else if (typeof value === 'object') {
+            } else if (typeof value === 'object' && value !== null) {
                 if (explode) {
                     // @ts-ignore
                     return Object.entries(value).map(([k, v]) => \`\${encode(k)}=\${encode(String(v))}\`).join(',');
@@ -121,7 +121,7 @@ export class HttpParamsBuilderGenerator {
             if (Array.isArray(value)) {
                 // @ts-ignore
                 return prefix + value.map(v => encode(String(v))).join(explode ? prefix : ',');
-            } else if (typeof value === 'object') {
+            } else if (typeof value === 'object' && value !== null) {
                 if (explode) {
                     // @ts-ignore
                     return prefix + Object.entries(value).map(([k, v]) => \`\${encode(k)}=\${encode(String(v))}\`).join(prefix);
@@ -144,7 +144,7 @@ export class HttpParamsBuilderGenerator {
                    // @ts-ignore
                    return prefix + \`\${encode(key)}=\` + value.map(v => encode(String(v))).join(',');
                 }
-            } else if (typeof value === 'object') {
+            } else if (typeof value === 'object' && value !== null) {
                 if (explode) {
                     // @ts-ignore
                     return prefix + Object.entries(value).map(([k, v]) => \`\${encode(k)}=\${encode(String(v))}\`).join(prefix);
@@ -237,11 +237,11 @@ export class HttpParamsBuilderGenerator {
         // @ts-ignore
         const explode = config.explode ?? true;
         
-        if (style === 'deepObject' && typeof value === 'object') {
+        if (style === 'deepObject' && typeof value === 'object' && value !== null) {
              const processDeep = (obj: Record<string, string | number | boolean | object | undefined | null>, prefix: string) => {
-                 Object.keys(obj).forEach(k => {
+                 Object.keys(obj as any).forEach(k => {
                      const keyPath = \`\${prefix}[\${k}]\`;
-                     const v = obj[k];
+                     const v = (obj as any)[k];
                      if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
                          processDeep(v as Record<string, string | number | boolean | object | undefined | null>, keyPath);
                      } else {
@@ -278,7 +278,7 @@ export class HttpParamsBuilderGenerator {
             return params; 
         } 
 
-        if (typeof value === 'object') { 
+        if (typeof value === 'object' && value !== null) { 
              if (style === 'form') { 
                  if (explode) { 
                      // @ts-ignore
@@ -393,7 +393,7 @@ export class HttpParamsBuilderGenerator {
             // @ts-ignore
             return value.join(','); 
         } 
-        if (typeof value === 'object') { 
+        if (typeof value === 'object' && value !== null) { 
             if (explode) { 
                 return Object.entries(value).map(([k, v]) => \`\${k}=\${v}\`).join(','); 
             } 
@@ -450,7 +450,7 @@ export class HttpParamsBuilderGenerator {
             } 
         } 
         
-        if (typeof value === 'object') { 
+        if (typeof value === 'object' && value !== null) { 
             if (explode) { 
                 // Explode: 'k1=v1; k2=v2' (Parameter name omitted for object props) 
                 // @ts-ignore
@@ -484,7 +484,7 @@ export class HttpParamsBuilderGenerator {
         if (value === null || value === undefined) return ''; 
         // @ts-ignore
         if (serialization === 'json') return encodeURIComponent(JSON.stringify(value)); 
-        if (typeof value === 'object') { 
+        if (typeof value === 'object' && value !== null) { 
             return Object.entries(value).map(([k, v]) => \`\${k}=\${v}\`).join('&'); 
         } 
         return String(value);`,
