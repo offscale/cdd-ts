@@ -9,17 +9,17 @@ jobs:
     ci:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v4
 
             - name: Checkout ts-morph fork
-              uses: actions/checkout@v6
+              uses: actions/checkout@v4
               with:
                   repository: SamuelMarks/ts-morph
                   ref: wasm-typescript-go
                   submodules: true
                   path: ../ts-morph
 
-            - uses: actions/setup-node@v6
+            - uses: actions/setup-node@v4
               with:
                   node-version: 'lts/*'
 
@@ -48,7 +48,7 @@ jobs:
                   make build_with_ts_go_assemblyscript
 
             - name: Upload coverage report artifact
-              uses: actions/upload-artifact@v6
+              uses: actions/upload-artifact@v4
               with:
                   name: coverage-report
                   path: ./coverage
