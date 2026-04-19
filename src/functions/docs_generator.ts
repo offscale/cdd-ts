@@ -121,7 +121,7 @@ export function generateDocsJson(
     parser: SwaggerParser,
     config: GeneratorConfig,
     options: DocsOptions,
-): Record<string, Record<string, string>> {
+): { endpoints: Record<string, Record<string, string>> } {
     const useImports = options.imports ?? false;
     const useWrapping = options.wrapping ?? false;
 
@@ -180,5 +180,5 @@ export function generateDocsJson(
         endpoints[path][method] = finalCode;
     }
 
-    return { endpoints } as unknown as Record<string, Record<string, string>>;
+    return { endpoints };
 }

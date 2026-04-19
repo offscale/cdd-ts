@@ -332,7 +332,7 @@ describe('Core Utils: Spec Extractor', () => {
                 },
             };
 
-            const cache = new Map<string, any>([
+            const cache = new Map<string, SwaggerSpec>([
                 [entryUri, entrySpec],
                 [externalUri, externalSpec],
             ]);

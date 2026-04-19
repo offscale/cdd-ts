@@ -1117,7 +1117,7 @@ describe('Core: SwaggerParser', () => {
                     },
                 },
             };
-            const cache = new Map<string, any>([
+            const cache = new Map<string, SwaggerSpec>([
                 ['file://entry-spec.json', spec],
                 ['file://other-spec.json', { type: 'number', $id: 'UserModel' }],
             ]);
