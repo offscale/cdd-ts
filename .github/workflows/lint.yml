@@ -19,6 +19,13 @@ jobs:
                   submodules: true
                   path: ../ts-morph
 
+            - name: Checkout typescript-go fork
+              uses: actions/checkout@v4
+              with:
+                  repository: SamuelMarks/typescript-go
+                  ref: wasm
+                  path: ../ts-morph/packages/compiler-go-source
+
             - uses: actions/setup-node@v4
               with:
                   node-version: 'lts/*'
