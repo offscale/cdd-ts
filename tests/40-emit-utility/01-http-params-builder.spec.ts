@@ -25,10 +25,8 @@ class MockHttpParams {
             encodeValue: (v: string) => encodeURIComponent(v),
         };
 
-        // type-coverage:ignore-next-line
         if (options?.fromObject) {
-            // type-coverage:ignore-next-line
-            Object.entries(options.fromObject).forEach(([k, v]) => {
+            Object.entries(options.fromObject as Record<string, string | number | boolean | null>).forEach(([k, v]) => {
                 this.map.set(k, [String(v)]);
             });
         }
