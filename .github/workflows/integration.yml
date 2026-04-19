@@ -20,10 +20,10 @@ jobs:
 
         steps:
             - name: Checkout repo
-              uses: actions/checkout@v6
+              uses: actions/checkout@v4
 
             - name: Checkout ts-morph fork
-              uses: actions/checkout@v6
+              uses: actions/checkout@v4
               with:
                   repository: SamuelMarks/ts-morph
                   ref: wasm-typescript-go
@@ -31,7 +31,7 @@ jobs:
                   path: ../ts-morph
 
             - name: Setup Node
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@v4
               with:
                   node-version: 'lts/*'
                   cache: 'npm'
@@ -47,22 +47,16 @@ jobs:
 
             - name: Create Angular client
               run: |
-                  npx -p @angular/cli ng new angular-client --defaults --skip-git
+                  npx -p @angular/cli ng new angular-client --defaults --skip-git --interactive=false
                   cd angular-client
-                  npx ng add @angular/material --skip-confirmation --defaults
+                  npx ng add @angular/material --skip-confirmation --interactive=false --theme=azure-blue --typography=true --animations=true
 
             - name: Fetch Petstore JSON
-              run: curl -s https://petstore.swagger.io/v2/swagger.json > petstore.json
+              run: curl --retry 3 --retry-connrefused --retry-delay 2 -fsSL -o petstore.json http://localhost:8080/v2/swagger.json || curl -fsSL -o petstore.json https://petstore.swagger.io/v2/swagger.json
 
             - name: Run Generator
               run: node dist/cli.js from_openapi to_sdk -i petstore.json --output angular-client/src/app/api
 
             - name: Run tests for Angular client
               working-directory: angular-client
-              run: |
-                  if [ -f package-lock.json ]; then
-                    npm ci
-                  else
-                    npm i
-                  fi
-                  npm run test -- --watch=false
+              run: npm run test -- --watch=false

@@ -9,17 +9,17 @@ jobs:
     lint:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v4
 
             - name: Checkout ts-morph fork
-              uses: actions/checkout@v6
+              uses: actions/checkout@v4
               with:
                   repository: SamuelMarks/ts-morph
                   ref: wasm-typescript-go
                   submodules: true
                   path: ../ts-morph
 
-            - uses: actions/setup-node@v6
+            - uses: actions/setup-node@v4
               with:
                   node-version: 'lts/*'
 
