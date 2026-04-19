@@ -31,6 +31,14 @@ jobs:
                   mv ts-morph-tmp ../ts-morph
                   cp -r ts-morph-as ../ts-morph/packages/ts-morph-as
 
+            - name: Setup Deno
+              uses: denoland/setup-deno@v2
+              with:
+                  deno-version: v2.x
+
+            - name: Build ts-morph
+              run: cd ../ts-morph && deno task setup
+
             - uses: actions/setup-node@v4
               with:
                   node-version: 'lts/*'
