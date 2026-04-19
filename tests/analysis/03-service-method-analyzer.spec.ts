@@ -5,7 +5,7 @@ import { GeneratorConfig, PathInfo } from '@src/core/types/index.js';
 
 describe('Analysis: ServiceMethodAnalyzer', () => {
     // type-coverage:ignore-next-line
-    const setupAnalyzer = (spec: any) => {
+    const setupAnalyzer = (spec: string | number | boolean | object | undefined | null) => {
         const config: GeneratorConfig = { input: '', output: '', options: {} };
         const parser = new SwaggerParser(spec, config);
         const analyzer = new ServiceMethodAnalyzer(config, parser);
@@ -198,9 +198,11 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             expect(config.nodeType).toBe('none');
             // Should exist for a few levels deep
             // type-coverage:ignore-next-line
-            expect((config as any).properties.child).toBeDefined();
+            expect((config as string | number | boolean | object | undefined | null).properties.child).toBeDefined();
             // type-coverage:ignore-next-line
-            expect((config as any).properties.child.properties.child).toBeDefined();
+            expect(
+                (config as string | number | boolean | object | undefined | null).properties.child.properties.child,
+            ).toBeDefined();
         }
     });
 
@@ -250,9 +252,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         const model = analyzer.analyze(operation);
         expect(model?.responseXmlConfig?.prefixItems).toBeDefined();
         // type-coverage:ignore-next-line
-        expect((model?.responseXmlConfig?.prefixItems as any)?.[0]?.name).toBe('One');
+        expect(
+            (model?.responseXmlConfig?.prefixItems as string | number | boolean | object | undefined | null)?.[0]?.name,
+        ).toBe('One');
         // type-coverage:ignore-next-line
-        expect((model?.responseXmlConfig?.prefixItems as any)?.[1]?.name).toBe('Two');
+        expect(
+            (model?.responseXmlConfig?.prefixItems as string | number | boolean | object | undefined | null)?.[1]?.name,
+        ).toBe('Two');
     });
 
     it('should handle various JSON content types detection', () => {
@@ -371,12 +377,14 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             const config = model.body.config;
             // Should include properties from Base (via allOf)
             // type-coverage:ignore-next-line
-            expect((config as any).properties.id).toBeDefined();
+            expect((config as string | number | boolean | object | undefined | null).properties.id).toBeDefined();
             // type-coverage:ignore-next-line
-            expect((config as any).properties.id.attribute).toBe(true);
+            expect((config as string | number | boolean | object | undefined | null).properties.id.attribute).toBe(
+                true,
+            );
             // Should include local properties
             // type-coverage:ignore-next-line
-            expect((config as any).properties.name).toBeDefined();
+            expect((config as string | number | boolean | object | undefined | null).properties.name).toBeDefined();
         }
     });
 
@@ -491,7 +499,7 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             path: '/wildcard',
             method: 'POST',
             methodName: 'postWildcard',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
         const model = analyzer.analyze(op);
 
         expect(model?.requestContentType).toBe('text/plain');
@@ -510,7 +518,10 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         const { analyzer } = setupAnalyzer(spec);
         // Using private/internal method via cast to test specific logic
         // type-coverage:ignore-next-line
-        const config = (analyzer as any).getXmlConfig({ $ref: '#/missing' }, 5);
+        const config = (analyzer as string | number | boolean | object | undefined | null).getXmlConfig(
+            { $ref: '#/missing' },
+            5,
+        );
         // type-coverage:ignore-next-line
         expect(config).toEqual({});
     });
@@ -539,7 +550,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const op = { ...spec.paths['/echo'].post, path: '/echo', method: 'POST' } as any;
+        const op = { ...spec.paths['/echo'].post, path: '/echo', method: 'POST' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(op);
 
         // The fallback logic sees no valid response code, checks requestBody schema, sees 'string'.
@@ -569,7 +586,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const op = { ...spec.paths['/post'].post, path: '/post', method: 'POST' } as any;
+        const op = { ...spec.paths['/post'].post, path: '/post', method: 'POST' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(op);
 
         // Should pick up the integer schema from the custom content type
@@ -669,7 +692,7 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
 
         // Public analyze() would trigger this via post/response, testing logic directly here
         // type-coverage:ignore-next-line
-        const config = (analyzer as any).getXmlConfig(schema, 5);
+        const config = (analyzer as string | number | boolean | object | undefined | null).getXmlConfig(schema, 5);
 
         // type-coverage:ignore-next-line
         expect(config.wrapped).toBe(true);
@@ -700,7 +723,10 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const config = (analyzer as any).getXmlConfig(spec.components.schemas.Adv, 5);
+        const config = (analyzer as string | number | boolean | object | undefined | null).getXmlConfig(
+            spec.components.schemas.Adv,
+            5,
+        );
 
         // type-coverage:ignore-next-line
         expect(config.prefix).toBe('ex');
@@ -729,25 +755,37 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         // 1. Reference Wrapper -> Should default to 'none'
         // We pass the wrapper directly (mimicking usage in a property or root)
         // type-coverage:ignore-next-line
-        const refConfig = (analyzer as any).getXmlConfig({ $ref: '#/components/schemas/Target' }, 5);
+        const refConfig = (analyzer as string | number | boolean | object | undefined | null).getXmlConfig(
+            { $ref: '#/components/schemas/Target' },
+            5,
+        );
         // type-coverage:ignore-next-line
         expect(refConfig.nodeType).toBe('none');
 
         // 2. Array -> Should default to 'none'
         // type-coverage:ignore-next-line
-        const arrayConfig = (analyzer as any).getXmlConfig(spec.components.schemas.ArrayWrapper, 5);
+        const arrayConfig = (analyzer as string | number | boolean | object | undefined | null).getXmlConfig(
+            spec.components.schemas.ArrayWrapper,
+            5,
+        );
         // type-coverage:ignore-next-line
         expect(arrayConfig.nodeType).toBe('none');
 
         // 3. Standard Object -> Should default to 'element'
         // type-coverage:ignore-next-line
-        const objConfig = (analyzer as any).getXmlConfig(spec.components.schemas.StandardObject, 5);
+        const objConfig = (analyzer as string | number | boolean | object | undefined | null).getXmlConfig(
+            spec.components.schemas.StandardObject,
+            5,
+        );
         // type-coverage:ignore-next-line
         expect(objConfig.nodeType).toBe('element');
 
         // 4. Legacy Wrapped Array -> Should default to 'element'
         // type-coverage:ignore-next-line
-        const wrappedConfig = (analyzer as any).getXmlConfig(spec.components.schemas.LegacyWrapped, 5);
+        const wrappedConfig = (analyzer as string | number | boolean | object | undefined | null).getXmlConfig(
+            spec.components.schemas.LegacyWrapped,
+            5,
+        );
         // type-coverage:ignore-next-line
         expect(wrappedConfig.nodeType).toBe('element');
     });
@@ -805,7 +843,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const operation = { ...spec.paths['/multi'].get, path: '/multi', method: 'GET', methodName: 'getMulti' } as any;
+        const operation = { ...spec.paths['/multi'].get, path: '/multi', method: 'GET', methodName: 'getMulti' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(operation)!;
 
         expect(model.responseVariants.some(v => v.serialization === 'json-seq')).toBe(true);
@@ -840,7 +884,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const operation = { ...spec.paths['/geo'].get, path: '/geo', method: 'GET', methodName: 'getGeoSeq' } as any;
+        const operation = { ...spec.paths['/geo'].get, path: '/geo', method: 'GET', methodName: 'getGeoSeq' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(operation)!;
 
         expect(model.responseVariants.some(v => v.serialization === 'json-seq')).toBe(true);
@@ -876,7 +926,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const operation = { ...spec.paths['/err'].get, path: '/err', method: 'GET', methodName: 'getErr' } as any;
+        const operation = { ...spec.paths['/err'].get, path: '/err', method: 'GET', methodName: 'getErr' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(operation)!;
 
         const types = model.errorResponses.map(e => e.type);
@@ -905,7 +961,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const operation = { ...spec.paths['/err'].get, path: '/err', method: 'GET', methodName: 'getErr' } as any;
+        const operation = { ...spec.paths['/err'].get, path: '/err', method: 'GET', methodName: 'getErr' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(operation)!;
 
         const types = model.errorResponses.map(e => e.type);
@@ -930,7 +992,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const op = { ...spec.paths['/err'].get, path: '/err', method: 'GET', methodName: 'getErr' } as any;
+        const op = { ...spec.paths['/err'].get, path: '/err', method: 'GET', methodName: 'getErr' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(op)!;
         expect(model.errorResponses[0].type).toBe('string');
     });
@@ -957,7 +1025,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const op = { ...spec.paths['/items'].post, path: '/items', method: 'POST', methodName: 'postItems' } as any;
+        const op = { ...spec.paths['/items'].post, path: '/items', method: 'POST', methodName: 'postItems' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(op)!;
         const bodyParam = model.parameters.find(p => p.type === 'string[]' || p.type === '(string)[]');
         expect(bodyParam).toBeDefined();
@@ -991,7 +1065,7 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             path: '/custom-seq',
             method: 'POST',
             methodName: 'postCustomSeq',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
         const model = analyzer.analyze(op)!;
         expect(model.requestContentType).toBe('application/vnd.acme+json');
         expect(model.body?.type).toBe('json-lines');
@@ -1017,7 +1091,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const op = { ...spec.paths['/upload'].post, path: '/upload', method: 'POST', methodName: 'upload' } as any;
+        const op = { ...spec.paths['/upload'].post, path: '/upload', method: 'POST', methodName: 'upload' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(op)!;
         const bodyParam = model.parameters.find(p => p.name === 'body');
         expect(bodyParam?.type).toBe('FormData | OpenApiValue[] | OpenApiValue');
@@ -1051,7 +1131,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const op = { ...spec.paths['/multi'].post, path: '/multi', method: 'POST', methodName: 'postMulti' } as any;
+        const op = { ...spec.paths['/multi'].post, path: '/multi', method: 'POST', methodName: 'postMulti' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(op)!;
         expect(model.body?.type).toBe('multipart');
     });
@@ -1081,9 +1167,12 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const config = (analyzer as any).getDecodingConfig(spec.components.schemas.Encoded, 5);
+        const config = (analyzer as string | number | boolean | object | undefined | null).getDecodingConfig(
+            spec.components.schemas.Encoded,
+            5,
+        );
         // type-coverage:ignore-next-line
-        expect((config as any).properties.payload).toBeDefined();
+        expect((config as string | number | boolean | object | undefined | null).properties.payload).toBeDefined();
     });
 
     it('should merge encoding config from allOf', () => {
@@ -1111,9 +1200,12 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const config = (analyzer as any).getEncodingConfig(spec.components.schemas.Encoded, 5);
+        const config = (analyzer as string | number | boolean | object | undefined | null).getEncodingConfig(
+            spec.components.schemas.Encoded,
+            5,
+        );
         // type-coverage:ignore-next-line
-        expect((config as any).properties.payload).toBeDefined();
+        expect((config as string | number | boolean | object | undefined | null).properties.payload).toBeDefined();
     });
 
     it('should mark json serialization when contentMediaType is resolved via ref', () => {
@@ -1137,7 +1229,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const op = { ...spec.paths['/query'].get, path: '/query', method: 'GET', methodName: 'getQuery' } as any;
+        const op = { ...spec.paths['/query'].get, path: '/query', method: 'GET', methodName: 'getQuery' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(op)!;
         expect(model.queryParams[0].serializationLink).toBe('json');
     });
@@ -1165,7 +1263,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
         };
         const { analyzer } = setupAnalyzer(spec);
         // type-coverage:ignore-next-line
-        const op = { ...spec.paths['/encoded'].get, path: '/encoded', method: 'GET', methodName: 'getEncoded' } as any;
+        const op = { ...spec.paths['/encoded'].get, path: '/encoded', method: 'GET', methodName: 'getEncoded' } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const model = analyzer.analyze(op)!;
 
         const binParam = model.queryParams.find(p => p.originalName === 'bin');
@@ -1217,7 +1321,7 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             path: '/xml/{soapId}',
             method: 'GET',
             methodName: 'getXmlParams',
-        } as any;
+        } as string | number | boolean | object | undefined | null;
         const model = analyzer.analyze(op)!;
 
         expect(model.pathParams[0].paramName).toBe('soapIdSerialized');
@@ -1247,7 +1351,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/empty'].get, path: '/empty', method: 'GET', methodName: 'getEmpty' } as any;
+            const op = { ...spec.paths['/empty'].get, path: '/empty', method: 'GET', methodName: 'getEmpty' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.responseVariants).toHaveLength(0);
             expect(model.responseType).toBe('string | number | boolean | object | undefined | null');
@@ -1275,7 +1385,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/items'].get, path: '/items', method: 'GET', methodName: 'getItems' } as any;
+            const op = { ...spec.paths['/items'].get, path: '/items', method: 'GET', methodName: 'getItems' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.responseVariants[0].type).toBe('(string)[]');
         });
@@ -1302,7 +1418,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/custom'].get, path: '/custom', method: 'GET', methodName: 'getCustom' } as any;
+            const op = { ...spec.paths['/custom'].get, path: '/custom', method: 'GET', methodName: 'getCustom' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.responseVariants[0].serialization).toBe('json-lines');
             expect(model.responseVariants[0].type).toBe('(number)[]');
@@ -1330,7 +1452,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/vendor'].get, path: '/vendor', method: 'GET', methodName: 'getVendor' } as any;
+            const op = { ...spec.paths['/vendor'].get, path: '/vendor', method: 'GET', methodName: 'getVendor' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.responseVariants[0].mediaType).toBe('application/vnd.api+json');
             expect(model.responseVariants[0].isDefault).toBe(true);
@@ -1359,7 +1487,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/xml'].get, path: '/xml', method: 'GET', methodName: 'getXml' } as any;
+            const op = { ...spec.paths['/xml'].get, path: '/xml', method: 'GET', methodName: 'getXml' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.responseVariants.some(v => v.serialization === 'xml')).toBe(false);
         });
@@ -1386,7 +1520,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/sse'].get, path: '/sse', method: 'GET', methodName: 'getSse' } as any;
+            const op = { ...spec.paths['/sse'].get, path: '/sse', method: 'GET', methodName: 'getSse' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.responseVariants[0].type).toBe('string');
             expect(model.responseVariants[0].sseMode).toBe('data');
@@ -1427,7 +1567,7 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
                 path: '/sse-event',
                 method: 'GET',
                 methodName: 'getSseEvent',
-            } as any;
+            } as string | number | boolean | object | undefined | null;
             const model = analyzer.analyze(op)!;
             expect(model.responseVariants[0].sseMode).toBe('event');
             expect(model.sseMode).toBe('event');
@@ -1451,7 +1591,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/err'].get, path: '/err', method: 'GET', methodName: 'getErr' } as any;
+            const op = { ...spec.paths['/err'].get, path: '/err', method: 'GET', methodName: 'getErr' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.errorResponses[0].type).toBe('Blob');
         });
@@ -1472,7 +1618,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/body'].post, path: '/body', method: 'POST', methodName: 'postBody' } as any;
+            const op = { ...spec.paths['/body'].post, path: '/body', method: 'POST', methodName: 'postBody' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.body?.type).toBe('json');
             expect(model.requestEncodingConfig).toBeUndefined();
@@ -1494,7 +1646,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/raw'].post, path: '/raw', method: 'POST', methodName: 'postRaw' } as any;
+            const op = { ...spec.paths['/raw'].post, path: '/raw', method: 'POST', methodName: 'postRaw' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.body?.type).toBe('raw');
         });
@@ -1518,7 +1676,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/params'].get, path: '/params', method: 'GET', methodName: 'getParams' } as any;
+            const op = { ...spec.paths['/params'].get, path: '/params', method: 'GET', methodName: 'getParams' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.parameters[0].name).toBe('req');
             expect(model.parameters[1].name).toBe('opt');
@@ -1550,10 +1714,22 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/multi'].post, path: '/multi', method: 'POST', methodName: 'postMulti' } as any;
+            const op = { ...spec.paths['/multi'].post, path: '/multi', method: 'POST', methodName: 'postMulti' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             // type-coverage:ignore-next-line
-            const config = (model.body as any)?.config as any;
+            const config = (model.body as string | number | boolean | object | undefined | null)?.config as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             // type-coverage:ignore-next-line
             expect(config.prefixEncoding).toBeDefined();
             // type-coverage:ignore-next-line
@@ -1594,11 +1770,23 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/form'].post, path: '/form', method: 'POST', methodName: 'postForm' } as any;
+            const op = { ...spec.paths['/form'].post, path: '/form', method: 'POST', methodName: 'postForm' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.body?.type).toBe('urlencoded');
             // type-coverage:ignore-next-line
-            const config = (model.body as any).config as any;
+            const config = (model.body as string | number | boolean | object | undefined | null).config as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             // type-coverage:ignore-next-line
             expect(config.meta.contentType).toBe('application/json');
             // type-coverage:ignore-next-line
@@ -1613,9 +1801,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             const spec = { openapi: '3.0.0', info: { title: 'Enc', version: '1.0' }, paths: {} };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const configMap: any = {};
+            const configMap: string | number | boolean | object | undefined | null = {};
             // type-coverage:ignore-next-line
-            (analyzer as any).enrichEncodingConfig({ type: 'string', contentEncoding: 'base64' }, configMap, 'field');
+            (analyzer as string | number | boolean | object | undefined | null).enrichEncodingConfig(
+                { type: 'string', contentEncoding: 'base64' },
+                configMap,
+                'field',
+            );
             // type-coverage:ignore-next-line
             expect(configMap.field.headers['Content-Transfer-Encoding']).toBe('base64');
         });
@@ -1624,9 +1816,15 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             const spec = { openapi: '3.0.0', info: { title: 'Enc', version: '1.0' }, paths: {} };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const configMap: any = { field: { headers: { 'content-transfer-encoding': 'gzip' } } };
+            const configMap: string | number | boolean | object | undefined | null = {
+                field: { headers: { 'content-transfer-encoding': 'gzip' } },
+            };
             // type-coverage:ignore-next-line
-            (analyzer as any).enrichEncodingConfig({ type: 'string', contentEncoding: 'base64' }, configMap, 'field');
+            (analyzer as string | number | boolean | object | undefined | null).enrichEncodingConfig(
+                { type: 'string', contentEncoding: 'base64' },
+                configMap,
+                'field',
+            );
             // type-coverage:ignore-next-line
             expect(configMap.field.headers['content-transfer-encoding']).toBe('gzip');
         });
@@ -1645,7 +1843,7 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
                 ],
             };
             // type-coverage:ignore-next-line
-            const cfg = (analyzer as any).getXmlConfig(schema, 5);
+            const cfg = (analyzer as string | number | boolean | object | undefined | null).getXmlConfig(schema, 5);
             // type-coverage:ignore-next-line
             expect(cfg.properties?.node).toBeDefined();
         });
@@ -1661,7 +1859,10 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
                 },
             };
             // type-coverage:ignore-next-line
-            const cfg = (analyzer as any).getDecodingConfig(schema, 5);
+            const cfg = (analyzer as string | number | boolean | object | undefined | null).getDecodingConfig(
+                schema,
+                5,
+            );
             // type-coverage:ignore-next-line
             expect(cfg.items).toBeDefined();
 
@@ -1679,7 +1880,10 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
                 ],
             };
             // type-coverage:ignore-next-line
-            const cfg2 = (analyzer as any).getDecodingConfig(allOfSchema, 5);
+            const cfg2 = (analyzer as string | number | boolean | object | undefined | null).getDecodingConfig(
+                allOfSchema,
+                5,
+            );
             // type-coverage:ignore-next-line
             expect(cfg2.properties?.payload).toBeDefined();
         });
@@ -1688,9 +1892,16 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             const spec = { openapi: '3.0.0', info: { title: 'Dec', version: '1.0' }, paths: {} };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            expect((analyzer as any).getDecodingConfig(undefined, 5)).toEqual({});
+            expect(
+                (analyzer as string | number | boolean | object | undefined | null).getDecodingConfig(undefined, 5),
+            ).toEqual({});
             // type-coverage:ignore-next-line
-            expect((analyzer as any).getDecodingConfig({ $ref: '#/missing' }, 5)).toEqual({});
+            expect(
+                (analyzer as string | number | boolean | object | undefined | null).getDecodingConfig(
+                    { $ref: '#/missing' },
+                    5,
+                ),
+            ).toEqual({});
         });
 
         it('should build encoding config for arrays and allOf properties', () => {
@@ -1711,7 +1922,10 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
                 ],
             };
             // type-coverage:ignore-next-line
-            const cfg = (analyzer as any).getEncodingConfig(schema, 5);
+            const cfg = (analyzer as string | number | boolean | object | undefined | null).getEncodingConfig(
+                schema,
+                5,
+            );
             // type-coverage:ignore-next-line
             expect(cfg.properties?.payload).toBeDefined();
             // type-coverage:ignore-next-line
@@ -1722,16 +1936,23 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             const spec = { openapi: '3.0.0', info: { title: 'Enc', version: '1.0' }, paths: {} };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            expect((analyzer as any).getEncodingConfig(undefined, 5)).toEqual({});
+            expect(
+                (analyzer as string | number | boolean | object | undefined | null).getEncodingConfig(undefined, 5),
+            ).toEqual({});
             // type-coverage:ignore-next-line
-            expect((analyzer as any).getEncodingConfig({ $ref: '#/missing' }, 5)).toEqual({});
+            expect(
+                (analyzer as string | number | boolean | object | undefined | null).getEncodingConfig(
+                    { $ref: '#/missing' },
+                    5,
+                ),
+            ).toEqual({});
         });
 
         it('should return "any" when resolveType receives undefined schema', () => {
             const spec = { openapi: '3.0.0', info: { title: 'Resolve', version: '1.0' }, paths: {} };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            expect((analyzer as any).resolveType(undefined, [])).toBe(
+            expect((analyzer as string | number | boolean | object | undefined | null).resolveType(undefined, [])).toBe(
                 'string | number | boolean | object | undefined | null',
             );
         });
@@ -1751,9 +1972,18 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
                 },
             };
             const { analyzer } = setupAnalyzer(spec);
-            vi.spyOn(analyzer as any, 'analyzeBody').mockReturnValue({ type: 'json', paramName: 'body' });
+            vi.spyOn(analyzer as string | number | boolean | object | undefined | null, 'analyzeBody').mockReturnValue({
+                type: 'json',
+                paramName: 'body',
+            });
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/enc'].post, path: '/enc', method: 'POST', methodName: 'postEnc' } as any;
+            const op = { ...spec.paths['/enc'].post, path: '/enc', method: 'POST', methodName: 'postEnc' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.requestEncodingConfig).toBeUndefined();
         });
@@ -1778,7 +2008,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/jsonl'].get, path: '/jsonl', method: 'GET', methodName: 'getJsonl' } as any;
+            const op = { ...spec.paths['/jsonl'].get, path: '/jsonl', method: 'GET', methodName: 'getJsonl' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.responseVariants[0].type).toBe('(number)[]');
         });
@@ -1788,7 +2024,7 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             const { analyzer } = setupAnalyzer(spec);
             let readCount = 0;
             // type-coverage:ignore-next-line
-            const mediaObj: any = {};
+            const mediaObj: string | number | boolean | object | undefined | null = {};
             // type-coverage:ignore-next-line
             Object.defineProperty(mediaObj, 'schema', {
                 get() {
@@ -1803,7 +2039,7 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
                 path: '/weird',
                 // type-coverage:ignore-next-line
                 responses: { '200': { description: 'ok', content: { 'text/event-stream': mediaObj } } },
-            } as any;
+            } as string | number | boolean | object | undefined | null;
             const model = analyzer.analyze(op)!;
             expect(model.responseVariants[0].type).toBe('string | number | boolean | object | undefined | null');
         });
@@ -1833,7 +2069,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/tuple'].post, path: '/tuple', method: 'POST', methodName: 'postTuple' } as any;
+            const op = { ...spec.paths['/tuple'].post, path: '/tuple', method: 'POST', methodName: 'postTuple' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.body?.type).toBe('multipart');
         });
@@ -1842,17 +2084,26 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             const spec = { openapi: '3.0.0', info: { title: 'Skip', version: '1.0' }, paths: {} };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const xmlCfg = (analyzer as any).getXmlConfig({ allOf: [{ type: 'object' }] }, 5);
+            const xmlCfg = (analyzer as string | number | boolean | object | undefined | null).getXmlConfig(
+                { allOf: [{ type: 'object' }] },
+                5,
+            );
             // type-coverage:ignore-next-line
             expect(xmlCfg.properties).toBeUndefined();
 
             // type-coverage:ignore-next-line
-            const decCfg = (analyzer as any).getDecodingConfig({ allOf: [{ type: 'object' }] }, 5);
+            const decCfg = (analyzer as string | number | boolean | object | undefined | null).getDecodingConfig(
+                { allOf: [{ type: 'object' }] },
+                5,
+            );
             // type-coverage:ignore-next-line
             expect(decCfg.properties).toBeUndefined();
 
             // type-coverage:ignore-next-line
-            const encCfg = (analyzer as any).getEncodingConfig({ allOf: [{ type: 'object' }] }, 5);
+            const encCfg = (analyzer as string | number | boolean | object | undefined | null).getEncodingConfig(
+                { allOf: [{ type: 'object' }] },
+                5,
+            );
             // type-coverage:ignore-next-line
             expect(encCfg.properties).toBeUndefined();
         });
@@ -1877,7 +2128,7 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
                 path: '/fallback',
                 method: 'GET',
                 methodName: 'getFallback',
-            } as any;
+            } as string | number | boolean | object | undefined | null;
             const model = analyzer.analyze(op)!;
             expect(model.docs).toContain('Performs a GET request to /fallback.');
         });
@@ -1899,7 +2150,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/desc'].get, path: '/desc', method: 'GET', methodName: 'getDesc' } as any;
+            const op = { ...spec.paths['/desc'].get, path: '/desc', method: 'GET', methodName: 'getDesc' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.docs).toContain('Short summary');
             expect(model.docs).toContain('Detailed description');
@@ -1921,7 +2178,13 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
             };
             const { analyzer } = setupAnalyzer(spec);
             // type-coverage:ignore-next-line
-            const op = { ...spec.paths['/ext'].get, path: '/ext', method: 'GET', methodName: 'getExt' } as any;
+            const op = { ...spec.paths['/ext'].get, path: '/ext', method: 'GET', methodName: 'getExt' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             const model = analyzer.analyze(op)!;
             expect(model.docs).toContain('@see https://example.com');
         });

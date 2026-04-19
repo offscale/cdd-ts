@@ -155,14 +155,14 @@ describe('Core Utils: OpenAPI AST Scanner', () => {
 
     it('should apply JSDoc example tags to params, request bodies, and responses', () => {
         const sourceText = `
-const app = { post: (..._args: any[]) => { void _args; } };
+const app = { post: (..._args: string | number | boolean | object | undefined | null[]) => { void _args; } };
 /**
  * Create user.
  * @paramExample id 123
  * @requestExample application/json {"name":"Ada"}
  * @responseExample 200 application/json {"id":123,"name":"Ada"}
  */
-function createUser(req: any, res: any) {
+function createUser(req: string | number | boolean | object | undefined | null, res: string | number | boolean | object | undefined | null) {
   const { id } = req.params;
   const body = req.body;
   res.status(200).json({ id, body });
@@ -172,9 +172,11 @@ app.post('/users/:id', createUser);
         const ir = scanTypeScriptSource(sourceText, '/virtual.ts');
         const spec = buildOpenApiSpecFromScan(ir);
         // type-coverage:ignore-next-line
-        const createUser = (spec.paths as any)['/users/{id}'].post;
+        const createUser = (spec.paths as string | number | boolean | object | undefined | null)['/users/{id}'].post;
         // type-coverage:ignore-next-line
-        const idParam = createUser.parameters.find((param: any) => param.name === 'id');
+        const idParam = createUser.parameters.find(
+            (param: string | number | boolean | object | undefined | null) => param.name === 'id',
+        );
         // type-coverage:ignore-next-line
         expect(idParam?.example).toBe(123);
         // type-coverage:ignore-next-line
@@ -185,13 +187,13 @@ app.post('/users/:id', createUser);
 
     it('should preserve wrapped serialized/external examples from JSDoc tags', () => {
         const sourceText = `
-const app = { post: (..._args: any[]) => { void _args; }, get: (..._args: any[]) => { void _args; } };
+const app = { post: (..._args: string | number | boolean | object | undefined | null[]) => { void _args; }, get: (..._args: string | number | boolean | object | undefined | null[]) => { void _args; } };
 /**
  * Return plain text.
  * @response 200 text/plain OK
  * @responseExample 200 text/plain {"__oasExample":{"serializedValue":"OK"}}
  */
-function getPlain(req: any, res: any) {
+function getPlain(req: string | number | boolean | object | undefined | null, res: string | number | boolean | object | undefined | null) {
   res.status(200).send('OK');
 }
 app.get('/plain', getPlain);
@@ -200,7 +202,7 @@ app.get('/plain', getPlain);
  * Send plain text.
  * @requestExample text/plain {"__oasExample":{"externalValue":"./examples/request.txt"}}
  */
-function postPlain(req: any, res: any) {
+function postPlain(req: string | number | boolean | object | undefined | null, res: string | number | boolean | object | undefined | null) {
   if (req.is('text/plain')) { /* noop */ }
   const body = req.body;
   res.status(204).send();
@@ -211,7 +213,7 @@ app.post('/plain', postPlain);
         const spec = buildOpenApiSpecFromScan(ir);
 
         // type-coverage:ignore-next-line
-        const getPlain = (spec.paths as any)['/plain'].get;
+        const getPlain = (spec.paths as string | number | boolean | object | undefined | null)['/plain'].get;
         // type-coverage:ignore-next-line
         const responseContent = getPlain.responses['200']?.content?.['text/plain'];
         // type-coverage:ignore-next-line
@@ -220,7 +222,7 @@ app.post('/plain', postPlain);
         expect(responseContent?.examples?.example?.serializedValue).toBe('OK');
 
         // type-coverage:ignore-next-line
-        const postPlain = (spec.paths as any)['/plain'].post;
+        const postPlain = (spec.paths as string | number | boolean | object | undefined | null)['/plain'].post;
         // type-coverage:ignore-next-line
         const requestContent = postPlain.requestBody?.content?.['text/plain'];
         // type-coverage:ignore-next-line
@@ -235,9 +237,12 @@ app.post('/plain', postPlain);
         const spec = buildOpenApiSpecFromScan(ir);
 
         // type-coverage:ignore-next-line
-        const rawQuery = (spec.paths as any)['/raw-query-example'].get;
+        const rawQuery = (spec.paths as string | number | boolean | object | undefined | null)['/raw-query-example']
+            .get;
         // type-coverage:ignore-next-line
-        const param = rawQuery.parameters.find((entry: any) => entry.in === 'querystring');
+        const param = rawQuery.parameters.find(
+            (entry: string | number | boolean | object | undefined | null) => entry.in === 'querystring',
+        );
         // type-coverage:ignore-next-line
         const content = param?.content?.['application/x-www-form-urlencoded'];
         // type-coverage:ignore-next-line
@@ -250,14 +255,14 @@ app.post('/plain', postPlain);
 
     it('should apply JSDoc paramSchema overrides', () => {
         const sourceText = `
-const app = { get: (..._args: any[]) => { void _args; } };
+const app = { get: (..._args: string | number | boolean | object | undefined | null[]) => { void _args; } };
 /**
  * Fetch a resource.
  * @paramSchema id {"type":"string","format":"uuid"}
  * @paramSchema search string
  * @paramSchema filter Filter
  */
-function fetchResource(req: any, res: any) {
+function fetchResource(req: string | number | boolean | object | undefined | null, res: string | number | boolean | object | undefined | null) {
   const { id } = req.params;
   const search = req.query.search;
   const filter = req.query.filter;
@@ -268,13 +273,19 @@ app.get('/resources/:id', fetchResource);
         const ir = scanTypeScriptSource(sourceText, '/virtual.ts');
         const spec = buildOpenApiSpecFromScan(ir);
         // type-coverage:ignore-next-line
-        const op = (spec.paths as any)['/resources/{id}'].get;
+        const op = (spec.paths as string | number | boolean | object | undefined | null)['/resources/{id}'].get;
         // type-coverage:ignore-next-line
-        const idParam = op.parameters.find((param: any) => param.name === 'id');
+        const idParam = op.parameters.find(
+            (param: string | number | boolean | object | undefined | null) => param.name === 'id',
+        );
         // type-coverage:ignore-next-line
-        const searchParam = op.parameters.find((param: any) => param.name === 'search');
+        const searchParam = op.parameters.find(
+            (param: string | number | boolean | object | undefined | null) => param.name === 'search',
+        );
         // type-coverage:ignore-next-line
-        const filterParam = op.parameters.find((param: any) => param.name === 'filter');
+        const filterParam = op.parameters.find(
+            (param: string | number | boolean | object | undefined | null) => param.name === 'filter',
+        );
 
         // type-coverage:ignore-next-line
         expect(idParam?.schema).toEqual({ type: 'string', format: 'uuid' });
@@ -286,8 +297,8 @@ app.get('/resources/:id', fetchResource);
 
     it('should ignore reserved header parameters when building specs (OAS 3.2)', () => {
         const sourceText = `
-const app = { get: (..._args: any[]) => { void _args; } };
-function headerHandler(req: any, res: any) {
+const app = { get: (..._args: string | number | boolean | object | undefined | null[]) => { void _args; } };
+function headerHandler(req: string | number | boolean | object | undefined | null, res: string | number | boolean | object | undefined | null) {
   const accept = req.headers['accept'];
   const contentType = req.headers['content-type'];
   const auth = req.get('Authorization');
@@ -299,11 +310,15 @@ app.get('/headers', headerHandler);
         const ir = scanTypeScriptSource(sourceText, '/virtual.ts');
         const spec = buildOpenApiSpecFromScan(ir);
         // type-coverage:ignore-next-line
-        const op = (spec.paths as any)['/headers'].get;
+        const op = (spec.paths as string | number | boolean | object | undefined | null)['/headers'].get;
         // type-coverage:ignore-next-line
-        const headerParams = (op.parameters || []).filter((param: any) => param.in === 'header');
+        const headerParams = (op.parameters || []).filter(
+            (param: string | number | boolean | object | undefined | null) => param.in === 'header',
+        );
         // type-coverage:ignore-next-line
-        const headerNames = headerParams.map((param: any) => String(param.name).toLowerCase());
+        const headerNames = headerParams.map((param: string | number | boolean | object | undefined | null) =>
+            String(param.name).toLowerCase(),
+        );
         // type-coverage:ignore-next-line
         expect(headerNames).toEqual(['x-custom']);
     });
@@ -362,11 +377,16 @@ app.get('/headers', headerHandler);
         expect(spec.info.version).toBe('1.2.3');
 
         // type-coverage:ignore-next-line
-        const getUser = (spec.paths as any)['/users/{id}'].get;
+        const getUser = (spec.paths as string | number | boolean | object | undefined | null)['/users/{id}'].get;
         // type-coverage:ignore-next-line
         expect(getUser.operationId).toBe('getUser');
         // type-coverage:ignore-next-line
-        expect(getUser.parameters.some((param: any) => param.name === 'id' && param.in === 'path')).toBe(true);
+        expect(
+            getUser.parameters.some(
+                (param: string | number | boolean | object | undefined | null) =>
+                    param.name === 'id' && param.in === 'path',
+            ),
+        ).toBe(true);
         // type-coverage:ignore-next-line
         expect(getUser.tags).toEqual(['Users', 'Accounts']);
         expect(spec.tags?.map(tag => tag.name)).toEqual(['Users', 'Accounts']);
@@ -375,12 +395,12 @@ app.get('/headers', headerHandler);
         expect(usersTag?.kind).toBe('nav');
 
         // type-coverage:ignore-next-line
-        const search = (spec.paths as any)['/search'].query;
+        const search = (spec.paths as string | number | boolean | object | undefined | null)['/search'].query;
         // type-coverage:ignore-next-line
         expect(search).toBeDefined();
 
         // type-coverage:ignore-next-line
-        const rawQuery = (spec.paths as any)['/raw-query'].get;
+        const rawQuery = (spec.paths as string | number | boolean | object | undefined | null)['/raw-query'].get;
         // type-coverage:ignore-next-line
         expect(rawQuery.parameters).toEqual(
             expect.arrayContaining([
@@ -395,19 +415,20 @@ app.get('/headers', headerHandler);
         );
 
         // type-coverage:ignore-next-line
-        const copyPath = (spec.paths as any)['/files/{id}'];
+        const copyPath = (spec.paths as string | number | boolean | object | undefined | null)['/files/{id}'];
         // type-coverage:ignore-next-line
         expect(copyPath.additionalOperations?.COPY).toBeDefined();
 
         // type-coverage:ignore-next-line
-        const messages = (spec.paths as any)['/messages'].post;
+        const messages = (spec.paths as string | number | boolean | object | undefined | null)['/messages'].post;
         // type-coverage:ignore-next-line
         expect(messages.requestBody.content['application/json']).toBeDefined();
         // type-coverage:ignore-next-line
         expect(messages.responses['200'].content['text/plain']).toBeDefined();
 
         // type-coverage:ignore-next-line
-        const typedMessages = (spec.paths as any)['/typed-messages'].post;
+        const typedMessages = (spec.paths as string | number | boolean | object | undefined | null)['/typed-messages']
+            .post;
         // type-coverage:ignore-next-line
         expect(typedMessages.requestBody.content['application/json'].schema).toEqual({
             $ref: '#/components/schemas/CreateMessageBody',
@@ -418,7 +439,7 @@ app.get('/headers', headerHandler);
         });
 
         // type-coverage:ignore-next-line
-        const secure = (spec.paths as any)['/secure'].get;
+        const secure = (spec.paths as string | number | boolean | object | undefined | null)['/secure'].get;
         // type-coverage:ignore-next-line
         expect(secure.externalDocs).toEqual({
             url: 'https://example.com/secure',
@@ -440,11 +461,14 @@ app.get('/headers', headerHandler);
         expect(secure['x-feature-flag']).toBe('beta');
 
         // type-coverage:ignore-next-line
-        const documented = (spec.paths as any)['/documented/{id}'].get;
+        const documented = (spec.paths as string | number | boolean | object | undefined | null)['/documented/{id}']
+            .get;
         // type-coverage:ignore-next-line
         expect(documented.operationId).toBe('fetchDocumented');
         // type-coverage:ignore-next-line
-        const documentedParam = documented.parameters.find((param: any) => param.name === 'id');
+        const documentedParam = documented.parameters.find(
+            (param: string | number | boolean | object | undefined | null) => param.name === 'id',
+        );
         // type-coverage:ignore-next-line
         expect(documentedParam.description).toBe('Documented id.');
         // type-coverage:ignore-next-line
@@ -490,14 +514,14 @@ app.get('/headers', headerHandler);
         );
 
         // type-coverage:ignore-next-line
-        const customPath = (customSpec.paths as any)['/things/{id}'];
+        const customPath = (customSpec.paths as string | number | boolean | object | undefined | null)['/things/{id}'];
         // type-coverage:ignore-next-line
         expect(customPath.additionalOperations?.COPY).toBeDefined();
         // type-coverage:ignore-next-line
         expect(customPath.additionalOperations.COPY.responses['200']).toBeDefined();
 
         // type-coverage:ignore-next-line
-        const uploadPath = (customSpec.paths as any)['/upload'].post;
+        const uploadPath = (customSpec.paths as string | number | boolean | object | undefined | null)['/upload'].post;
         // type-coverage:ignore-next-line
         expect(uploadPath.requestBody.content['multipart/form-data']).toBeDefined();
         // type-coverage:ignore-next-line

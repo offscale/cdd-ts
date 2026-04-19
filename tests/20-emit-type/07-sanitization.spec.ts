@@ -33,7 +33,7 @@ describe('Emitter: TypeGenerator (Sanitization)', () => {
             },
         };
 
-        const sourceFile = runGenerator(spec as any);
+        const sourceFile = runGenerator(spec as string | number | boolean | object | undefined | null);
         const iface = sourceFile.getInterfaceOrThrow('Unsafe');
         const doc = iface.getJsDocs()[0].getDescription();
 
@@ -62,7 +62,7 @@ describe('Emitter: TypeGenerator (Sanitization)', () => {
             },
         };
 
-        const sourceFile = runGenerator(spec as any);
+        const sourceFile = runGenerator(spec as string | number | boolean | object | undefined | null);
         const typeAlias = sourceFile.getTypeAliasOrThrow('Doc');
         const tags = typeAlias.getJsDocs()[0].getTags();
         const seeTag = tags.find(t => t.getTagName() === 'see');

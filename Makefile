@@ -14,6 +14,7 @@ help:
 	@echo "  make build_docker  - Build Docker images"
 	@echo "  make run_docker    - Run Docker images"
 	@echo "  make build_with_ts_go - Build cdd-ts utilizing the local ts-morph wasm fork"
+	@echo "  make build_with_ts_go_assemblyscript - Build cdd-ts utilizing the new AOT Go+AS architecture"
 
 install_base:
 	@echo "Please install Node.js >= 18.0.0 manually if not installed."
@@ -65,3 +66,14 @@ build_with_ts_go:
 	@echo "Compiling to WebAssembly via javy..."
 	npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts.wasm
 	@echo "build_with_ts_go completed successfully!"
+
+build_with_ts_go_assemblyscript:
+	@echo "Building Go engine (WASM)..."
+	cd ../ts-morph/packages/compiler-go-source && GOOS=wasip1 GOARCH=wasm go build -o test.wasm ./cmd/wasm-wasi
+	@echo "Building AssemblyScript bridge (WASM)..."
+	cd ../ts-morph/packages/ts-morph-as && npm run asbuild:release
+	@echo "================================"
+	@echo "Success! Compare filesizes:"
+	@ls -lh ../ts-morph/packages/compiler-go-source/test.wasm
+	@ls -lh ../ts-morph/packages/ts-morph-as/build/release.wasm
+	@echo "================================"

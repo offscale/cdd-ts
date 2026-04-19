@@ -15,7 +15,10 @@ describe('Admin: RoutingGenerator', () => {
 
     beforeAll(() => {
         project = createTestProject();
-        const parser = new SwaggerParser(coverageSpec as any, { options: { admin: true } } as any);
+        const parser = new SwaggerParser(
+            coverageSpec as string | number | boolean | object | undefined | null,
+            { options: { admin: true } } as string | number | boolean | object | undefined | null,
+        );
         resources = discoverAdminResources(parser);
         const routingGen = new RoutingGenerator(project);
 

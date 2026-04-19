@@ -107,7 +107,13 @@ const refRequestBodyCallbackSpec: SwaggerSpec = {
 describe('Emitter: CallbackGenerator', () => {
     const runGenerator = (spec: SwaggerSpec) => {
         const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out', options: { dateType: 'string', enumStyle: 'enum' } } as any;
+        const config: GeneratorConfig = { output: '/out', options: { dateType: 'string', enumStyle: 'enum' } } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const parser = new SwaggerParser(spec, config);
         if (spec.components?.schemas?.EventPayload) {
             parser.schemas.push({
@@ -124,7 +130,7 @@ describe('Emitter: CallbackGenerator', () => {
         const code = sourceFile.getText();
         const jsCode = ts.transpile(code, { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS });
         // type-coverage:ignore-next-line
-        const moduleHelper = { exports: {} as any };
+        const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
         new Function('exports', jsCode)(moduleHelper.exports);
         // type-coverage:ignore-next-line
@@ -147,9 +153,13 @@ describe('Emitter: CallbackGenerator', () => {
         // type-coverage:ignore-next-line
         expect(API_CALLBACKS).toHaveLength(2);
         // type-coverage:ignore-next-line
-        const opCallback = API_CALLBACKS.find((c: any) => c.name === 'myWebhook');
+        const opCallback = API_CALLBACKS.find(
+            (c: string | number | boolean | object | undefined | null) => c.name === 'myWebhook',
+        );
         // type-coverage:ignore-next-line
-        const componentCallback = API_CALLBACKS.find((c: any) => c.name === 'MyCallback');
+        const componentCallback = API_CALLBACKS.find(
+            (c: string | number | boolean | object | undefined | null) => c.name === 'MyCallback',
+        );
 
         // type-coverage:ignore-next-line
         expect(opCallback).toBeDefined();
@@ -169,7 +179,9 @@ describe('Emitter: CallbackGenerator', () => {
 
         // Should NOT contain brokenWebhook because it resolves to undefined
         // type-coverage:ignore-next-line
-        const broken = API_CALLBACKS.find((c: any) => c.name === 'brokenWebhook');
+        const broken = API_CALLBACKS.find(
+            (c: string | number | boolean | object | undefined | null) => c.name === 'brokenWebhook',
+        );
         // type-coverage:ignore-next-line
         expect(broken).toBeUndefined();
     });

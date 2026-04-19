@@ -10,7 +10,7 @@ describe('Emitter: SecurityGenerator', () => {
     const runGenerator = (spec: Partial<SwaggerSpec>) => {
         const project = new Project({ useInMemoryFileSystem: true });
         const config: GeneratorConfig = { input: '', output: '/out', options: {} };
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
 
         new SecurityGenerator(parser, project).generate('/out');
         return project;
@@ -62,7 +62,7 @@ describe('Emitter: SecurityGenerator', () => {
 
     it('should generate HTTP security definitions (Basic, Bearer)', () => {
         // type-coverage:ignore-next-line
-        const schemes: any = {
+        const schemes: string | number | boolean | object | undefined | null = {
             BasicAuth: {
                 type: 'http',
                 scheme: 'basic',
@@ -195,7 +195,7 @@ describe('Emitter: SecurityGenerator', () => {
                     name: 'X-Auth',
                 },
             },
-        } as any);
+        } as string | number | boolean | object | undefined | null);
 
         const sourceFile = project.getSourceFileOrThrow('/out/security.ts');
         const text = sourceFile.getText();
@@ -232,10 +232,15 @@ describe('Emitter: SecurityGenerator', () => {
 
         const cache = new Map<string, SwaggerSpec>([
             [entryUri, spec],
-            [schemeUri, externalSchemes as any],
+            [schemeUri, externalSchemes as string | number | boolean | object | undefined | null],
         ]);
 
-        const parser = new SwaggerParser(spec as any, config, cache, entryUri);
+        const parser = new SwaggerParser(
+            spec as string | number | boolean | object | undefined | null,
+            config,
+            cache,
+            entryUri,
+        );
         new SecurityGenerator(parser, project).generate('/out');
 
         const sourceFile = project.getSourceFileOrThrow('/out/security.ts');

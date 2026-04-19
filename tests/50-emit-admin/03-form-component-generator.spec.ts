@@ -16,7 +16,10 @@ describe('Generators (Angular): FormComponentGenerator', () => {
     const validBase = { openapi: '3.0.0', info: { title: 'Test', version: '1.0' }, paths: {} };
 
     // type-coverage:ignore-next-line
-    const run = (spec: any, resourceOverrides: Partial<Resource> = {}) => {
+    const run = (
+        spec: string | number | boolean | object | undefined | null,
+        resourceOverrides: Partial<Resource> = {},
+    ) => {
         const parser = new SwaggerParser(spec, config);
 
         // Basic resource extraction simulation
@@ -55,7 +58,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
             modelName: schemaName,
             isEditable: true,
             operations: [],
-            formProperties: formProps as any[],
+            formProperties: formProps as string | number | boolean | object | undefined | null[],
             listProperties: [],
             ...resourceOverrides,
         };
@@ -350,7 +353,10 @@ describe('Generators (Angular): FormComponentGenerator', () => {
 
     describe('Coverage: internal helpers', () => {
         it('should generate polymorphic form helpers with enum dedupe and map branches', () => {
-            const parser = new SwaggerParser(validBase as any, config);
+            const parser = new SwaggerParser(
+                validBase as string | number | boolean | object | undefined | null,
+                config,
+            );
             const generator = new FormComponentGenerator(project, parser);
 
             const arrayItemControl: FormControlModel = {
@@ -361,7 +367,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                 validationRules: [],
                 controlType: 'control',
                 schema: { type: 'string' },
-            } as any;
+            } as string | number | boolean | object | undefined | null;
 
             const analysis: FormAnalysisResult = {
                 interfaces: [{ name: 'IgnoredForm', properties: [{ name: 'subProp' }], isTopLevel: false }],
@@ -374,7 +380,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                         validationRules: [],
                         controlType: 'control',
                         schema: { type: 'string', enum: ['A', 'B'] },
-                    } as any,
+                    } as string | number | boolean | object | undefined | null,
                     {
                         name: 'status',
                         propertyName: 'status',
@@ -383,7 +389,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                         validationRules: [],
                         controlType: 'control',
                         schema: { type: 'string', enum: ['A', 'B'] },
-                    } as any,
+                    } as string | number | boolean | object | undefined | null,
                     {
                         name: 'missingSchema',
                         propertyName: 'missingSchema',
@@ -392,7 +398,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                         validationRules: [],
                         controlType: 'control',
                         schema: undefined,
-                    } as any,
+                    } as string | number | boolean | object | undefined | null,
                     {
                         name: 'items',
                         propertyName: 'items',
@@ -403,7 +409,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                         schema: { type: 'array', items: { type: 'object' } },
                         nestedControls: [arrayItemControl],
                         nestedFormInterface: 'ItemForm',
-                    } as any,
+                    } as string | number | boolean | object | undefined | null,
                     {
                         name: 'meta',
                         propertyName: 'meta',
@@ -421,8 +427,8 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                             validationRules: [],
                             controlType: 'control',
                             schema: { type: 'string' },
-                        } as any,
-                    } as any,
+                        } as string | number | boolean | object | undefined | null,
+                    } as string | number | boolean | object | undefined | null,
                     {
                         name: 'meta2',
                         propertyName: 'meta2',
@@ -432,7 +438,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                         controlType: 'map',
                         schema: { type: 'object' },
                         mapValueControl: undefined,
-                    } as any,
+                    } as string | number | boolean | object | undefined | null,
                 ],
                 usesCustomValidators: false,
                 hasFormArrays: true,
@@ -457,11 +463,11 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                                         validationRules: [],
                                         controlType: 'control',
                                         schema: { type: 'string' },
-                                    } as any,
+                                    } as string | number | boolean | object | undefined | null,
                                 ],
                             },
                         ],
-                    } as any,
+                    } as string | number | boolean | object | undefined | null,
                 ],
                 dependencyRules: [
                     { type: 'required', triggerField: 'flag', targetField: 'target' },
@@ -479,7 +485,11 @@ describe('Generators (Angular): FormComponentGenerator', () => {
             };
 
             // type-coverage:ignore-next-line
-            (generator as any).generateFormComponentTs(resource, '/admin/test/test-form', analysis);
+            (generator as string | number | boolean | object | undefined | null).generateFormComponentTs(
+                resource,
+                '/admin/test/test-form',
+                analysis,
+            );
             const sourceFile = project.getSourceFileOrThrow('/admin/test/test-form/test-form.component.ts');
             const text = sourceFile.getText();
 
@@ -492,7 +502,10 @@ describe('Generators (Angular): FormComponentGenerator', () => {
         });
 
         it('should fall back to any when interface props are not found in polymorphic options', () => {
-            const parser = new SwaggerParser(validBase as any, config);
+            const parser = new SwaggerParser(
+                validBase as string | number | boolean | object | undefined | null,
+                config,
+            );
             const generator = new FormComponentGenerator(project, parser);
 
             const analysis: FormAnalysisResult = {
@@ -521,11 +534,11 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                                         validationRules: [],
                                         controlType: 'control',
                                         schema: { type: 'string' },
-                                    } as any,
+                                    } as string | number | boolean | object | undefined | null,
                                 ],
                             },
                         ],
-                    } as any,
+                    } as string | number | boolean | object | undefined | null,
                 ],
                 dependencyRules: [],
             };
@@ -540,7 +553,11 @@ describe('Generators (Angular): FormComponentGenerator', () => {
             };
 
             // type-coverage:ignore-next-line
-            (generator as any).generateFormComponentTs(resource, '/admin/test-any/test-form', analysis);
+            (generator as string | number | boolean | object | undefined | null).generateFormComponentTs(
+                resource,
+                '/admin/test-any/test-form',
+                analysis,
+            );
             const sourceFile = project.getSourceFileOrThrow('/admin/test-any/test-form/test-form.component.ts');
             expect(sourceFile.getText()).toContain(
                 'unknownProp: Record<string, string | number | boolean | object | undefined | null>',
@@ -548,7 +565,10 @@ describe('Generators (Angular): FormComponentGenerator', () => {
         });
 
         it('should default array item interface to any when nestedFormInterface is missing', () => {
-            const parser = new SwaggerParser(validBase as any, config);
+            const parser = new SwaggerParser(
+                validBase as string | number | boolean | object | undefined | null,
+                config,
+            );
             const generator = new FormComponentGenerator(project, parser);
 
             const analysis: FormAnalysisResult = {
@@ -557,7 +577,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                     {
                         name: 'items',
                         propertyName: 'items',
-                        dataType: 'any[]',
+                        dataType: '(string | number | boolean | object | undefined | null)[]',
                         defaultValue: null,
                         validationRules: [],
                         controlType: 'array',
@@ -570,9 +590,9 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                                 validationRules: [],
                                 controlType: 'control',
                                 schema: { type: 'string' },
-                            } as any,
+                            } as string | number | boolean | object | undefined | null,
                         ],
-                    } as any,
+                    } as string | number | boolean | object | undefined | null,
                 ],
                 usesCustomValidators: false,
                 hasFormArrays: true,
@@ -593,7 +613,11 @@ describe('Generators (Angular): FormComponentGenerator', () => {
             };
 
             // type-coverage:ignore-next-line
-            (generator as any).generateFormComponentTs(resource, '/admin/test-any-array/test-form', analysis);
+            (generator as string | number | boolean | object | undefined | null).generateFormComponentTs(
+                resource,
+                '/admin/test-any-array/test-form',
+                analysis,
+            );
             const sourceFile = project.getSourceFileOrThrow('/admin/test-any-array/test-form/test-form.component.ts');
             expect(sourceFile.getText()).toContain(
                 'FormArray<FormGroup<Record<string, string | number | boolean | object | undefined | null>>>',
@@ -601,7 +625,10 @@ describe('Generators (Angular): FormComponentGenerator', () => {
         });
 
         it('should generate onSubmit branches for create-only and update-only flows', () => {
-            const parser = new SwaggerParser(validBase as any, config);
+            const parser = new SwaggerParser(
+                validBase as string | number | boolean | object | undefined | null,
+                config,
+            );
             const generator = new FormComponentGenerator(project, parser);
             const sourceFile = project.createSourceFile('/admin/test-on-submit.ts', '', { overwrite: true });
             const classDeclaration = sourceFile.addClass({ name: 'OnSubmitTest' });
@@ -610,13 +637,26 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                 name: 'test',
                 modelName: 'Test',
                 isEditable: true,
-                operations: [{ action: 'create', methodName: 'createTest' } as any],
+                operations: [
+                    { action: 'create', methodName: 'createTest' } as
+                        | string
+                        | number
+                        | boolean
+                        | object
+                        | undefined
+                        | null,
+                ],
                 formProperties: [],
                 listProperties: [],
             };
 
             // type-coverage:ignore-next-line
-            (generator as any).addOnSubmit(classDeclaration, createOnly, 'TestService', false);
+            (generator as string | number | boolean | object | undefined | null).addOnSubmit(
+                classDeclaration,
+                createOnly,
+                'TestService',
+                false,
+            );
             const createBody = classDeclaration.getMethodOrThrow('onSubmit').getBodyText() ?? '';
             expect(createBody).toContain('this.form.getRawValue()');
             expect(createBody).toContain('createTest');
@@ -627,19 +667,35 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                 name: 'test',
                 modelName: 'Test',
                 isEditable: true,
-                operations: [{ action: 'update', methodName: 'updateTest' } as any],
+                operations: [
+                    { action: 'update', methodName: 'updateTest' } as
+                        | string
+                        | number
+                        | boolean
+                        | object
+                        | undefined
+                        | null,
+                ],
                 formProperties: [],
                 listProperties: [],
             };
             // type-coverage:ignore-next-line
-            (generator as any).addOnSubmit(classDeclaration, updateOnly, 'TestService', false);
+            (generator as string | number | boolean | object | undefined | null).addOnSubmit(
+                classDeclaration,
+                updateOnly,
+                'TestService',
+                false,
+            );
             const updateBody = classDeclaration.getMethodOrThrow('onSubmit').getBodyText() ?? '';
             expect(updateBody).toContain('updateTest');
             expect(updateBody).toContain('no create operation is available');
         });
 
         it('should skip patchForm when there are no complex props and use any when modelName is missing', () => {
-            const parser = new SwaggerParser(validBase as any, config);
+            const parser = new SwaggerParser(
+                validBase as string | number | boolean | object | undefined | null,
+                config,
+            );
             const generator = new FormComponentGenerator(project, parser);
             const sourceFile = project.createSourceFile('/admin/test-patch.ts', '', { overwrite: true });
             const classDeclaration = sourceFile.addClass({ name: 'PatchFormTest' });
@@ -657,9 +713,9 @@ describe('Generators (Angular): FormComponentGenerator', () => {
             };
 
             // type-coverage:ignore-next-line
-            (generator as any).addPatchForm(
+            (generator as string | number | boolean | object | undefined | null).addPatchForm(
                 classDeclaration,
-                { name: 'test', modelName: 'Test' } as any,
+                { name: 'test', modelName: 'Test' } as string | number | boolean | object | undefined | null,
                 analysisEmpty,
             );
             expect(classDeclaration.getMethod('patchForm')).toBeUndefined();
@@ -675,13 +731,17 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                         validationRules: [],
                         controlType: 'map',
                         schema: { type: 'object' },
-                    } as any,
+                    } as string | number | boolean | object | undefined | null,
                 ],
                 hasMaps: true,
             };
 
             // type-coverage:ignore-next-line
-            (generator as any).addPatchForm(classDeclaration, { name: 'test', modelName: '' } as any, analysisComplex);
+            (generator as string | number | boolean | object | undefined | null).addPatchForm(
+                classDeclaration,
+                { name: 'test', modelName: '' } as string | number | boolean | object | undefined | null,
+                analysisComplex,
+            );
             const patchMethod = classDeclaration.getMethodOrThrow('patchForm');
             expect(
                 (

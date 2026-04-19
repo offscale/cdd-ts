@@ -150,17 +150,23 @@ describe('generateDocsJson', () => {
                     method: 'get',
                     methodName: 'getUsers',
                     operationId: 'getUsers',
-                } as any,
+                } as string | number | boolean | object | undefined | null as PathInfo,
                 {
                     path: '/users',
                     method: 'post',
                     methodName: 'createUser',
                     operationId: 'createUser',
-                } as any,
+                } as string | number | boolean | object | undefined | null as PathInfo,
             ],
-        } as any;
+        } as string | number | boolean | object | undefined | null as SwaggerParser;
 
-        const config: any = { output: '', input: '', options: {} };
+        const config = { output: '', input: '', options: {} } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null as GeneratorConfig;
         const result = generateDocsJson(parser, config, { wrapping: true });
 
         expect(result.endpoints['/users']['get']).toContain('getUsers');

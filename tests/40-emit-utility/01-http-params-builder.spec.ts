@@ -11,10 +11,13 @@ import ts from 'typescript';
 class MockHttpParams {
     map = new Map<string, string[]>();
     // type-coverage:ignore-next-line
-    encoder: any;
+    encoder: string | number | boolean | object | undefined | null;
 
     // type-coverage:ignore-next-line
-    constructor(options?: { fromObject?: any; encoder?: any }) {
+    constructor(options?: {
+        fromObject?: string | number | boolean | object | undefined | null;
+        encoder?: string | number | boolean | object | undefined | null;
+    }) {
         // Mock default encoder behavior: encodeURIComponent
         // type-coverage:ignore-next-line
         this.encoder = options?.encoder || {
@@ -85,7 +88,7 @@ function getBuilderContext() {
     });
 
     const exportsMock = {};
-    const encoderExports: Record<string, any> = {};
+    const encoderExports: Record<string, string | number | boolean | object | undefined | null> = {};
 
     new Function('exports', encoderJsCode)(encoderExports);
     // type-coverage:ignore-next-line
@@ -95,9 +98,9 @@ function getBuilderContext() {
 
     return {
         // type-coverage:ignore-next-line
-        Builder: (exportsMock as any).HttpParamsBuilder,
+        Builder: (exportsMock as string | number | boolean | object | undefined | null).HttpParamsBuilder,
         // type-coverage:ignore-next-line
-        ApiParameterCodec: (exportsMock as any).ApiParameterCodec,
+        ApiParameterCodec: (exportsMock as string | number | boolean | object | undefined | null).ApiParameterCodec,
     };
 }
 

@@ -30,7 +30,13 @@ const examplesSpec: SwaggerSpec = {
 describe('Emitter: ExamplesGenerator', () => {
     const runGenerator = (spec: SwaggerSpec) => {
         const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out', options: {} } as any;
+        const config: GeneratorConfig = { output: '/out', options: {} } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const parser = new SwaggerParser(spec, config);
         new ExamplesGenerator(parser, project).generate('/out');
         return project;
@@ -41,7 +47,7 @@ describe('Emitter: ExamplesGenerator', () => {
         const code = sourceFile.getText();
         const jsCode = ts.transpile(code, { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS });
         // type-coverage:ignore-next-line
-        const moduleHelper = { exports: {} as any };
+        const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
         new Function('exports', jsCode)(moduleHelper.exports);
         // type-coverage:ignore-next-line

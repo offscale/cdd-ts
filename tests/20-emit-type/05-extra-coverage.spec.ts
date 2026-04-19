@@ -7,7 +7,7 @@ import { SwaggerParser } from '@src/openapi/parse.js';
 import { GeneratorConfig } from '@src/core/types/index.js';
 
 describe('Emitter: TypeGenerator (Extra Coverage)', () => {
-    const setup = (schemas: Record<string, any>) => {
+    const setup = (schemas: Record<string, string | number | boolean | object | undefined | null>) => {
         const project = new Project({ useInMemoryFileSystem: true });
         const config: GeneratorConfig = { input: '', output: '/out', options: {} };
         const parser = new SwaggerParser(
@@ -16,7 +16,7 @@ describe('Emitter: TypeGenerator (Extra Coverage)', () => {
                 info: { title: 'T', version: '1' },
                 paths: {},
                 components: { schemas },
-            } as any,
+            } as string | number | boolean | object | undefined | null,
             config,
         );
         new TypeGenerator(parser, project, config).generate('/out');

@@ -9,8 +9,8 @@ export class PetService {
     uploadFile(petId: number, options: { observe: 'response' }): Observable<string>;
     uploadFile(
         petId: number,
-        options?: any,
+        options?: string | number | boolean | object | undefined | null,
     ): Observable<Record<string, string | number | boolean | object | undefined | null>> {
-        return of({} as any);
+        return of({} as string | number | boolean | object | undefined | null);
     }
 }

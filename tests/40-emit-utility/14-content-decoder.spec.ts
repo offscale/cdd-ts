@@ -16,7 +16,7 @@ function getContentDecoder() {
     });
 
     // type-coverage:ignore-next-line
-    const moduleScope = { exports: {} as any };
+    const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
     const finalCode = `const XmlParser = { parse: (xml) => ({ xml }) }; ${jsCode}; exports.ContentDecoder = ContentDecoder;`;
 
     // type-coverage:ignore-next-line

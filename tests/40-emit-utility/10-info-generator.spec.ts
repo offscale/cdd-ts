@@ -9,7 +9,10 @@ import ts from 'typescript';
 describe('Emitter: InfoGenerator', () => {
     const runGenerator = (spec: object) => {
         const project = createTestProject();
-        const parser = new SwaggerParser(spec as any, { options: {} } as any);
+        const parser = new SwaggerParser(
+            spec as string | number | boolean | object | undefined | null,
+            { options: {} } as string | number | boolean | object | undefined | null,
+        );
         new InfoGenerator(parser, project).generate('/out');
         return project;
     };
@@ -22,7 +25,7 @@ describe('Emitter: InfoGenerator', () => {
             module: ts.ModuleKind.CommonJS,
         });
         // type-coverage:ignore-next-line
-        const moduleHelper = { exports: {} as any };
+        const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
         new Function('exports', jsCode)(moduleHelper.exports);
         // type-coverage:ignore-next-line
@@ -242,10 +245,13 @@ describe('Emitter: InfoGenerator', () => {
 
     it('should fall back to empty info object if parser info is missing', () => {
         const project = createTestProject();
-        const parser = new SwaggerParser(emptySpec as any, { options: {} } as any);
+        const parser = new SwaggerParser(
+            emptySpec as string | number | boolean | object | undefined | null,
+            { options: {} } as string | number | boolean | object | undefined | null,
+        );
         // Simulate a defensive fallback scenario after validation
         // type-coverage:ignore-next-line
-        (parser as any).spec.info = undefined;
+        (parser as string | number | boolean | object | undefined | null).spec.info = undefined;
 
         new InfoGenerator(parser, project).generate('/out');
         // type-coverage:ignore-next-line

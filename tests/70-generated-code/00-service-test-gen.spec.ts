@@ -10,7 +10,7 @@ import { camelCase } from '@src/functions/utils.js';
 /**
  * Propagates op.operationId to op.methodName if missing
  */
-function setOperationMethodNames(operations: any[]) {
+function setOperationMethodNames(operations: string | number | boolean | object | undefined | null[]) {
     // type-coverage:ignore-next-line
     for (const op of operations) {
         // type-coverage:ignore-next-line
@@ -41,7 +41,7 @@ describe('Generated Code: Service Test Generators', () => {
      * Setup function that always sets methodName on operations as needed.
      */
     // type-coverage:ignore-next-line
-    const setupTestGen = (specPart: any) => {
+    const setupTestGen = (specPart: string | number | boolean | object | undefined | null) => {
         // type-coverage:ignore-next-line
         const specClone = JSON.parse(JSON.stringify(specPart));
         const spec = {
@@ -56,7 +56,7 @@ describe('Generated Code: Service Test Generators', () => {
             // type-coverage:ignore-next-line
             components: specClone.components || {},
         };
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
         const analyzer = new ServiceMethodAnalyzer(config, parser);
         const testGen = new ServiceTestGenerator(parser, project, config);
         return { parser, analyzer, testGen };
@@ -72,7 +72,11 @@ describe('Generated Code: Service Test Generators', () => {
             // Check that we actually found operations to test
             expect(userOps.length).toBeGreaterThan(0);
 
-            testGen.generateServiceTestFile('users', userOps as any, '/');
+            testGen.generateServiceTestFile(
+                'users',
+                userOps as string | number | boolean | object | undefined | null,
+                '/',
+            );
             const sourceFile = project.getSourceFileOrThrow('/users.service.spec.ts');
             const classText = sourceFile.getFullText();
             expect(classText).toContain('import { TestBed } from "@angular/core/testing";');
@@ -89,11 +93,15 @@ describe('Generated Code: Service Test Generators', () => {
                 parser.operations.find(o => o.operationId === 'postPrimitive'),
                 parser.operations.find(o => o.operationId === 'getWithPrimitiveParam'),
             ].filter(Boolean);
-            setOperationMethodNames(operations as any[]);
+            setOperationMethodNames(operations as string | number | boolean | object | undefined | null[]);
 
             expect(operations.length).toBe(3);
 
-            testGen.generateServiceTestFile('service', operations as any, '/');
+            testGen.generateServiceTestFile(
+                'service',
+                operations as string | number | boolean | object | undefined | null,
+                '/',
+            );
             const sourceFile = project.getSourceFileOrThrow('/service.service.spec.ts');
             const text = sourceFile.getFullText();
 
@@ -118,7 +126,11 @@ describe('Generated Code: Service Test Generators', () => {
 
             if (!op!.methodName) op!.methodName = camelCase(op!.operationId!);
 
-            testGen.generateServiceTestFile('no-params', [op] as any, '/');
+            testGen.generateServiceTestFile(
+                'no-params',
+                [op] as string | number | boolean | object | undefined | null,
+                '/',
+            );
             const sourceFile = project.getSourceFileOrThrow('/noParams.service.spec.ts');
             const text = sourceFile.getFullText();
 
@@ -194,9 +206,9 @@ describe('Generated Code: Service Test Generators', () => {
 
             const { parser, testGen } = setupTestGen(edgeCaseSpec);
             const ops = parser.operations;
-            setOperationMethodNames(ops as any[]);
+            setOperationMethodNames(ops as string | number | boolean | object | undefined | null[]);
 
-            testGen.generateServiceTestFile('edge', ops as any, '/');
+            testGen.generateServiceTestFile('edge', ops as string | number | boolean | object | undefined | null, '/');
             const sourceFile = project.getSourceFileOrThrow('/edge.service.spec.ts');
             const text = sourceFile.getFullText();
 
@@ -252,9 +264,13 @@ describe('Generated Code: Service Test Generators', () => {
 
             const { parser, testGen } = setupTestGen(exampleSpec);
             const ops = parser.operations;
-            setOperationMethodNames(ops as any[]);
+            setOperationMethodNames(ops as string | number | boolean | object | undefined | null[]);
 
-            testGen.generateServiceTestFile('example', ops as any, '/');
+            testGen.generateServiceTestFile(
+                'example',
+                ops as string | number | boolean | object | undefined | null,
+                '/',
+            );
             const sourceFile = project.getSourceFileOrThrow('/example.service.spec.ts');
             const text = sourceFile.getFullText();
 
@@ -291,9 +307,13 @@ describe('Generated Code: Service Test Generators', () => {
 
             const { parser, testGen } = setupTestGen(examplesSpec);
             const ops = parser.operations;
-            setOperationMethodNames(ops as any[]);
+            setOperationMethodNames(ops as string | number | boolean | object | undefined | null[]);
 
-            testGen.generateServiceTestFile('examples', ops as any, '/');
+            testGen.generateServiceTestFile(
+                'examples',
+                ops as string | number | boolean | object | undefined | null,
+                '/',
+            );
             const sourceFile = project.getSourceFileOrThrow('/examples.service.spec.ts');
             const text = sourceFile.getFullText();
 
@@ -333,9 +353,13 @@ describe('Generated Code: Service Test Generators', () => {
 
             const { parser, testGen } = setupTestGen(oas32Spec);
             const ops = parser.operations;
-            setOperationMethodNames(ops as any[]);
+            setOperationMethodNames(ops as string | number | boolean | object | undefined | null[]);
 
-            testGen.generateServiceTestFile('example', ops as any, '/');
+            testGen.generateServiceTestFile(
+                'example',
+                ops as string | number | boolean | object | undefined | null,
+                '/',
+            );
             const sourceFile = project.getSourceFileOrThrow('/example.service.spec.ts');
             const text = sourceFile.getFullText();
 
@@ -370,9 +394,9 @@ describe('Generated Code: Service Test Generators', () => {
 
             const { parser, testGen } = setupTestGen(modelParamSpec);
             const ops = parser.operations;
-            setOperationMethodNames(ops as any[]);
+            setOperationMethodNames(ops as string | number | boolean | object | undefined | null[]);
 
-            testGen.generateServiceTestFile('model', ops as any, '/');
+            testGen.generateServiceTestFile('model', ops as string | number | boolean | object | undefined | null, '/');
             const sourceFile = project.getSourceFileOrThrow('/model.service.spec.ts');
             const text = sourceFile.getFullText();
 
@@ -387,7 +411,7 @@ describe('Generated Code: Service Test Generators', () => {
             // examples map with dataValue/value/serializedValue
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -397,7 +421,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -407,7 +431,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -423,7 +447,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -433,7 +457,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -443,7 +467,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -456,7 +480,7 @@ describe('Generated Code: Service Test Generators', () => {
             // examples map with empty object (no keys)
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -467,7 +491,7 @@ describe('Generated Code: Service Test Generators', () => {
             // examples map object missing known example keys
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -478,7 +502,7 @@ describe('Generated Code: Service Test Generators', () => {
             const unresolvedSpy = vi.spyOn(parser, 'resolveReference').mockReturnValueOnce(undefined);
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -490,7 +514,7 @@ describe('Generated Code: Service Test Generators', () => {
             // examples map literal value
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -501,7 +525,7 @@ describe('Generated Code: Service Test Generators', () => {
             // schema-based examples
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string', dataValue: 'sdv' },
@@ -510,7 +534,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string', example: 'sex' },
@@ -519,7 +543,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string', examples: ['ex1'] },
@@ -529,7 +553,7 @@ describe('Generated Code: Service Test Generators', () => {
             // schema $ref should skip schema example branch
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { $ref: '#/components/schemas/RefType' },
@@ -539,7 +563,7 @@ describe('Generated Code: Service Test Generators', () => {
             // content examples
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -549,7 +573,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -559,7 +583,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -569,7 +593,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -579,7 +603,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -589,7 +613,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -603,7 +627,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -617,7 +641,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -634,14 +658,14 @@ describe('Generated Code: Service Test Generators', () => {
             const { parser, testGen } = setupTestGen({ paths: {} });
 
             // type-coverage:ignore-next-line
-            const resolvedSerialized = Object.create(null) as any;
+            const resolvedSerialized = Object.create(null) as string | number | boolean | object | undefined | null;
             // type-coverage:ignore-next-line
             resolvedSerialized.serializedValue = 'rser-null';
 
             const resolveSpy = vi.spyOn(parser, 'resolveReference').mockReturnValueOnce(resolvedSerialized);
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -654,7 +678,7 @@ describe('Generated Code: Service Test Generators', () => {
             const emptyExamples = Object.create(null);
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -664,12 +688,12 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBeUndefined();
 
             // type-coverage:ignore-next-line
-            const contentSerialized = Object.create(null) as any;
+            const contentSerialized = Object.create(null) as string | number | boolean | object | undefined | null;
             // type-coverage:ignore-next-line
             contentSerialized.serializedValue = 'cser-null';
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -689,7 +713,7 @@ describe('Generated Code: Service Test Generators', () => {
             const resolvedSpy = vi.spyOn(parser, 'resolveReference').mockReturnValueOnce({ serializedValue: 'only' });
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -700,7 +724,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -714,7 +738,7 @@ describe('Generated Code: Service Test Generators', () => {
 
             expect(
                 // type-coverage:ignore-next-line
-                (testGen as any).getParameterExampleValue({
+                (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
@@ -727,7 +751,7 @@ describe('Generated Code: Service Test Generators', () => {
             const { testGen } = setupTestGen({ paths: {} });
 
             // type-coverage:ignore-next-line
-            const output = (testGen as any).generateMethodTests([
+            const output = (testGen as string | number | boolean | object | undefined | null).generateMethodTests([
                 {
                     methodName: 'doThing',
                     method: 'GET',
@@ -741,7 +765,7 @@ describe('Generated Code: Service Test Generators', () => {
             expect(output.join('\n')).toContain('doThing');
 
             // type-coverage:ignore-next-line
-            const imports = (testGen as any).collectModelImports([
+            const imports = (testGen as string | number | boolean | object | undefined | null).collectModelImports([
                 {
                     method: 'GET',
                     path: '/things/{id}',
@@ -758,11 +782,23 @@ describe('Generated Code: Service Test Generators', () => {
             const { testGen } = setupTestGen({ paths: {} });
 
             // type-coverage:ignore-next-line
-            expect((testGen as any).generateDefaultPrimitiveValue({ type: 'integer' })).toBe('123');
+            expect(
+                (testGen as string | number | boolean | object | undefined | null).generateDefaultPrimitiveValue({
+                    type: 'integer',
+                }),
+            ).toBe('123');
             // type-coverage:ignore-next-line
-            expect((testGen as any).generateDefaultPrimitiveValue({ type: 'boolean' })).toBe('true');
+            expect(
+                (testGen as string | number | boolean | object | undefined | null).generateDefaultPrimitiveValue({
+                    type: 'boolean',
+                }),
+            ).toBe('true');
             // type-coverage:ignore-next-line
-            expect((testGen as any).generateDefaultPrimitiveValue({ type: 'string' })).toBe("'test-value'");
+            expect(
+                (testGen as string | number | boolean | object | undefined | null).generateDefaultPrimitiveValue({
+                    type: 'string',
+                }),
+            ).toBe("'test-value'");
         });
 
         it('should generate arrays of mock data for array models', () => {
@@ -811,9 +847,9 @@ describe('Generated Code: Service Test Generators', () => {
 
             const { parser, testGen } = setupTestGen(arrSpec);
             const ops = parser.operations;
-            setOperationMethodNames(ops as any[]);
+            setOperationMethodNames(ops as string | number | boolean | object | undefined | null[]);
 
-            testGen.generateServiceTestFile('user', ops as any, '/');
+            testGen.generateServiceTestFile('user', ops as string | number | boolean | object | undefined | null, '/');
             const sourceFile = project.getSourceFileOrThrow('/user.service.spec.ts');
             const text = sourceFile.getFullText();
 
@@ -866,7 +902,9 @@ describe('Generated Code: Service Test Generators', () => {
             }
 
             // type-coverage:ignore-next-line
-            const imports = (testGen as any).collectModelImports(parser.operations);
+            const imports = (testGen as string | number | boolean | object | undefined | null).collectModelImports(
+                parser.operations,
+            );
 
             // type-coverage:ignore-next-line
             expect(imports.has('Filter')).toBe(true);

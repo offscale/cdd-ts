@@ -8,7 +8,7 @@ import { GeneratorConfig } from '@src/core/types/index.js';
 const mockConfig: GeneratorConfig = {
     input: '',
     output: '',
-    options: {} as any,
+    options: {} as string | number | boolean | object | undefined | null,
 };
 
 // A comprehensive in-memory spec to test various schema scenarios
@@ -81,8 +81,13 @@ describe('MockDataGenerator', () => {
     beforeAll(() => {
         // Initialize parser with the dummy spec
         // We use a fake map/URI because we aren't loading from disk
-        const cache = new Map([['file://test', dummySpec as any]]);
-        parser = new SwaggerParser(dummySpec as any, mockConfig, cache, 'file://test');
+        const cache = new Map([['file://test', dummySpec as string | number | boolean | object | undefined | null]]);
+        parser = new SwaggerParser(
+            dummySpec as string | number | boolean | object | undefined | null,
+            mockConfig,
+            cache,
+            'file://test',
+        );
         generator = new MockDataGenerator(parser);
     });
 

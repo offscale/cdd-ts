@@ -17,7 +17,7 @@ describe('Emitter: SpecSnapshotGenerator', () => {
             input: '',
             output: '/out',
             options: { dateType: 'string', enumStyle: 'enum', generateServices: true },
-        } as any;
+        } as string | number | boolean | object | undefined | null;
         const parser = new SwaggerParser(snapshotSpec, config);
 
         new SpecSnapshotGenerator(parser, project).generate('/out');

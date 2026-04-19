@@ -37,7 +37,7 @@ describe('Emitter: ServiceMethodGenerator (Multipart Defaults)', () => {
         const config: GeneratorConfig = { input: '', output: '/out', options: { dateType: 'Date', enumStyle: 'enum' } };
 
         const project = new Project({ useInMemoryFileSystem: true });
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
 
         // Pre-generate types
         new TypeGenerator(parser, project, config).generate('/out');
@@ -78,7 +78,7 @@ describe('Emitter: ServiceMethodGenerator (Multipart Defaults)', () => {
 
         // Inject a new operation into the parser/spec that uses contentEncoding
         // type-coverage:ignore-next-line
-        const op: any = {
+        const op: string | number | boolean | object | undefined | null = {
             method: 'POST',
             path: '/upload-encoding',
             methodName: 'uploadWithEncoding',
@@ -111,7 +111,7 @@ describe('Emitter: ServiceMethodGenerator (Multipart Defaults)', () => {
         const { methodGen, serviceClass } = createTestEnv();
 
         // type-coverage:ignore-next-line
-        const op: any = {
+        const op: string | number | boolean | object | undefined | null = {
             method: 'POST',
             path: '/ranges',
             methodName: 'postRanges',

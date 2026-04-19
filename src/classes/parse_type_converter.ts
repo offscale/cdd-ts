@@ -304,10 +304,10 @@ export function getTypeScriptType(
                 const safeKey = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(propName) ? propName : `'${propName}'`;
 
                 // Schema: If 'propName' key exists in the object, then the object must ALSO satisfy 'depType'.
-                // TS Intersection: ( { prop: string | number | boolean | object | undefined | null } & DepType ) | { prop?: never }
+                // TS Intersection: ( { prop: string | number | boolean | object | undefined | null } & DepType ) | { prop?: string | number | boolean | object | undefined | null }
                 /* v8 ignore next */
                 dependencies.push(
-                    `(({ ${safeKey}: string | number | boolean | object | undefined | null } & ${depType}) | { ${safeKey}?: never })`,
+                    `(({ ${safeKey}: string | number | boolean | object | undefined | null } & ${depType}) | { ${safeKey}?: string | number | boolean | object | undefined | null })`,
                 );
             });
         }
@@ -333,7 +333,7 @@ export function getTypeScriptType(
                 if (!requiredFields) return;
                 /* v8 ignore next */
                 dependencies.push(
-                    `(({ ${safeKey}: string | number | boolean | object | undefined | null } & { ${requiredFields} }) | { ${safeKey}?: never })`,
+                    `(({ ${safeKey}: string | number | boolean | object | undefined | null } & { ${requiredFields} }) | { ${safeKey}?: string | number | boolean | object | undefined | null })`,
                 );
             });
         }

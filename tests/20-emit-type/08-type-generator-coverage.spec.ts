@@ -27,7 +27,7 @@ describe('Emitter: TypeGenerator (Coverage Edges)', () => {
             },
         };
 
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
         new TypeGenerator(parser, project, config).generate('/out');
 
         const sourceFile = project.getSourceFileOrThrow('/out/models/index.ts');
@@ -157,7 +157,7 @@ describe('Emitter: TypeGenerator (Coverage Edges)', () => {
             },
         };
 
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
         new TypeGenerator(parser, project, config).generate('/out');
 
         const sourceFile = project.getSourceFileOrThrow('/out/models/index.ts');

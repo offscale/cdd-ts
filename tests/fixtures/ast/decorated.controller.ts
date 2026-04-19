@@ -1,42 +1,42 @@
 // Mocks to satisfy both runtime execution AND TypeScript static checks.
 // Uses 'any' to avoid strict signature mismatches with legacy experiment decorators.
-export function Controller(_path: string): any {
+export function Controller(_path: string): string | number | boolean | object | undefined | null {
     void _path;
     return () => {};
 }
 
-export function Get(_path?: string): any {
+export function Get(_path?: string): string | number | boolean | object | undefined | null {
     void _path;
     return () => {};
 }
 
-export function Post(_path?: string): any {
+export function Post(_path?: string): string | number | boolean | object | undefined | null {
     void _path;
     return () => {};
 }
 
-export function Param(_name?: string): any {
+export function Param(_name?: string): string | number | boolean | object | undefined | null {
     void _name;
     return () => {};
 }
 
-export function Query(_name?: string): any;
-export function Query(_path?: string): any;
-export function Query(_arg?: string): any {
+export function Query(_name?: string): string | number | boolean | object | undefined | null;
+export function Query(_path?: string): string | number | boolean | object | undefined | null;
+export function Query(_arg?: string): string | number | boolean | object | undefined | null {
     void _arg;
     return () => {};
 }
 
-export function Header(_name?: string): any {
+export function Header(_name?: string): string | number | boolean | object | undefined | null {
     void _name;
     return () => {};
 }
 
-export function Body(): any {
+export function Body(): string | number | boolean | object | undefined | null {
     return () => {};
 }
 
-export function HttpCode(_code: number): any {
+export function HttpCode(_code: number): string | number | boolean | object | undefined | null {
     void _code;
     return () => {};
 }

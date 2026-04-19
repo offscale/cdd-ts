@@ -10,7 +10,7 @@ describe('Core: ReferenceResolver', () => {
 
     beforeEach(() => {
         cache = new Map();
-        cache.set(rootUri, { openapi: '3.0.0', paths: {} } as any);
+        cache.set(rootUri, { openapi: '3.0.0', paths: {} } as string | number | boolean | object | undefined | null);
         resolver = new ReferenceResolver(cache, rootUri);
     });
 
@@ -21,7 +21,11 @@ describe('Core: ReferenceResolver', () => {
     describe('indexSchemaIds', () => {
         it('should return early for non-object specs', () => {
             const sizeBefore = cache.size;
-            ReferenceResolver.indexSchemaIds(null as any, rootUri, cache);
+            ReferenceResolver.indexSchemaIds(
+                null as string | number | boolean | object | undefined | null,
+                rootUri,
+                cache,
+            );
             expect(cache.size).toBe(sizeBefore);
         });
 
@@ -60,14 +64,14 @@ describe('Core: ReferenceResolver', () => {
 
     describe('resolveReference', () => {
         it('should handle JSON pointer traversal', () => {
-            cache.set(rootUri, { nested: { val: 123 } } as any);
+            cache.set(rootUri, { nested: { val: 123 } } as string | number | boolean | object | undefined | null);
             const res = resolver.resolveReference('#/nested/val');
             expect(res).toBe(123);
         });
 
         it('should return undefined and warn when traversal fails on missing property', () => {
             const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-            cache.set(rootUri, { nested: {} } as any);
+            cache.set(rootUri, { nested: {} } as string | number | boolean | object | undefined | null);
             const res = resolver.resolveReference('#/nested/missing');
             expect(res).toBeUndefined();
             expect(spy).toHaveBeenCalledWith(expect.stringContaining('Failed to resolve reference part "missing"'));
@@ -75,7 +79,7 @@ describe('Core: ReferenceResolver', () => {
 
         it('should warn if property access fails during traversal', () => {
             const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-            cache.set(rootUri, { a: { b: 1 } } as any);
+            cache.set(rootUri, { a: { b: 1 } } as string | number | boolean | object | undefined | null);
             const res = resolver.resolveReference('#/a/c');
             expect(res).toBeUndefined();
             expect(spy).toHaveBeenCalledWith(expect.stringContaining('Failed to resolve reference part "c"'));
@@ -83,14 +87,20 @@ describe('Core: ReferenceResolver', () => {
 
         it('should return undefined and warn when traversal fails on null intermediate', () => {
             const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-            cache.set(rootUri, { nested: null } as any);
+            cache.set(rootUri, { nested: null } as string | number | boolean | object | undefined | null);
             const res = resolver.resolveReference('#/nested/child');
             expect(res).toBeUndefined();
             expect(spy).toHaveBeenCalledWith(expect.stringContaining('Failed to resolve reference part "child"'));
         });
 
         it('should resolve references to external files in cache', () => {
-            cache.set('http://external.com/doc.json', { id: 'extern' } as any);
+            cache.set('http://external.com/doc.json', { id: 'extern' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null);
             const res = resolver.resolveReference('http://external.com/doc.json#/id');
             expect(res).toBe('extern');
         });
@@ -104,9 +114,15 @@ describe('Core: ReferenceResolver', () => {
                     },
                 },
             };
-            cache.set(rootUri, spec as any);
+            cache.set(rootUri, spec as string | number | boolean | object | undefined | null);
             // type-coverage:ignore-next-line
-            const res = resolver.resolveReference('#/paths/~12.0~1repositories~1%7Busername%7D/get') as any;
+            const res = resolver.resolveReference('#/paths/~12.0~1repositories~1%7Busername%7D/get') as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             // type-coverage:ignore-next-line
             expect(res?.operationId).toBe('getRepo');
         });
@@ -120,7 +136,7 @@ describe('Core: ReferenceResolver', () => {
 
         it('should NOT warn on invalid reference type input (not string)', () => {
             const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-            const res = resolver.resolveReference(123 as any);
+            const res = resolver.resolveReference(123 as string | number | boolean | object | undefined | null);
             expect(res).toBeUndefined();
             expect(spy).not.toHaveBeenCalled();
         });
@@ -150,14 +166,20 @@ describe('Core: ReferenceResolver', () => {
 
     describe('resolve', () => {
         it('should augment resolved object with summary/description from ref wrapper', () => {
-            cache.set(rootUri, { defs: { Target: { type: 'string', description: 'Original' } } } as any);
+            cache.set(rootUri, { defs: { Target: { type: 'string', description: 'Original' } } } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null);
             const refObj = {
                 $ref: '#/defs/Target',
                 description: 'Overridden',
                 summary: 'Summary',
             };
             // type-coverage:ignore-next-line
-            const res: any = resolver.resolve(refObj);
+            const res: string | number | boolean | object | undefined | null = resolver.resolve(refObj);
             // type-coverage:ignore-next-line
             expect(res.type).toBe('string');
             // type-coverage:ignore-next-line
@@ -167,13 +189,19 @@ describe('Core: ReferenceResolver', () => {
         });
 
         it('should only override description when summary is omitted', () => {
-            cache.set(rootUri, { defs: { Target: { type: 'string', description: 'Original' } } } as any);
+            cache.set(rootUri, { defs: { Target: { type: 'string', description: 'Original' } } } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null);
             const refObj = {
                 $ref: '#/defs/Target',
                 description: 'Only description',
             };
             // type-coverage:ignore-next-line
-            const res: any = resolver.resolve(refObj);
+            const res: string | number | boolean | object | undefined | null = resolver.resolve(refObj);
             // type-coverage:ignore-next-line
             expect(res.description).toBe('Only description');
             // type-coverage:ignore-next-line
@@ -181,13 +209,19 @@ describe('Core: ReferenceResolver', () => {
         });
 
         it('should only override summary when description is omitted', () => {
-            cache.set(rootUri, { defs: { Target: { type: 'string', description: 'Original' } } } as any);
+            cache.set(rootUri, { defs: { Target: { type: 'string', description: 'Original' } } } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null);
             const refObj = {
                 $ref: '#/defs/Target',
                 summary: 'Only summary',
             };
             // type-coverage:ignore-next-line
-            const res: any = resolver.resolve(refObj);
+            const res: string | number | boolean | object | undefined | null = resolver.resolve(refObj);
             // type-coverage:ignore-next-line
             expect(res.summary).toBe('Only summary');
             // type-coverage:ignore-next-line
@@ -223,13 +257,20 @@ describe('Core: ReferenceResolver', () => {
                 },
             };
 
-            cache.set(rootUri, spec as any);
+            cache.set(rootUri, spec as string | number | boolean | object | undefined | null);
             ReferenceResolver.indexSchemaIds(spec, rootUri, cache);
 
             // type-coverage:ignore-next-line
-            const refObj = (spec as any).components.schemas.Foo.properties.bar;
+            const refObj = (spec as string | number | boolean | object | undefined | null).components.schemas.Foo
+                .properties.bar;
             // type-coverage:ignore-next-line
-            const resolved = resolver.resolve(refObj as any) as any;
+            const resolved = resolver.resolve(refObj as string | number | boolean | object | undefined | null) as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
 
             // type-coverage:ignore-next-line
             expect(resolved).toBeDefined();
@@ -268,14 +309,20 @@ describe('Core: ReferenceResolver', () => {
                 },
             };
 
-            cache.set('http://base/generic', genericSchema as any);
-            cache.set('http://base/specific', specificSchema as any);
+            cache.set('http://base/generic', genericSchema as string | number | boolean | object | undefined | null);
+            cache.set('http://base/specific', specificSchema as string | number | boolean | object | undefined | null);
             ReferenceResolver.indexSchemaIds(genericSchema, 'http://base/generic', cache);
             ReferenceResolver.indexSchemaIds(specificSchema, 'http://base/specific', cache);
 
             const stack = ['http://base/specific', 'http://base/generic'];
             // type-coverage:ignore-next-line
-            const resolved = resolver.resolveReference('#item', 'http://base/generic', stack) as any;
+            const resolved = resolver.resolveReference('#item', 'http://base/generic', stack) as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
 
             // type-coverage:ignore-next-line
             expect(resolved).toBeDefined();
@@ -298,11 +345,17 @@ describe('Core: ReferenceResolver', () => {
                     },
                 },
             };
-            cache.set('http://base/generic', genericSchema as any);
+            cache.set('http://base/generic', genericSchema as string | number | boolean | object | undefined | null);
             ReferenceResolver.indexSchemaIds(genericSchema, 'http://base/generic', cache);
 
             // type-coverage:ignore-next-line
-            const resolved = resolver.resolveReference('#item', 'http://base/generic', []) as any;
+            const resolved = resolver.resolveReference('#item', 'http://base/generic', []) as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
 
             // type-coverage:ignore-next-line
             expect(resolved).toBeDefined();
@@ -312,7 +365,13 @@ describe('Core: ReferenceResolver', () => {
 
         it('should return undefined when dynamic anchor is not found in stack', () => {
             vi.spyOn(console, 'warn').mockImplementation(() => {});
-            cache.set('http://base/generic', { openapi: '3.0.0', paths: {} } as any);
+            cache.set('http://base/generic', { openapi: '3.0.0', paths: {} } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null);
             const resolved = resolver.resolveReference('#missing', 'http://base/generic', ['http://base/generic']);
             expect(resolved).toBeUndefined();
         });
@@ -328,13 +387,13 @@ describe('Core: ReferenceResolver', () => {
                 },
             };
 
-            cache.set('http://base/specific', specificSchema as any);
+            cache.set('http://base/specific', specificSchema as string | number | boolean | object | undefined | null);
             ReferenceResolver.indexSchemaIds(specificSchema, 'http://base/specific', cache);
 
             // type-coverage:ignore-next-line
             const resolved = resolver.resolveReference('#item', 'http://base/specific', [
                 'http://base/specific#/defs/overrideItem',
-            ]) as any;
+            ]) as string | number | boolean | object | undefined | null;
 
             // type-coverage:ignore-next-line
             expect(resolved?.type).toBe('number');
@@ -344,7 +403,13 @@ describe('Core: ReferenceResolver', () => {
     describe('resolveReference edge cases', () => {
         it('should return entire document when ref has no pointer', () => {
             // type-coverage:ignore-next-line
-            const spec = { openapi: '3.0.0', paths: { '/x': {} } } as any;
+            const spec = { openapi: '3.0.0', paths: { '/x': {} } } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null;
             cache.set('http://doc.com/root.json', spec);
             const res = resolver.resolveReference('http://doc.com/root.json');
             // type-coverage:ignore-next-line
@@ -367,7 +432,7 @@ describe('Core: ReferenceResolver', () => {
 
             const customCache = new NonHasCache();
             // type-coverage:ignore-next-line
-            const spec = { openapi: '3.0.0', paths: {} } as any;
+            const spec = { openapi: '3.0.0', paths: {} } as string | number | boolean | object | undefined | null;
             customCache.set('http://doc.com/root.json', spec);
             const customResolver = new ReferenceResolver(customCache, 'http://doc.com/root.json');
             const res = customResolver.resolveReference('http://doc.com/root.json');

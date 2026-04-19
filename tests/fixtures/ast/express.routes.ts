@@ -35,7 +35,7 @@ const router = {
 };
 type Request<
     Params = Record<string, string | undefined>,
-    _ResBody = unknown,
+    _ResBody = string | number | boolean | object | undefined | null,
     ReqBody = Record<string, string | number | boolean | object | undefined | null> | undefined,
     ReqQuery = Record<string, string | undefined>,
 > = {
@@ -48,7 +48,7 @@ type Request<
     is: (type: string) => boolean;
     url: string;
 };
-type Response<ResBody = unknown> = {
+type Response<ResBody = string | number | boolean | object | undefined | null> = {
     json: (body: ResBody) => void;
     send: (body?: ResBody) => void;
     status: (code: number | string) => Response<ResBody>;
@@ -73,7 +73,7 @@ const middleware = (_req: Request, _res: Response, next: () => void) => {
  * @tag {"name":"Users","summary":"User operations","kind":"nav"}
  * @deprecated
  */
-export function getUser(req: Request<Record<string, string>, unknown, unknown, Record<string, string>>, res: Response) {
+export function getUser(req: Request<Record<string, string>, string | number | boolean | object | undefined | null, string | number | boolean | object | undefined | null, Record<string, string>>, res: Response) {
     const { id } = req.params;
     const search = req.query.search;
     const token = req.headers['x-token'];
@@ -93,7 +93,7 @@ router.route('/projects/:projectId').patch(function updateProject(req: Request<R
 app.post(
     '/messages',
     (
-        req: Request<unknown, unknown, Record<string, string | number | boolean | object | undefined | null>>,
+        req: Request<string | number | boolean | object | undefined | null, string | number | boolean | object | undefined | null, Record<string, string | number | boolean | object | undefined | null>>,
         res: Response,
     ) => {
         const body = req.body;
@@ -119,7 +119,7 @@ export interface MessageReceipt {
     id: string;
 }
 
-export function typedMessages(req: Request<unknown, MessageReceipt, CreateMessageBody>, res: Response<MessageReceipt>) {
+export function typedMessages(req: Request<string | number | boolean | object | undefined | null, MessageReceipt, CreateMessageBody>, res: Response<MessageReceipt>) {
     const message = req.body ? req.body.message : undefined;
     res.status(201).json({ id: message ?? '' });
 }
@@ -148,7 +148,7 @@ app.get(
             body,
         }: Request<
             Record<string, string>,
-            unknown,
+            string | number | boolean | object | undefined | null,
             Record<string, string | number | boolean | object | undefined | null>,
             Record<string, string>
         >,
@@ -198,7 +198,7 @@ app.get(`/literal`, (_req: Request, res: Response) => {
     res.send('literal');
 });
 
-app.query('/search', (req: Request<unknown, unknown, unknown, Record<string, string>>, res: Response) => {
+app.query('/search', (req: Request<string | number | boolean | object | undefined | null, string | number | boolean | object | undefined | null, string | number | boolean | object | undefined | null, Record<string, string>>, res: Response) => {
     const q = req.query.q;
     res.json({ q });
 });

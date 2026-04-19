@@ -12,6 +12,7 @@ if "%1"=="build_wasm" goto build_wasm
 if "%1"=="build_docker" goto build_docker
 if "%1"=="run_docker" goto run_docker
 if "%1"=="build_with_ts_go" goto build_with_ts_go
+if "%1"=="build_with_ts_go_assemblyscript" goto build_with_ts_go_assemblyscript
 
 :help
 echo Available commands:
@@ -25,6 +26,7 @@ echo   make.bat build_wasm    - Build the WASM output
 echo   make.bat build_docker  - Build Docker images
 echo   make.bat run_docker    - Run Docker images
 echo   make.bat build_with_ts_go - Build cdd-ts utilizing the local ts-morph wasm fork
+echo   make.bat build_with_ts_go_assemblyscript - Build cdd-ts utilizing the new AOT Go+AS architecture
 goto end
 
 :install_base
@@ -85,4 +87,26 @@ call npx esbuild dist\index.js --bundle --platform=browser --target=es2020 --ext
 echo Compiling to WebAssembly via javy...
 call npx -y javy-cli compile wasm\cdd-ts.js -o wasm\cdd-ts.wasm
 echo build_with_ts_go completed successfully!
+goto end
+
+:build_with_ts_go_assemblyscript
+echo Building Go engine (WASM)...
+cd ..\ts-morph\packages\compiler-go-source
+set GOOS=wasip1
+set GOARCH=wasm
+call go build -o test.wasm .\cmd\wasm-wasi
+set GOOS=
+set GOARCH=
+cd ..\..\..\cdd-ts
+
+echo Building AssemblyScript bridge (WASM)...
+cd ..\ts-morph\packages\ts-morph-as
+call npm run asbuild:release
+cd ..\..\..\cdd-ts
+
+echo ================================
+echo Success! Compare filesizes:
+dir ..\ts-morph\packages\compiler-go-source\test.wasm
+dir ..\ts-morph\packages\ts-morph-as\build\release.wasm
+echo ================================
 goto end

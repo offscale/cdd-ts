@@ -102,7 +102,12 @@ describe('Generated Code: MockDataGenerator (Coverage)', () => {
         // FIX: Provide a valid absolute file URI for the parser base to ensure
         // URL resolution and fileURLToPath() work correctly in environments.
         const documentUri = pathToFileURL(path.resolve(process.cwd(), 'spec.json')).href;
-        const parser = new SwaggerParser(spec as any, config, undefined, documentUri);
+        const parser = new SwaggerParser(
+            spec as string | number | boolean | object | undefined | null,
+            config,
+            undefined,
+            documentUri,
+        );
         return new MockDataGenerator(parser);
     };
     const generator = createMockGenerator(mockDataGenSpec);
@@ -113,9 +118,11 @@ describe('Generated Code: MockDataGenerator (Coverage)', () => {
 
     it('should handle externalValue by resolving local files', () => {
         // type-coverage:ignore-next-line
-        (fs.existsSync as any).mockReturnValue(true);
+        (fs.existsSync as string | number | boolean | object | undefined | null).mockReturnValue(true);
         // type-coverage:ignore-next-line
-        (fs.readFileSync as any).mockReturnValue(JSON.stringify({ foo: 'bar' }));
+        (fs.readFileSync as string | number | boolean | object | undefined | null).mockReturnValue(
+            JSON.stringify({ foo: 'bar' }),
+        );
 
         const mockString = generator.generate('WithExternalValue');
         // MockDataGenerator returns JSON stringified value, so parsing it should give original object
@@ -128,9 +135,9 @@ describe('Generated Code: MockDataGenerator (Coverage)', () => {
 
     it('should return raw file content when externalValue is not JSON', () => {
         // type-coverage:ignore-next-line
-        (fs.existsSync as any).mockReturnValue(true);
+        (fs.existsSync as string | number | boolean | object | undefined | null).mockReturnValue(true);
         // type-coverage:ignore-next-line
-        (fs.readFileSync as any).mockReturnValue('plain text');
+        (fs.readFileSync as string | number | boolean | object | undefined | null).mockReturnValue('plain text');
 
         const mockString = generator.generate('WithExternalValue');
         // type-coverage:ignore-next-line
@@ -354,7 +361,12 @@ describe('Generated Code: MockDataGenerator (Coverage)', () => {
             output: '/out',
             options: { dateType: 'string', enumStyle: 'enum' },
         };
-        const parser = new SwaggerParser(mockDataGenSpec as any, config, undefined, 'https://example.com/spec.json');
+        const parser = new SwaggerParser(
+            mockDataGenSpec as string | number | boolean | object | undefined | null,
+            config,
+            undefined,
+            'https://example.com/spec.json',
+        );
         const customGenerator = new MockDataGenerator(parser);
 
         const mockString = customGenerator.generate('ExternalRelativeHttp');
@@ -370,7 +382,12 @@ describe('Generated Code: MockDataGenerator (Coverage)', () => {
             output: '/out',
             options: { dateType: 'string', enumStyle: 'enum' },
         };
-        const parser = new SwaggerParser(mockDataGenSpec as any, config, undefined, 'ftp://example.com/spec.json');
+        const parser = new SwaggerParser(
+            mockDataGenSpec as string | number | boolean | object | undefined | null,
+            config,
+            undefined,
+            'ftp://example.com/spec.json',
+        );
         const customGenerator = new MockDataGenerator(parser);
 
         const mockString = customGenerator.generate('ExternalRelativeHttp');
@@ -387,20 +404,28 @@ describe('Generated Code: MockDataGenerator (Coverage)', () => {
             output: '/out',
             options: { dateType: 'string', enumStyle: 'enum' },
         };
-        const invalidBaseParser = new SwaggerParser(mockDataGenSpec as any, config, undefined, 'http://[invalid');
+        const invalidBaseParser = new SwaggerParser(
+            mockDataGenSpec as string | number | boolean | object | undefined | null,
+            config,
+            undefined,
+            'http://[invalid',
+        );
         const invalidBaseGenerator = new MockDataGenerator(invalidBaseParser);
         // type-coverage:ignore-next-line
         const invalid = JSON.parse(invalidBaseGenerator.generate('ExternalRelativeHttp'));
         // type-coverage:ignore-next-line
         expect(invalid).toContain('External Content: relative.json');
 
-        const parser = new SwaggerParser(mockDataGenSpec as any, config);
+        const parser = new SwaggerParser(
+            mockDataGenSpec as string | number | boolean | object | undefined | null,
+            config,
+        );
         // type-coverage:ignore-next-line
-        (parser as any).documentUri = '';
+        (parser as string | number | boolean | object | undefined | null).documentUri = '';
         const customGenerator = new MockDataGenerator(parser);
 
         // type-coverage:ignore-next-line
-        (fs.existsSync as any).mockReturnValue(false);
+        (fs.existsSync as string | number | boolean | object | undefined | null).mockReturnValue(false);
         // type-coverage:ignore-next-line
         const missing = JSON.parse(customGenerator.generate('ExternalMissingFile'));
         // type-coverage:ignore-next-line

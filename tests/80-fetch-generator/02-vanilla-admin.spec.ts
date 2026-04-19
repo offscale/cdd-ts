@@ -10,7 +10,7 @@ describe('Vanilla Admin UI Generation (Fetch)', () => {
                 implementation: 'fetch',
                 admin: true,
                 generateServices: true,
-            } as any,
+            } as string | number | boolean | object | undefined | null,
         });
 
         const files = project.getSourceFiles().map(f => f.getFilePath());

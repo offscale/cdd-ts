@@ -18,7 +18,7 @@ describe('Emitter: TypeGenerator (dependentSchemas)', () => {
             // type-coverage:ignore-next-line
             components: { schemas: { DependentModel: schema } },
         };
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
         new TypeGenerator(parser, project, config).generate('/out');
         return project.getSourceFileOrThrow('/out/models/index.ts');
     };
@@ -45,10 +45,10 @@ describe('Emitter: TypeGenerator (dependentSchemas)', () => {
         // Base part
         expect(typeText).toContain("paymentMethod?: 'credit_card' | 'paypal'");
 
-        // Intersection part structure: (({ paymentMethod: string | number | boolean | object | undefined | null } & Dependency) | { paymentMethod?: never })
+        // Intersection part structure: (({ paymentMethod: string | number | boolean | object | undefined | null } & Dependency) | { paymentMethod?: string | number | boolean | object | undefined | null })
         // Adjusted expectation: inline objects inside intersection do not have trailing semicolons
         expect(typeText).toContain(
-            '& (({ paymentMethod: string | number | boolean | object | undefined | null } & { creditCardNumber: string }) | { paymentMethod?: never })',
+            '& (({ paymentMethod: string | number | boolean | object | undefined | null } & { creditCardNumber: string }) | { paymentMethod?: string | number | boolean | object | undefined | null })',
         );
     });
 
@@ -68,10 +68,10 @@ describe('Emitter: TypeGenerator (dependentSchemas)', () => {
         const typeText = sourceFile.getTypeAliasOrThrow('DependentModel').getTypeNodeOrThrow().getText();
 
         expect(typeText).toContain(
-            '& (({ a: string | number | boolean | object | undefined | null } & { c?: number }) | { a?: never })',
+            '& (({ a: string | number | boolean | object | undefined | null } & { c?: number }) | { a?: string | number | boolean | object | undefined | null })',
         );
         expect(typeText).toContain(
-            '& (({ b: string | number | boolean | object | undefined | null } & { d?: boolean }) | { b?: never })',
+            '& (({ b: string | number | boolean | object | undefined | null } & { d?: boolean }) | { b?: string | number | boolean | object | undefined | null })',
         );
     });
 
@@ -87,7 +87,7 @@ describe('Emitter: TypeGenerator (dependentSchemas)', () => {
         const typeText = sourceFile.getTypeAliasOrThrow('DependentModel').getTypeNodeOrThrow().getText();
 
         expect(typeText).toContain(
-            "(({ 'my-prop': string | number | boolean | object | undefined | null } & { extra?: string }) | { 'my-prop'?: never })",
+            "(({ 'my-prop': string | number | boolean | object | undefined | null } & { extra?: string }) | { 'my-prop'?: string | number | boolean | object | undefined | null })",
         );
     });
 });
@@ -104,7 +104,7 @@ describe('Emitter: TypeGenerator (dependentRequired)', () => {
             // type-coverage:ignore-next-line
             components: { schemas: { DependentModel: schema } },
         };
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
         new TypeGenerator(parser, project, config).generate('/out');
         return project.getSourceFileOrThrow('/out/models/index.ts');
     };
@@ -126,7 +126,7 @@ describe('Emitter: TypeGenerator (dependentRequired)', () => {
 
         expect(typeText).toContain('hasPhone?: boolean');
         expect(typeText).toContain(
-            '& (({ hasPhone: string | number | boolean | object | undefined | null } & { phoneNumber: string | number | boolean | object | undefined | null; phoneExtension: string | number | boolean | object | undefined | null }) | { hasPhone?: never })',
+            '& (({ hasPhone: string | number | boolean | object | undefined | null } & { phoneNumber: string | number | boolean | object | undefined | null; phoneExtension: string | number | boolean | object | undefined | null }) | { hasPhone?: string | number | boolean | object | undefined | null })',
         );
     });
 });

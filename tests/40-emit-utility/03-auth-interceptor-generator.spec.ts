@@ -8,8 +8,8 @@ import { AuthInterceptorGenerator } from '@src/vendors/angular/utils/auth-interc
 describe('Emitter: AuthInterceptorGenerator', () => {
     const runGenerator = (spec: object) => {
         const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out' } as any;
-        const parser = new SwaggerParser(spec as any, config);
+        const config: GeneratorConfig = { output: '/out' } as string | number | boolean | object | undefined | null;
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
         const generator = new AuthInterceptorGenerator(parser, project);
         const result = generator.generate('/out');
         return { ...result, project };
@@ -222,22 +222,29 @@ describe('Emitter: AuthInterceptorGenerator', () => {
 
     it('should default auth prefix to Bearer for non-http schemes', () => {
         const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out' } as any;
-        const parser = new SwaggerParser(emptySpec as any, config);
+        const config: GeneratorConfig = { output: '/out' } as string | number | boolean | object | undefined | null;
+        const parser = new SwaggerParser(emptySpec as string | number | boolean | object | undefined | null, config);
         const generator = new AuthInterceptorGenerator(parser, project);
 
         // type-coverage:ignore-next-line
-        const prefix = (generator as any).getAuthPrefix({ type: 'apiKey' });
+        const prefix = (generator as string | number | boolean | object | undefined | null).getAuthPrefix({
+            type: 'apiKey',
+        });
         // type-coverage:ignore-next-line
         expect(prefix).toBe('Bearer');
 
         // type-coverage:ignore-next-line
-        const bearerDefault = (generator as any).getAuthPrefix({ type: 'http' });
+        const bearerDefault = (generator as string | number | boolean | object | undefined | null).getAuthPrefix({
+            type: 'http',
+        });
         // type-coverage:ignore-next-line
         expect(bearerDefault).toBe('Bearer');
 
         // type-coverage:ignore-next-line
-        const basicPrefix = (generator as any).getAuthPrefix({ type: 'http', scheme: 'basic' });
+        const basicPrefix = (generator as string | number | boolean | object | undefined | null).getAuthPrefix({
+            type: 'http',
+            scheme: 'basic',
+        });
         // type-coverage:ignore-next-line
         expect(basicPrefix).toBe('Basic');
     });

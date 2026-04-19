@@ -138,16 +138,20 @@ properties:
         const result = await SpecLoader.load('http://api.com/spec');
         expect(result.entrySpec).toBeDefined();
         // type-coverage:ignore-next-line
-        expect((result.entrySpec as any).type).toBe('object');
+        expect((result.entrySpec as string | number | boolean | object | undefined | null).type).toBe('object');
         // type-coverage:ignore-next-line
-        expect((result.entrySpec as any).properties?.name?.type).toBe('string');
+        expect((result.entrySpec as string | number | boolean | object | undefined | null).properties?.name?.type).toBe(
+            'string',
+        );
     });
 
     it('should handle non-url paths when calling loadContent directly', async () => {
         (fs.existsSync as Mock).mockReturnValue(true);
         (fs.readFileSync as Mock).mockReturnValue('{"openapi":"3.0.0"}');
         // type-coverage:ignore-next-line
-        const content = await (SpecLoader as any).loadContent('plain.json');
+        const content = await (SpecLoader as string | number | boolean | object | undefined | null).loadContent(
+            'plain.json',
+        );
         // type-coverage:ignore-next-line
         expect(content).toBe('{"openapi":"3.0.0"}');
     });
@@ -307,7 +311,10 @@ properties:
     });
 
     it('should throw if load does not populate entry spec', async () => {
-        vi.spyOn(SpecLoader as any, 'loadAndCacheSpecRecursive').mockResolvedValueOnce(undefined);
+        vi.spyOn(
+            SpecLoader as string | number | boolean | object | undefined | null,
+            'loadAndCacheSpecRecursive',
+        ).mockResolvedValueOnce(undefined);
         await expect(SpecLoader.load('http://empty.com/spec.json')).rejects.toThrow(
             'Failed to load entry spec from http://empty.com/spec.json',
         );

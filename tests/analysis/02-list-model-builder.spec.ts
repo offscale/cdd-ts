@@ -13,7 +13,9 @@ describe('Analysis: ListModelBuilder', () => {
             name: 'items',
             modelName: 'Item',
             isEditable: true,
-            operations: [{ action: 'list', methodName: 'listItems' } as any],
+            operations: [
+                { action: 'list', methodName: 'listItems' } as string | number | boolean | object | undefined | null,
+            ],
             formProperties: [
                 { name: 'id', schema: { type: 'string' } as SwaggerDefinition },
                 { name: 'name', schema: { type: 'string' } as SwaggerDefinition },
@@ -46,7 +48,9 @@ describe('Analysis: ListModelBuilder', () => {
     it('should throw an error if the resource has no "list" operation', () => {
         const builder = new ListModelBuilder();
         const resource = createResource({
-            operations: [{ action: 'create', methodName: 'createItem' } as any], // No 'list' operation
+            operations: [
+                { action: 'create', methodName: 'createItem' } as string | number | boolean | object | undefined | null,
+            ], // No 'list' operation
         });
 
         // This covers the error handling path when a list view cannot be generated.
@@ -59,9 +63,21 @@ describe('Analysis: ListModelBuilder', () => {
         const builder = new ListModelBuilder();
         const resource = createResource({
             operations: [
-                { action: 'list', methodName: 'listItems' } as any,
-                { action: 'getInfo', methodName: 'getInfo', isCustomCollectionAction: true } as any,
-                { action: 'processItem', methodName: 'processItem', isCustomItemAction: true } as any,
+                { action: 'list', methodName: 'listItems' } as string | number | boolean | object | undefined | null,
+                { action: 'getInfo', methodName: 'getInfo', isCustomCollectionAction: true } as
+                    | string
+                    | number
+                    | boolean
+                    | object
+                    | undefined
+                    | null,
+                { action: 'processItem', methodName: 'processItem', isCustomItemAction: true } as
+                    | string
+                    | number
+                    | boolean
+                    | object
+                    | undefined
+                    | null,
             ],
         });
 
@@ -110,7 +126,7 @@ describe('Analysis: ListModelBuilder', () => {
         const builder = new ListModelBuilder();
         const resource = createResource({
             formProperties: [],
-            listProperties: undefined as any,
+            listProperties: undefined as string | number | boolean | object | undefined | null,
         });
 
         const viewModel = builder.build(resource);

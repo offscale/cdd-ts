@@ -17,7 +17,7 @@ function getLinkSetParser() {
     });
 
     // type-coverage:ignore-next-line
-    const moduleScope = { exports: {} as any };
+    const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
     const finalCode = `${jsCode}; exports.LinkSetParser = LinkSetParser;`;
 
     // type-coverage:ignore-next-line

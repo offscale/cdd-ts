@@ -22,7 +22,7 @@ describe('Emitter: ProviderGenerator', () => {
             ...config,
         };
 
-        const parser = new SwaggerParser(spec as any, fullConfig);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, fullConfig);
 
         new TokenGenerator(project, fullConfig.clientName).generate(fullConfig.output);
         new BaseInterceptorGenerator(project, fullConfig.clientName).generate(fullConfig.output);
@@ -50,7 +50,9 @@ describe('Emitter: ProviderGenerator', () => {
     });
 
     it('should not generate if generateServices is false', () => {
-        const fileContent = runGenerator(emptySpec, { options: { generateServices: false } as any });
+        const fileContent = runGenerator(emptySpec, {
+            options: { generateServices: false } as string | number | boolean | object | undefined | null,
+        });
         expect(fileContent).toBeUndefined();
     });
 
@@ -121,7 +123,10 @@ describe('Emitter: ProviderGenerator', () => {
     });
 
     it('should add DateInterceptor if dateType is "Date"', () => {
-        const fileContent = runGenerator(emptySpec, { clientName: 'Test', options: { dateType: 'Date' } as any });
+        const fileContent = runGenerator(emptySpec, {
+            clientName: 'Test',
+            options: { dateType: 'Date' } as string | number | boolean | object | undefined | null,
+        });
         expect(fileContent).toContain('if (config.enableDateTransform !== false)');
         expect(fileContent).toContain('customInterceptors.unshift(new DateInterceptor());');
     });
@@ -160,7 +165,7 @@ describe('Emitter: ProviderGenerator', () => {
             output: '/out',
             options: { generateServices: false, dateType: 'string', enumStyle: 'enum' },
         };
-        const parser = new SwaggerParser(emptySpec as any, config);
+        const parser = new SwaggerParser(emptySpec as string | number | boolean | object | undefined | null, config);
         const generator = new ProviderGenerator(parser, project, []);
 
         generator.generate('/out');
@@ -175,8 +180,8 @@ describe('Emitter: ProviderGenerator', () => {
             input: '',
             output: '/out',
             options: { generateServices: true, dateType: 'string', enumStyle: 'enum' },
-        } as any;
-        const parser = new SwaggerParser(emptySpec as any, config);
+        } as string | number | boolean | object | undefined | null;
+        const parser = new SwaggerParser(emptySpec as string | number | boolean | object | undefined | null, config);
 
         new ProviderGenerator(parser, project).generate('/out');
 

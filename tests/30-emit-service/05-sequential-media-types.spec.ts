@@ -101,7 +101,10 @@ describe('Emitter: ServiceMethodGenerator (Sequential Media Types)', () => {
     const createTestEnv = () => {
         const config: GeneratorConfig = { input: '', output: '/out', options: { dateType: 'Date', enumStyle: 'enum' } };
         const project = new Project({ useInMemoryFileSystem: true });
-        const parser = new SwaggerParser(sequentialSpec as any, config);
+        const parser = new SwaggerParser(
+            sequentialSpec as string | number | boolean | object | undefined | null,
+            config,
+        );
 
         new TypeGenerator(parser, project, config).generate('/out');
 

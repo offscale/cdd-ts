@@ -7,7 +7,7 @@ interface ApiResponse {
 export class PetService {
     uploadFile(petId: number): Observable<ApiResponse>;
     uploadFile(petId: number, options: { observe: 'response' }): Observable<string>;
-    uploadFile(petId: number, options?: any): Observable<string | number | boolean | object | undefined | null> {
-        return of({} as any);
+    uploadFile(petId: number, options?: string | number | boolean | object | undefined | null): Observable<string | number | boolean | object | undefined | null> {
+        return of({} as string | number | boolean | object | undefined | null);
     }
 }

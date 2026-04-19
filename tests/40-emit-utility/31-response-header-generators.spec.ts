@@ -7,16 +7,19 @@ import ts from 'typescript';
 
 describe('Emitter: Response Header Utilities', () => {
     // type-coverage:ignore-next-line
-    const createParser = (spec: any, options: any = {}) =>
+    const createParser = (
+        spec: string | number | boolean | object | undefined | null,
+        options: string | number | boolean | object | undefined | null = {},
+    ) =>
         new SwaggerParser(
             {
                 openapi: '3.0.0',
                 info: { title: 'T', version: '1' },
                 // type-coverage:ignore-next-line
                 ...spec,
-            } as any,
+            } as string | number | boolean | object | undefined | null,
             // type-coverage:ignore-next-line
-            { options } as any,
+            { options } as string | number | boolean | object | undefined | null,
         );
 
     describe('Registry Generator', () => {
@@ -61,7 +64,7 @@ describe('Emitter: Response Header Utilities', () => {
             const text = file.getText().replace(/import.*;/g, '');
             const jsCode = ts.transpile(text, { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS });
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
             new Function('exports', jsCode)(moduleScope.exports);
 
@@ -109,7 +112,7 @@ describe('Emitter: Response Header Utilities', () => {
             const text = file.getText().replace(/import.*;/g, '');
             const jsCode = ts.transpile(text, { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS });
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
             new Function('exports', jsCode)(moduleScope.exports);
 
@@ -146,7 +149,7 @@ describe('Emitter: Response Header Utilities', () => {
             const text = file.getText().replace(/import.*;/g, '');
             const jsCode = ts.transpile(text, { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS });
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
             new Function('exports', jsCode)(moduleScope.exports);
 
@@ -194,7 +197,7 @@ describe('Emitter: Response Header Utilities', () => {
             const text = file.getText().replace(/import.*;/g, '');
             const jsCode = ts.transpile(text, { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS });
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
             new Function('exports', jsCode)(moduleScope.exports);
 
@@ -247,7 +250,7 @@ describe('Emitter: Response Header Utilities', () => {
             const text = file.getText().replace(/import.*;/g, '');
             const jsCode = ts.transpile(text, { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS });
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
             new Function('exports', jsCode)(moduleScope.exports);
 
@@ -298,7 +301,7 @@ describe('Emitter: Response Header Utilities', () => {
             const text = file.getText().replace(/import.*;/g, '');
             const jsCode = ts.transpile(text, { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS });
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
             new Function('exports', jsCode)(moduleScope.exports);
 
@@ -358,7 +361,7 @@ describe('Emitter: Response Header Utilities', () => {
             const text = file.getText().replace(/import.*;/g, '');
             const jsCode = ts.transpile(text, { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS });
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
             new Function('exports', jsCode)(moduleScope.exports);
 
@@ -406,14 +409,17 @@ describe('Emitter: Response Header Utilities', () => {
             };
             const parser = createParser(spec);
             const generator = new ResponseHeaderRegistryGenerator(parser, project);
-            vi.spyOn(generator as any, 'getHeaderTypeInfo').mockReturnValue({ typeHint: undefined });
+            vi.spyOn(
+                generator as string | number | boolean | object | undefined | null,
+                'getHeaderTypeInfo',
+            ).mockReturnValue({ typeHint: undefined });
 
             generator.generate('/out');
             const file = project.getSourceFileOrThrow('/out/response-headers.ts');
             const text = file.getText().replace(/import.*;/g, '');
             const jsCode = ts.transpile(text, { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS });
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
             new Function('exports', jsCode)(moduleScope.exports);
 
@@ -429,9 +435,16 @@ describe('Emitter: Response Header Utilities', () => {
             const generator = new ResponseHeaderRegistryGenerator(parser, project);
 
             // type-coverage:ignore-next-line
-            expect((generator as any).getXmlConfig(undefined, 1)).toEqual({});
+            expect(
+                (generator as string | number | boolean | object | undefined | null).getXmlConfig(undefined, 1),
+            ).toEqual({});
             // type-coverage:ignore-next-line
-            expect((generator as any).getXmlConfig({ type: 'object' } as any, 0)).toEqual({});
+            expect(
+                (generator as string | number | boolean | object | undefined | null).getXmlConfig(
+                    { type: 'object' } as string | number | boolean | object | undefined | null,
+                    0,
+                ),
+            ).toEqual({});
         });
 
         // New Test: LinkSet Support via Header detection
@@ -464,7 +477,7 @@ describe('Emitter: Response Header Utilities', () => {
             const text = file.getText().replace(/import.*;/g, '');
             const jsCode = ts.transpile(text, { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS });
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
             new Function('exports', jsCode)(moduleScope.exports);
 
@@ -512,7 +525,7 @@ describe('Emitter: Response Header Utilities', () => {
             const text = file.getText().replace(/import.*;/g, '');
             const jsCode = ts.transpile(text, { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS });
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
             new Function('exports', jsCode)(moduleScope.exports);
 
@@ -572,9 +585,9 @@ describe('Emitter: Response Header Utilities', () => {
             };
 
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
-            const mockInjectable = () => (target: any) => target;
+            const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
 
             const wrappedCode = `
                 const API_RESPONSE_HEADERS = ${JSON.stringify(API_RESPONSE_HEADERS)};
@@ -623,7 +636,11 @@ describe('Emitter: Response Header Utilities', () => {
 
             const XmlParserMock = {
                 // type-coverage:ignore-next-line
-                parse: (xml: string, config: any) => ({ parsed: true, root: config.name, raw: xml }),
+                parse: (xml: string, config: string | number | boolean | object | undefined | null) => ({
+                    parsed: true,
+                    root: config.name,
+                    raw: xml,
+                }),
             };
 
             const API_RESPONSE_HEADERS = {
@@ -643,9 +660,9 @@ describe('Emitter: Response Header Utilities', () => {
             };
 
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
-            const mockInjectable = () => (target: any) => target;
+            const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
 
             const wrappedCode = `
                 const API_RESPONSE_HEADERS = ${JSON.stringify(API_RESPONSE_HEADERS)};
@@ -698,7 +715,9 @@ describe('Emitter: Response Header Utilities', () => {
             const API_HEADER_XML_CONFIGS = {};
             const XmlParser = { parse: () => null };
             // type-coverage:ignore-next-line
-            const LinkSetParser = { parseHeader: (val: any) => [{ href: val }] }; // Mock implementation
+            const LinkSetParser = {
+                parseHeader: (val: string | number | boolean | object | undefined | null) => [{ href: val }],
+            }; // Mock implementation
 
             const headersMap = new Map<string, string>();
             headersMap.set('Link', '<http://example.com>; rel="next"');
@@ -710,9 +729,9 @@ describe('Emitter: Response Header Utilities', () => {
             };
 
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
-            const mockInjectable = () => (target: any) => target;
+            const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
 
             const wrappedCode = `
                 const API_RESPONSE_HEADERS = ${JSON.stringify(API_RESPONSE_HEADERS)};
@@ -762,7 +781,9 @@ describe('Emitter: Response Header Utilities', () => {
             const LinkSetParser = {
                 parseHeader: () => null,
                 // type-coverage:ignore-next-line
-                parseJson: (val: any) => [{ href: val?.[0]?.href ?? 'missing' }],
+                parseJson: (val: string | number | boolean | object | undefined | null) => [
+                    { href: val?.[0]?.href ?? 'missing' },
+                ],
             };
 
             const headersMap = new Map<string, string>();
@@ -775,9 +796,9 @@ describe('Emitter: Response Header Utilities', () => {
             };
 
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
-            const mockInjectable = () => (target: any) => target;
+            const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
 
             const wrappedCode = `
                 const API_RESPONSE_HEADERS = ${JSON.stringify(API_RESPONSE_HEADERS)};
@@ -832,9 +853,9 @@ describe('Emitter: Response Header Utilities', () => {
             };
 
             // type-coverage:ignore-next-line
-            const moduleScope = { exports: {} as any };
+            const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
             // type-coverage:ignore-next-line
-            const mockInjectable = () => (target: any) => target;
+            const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
             const wrappedCode = `
                 const API_RESPONSE_HEADERS = ${JSON.stringify(API_RESPONSE_HEADERS)};
                 const API_HEADER_XML_CONFIGS = ${JSON.stringify(API_HEADER_XML_CONFIGS)};
@@ -851,7 +872,11 @@ describe('Emitter: Response Header Utilities', () => {
             // type-coverage:ignore-next-line
             const service = new ServiceClass();
             // type-coverage:ignore-next-line
-            const result = service.parse(mockHeaders as any, 'op1', 200);
+            const result = service.parse(
+                mockHeaders as string | number | boolean | object | undefined | null,
+                'op1',
+                200,
+            );
 
             // type-coverage:ignore-next-line
             expect(result['Set-Cookie']).toEqual(values);

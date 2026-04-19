@@ -6,7 +6,7 @@ import { createTestProject } from '../shared/helpers.js';
 import ts from 'typescript';
 
 describe('Emitter: ServerUrlGenerator', () => {
-    const runGenerator = (servers: any[]) => {
+    const runGenerator = (servers: string | number | boolean | object | undefined | null[]) => {
         const project = createTestProject();
         const parser = new SwaggerParser(
             {
@@ -14,8 +14,8 @@ describe('Emitter: ServerUrlGenerator', () => {
                 info: { title: 'Test', version: '1.0' },
                 paths: {},
                 servers,
-            } as any,
-            { options: {} } as any,
+            } as string | number | boolean | object | undefined | null,
+            { options: {} } as string | number | boolean | object | undefined | null,
         );
 
         new ServerUrlGenerator(parser, project).generate('/out');
@@ -30,7 +30,11 @@ describe('Emitter: ServerUrlGenerator', () => {
             module: ts.ModuleKind.CommonJS,
         });
         // type-coverage:ignore-next-line
-        const moduleScope = { API_SERVERS: [], getServerUrl: null as any, resolveServerUrl: null as any };
+        const moduleScope = {
+            API_SERVERS: [],
+            getServerUrl: null as string | number | boolean | object | undefined | null,
+            resolveServerUrl: null as string | number | boolean | object | undefined | null,
+        };
         new Function(
             'scope',
             `
@@ -79,7 +83,9 @@ describe('Emitter: ServerUrlGenerator', () => {
         const { API_SERVERS } = compileHelper(project);
         expect(API_SERVERS[0]['x-server']).toBe('alpha');
         // type-coverage:ignore-next-line
-        expect((API_SERVERS[0] as any).variables?.env['x-var']).toBe('meta');
+        expect((API_SERVERS[0] as string | number | boolean | object | undefined | null).variables?.env['x-var']).toBe(
+            'meta',
+        );
 
         const sourceFile = project.getSourceFileOrThrow('/out/utils/server-url.ts');
         expect(sourceFile.getInterfaceOrThrow('ServerConfiguration').getIndexSignatures().length).toBe(1);
@@ -223,12 +229,12 @@ describe('Emitter: ServerUrlGenerator', () => {
                 openapi: '3.2.0',
                 info: { title: 'No Servers', version: '1.0' },
                 paths: {},
-            } as any,
-            { options: {} } as any,
+            } as string | number | boolean | object | undefined | null,
+            { options: {} } as string | number | boolean | object | undefined | null,
         );
         // Force undefined to exercise defensive fallback path
         // type-coverage:ignore-next-line
-        (parser as any).servers = undefined;
+        (parser as string | number | boolean | object | undefined | null).servers = undefined;
 
         new ServerUrlGenerator(parser, project).generate('/out');
         const sourceFile = project.getSourceFileOrThrow('/out/utils/server-url.ts');

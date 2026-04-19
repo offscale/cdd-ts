@@ -69,17 +69,25 @@ describe('Core: Specification Extensions', () => {
     };
 
     it('should allow accessing x- properties on InfoObject types', () => {
-        const parser = new SwaggerParser(specWithExtensions as any, config);
+        const parser = new SwaggerParser(
+            specWithExtensions as string | number | boolean | object | undefined | null,
+            config,
+        );
         const info: InfoObject = parser.getSpec().info;
 
         expect(info['x-logo']).toBeDefined();
         // type-coverage:ignore-next-line
-        expect((info as any)['x-logo'].url).toBe('https://example.com/logo.png');
+        expect((info as string | number | boolean | object | undefined | null)['x-logo'].url).toBe(
+            'https://example.com/logo.png',
+        );
         expect(info['x-internal-id']).toBe(12345);
     });
 
     it('should allow accessing x- properties on TagObject types', () => {
-        const parser = new SwaggerParser(specWithExtensions as any, config);
+        const parser = new SwaggerParser(
+            specWithExtensions as string | number | boolean | object | undefined | null,
+            config,
+        );
         const tags: TagObject[] = parser.getSpec().tags || [];
 
         expect(tags.length).toBe(1);
@@ -87,7 +95,10 @@ describe('Core: Specification Extensions', () => {
     });
 
     it('should allow accessing x- properties on ServerObject types', () => {
-        const parser = new SwaggerParser(specWithExtensions as any, config);
+        const parser = new SwaggerParser(
+            specWithExtensions as string | number | boolean | object | undefined | null,
+            config,
+        );
         const servers: ServerObject[] = parser.servers || [];
 
         expect(servers.length).toBe(1);
@@ -95,7 +106,10 @@ describe('Core: Specification Extensions', () => {
     });
 
     it('should allow accessing x- properties on SecurityScheme types', () => {
-        const parser = new SwaggerParser(specWithExtensions as any, config);
+        const parser = new SwaggerParser(
+            specWithExtensions as string | number | boolean | object | undefined | null,
+            config,
+        );
         const schemes = parser.getSecuritySchemes();
 
         expect(schemes['ApiKey']).toBeDefined();
@@ -103,7 +117,9 @@ describe('Core: Specification Extensions', () => {
     });
 
     it('should propagate operation x- properties to PathInfo via extractPaths', () => {
-        const pathInfoList = extractPaths(specWithExtensions.paths as any);
+        const pathInfoList = extractPaths(
+            specWithExtensions.paths as string | number | boolean | object | undefined | null,
+        );
         const op = pathInfoList.find(p => p.path === '/users' && p.method === 'GET');
 
         expect(op).toBeDefined();
@@ -111,11 +127,15 @@ describe('Core: Specification Extensions', () => {
     });
 
     it('should propagate parameter x- properties via extractPaths', () => {
-        const pathInfoList = extractPaths(specWithExtensions.paths as any);
+        const pathInfoList = extractPaths(
+            specWithExtensions.paths as string | number | boolean | object | undefined | null,
+        );
         const op = pathInfoList.find(p => p.path === '/users' && p.method === 'GET');
         const param = op!.parameters!.find(p => p.name === 'limit');
 
         expect(param).toBeDefined();
-        expect((param as any)!['x-custom-validation']).toBe('max-100');
+        expect((param as string | number | boolean | object | undefined | null)!['x-custom-validation']).toBe(
+            'max-100',
+        );
     });
 });

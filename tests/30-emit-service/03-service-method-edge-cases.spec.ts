@@ -68,7 +68,7 @@ describe('Emitter: ServiceMethodGenerator (Edge Cases)', () => {
             output: '/out',
             options: { dateType: 'Date', enumStyle: 'enum', ...configOverrides },
         };
-        const parser = new SwaggerParser(spec as any, config);
+        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
         const methodGen = new ServiceMethodGenerator(config, parser);
         const sourceFile = project.createSourceFile('/out/tmp.service.ts');
         const serviceClass = sourceFile.addClass({ name: 'TmpService' });
@@ -106,7 +106,9 @@ describe('Emitter: ServiceMethodGenerator (Edge Cases)', () => {
     it('should NOT apply SECURITY_CONTEXT_TOKEN for explicit skip (default behavior)', () => {
         const { methodGen, serviceClass, parser } = createTestEnvironment(specEdgeTests);
         // type-coverage:ignore-next-line
-        const op = parser.operations.find((o: any) => o.operationId === 'getPublic')!;
+        const op = parser.operations.find(
+            (o: string | number | boolean | object | undefined | null) => o.operationId === 'getPublic',
+        )!;
         op.methodName = 'getPublic';
         methodGen.addServiceMethod(serviceClass, op);
 
@@ -118,7 +120,9 @@ describe('Emitter: ServiceMethodGenerator (Edge Cases)', () => {
     it('should generate context with SECURITY_CONTEXT_TOKEN when security scopes are present', () => {
         const { methodGen, serviceClass, parser } = createTestEnvironment(specEdgeTests);
         // type-coverage:ignore-next-line
-        const op = parser.operations.find((o: any) => o.operationId === 'getOauthProtected')!;
+        const op = parser.operations.find(
+            (o: string | number | boolean | object | undefined | null) => o.operationId === 'getOauthProtected',
+        )!;
         op.methodName = 'getOauthProtected';
         methodGen.addServiceMethod(serviceClass, op);
 

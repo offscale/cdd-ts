@@ -18,7 +18,11 @@ describe('E2E: Full Generation Orchestrator', () => {
 
     it('should generate all expected files for a full service-oriented run', async () => {
         const project = createTestProject();
-        const config: GeneratorConfig = { input: '', output: '/generated', options: { generateServices: true } as any };
+        const config: GeneratorConfig = {
+            input: '',
+            output: '/generated',
+            options: { generateServices: true } as string | number | boolean | object | undefined | null,
+        };
         await generateFromConfig(config, project, { spec: coverageSpec });
 
         const filePaths = project.getSourceFiles().map(f => f.getFilePath());
@@ -34,7 +38,11 @@ describe('E2E: Full Generation Orchestrator', () => {
 
     it('should generate auth-related files when security spec is provided', async () => {
         const project = createTestProject();
-        const config: GeneratorConfig = { input: '', output: '/generated', options: { generateServices: true } as any };
+        const config: GeneratorConfig = {
+            input: '',
+            output: '/generated',
+            options: { generateServices: true } as string | number | boolean | object | undefined | null,
+        };
         await generateFromConfig(config, project, { spec: securitySpec });
 
         const filePaths = project.getSourceFiles().map(f => f.getFilePath());
@@ -45,7 +53,11 @@ describe('E2E: Full Generation Orchestrator', () => {
 
     it('should handle specs with only cookie security schemes by generating interceptor (Browser restriction noted)', async () => {
         const project = createTestProject();
-        const config: GeneratorConfig = { input: '', output: '/generated', options: { generateServices: true } as any };
+        const config: GeneratorConfig = {
+            input: '',
+            output: '/generated',
+            options: { generateServices: true } as string | number | boolean | object | undefined | null,
+        };
         const cookieSecuritySpec = {
             openapi: '3.0.0',
             info: { title: 'Test API', version: '1.0.0' },

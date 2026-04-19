@@ -25,19 +25,25 @@ const tagsSpec: SwaggerSpec = {
                 description: 'Find out more',
                 url: 'http://swagger.io',
             },
-        } as any,
+        } as string | number | boolean | object | undefined | null,
         {
             name: 'Store',
             description: 'Access to Petstore orders',
             parent: 'Pet',
-        } as any,
+        } as string | number | boolean | object | undefined | null,
     ],
 };
 
 describe('Emitter: TagGenerator', () => {
     const runGenerator = (spec: SwaggerSpec) => {
         const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out', options: {} } as any;
+        const config: GeneratorConfig = { output: '/out', options: {} } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         const parser = new SwaggerParser(spec, config);
         new TagGenerator(parser, project).generate('/out');
         return project;
@@ -48,7 +54,7 @@ describe('Emitter: TagGenerator', () => {
         const code = sourceFile.getText();
         const jsCode = ts.transpile(code, { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS });
         // type-coverage:ignore-next-line
-        const moduleHelper = { exports: {} as any };
+        const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
         new Function('exports', jsCode)(moduleHelper.exports);
         // type-coverage:ignore-next-line
@@ -118,7 +124,7 @@ describe('Emitter: TagGenerator', () => {
             openapi: '3.2.0',
             info: { title: 'MinimalTags', version: '1.0' },
             paths: {},
-            tags: [{ name: 'Minimal' } as any],
+            tags: [{ name: 'Minimal' } as string | number | boolean | object | undefined | null],
         };
         const project = runGenerator(minimalSpec);
         // type-coverage:ignore-next-line

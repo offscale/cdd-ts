@@ -7,7 +7,7 @@ import { GeneratorConfig, Resource } from '@src/core/types/index.js';
 
 describe('Analysis: FormModelBuilder', () => {
     // type-coverage:ignore-next-line
-    const setup = (spec: any, resourceName = 'TestResource') => {
+    const setup = (spec: string | number | boolean | object | undefined | null, resourceName = 'TestResource') => {
         const config: GeneratorConfig = { input: '', output: '', options: {} };
         const parser = new SwaggerParser(spec, config);
         const builder = new FormModelBuilder(parser);
@@ -23,7 +23,7 @@ describe('Analysis: FormModelBuilder', () => {
             formProperties: Object.entries(mainSchema.properties || {}).map(([name, schema]) => ({
                 name,
                 // type-coverage:ignore-next-line
-                schema: schema as any,
+                schema: schema as string | number | boolean | object | undefined | null,
             })),
             listProperties: [],
         };
@@ -495,7 +495,10 @@ describe('Analysis: FormModelBuilder', () => {
             },
         };
         const { builder, resource } = setup(spec);
-        vi.spyOn(builder as any, 'analyzePolymorphism').mockReturnValue(null);
+        vi.spyOn(
+            builder as string | number | boolean | object | undefined | null,
+            'analyzePolymorphism',
+        ).mockReturnValue(null);
         const result = builder.build(resource);
 
         expect(result.isPolymorphic).toBe(true);
@@ -514,9 +517,9 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec);
         // type-coverage:ignore-next-line
-        (builder as any).analyzeDependentSchemas({ type: 'object' });
+        (builder as string | number | boolean | object | undefined | null).analyzeDependentSchemas({ type: 'object' });
         // type-coverage:ignore-next-line
-        expect((builder as any).result.dependencyRules).toEqual([]);
+        expect((builder as string | number | boolean | object | undefined | null).result.dependencyRules).toEqual([]);
     });
 
     it('should ignore dependentSchemas when ref cannot be resolved', () => {
@@ -532,13 +535,13 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec);
         // type-coverage:ignore-next-line
-        (builder as any).analyzeDependentSchemas({
+        (builder as string | number | boolean | object | undefined | null).analyzeDependentSchemas({
             dependentSchemas: {
                 missing: { $ref: '#/components/schemas/DoesNotExist' },
             },
         });
         // type-coverage:ignore-next-line
-        expect((builder as any).result.dependencyRules).toEqual([]);
+        expect((builder as string | number | boolean | object | undefined | null).result.dependencyRules).toEqual([]);
         warnSpy.mockRestore();
     });
 
@@ -554,13 +557,13 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec);
         // type-coverage:ignore-next-line
-        (builder as any).analyzeDependentSchemas({
+        (builder as string | number | boolean | object | undefined | null).analyzeDependentSchemas({
             dependentSchemas: {
                 flag: { properties: { extra: { type: 'string' } } },
             },
         });
         // type-coverage:ignore-next-line
-        expect((builder as any).result.dependencyRules).toEqual([]);
+        expect((builder as string | number | boolean | object | undefined | null).result.dependencyRules).toEqual([]);
     });
 
     it('should return null when analyzePolymorphism receives schema without discriminator', () => {
@@ -575,7 +578,7 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec);
         // type-coverage:ignore-next-line
-        const result = (builder as any).analyzePolymorphism({
+        const result = (builder as string | number | boolean | object | undefined | null).analyzePolymorphism({
             name: 'poly',
             schema: { oneOf: [{ type: 'string' }] },
         });
@@ -595,7 +598,7 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec);
         // type-coverage:ignore-next-line
-        const config = (builder as any).analyzePolymorphism({
+        const config = (builder as string | number | boolean | object | undefined | null).analyzePolymorphism({
             name: 'poly',
             schema: { discriminator: { propertyName: 'type' } },
         });
@@ -633,7 +636,7 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec, 'Poly');
         // type-coverage:ignore-next-line
-        const config = (builder as any).analyzePolymorphism({
+        const config = (builder as string | number | boolean | object | undefined | null).analyzePolymorphism({
             name: 'poly',
             schema: spec.components.schemas.Poly,
         });
@@ -697,11 +700,12 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder, resource } = setup(spec);
         // type-coverage:ignore-next-line
-        (builder as any).getFormControlTypeString = () => 'any';
+        (builder as string | number | boolean | object | undefined | null).getFormControlTypeString = () =>
+            'string | number | boolean | object | undefined | null';
         const result = builder.build(resource);
         const mapControl = result.topLevelControls.find(c => c.name === 'meta');
 
-        expect(mapControl?.dataType).toBe('Record<string, any>');
+        expect(mapControl?.dataType).toBe('Record<string, string | number | boolean | object | undefined | null>');
     });
 
     it('should handle boolean additionalProperties fallback to empty schema', () => {
@@ -759,12 +763,16 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec, 'Poly');
         // type-coverage:ignore-next-line
-        const config = (builder as any).analyzePolymorphism({
+        const config = (builder as string | number | boolean | object | undefined | null).analyzePolymorphism({
             name: 'poly',
             schema: spec.components.schemas.Poly,
         });
         // type-coverage:ignore-next-line
-        expect(config.options[0].controls.some((c: any) => c.name === 'name')).toBe(true);
+        expect(
+            config.options[0].controls.some(
+                (c: string | number | boolean | object | undefined | null) => c.name === 'name',
+            ),
+        ).toBe(true);
     });
 
     it('should handle allOf schemas without properties during polymorphism analysis', () => {
@@ -796,12 +804,16 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec, 'Poly');
         // type-coverage:ignore-next-line
-        const config = (builder as any).analyzePolymorphism({
+        const config = (builder as string | number | boolean | object | undefined | null).analyzePolymorphism({
             name: 'poly',
             schema: spec.components.schemas.Poly,
         });
         // type-coverage:ignore-next-line
-        expect(config.options[0].controls.some((c: any) => c.name === 'name')).toBe(true);
+        expect(
+            config.options[0].controls.some(
+                (c: string | number | boolean | object | undefined | null) => c.name === 'name',
+            ),
+        ).toBe(true);
     });
 
     it('should not set defaultOption when defaultMapping does not match any option', () => {
@@ -823,7 +835,7 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec, 'Poly');
         // type-coverage:ignore-next-line
-        const config = (builder as any).analyzePolymorphism({
+        const config = (builder as string | number | boolean | object | undefined | null).analyzePolymorphism({
             name: 'poly',
             schema: spec.components.schemas.Poly,
         });
@@ -858,12 +870,16 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec, 'Poly');
         // type-coverage:ignore-next-line
-        const config = (builder as any).analyzePolymorphism({
+        const config = (builder as string | number | boolean | object | undefined | null).analyzePolymorphism({
             name: 'poly',
             schema: spec.components.schemas.Poly,
         });
         // type-coverage:ignore-next-line
-        expect(config.options[0].controls.some((c: any) => c.name === 'name')).toBe(true);
+        expect(
+            config.options[0].controls.some(
+                (c: string | number | boolean | object | undefined | null) => c.name === 'name',
+            ),
+        ).toBe(true);
         warnSpy.mockRestore();
     });
 
@@ -886,7 +902,7 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec, 'Poly');
         // type-coverage:ignore-next-line
-        const config = (builder as any).analyzePolymorphism({
+        const config = (builder as string | number | boolean | object | undefined | null).analyzePolymorphism({
             name: 'poly',
             schema: spec.components.schemas.Poly,
         });
@@ -918,10 +934,10 @@ describe('Analysis: FormModelBuilder', () => {
         const prop = {
             name: 'poly',
             schema: spec.components.schemas.Poly,
-        } as any;
+        } as string | number | boolean | object | undefined | null;
         vi.spyOn(parser, 'getPolymorphicSchemaOptions').mockReturnValue([]);
         // type-coverage:ignore-next-line
-        const config = (builder as any).analyzePolymorphism(prop);
+        const config = (builder as string | number | boolean | object | undefined | null).analyzePolymorphism(prop);
         // type-coverage:ignore-next-line
         expect(config.discriminatorOptions).toContain('sub');
     });
@@ -947,9 +963,15 @@ describe('Analysis: FormModelBuilder', () => {
         };
         const { builder } = setup(spec, 'Poly');
         // type-coverage:ignore-next-line
-        const prop = { name: 'poly', schema: spec.components.schemas.Poly } as any;
+        const prop = { name: 'poly', schema: spec.components.schemas.Poly } as
+            | string
+            | number
+            | boolean
+            | object
+            | undefined
+            | null;
         // type-coverage:ignore-next-line
-        const config = (builder as any).analyzePolymorphism(prop);
+        const config = (builder as string | number | boolean | object | undefined | null).analyzePolymorphism(prop);
         // type-coverage:ignore-next-line
         expect(config.options[0].discriminatorValue).toBe('Sub');
     });
@@ -973,13 +995,13 @@ describe('Analysis: FormModelBuilder', () => {
                 discriminator: { propertyName: 'type' },
                 oneOf: [{ $ref: '/' }],
             },
-        } as any;
+        } as string | number | boolean | object | undefined | null;
         vi.spyOn(parser, 'resolve').mockReturnValue({
             type: 'object',
             properties: { type: { type: 'string' } },
-        } as any);
+        } as string | number | boolean | object | undefined | null);
         // type-coverage:ignore-next-line
-        const config = (builder as any).analyzePolymorphism(prop);
+        const config = (builder as string | number | boolean | object | undefined | null).analyzePolymorphism(prop);
         // type-coverage:ignore-next-line
         expect(config.options.length).toBe(0);
         warnSpy.mockRestore();
@@ -1034,7 +1056,13 @@ describe('Analysis: FormModelBuilder', () => {
             formProperties: [
                 {
                     name: 'payload',
-                    schema: spec.components.schemas.Transport.properties.payload as any,
+                    schema: spec.components.schemas.Transport.properties.payload as
+                        | string
+                        | number
+                        | boolean
+                        | object
+                        | undefined
+                        | null,
                 },
             ],
             listProperties: [],

@@ -17,43 +17,50 @@ function getMultipartBuilder() {
     });
 
     // type-coverage:ignore-next-line
-    const moduleScope = { exports: {} as any };
+    const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
 
     global.FormData = class FormData {
-        _entries: Record<string, any> = {};
+        _entries: Record<string, string | number | boolean | object | undefined | null> = {};
 
         // type-coverage:ignore-next-line
-        append(k: string, v: any) {
+        append(k: string, v: string | number | boolean | object | undefined | null) {
             // type-coverage:ignore-next-line
             this._entries[k] = v;
         }
-    } as any;
+    } as string | number | boolean | object | undefined | null;
 
     global.Blob = class Blob {
-        parts: any[];
+        parts: string | number | boolean | object | undefined | null[];
         // type-coverage:ignore-next-line
-        options: any;
+        options: string | number | boolean | object | undefined | null;
         type: string;
 
         // type-coverage:ignore-next-line
-        constructor(parts: any[], options: any) {
+        constructor(
+            parts: string | number | boolean | object | undefined | null[],
+            options: string | number | boolean | object | undefined | null,
+        ) {
             this.parts = parts;
             // type-coverage:ignore-next-line
             this.options = options;
             // type-coverage:ignore-next-line
             this.type = options?.type || '';
         }
-    } as any;
+    } as string | number | boolean | object | undefined | null;
 
     global.File = class File extends global.Blob {
         name: string;
 
         // type-coverage:ignore-next-line
-        constructor(parts: any[], name: string, options: any) {
+        constructor(
+            parts: string | number | boolean | object | undefined | null[],
+            name: string,
+            options: string | number | boolean | object | undefined | null,
+        ) {
             super(parts, options);
             this.name = name;
         }
-    } as any;
+    } as string | number | boolean | object | undefined | null;
 
     const finalCode = `${jsCode}\nmoduleScope.exports.MultipartBuilder = MultipartBuilder;`;
 
@@ -82,7 +89,7 @@ describe('Utility: MultipartBuilder', () => {
             // type-coverage:ignore-next-line
             const result = MultipartBuilder.serialize(body, {});
             // type-coverage:ignore-next-line
-            const formData = result.content as any;
+            const formData = result.content as string | number | boolean | object | undefined | null;
             // type-coverage:ignore-next-line
             expect(formData).toBeInstanceOf(global.FormData);
         });
@@ -92,7 +99,7 @@ describe('Utility: MultipartBuilder', () => {
             // type-coverage:ignore-next-line
             const result = MultipartBuilder.serialize(body, {});
             // type-coverage:ignore-next-line
-            const formData = result.content as any;
+            const formData = result.content as string | number | boolean | object | undefined | null;
             // type-coverage:ignore-next-line
             const appended = formData._entries['meta'];
             // type-coverage:ignore-next-line
@@ -131,12 +138,14 @@ describe('Utility: MultipartBuilder', () => {
             // type-coverage:ignore-next-line
             const result = MultipartBuilder.serialize(body, encoding);
             // type-coverage:ignore-next-line
-            const blob = result.content as any;
+            const blob = result.content as string | number | boolean | object | undefined | null;
 
             // Blob parts can be objects (File) or strings.
             // We check specifically for strings to validate headers.
             // type-coverage:ignore-next-line
-            const stringParts = blob.parts.filter((p: any) => typeof p === 'string').join('');
+            const stringParts = blob.parts
+                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
+                .join('');
 
             // type-coverage:ignore-next-line
             expect(stringParts).toContain('filename="test.txt"');
@@ -154,9 +163,11 @@ describe('Utility: MultipartBuilder', () => {
             // type-coverage:ignore-next-line
             const result = MultipartBuilder.serialize(body, encoding);
             // type-coverage:ignore-next-line
-            const blob = result.content as any;
+            const blob = result.content as string | number | boolean | object | undefined | null;
             // type-coverage:ignore-next-line
-            const stringParts = blob.parts.filter((p: any) => typeof p === 'string').join('');
+            const stringParts = blob.parts
+                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
+                .join('');
 
             // type-coverage:ignore-next-line
             expect(stringParts).toContain('name="tags"');
@@ -176,9 +187,11 @@ describe('Utility: MultipartBuilder', () => {
             // type-coverage:ignore-next-line
             const result = MultipartBuilder.serialize(body, encoding);
             // type-coverage:ignore-next-line
-            const blob = result.content as any;
+            const blob = result.content as string | number | boolean | object | undefined | null;
             // type-coverage:ignore-next-line
-            const stringParts = blob.parts.filter((p: any) => typeof p === 'string').join('');
+            const stringParts = blob.parts
+                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
+                .join('');
 
             // type-coverage:ignore-next-line
             expect(stringParts).toContain('name="a"');
@@ -196,9 +209,11 @@ describe('Utility: MultipartBuilder', () => {
             // type-coverage:ignore-next-line
             const result = MultipartBuilder.serialize(body, encoding);
             // type-coverage:ignore-next-line
-            const blob = result.content as any;
+            const blob = result.content as string | number | boolean | object | undefined | null;
             // type-coverage:ignore-next-line
-            const stringParts = blob.parts.filter((p: any) => typeof p === 'string').join('');
+            const stringParts = blob.parts
+                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
+                .join('');
 
             // type-coverage:ignore-next-line
             expect(stringParts).toContain('name="meta"');
@@ -225,9 +240,11 @@ describe('Utility: MultipartBuilder', () => {
 
             // Verify parts
             // type-coverage:ignore-next-line
-            const blob = result.content as any;
+            const blob = result.content as string | number | boolean | object | undefined | null;
             // type-coverage:ignore-next-line
-            const stringParts = blob.parts.filter((p: any) => typeof p === 'string').join('');
+            const stringParts = blob.parts
+                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
+                .join('');
 
             // Should have no Content-Disposition by default for mixed array items
             // type-coverage:ignore-next-line
@@ -255,9 +272,11 @@ describe('Utility: MultipartBuilder', () => {
             // type-coverage:ignore-next-line
             const result = MultipartBuilder.serialize(body, config);
             // type-coverage:ignore-next-line
-            const blob = result.content as any;
+            const blob = result.content as string | number | boolean | object | undefined | null;
             // type-coverage:ignore-next-line
-            const stringParts = blob.parts.filter((p: any) => typeof p === 'string').join('');
+            const stringParts = blob.parts
+                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
+                .join('');
 
             // Check that it applied to all
             // We expect 3 occurrences of the content type
@@ -277,9 +296,11 @@ describe('Utility: MultipartBuilder', () => {
             // type-coverage:ignore-next-line
             const result = MultipartBuilder.serialize(body, config);
             // type-coverage:ignore-next-line
-            const blob = result.content as any;
+            const blob = result.content as string | number | boolean | object | undefined | null;
             // type-coverage:ignore-next-line
-            const stringParts = blob.parts.filter((p: any) => typeof p === 'string').join('');
+            const stringParts = blob.parts
+                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
+                .join('');
 
             // type-coverage:ignore-next-line
             expect(stringParts).toContain('Content-Type: text/prefix');

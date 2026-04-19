@@ -7,7 +7,8 @@ import ts from 'typescript';
 
 describe('Emitter: WebhookHelperGenerator', () => {
     // type-coverage:ignore-next-line
-    const createParser = (spec: any) => new SwaggerParser(spec, { options: {} } as any);
+    const createParser = (spec: string | number | boolean | object | undefined | null) =>
+        new SwaggerParser(spec, { options: {} } as string | number | boolean | object | undefined | null);
 
     it('should skip generation if no webhooks are defined', () => {
         const project = createTestProject();
@@ -72,9 +73,9 @@ describe('Emitter: WebhookHelperGenerator', () => {
         });
 
         // type-coverage:ignore-next-line
-        const moduleScope = { exports: {} as any };
+        const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
         // type-coverage:ignore-next-line
-        const mockInjectable = () => (target: any) => target;
+        const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
 
         const wrappedCode = `
             ${jsDefs} 
@@ -130,7 +131,7 @@ describe('Emitter: WebhookHelperGenerator', () => {
         const parser = createParser(spec);
         // Force parser.webhooks empty to exercise fallback branch
         // type-coverage:ignore-next-line
-        (parser as any).webhooks = [];
+        (parser as string | number | boolean | object | undefined | null).webhooks = [];
 
         new WebhookHelperGenerator(parser, project).generate('/out');
         const sourceFile = project.getSourceFile('/out/utils/webhook.service.ts');

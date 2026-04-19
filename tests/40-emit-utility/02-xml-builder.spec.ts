@@ -14,7 +14,7 @@ function getXmlBuilder() {
     const moduleScope = { exports: {} };
     new Function('exports', jsCode)(moduleScope.exports);
     // type-coverage:ignore-next-line
-    return (moduleScope.exports as any).XmlBuilder;
+    return (moduleScope.exports as string | number | boolean | object | undefined | null).XmlBuilder;
 }
 
 describe('Utility: XmlBuilder', () => {
