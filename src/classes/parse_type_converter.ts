@@ -25,7 +25,7 @@ export function isDataTypeInterface(type: string): boolean {
         'undefined',
         'null',
         'string | number | boolean | object | undefined | null',
-        'never',
+        'void',
         'object',
         'Date',
         'Blob',
@@ -259,7 +259,7 @@ export function getTypeScriptType(
     /* v8 ignore next */
     if (schema === true) return 'string | number | boolean | object | undefined | null';
     /* v8 ignore next */
-    if (schema === false) return 'never';
+    if (schema === false) return 'void';
     /* v8 ignore next */
     if (!schema) return 'string | number | boolean | object | undefined | null';
 

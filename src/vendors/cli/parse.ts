@@ -29,7 +29,7 @@ export function parseGeneratedCliSource(sourceText: string, filePath = 'cli.ts')
 
     const programDecls = sourceFile.getVariableDeclarations().filter(v => v.getName() === 'program');
     if (programDecls.length > 0) {
-        sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression).forEach(call => {
+        (sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression) as CallExpression[]).forEach(call => {
             const exp = call.getExpression();
             if (exp.getKind() === SyntaxKind.PropertyAccessExpression) {
                 const prop = exp as import('ts-morph').PropertyAccessExpression;
@@ -88,7 +88,7 @@ export function parseGeneratedCliSource(sourceText: string, filePath = 'cli.ts')
     /* v8 ignore start */
     groupVars.forEach(v => {
         const tag = v.getName().replace('Command', '');
-        sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression).forEach(call => {
+        (sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression) as CallExpression[]).forEach(call => {
             const exp = call.getExpression();
             if (exp.getKind() === SyntaxKind.PropertyAccessExpression) {
                 const prop = exp as import('ts-morph').PropertyAccessExpression;
@@ -111,7 +111,7 @@ export function parseGeneratedCliSource(sourceText: string, filePath = 'cli.ts')
 
                         let parent = call.getParent();
                         while (parent && parent.getKind() === SyntaxKind.PropertyAccessExpression) {
-                            const pCall = parent.getParentIfKind(SyntaxKind.CallExpression);
+                            const pCall = parent.getParentIfKind(SyntaxKind.CallExpression) as CallExpression | undefined;
                             if (!pCall) {
                                 break;
                             }
