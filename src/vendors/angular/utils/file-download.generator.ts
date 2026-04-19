@@ -70,7 +70,7 @@ export class FileDownloadGenerator {
                 } 
                 const contentDisposition = response instanceof HttpResponse ? response.headers.get('content-disposition') : null; 
                 const filename = extractFilenameFromContentDisposition(contentDisposition) ?? fallbackFilename; 
-                downloadFile(blob, filename); 
+                downloadFile(blob as Blob, filename); 
             }) 
         ); 
     };`,

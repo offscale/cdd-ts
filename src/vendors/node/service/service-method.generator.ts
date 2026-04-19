@@ -214,7 +214,9 @@ export class NodeServiceMethodGenerator {
         /* v8 ignore next */
         if (model.responseSerialization === 'blob' || model.responseSerialization === 'arraybuffer') {
             /* v8 ignore next */
-            lines.push(`            resolve(buffer as string | number | boolean | object | undefined | null as ${returnType});`);
+            lines.push(
+                `            resolve(buffer as string | number | boolean | object | undefined | null as ${returnType});`,
+            );
             /* v8 ignore next */
         } else if (model.responseSerialization === 'text') {
             /* v8 ignore next */

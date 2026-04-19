@@ -94,7 +94,7 @@ export class ResponseHeaderParserGenerator {
                     hasQuestionToken: true,
                 },
             ],
-            returnType: 'Record<string, string | number | boolean | object | undefined | null>',
+            returnType: 'any',
             statements: `
         switch (type) {
             case 'number': return parseFloat(value);
@@ -126,7 +126,7 @@ export class ResponseHeaderParserGenerator {
             parameters: [
                 { name: 'body', type: 'Record<string, string | number | boolean | object | undefined | null>' },
             ],
-            returnType: 'Record<string, string | number | boolean | object | undefined | null>',
+            returnType: 'any',
             statements: `
             return LinkSetParser.parseJson(body);`,
         });
