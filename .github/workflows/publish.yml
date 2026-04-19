@@ -19,14 +19,17 @@ jobs:
                   repository: SamuelMarks/ts-morph
                   ref: wasm-typescript-go
                   submodules: true
-                  path: ../ts-morph
+                  path: ts-morph-tmp
 
             - name: Checkout typescript-go fork
               uses: actions/checkout@v4
               with:
                   repository: SamuelMarks/typescript-go
                   ref: wasm
-                  path: ../ts-morph/packages/compiler-go-source
+                  path: ts-morph-tmp/packages/compiler-go-source
+
+            - name: Move ts-morph to parent dir
+              run: mv ts-morph-tmp ../ts-morph
 
             - uses: actions/setup-node@v4
               with:
