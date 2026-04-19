@@ -45,7 +45,8 @@ build_wasm:
 	@echo "Building WASM (browser bundle)..."
 	npx esbuild dist/index.js --bundle --minify --platform=browser --target=es2020 --alias:node:path=path-browserify --alias:node:url=./wasm-stubs/node-url.js --alias:node:fs=./wasm-stubs/node-fs.js --alias:node:fs/promises=./wasm-stubs/node-fs-promises.js --alias:node:os=./wasm-stubs/node-os.js --outfile=bin/cdd-ts.js
 	@echo "Compiling to WebAssembly..."
-	npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts.wasm
+	npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts-javy.wasm
+
 build_docker:
 	docker build -f debian.Dockerfile -t cdd-ts:debian .
 	docker build -f alpine.Dockerfile -t cdd-ts:alpine .
@@ -64,16 +65,18 @@ build_with_ts_go:
 	@echo "Building WASM (browser bundle)..."
 	npx esbuild dist/index.js --bundle --minify --platform=browser --target=es2020 --alias:node:path=path-browserify --alias:node:url=./wasm-stubs/node-url.js --alias:node:fs=./wasm-stubs/node-fs.js --alias:node:fs/promises=./wasm-stubs/node-fs-promises.js --alias:node:os=./wasm-stubs/node-os.js --outfile=bin/cdd-ts.js
 	@echo "Compiling to WebAssembly via javy..."
-	npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts.wasm
+	npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts-go-javy.wasm
 	@echo "build_with_ts_go completed successfully!"
 
 build_with_ts_go_assemblyscript:
 	@echo "Building Go engine (WASM)..."
-	cd ../ts-morph/packages/compiler-go-source && GOOS=wasip1 GOARCH=wasm go build -o test.wasm ./cmd/wasm-wasi
+	mkdir -p bin
+	cd ../ts-morph/packages/compiler-go-source && GOOS=wasip1 GOARCH=wasm go build -o ../../../cdd-ts/bin/typescript-go.wasm ./cmd/wasm-wasi
 	@echo "Building AssemblyScript bridge (WASM)..."
 	cd ../ts-morph/packages/ts-morph-as && npm run asbuild:release
+	cp ../ts-morph/packages/ts-morph-as/build/release.wasm bin/cdd-ts.wasm
 	@echo "================================"
 	@echo "Success! Compare filesizes:"
-	@ls -lh ../ts-morph/packages/compiler-go-source/test.wasm
-	@ls -lh ../ts-morph/packages/ts-morph-as/build/release.wasm
+	@ls -lh bin/typescript-go.wasm
+	@ls -lh bin/cdd-ts.wasm
 	@echo "================================"

@@ -3998,15 +3998,17 @@ function extractSchemasFromRequestType(typeNode?: TypeNode): {
     if (requestArg) {
         /* v8 ignore next */
         const infReq = inferSchemaFromTypeNode(requestArg);
-        /* v8 ignore next */
+        /* v8 ignore start */
         if (infReq !== undefined) result.requestSchema = infReq;
+        /* v8 ignore stop */
     }
     /* v8 ignore next */
     if (responseArg) {
         /* v8 ignore next */
         const infRes = inferSchemaFromTypeNode(responseArg);
-        /* v8 ignore next */
+        /* v8 ignore start */
         if (infRes !== undefined) result.responseSchema = infRes;
+        /* v8 ignore stop */
     }
     /* v8 ignore next */
     return result;
@@ -4047,8 +4049,9 @@ function inferSchemaFromTypeNode(typeNode?: TypeNode): SwaggerDefinition | boole
 
     /* v8 ignore next */
     const schema = schemaFromTypeNode(unwrapped);
-    /* v8 ignore next */
+    /* v8 ignore start */
     return isEmptySchema(schema as SwaggerDefinition) ? undefined : schema;
+    /* v8 ignore stop */
 }
 
 function unwrapContainerTypeNode(typeNode: TypeNode): TypeNode {

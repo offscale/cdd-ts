@@ -10,19 +10,26 @@ jobs:
     build_and_release:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v4
 
             - name: Checkout ts-morph fork
-              uses: actions/checkout@v6
+              uses: actions/checkout@v4
               with:
                   repository: SamuelMarks/ts-morph
                   ref: wasm-typescript-go
+                  submodules: true
                   path: ../ts-morph
 
             - name: Setup Node.js
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: 18
+
+            - name: Setup Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version: '>=1.22.0'
+                  cache: true
 
             - name: Install dependencies
               run: npm ci
@@ -30,13 +37,14 @@ jobs:
             - name: Build JS
               run: make build
 
-            - name: Build and rename legacy WASM
-              run: |
-                  make build_wasm
-                  mv bin/cdd-ts.wasm bin/cdd-ts.tsc.wasm
+            - name: Build legacy WASM (Javy)
+              run: make build_wasm
 
-            - name: Build TS Go WASM
+            - name: Build TS Go WASM (Javy)
               run: make build_with_ts_go
+
+            - name: Build AOT WASM (AssemblyScript + Go)
+              run: make build_with_ts_go_assemblyscript
 
             - name: Archive build
               run: tar -czvf dist.tar.gz dist/
@@ -48,7 +56,9 @@ jobs:
                       dist.tar.gz
                       bin/cdd-ts.js
                       bin/cdd-ts.wasm
-                      bin/cdd-ts.tsc.wasm
+                      bin/typescript-go.wasm
+                      bin/cdd-ts-javy.wasm
+                      bin/cdd-ts-go-javy.wasm
                   generate_release_notes: true
 
     verify_release:
@@ -56,36 +66,57 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout repo
-              uses: actions/checkout@v6
+              uses: actions/checkout@v4
 
             - name: Download and verify WASM
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
-                  # Wait for release to be fully available
                   sleep 10
                   gh release download ${{ github.ref_name }} -p "cdd-ts.wasm"
-                  gh release download ${{ github.ref_name }} -p "cdd-ts.tsc.wasm"
+                  gh release download ${{ github.ref_name }} -p "typescript-go.wasm"
+                  gh release download ${{ github.ref_name }} -p "cdd-ts-javy.wasm"
+                  gh release download ${{ github.ref_name }} -p "cdd-ts-go-javy.wasm"
 
                   if [ ! -f "cdd-ts.wasm" ]; then
                       echo "Failed to download cdd-ts.wasm"
                       exit 1
                   fi
-                  if [ ! -f "cdd-ts.tsc.wasm" ]; then
-                      echo "Failed to download cdd-ts.tsc.wasm"
+                  if [ ! -f "typescript-go.wasm" ]; then
+                      echo "Failed to download typescript-go.wasm"
+                      exit 1
+                  fi
+                  if [ ! -f "cdd-ts-javy.wasm" ]; then
+                      echo "Failed to download cdd-ts-javy.wasm"
+                      exit 1
+                  fi
+                  if [ ! -f "cdd-ts-go-javy.wasm" ]; then
+                      echo "Failed to download cdd-ts-go-javy.wasm"
                       exit 1
                   fi
 
-                  SIZE=$(stat -c%s "cdd-ts.wasm")
-                  if [ "$SIZE" -lt 10000000 ]; then
-                      echo "WASM file is too small ($SIZE bytes), likely a stub!"
+                  SIZE_AS=$(stat -c%s "cdd-ts.wasm")
+                  if [ "$SIZE_AS" -lt 1000 ]; then
+                      echo "AssemblyScript WASM file is too small ($SIZE_AS bytes), likely a stub!"
                       exit 1
                   fi
 
-                  SIZE_TSC=$(stat -c%s "cdd-ts.tsc.wasm")
-                  if [ "$SIZE_TSC" -lt 10000000 ]; then
-                      echo "Legacy WASM file is too small ($SIZE_TSC bytes), likely a stub!"
+                  SIZE_GO=$(stat -c%s "typescript-go.wasm")
+                  if [ "$SIZE_GO" -lt 10000000 ]; then
+                      echo "Go WASM file is too small ($SIZE_GO bytes), likely a stub!"
                       exit 1
                   fi
 
-                  echo "Successfully downloaded and verified non-stub WASM ($SIZE bytes) and legacy WASM ($SIZE_TSC bytes)"
+                  SIZE_JAVY=$(stat -c%s "cdd-ts-javy.wasm")
+                  if [ "$SIZE_JAVY" -lt 5000000 ]; then
+                      echo "Legacy Javy WASM file is too small ($SIZE_JAVY bytes), likely a stub!"
+                      exit 1
+                  fi
+
+                  SIZE_GO_JAVY=$(stat -c%s "cdd-ts-go-javy.wasm")
+                  if [ "$SIZE_GO_JAVY" -lt 5000000 ]; then
+                      echo "Go-Javy WASM file is too small ($SIZE_GO_JAVY bytes), likely a stub!"
+                      exit 1
+                  fi
+
+                  echo "Successfully downloaded and verified all WASM artifacts."

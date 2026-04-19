@@ -18,6 +18,7 @@ jobs:
               with:
                   repository: SamuelMarks/ts-morph
                   ref: wasm-typescript-go
+                  submodules: true
                   path: ../ts-morph
 
             - uses: actions/setup-node@v6
