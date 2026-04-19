@@ -125,7 +125,7 @@ export class XmlParserGenerator {
         } 
 
         if (config.properties) { 
-            const result: string | number | boolean | object | undefined | null = {}; 
+            const result: Record<string, string | number | boolean | object | undefined | null> = {}; 
             
             Object.entries(config.properties).forEach(([key, propConfig]) => { 
                 const nodeType = propConfig.nodeType; 

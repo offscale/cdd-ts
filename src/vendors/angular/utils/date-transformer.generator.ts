@@ -52,9 +52,7 @@ export class DateTransformerGenerator {
             name: 'transformDates',
             isExported: true,
             typeParameters: ['T'],
-            parameters: [
-                { name: 'body', type: 'T' },
-            ],
+            parameters: [{ name: 'body', type: 'T' }],
             returnType: 'T',
             docs: ['Recursively traverses an object or array and converts ISO date strings to Date objects.'],
             statements: `

@@ -503,7 +503,7 @@ app.get('/headers', headerHandler);
                         params: [],
                         requestBody: {
                             required: true,
-                            contentTypes: ['multipart/form-data', 'application/octet-stream', 'application/string | number | boolean | object | undefined | null'],
+                            contentTypes: ['multipart/form-data', 'application/octet-stream', 'application/unknown'],
                         },
                         responses: [{ status: '200', contentTypes: ['application/octet-stream'] }],
                     },

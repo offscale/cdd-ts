@@ -977,7 +977,14 @@ describe('Emitter: ServiceMethodGenerator (Coverage)', () => {
             [],
             false,
             false,
-            [{ mediaType: 'application/json', type: 'string | number | boolean | object | undefined | null', serialization: 'json', isDefault: true }],
+            [
+                {
+                    mediaType: 'application/json',
+                    type: 'string | number | boolean | object | undefined | null',
+                    serialization: 'json',
+                    isDefault: true,
+                },
+            ],
         );
         // type-coverage:ignore-next-line
         expect(overloads[0].returnType).toContain(
