@@ -47,7 +47,12 @@ describe('Emitter: ServiceMethodGenerator (Multipart Defaults)', () => {
         const sourceFile = project.createSourceFile('/out/service.ts');
         const serviceClass = sourceFile.addClass({ name: 'TestService' });
         // Mock the http property
-        serviceClass.addProperty({ name: 'http', scope: Scope.Private, isReadonly: true, type: 'string | number | boolean | object | undefined | null' });
+        serviceClass.addProperty({
+            name: 'http',
+            scope: Scope.Private,
+            isReadonly: true,
+            type: 'string | number | boolean | object | undefined | null',
+        });
 
         return { methodGen, serviceClass, parser };
     };

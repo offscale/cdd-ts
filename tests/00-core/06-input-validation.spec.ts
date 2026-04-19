@@ -3762,11 +3762,11 @@ describe('Core: Input Spec Validation', () => {
         });
 
         it('should reject nested braces or invalid runtime expression inside braces', () => {
-            expect(() => validateSpec(createSpec('{$request.string | number | boolean | object | undefined | null}'))).toThrow(/invalid runtime expression/);
+            expect(() => validateSpec(createSpec('{$request.unknown}'))).toThrow(/invalid runtime expression/);
         });
 
         it('should reject runtime expressions outside braces if required (e.g. starting with $)', () => {
-            expect(() => validateSpec(createSpec('$request.string | number | boolean | object | undefined | null'))).toThrow(/must be a valid runtime expression/);
+            expect(() => validateSpec(createSpec('$request.unknown'))).toThrow(/must be a valid runtime expression/);
         });
 
         it('should accept valid json pointer in body', () => {

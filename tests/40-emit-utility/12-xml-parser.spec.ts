@@ -135,13 +135,17 @@ function getXmlParser() {
 
         return {
             getElementsByTagName: () => parserError,
-            documentElement: createNode('string | number | boolean | object | undefined | null', {}, [], null),
+            documentElement: createNode('unknown', {}, [], null),
         };
     }
 
     const finalCode = `${jsCode}\nmoduleScope.exports.XmlParser = XmlParser;`;
 
-    new Function('moduleScope', 'exports', 'require', finalCode)(moduleScope, (moduleScope as string | number | boolean | object | undefined | null).exports, () => ({}));
+    new Function('moduleScope', 'exports', 'require', finalCode)(
+        moduleScope,
+        (moduleScope as string | number | boolean | object | undefined | null).exports,
+        () => ({}),
+    );
     // type-coverage:ignore-next-line
     return moduleScope.exports.XmlParser;
 }

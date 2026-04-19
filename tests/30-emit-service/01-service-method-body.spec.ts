@@ -239,7 +239,12 @@ describe('Emitter: ServiceMethodGenerator (Body Handling)', () => {
         const methodGen = new ServiceMethodGenerator(config, parser);
         const sourceFile = project.createSourceFile('/out/tmp.service.ts');
         const serviceClass = sourceFile.addClass({ name: 'TmpService' });
-        serviceClass.addProperty({ name: 'http', scope: Scope.Private, isReadonly: true, type: 'string | number | boolean | object | undefined | null' });
+        serviceClass.addProperty({
+            name: 'http',
+            scope: Scope.Private,
+            isReadonly: true,
+            type: 'string | number | boolean | object | undefined | null',
+        });
         serviceClass.addProperty({
             name: 'basePath',
             isReadonly: true,
