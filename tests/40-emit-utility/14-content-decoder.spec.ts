@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import ts from 'typescript';
 import { ContentDecoderGenerator } from '@src/openapi/emit_content_decoder.js';

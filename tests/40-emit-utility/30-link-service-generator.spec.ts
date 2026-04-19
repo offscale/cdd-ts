@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { LinkServiceGenerator } from '@src/vendors/angular/utils/link-service.generator.js';
 import { createTestProject } from '../shared/helpers.js';

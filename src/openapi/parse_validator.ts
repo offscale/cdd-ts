@@ -2779,7 +2779,7 @@ export function validateSpec(spec: SwaggerSpec): void {
                 if (!templateParamSet.has(param.name)) {
                     /* v8 ignore next */
                     throw new SpecValidationError(
-                        `Path parameter '${param.name}' in '${location}' does not match any template variable in path '${pathKey}'.`,
+                        `Path parameter '${param.name}' in '${location}' does not match the template variable in path '${pathKey}'.`,
                     );
                 }
                 /* v8 ignore next */

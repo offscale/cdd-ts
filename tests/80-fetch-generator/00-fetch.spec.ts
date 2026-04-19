@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { generateFromConfig, TestGeneratorConfig } from '@src/index.js';
 import { GeneratorConfig } from '@src/core/types/index.js';

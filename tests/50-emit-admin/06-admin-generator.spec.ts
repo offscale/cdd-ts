@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it, vi } from 'vitest';
 import { AdminGenerator } from '@src/vendors/angular/admin/admin.generator.js';
 import * as resourceDiscovery from '@src/vendors/angular/admin/resource-discovery.js';

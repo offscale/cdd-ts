@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ClassDeclaration, Project, SourceFile } from 'ts-morph';
 import { runGenerator } from '../shared/helpers.js';

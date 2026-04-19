@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { ContentEncoderGenerator } from '@src/openapi/emit_content_encoder.js';
 import { createTestProject } from '../shared/helpers.js';

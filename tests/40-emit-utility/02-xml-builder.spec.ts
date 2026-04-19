@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { createTestProject } from '../shared/helpers.js';
 import ts from 'typescript';

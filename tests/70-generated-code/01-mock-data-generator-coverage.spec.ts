@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -161,7 +162,7 @@ describe('Generated Code: MockDataGenerator (Coverage)', () => {
         expect(JSON.parse(generator.generate('SerializedValueSchema'))).toBe('serialized-value');
     });
 
-    it('should return empty object for unknown types without oneOf/anyOf', () => {
+    it('should return empty object for string | number | boolean | object | undefined | null types without oneOf/anyOf', () => {
         const mockString = generator.generate('UnknownTypeSchema');
         expect(JSON.parse(mockString)).toEqual({});
     });

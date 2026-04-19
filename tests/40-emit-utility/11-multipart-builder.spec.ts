@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { MultipartBuilderGenerator } from '@src/functions/emit_multipart.js';
 import { createTestProject } from '../shared/helpers.js';

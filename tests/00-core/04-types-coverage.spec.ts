@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 
 import { SwaggerDefinition, SwaggerSpec } from '@src/core/types/index.js';

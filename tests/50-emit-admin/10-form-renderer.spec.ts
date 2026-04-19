@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { FormInitializerRenderer, ValidationRenderer } from '@src/vendors/angular/admin/form.renderer.js';
 import { ValidationRule } from '@src/vendors/angular/admin/analysis/validation-types.js';

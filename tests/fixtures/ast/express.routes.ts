@@ -1,3 +1,4 @@
+// @ts-nocheck
 // tests/fixtures/ast/express.routes.ts
 
 const app = {

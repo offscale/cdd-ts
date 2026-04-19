@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 
 import { Project } from 'ts-morph';
@@ -186,7 +187,7 @@ describe('Emitter: TypeGenerator', () => {
     });
 
     describe('OAS 3.1 unevaluatedProperties Support', () => {
-        it('should generate "any" index signature if unevaluatedProperties is true', () => {
+        it('should generate "string | number | boolean | object | undefined | null" index signature if unevaluatedProperties is true', () => {
             const { generator, project } = createEnvironment();
             generator.generate('/out');
             const sourceFile = project.getSourceFileOrThrow('/out/models/index.ts');

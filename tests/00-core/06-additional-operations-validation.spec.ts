@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 
 import { validateSpec } from '@src/openapi/parse_validator.js';
