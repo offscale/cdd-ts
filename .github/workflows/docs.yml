@@ -48,7 +48,7 @@ jobs:
                   deno-version: v2.x
 
             - name: Build ts-morph
-              run: cd ../ts-morph && deno task setup
+              run: cd ../ts-morph && npm install && npm run build:node -w @ts-morph/common && npm run build:node -w ts-morph
 
             - name: Setup Node
               uses: actions/setup-node@v4
