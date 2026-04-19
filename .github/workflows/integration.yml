@@ -48,6 +48,9 @@ jobs:
                   node-version: 'lts/*'
                   cache: 'npm'
 
+            - name: Build ts-morph
+              run: cd ../ts-morph/packages/ts-morph && npm install && npm run build:node
+
             - name: Install dependencies and build cdd-web-ng
               run: |
                   if [ -f package-lock.json ]; then
