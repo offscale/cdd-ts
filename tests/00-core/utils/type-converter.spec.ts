@@ -95,7 +95,7 @@ describe('Core Utils: Type Converter', () => {
         });
 
         it('should treat boolean schema "false" as string | number | boolean | object | undefined | null', () => {
-            expect(utils.getTypeScriptType(false, config, [])).toBe('never');
+            expect(utils.getTypeScriptType(false, config, [])).toBe('void');
         });
 
         describe('Literal Types based on `const` (OAS 3.1)', () => {
@@ -398,12 +398,12 @@ describe('Core Utils: Type Converter', () => {
             expect(utils.getTypeScriptType(schema, config, [])).toBe('string[]');
         });
 
-        it('should translate unevaluatedItems=false into never[]', () => {
+        it('should translate unevaluatedItems=false into void[]', () => {
             const schema: SwaggerDefinition = {
                 type: 'array',
                 unevaluatedItems: false,
             };
-            expect(utils.getTypeScriptType(schema, config, [])).toBe('never[]');
+            expect(utils.getTypeScriptType(schema, config, [])).toBe('void[]');
         });
 
         it('should correctly wrap union types in arrays with parentheses', () => {

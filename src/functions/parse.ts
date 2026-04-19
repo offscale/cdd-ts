@@ -561,7 +561,7 @@ function scanExpressRoutes(sourceFile: SourceFile): CodeScanOperation[] {
     /* v8 ignore next */
     const operations: CodeScanOperation[] = [];
     /* v8 ignore next */
-    const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
+    const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression) as CallExpression[];
 
     /* v8 ignore next */
     for (const call of callExpressions) {
@@ -1799,7 +1799,7 @@ function getFunctionLikeName(handler: import('ts-morph').Node): string | undefin
         /* v8 ignore next */
         if (Node.isVariableDeclaration(parent)) {
             /* v8 ignore next */
-            return parent.getName();
+            return (parent as import('ts-morph').VariableDeclaration).getName();
         }
         /* v8 ignore next */
         /* v8 ignore start */
@@ -1810,7 +1810,7 @@ function getFunctionLikeName(handler: import('ts-morph').Node): string | undefin
             /* v8 ignore next */
             /* v8 ignore next */
             /* v8 ignore start */
-            return parent.getName();
+            return (parent as import('ts-morph').PropertyAssignment).getName();
             /* v8 ignore stop */
         }
     }
