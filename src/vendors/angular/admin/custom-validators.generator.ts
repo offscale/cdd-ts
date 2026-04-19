@@ -194,7 +194,7 @@ export class CustomValidatorsGenerator {
                                 );
                             });
                             /* v8 ignore next */
-                            writer.writeLine("} else if (typeof value === 'object') {");
+                            writer.writeLine("} else if (typeof value === 'object' && value !== null) {");
                             /* v8 ignore next */
                             writer.indent(() => {
                                 /* v8 ignore next */
@@ -243,7 +243,7 @@ export class CustomValidatorsGenerator {
                                 );
                             });
                             /* v8 ignore next */
-                            writer.writeLine("} else if (typeof value === 'object') {");
+                            writer.writeLine("} else if (typeof value === 'object' && value !== null) {");
                             /* v8 ignore next */
                             writer.indent(() => {
                                 /* v8 ignore next */

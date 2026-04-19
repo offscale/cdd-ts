@@ -23,7 +23,9 @@ describe('generateDocsJson', () => {
 
         expect(result.endpoints).toBeDefined();
         expect(result.endpoints['/users']).toBeDefined();
-        expect(result.endpoints['/users']['get']).toBe('const response = await this.service.getUsers();\nconsole.log(response);');
+        expect(result.endpoints['/users']['get']).toBe(
+            'const response = await this.service.getUsers();\nconsole.log(response);',
+        );
     });
 
     it('should generate documentation with imports and wrapping', () => {
@@ -45,10 +47,10 @@ describe('generateDocsJson', () => {
 
         const snippet = result.endpoints['/posts/{id}']['post'];
         expect(snippet).toContain("import { PostsService } from './api/services/posts.service';");
-        expect(snippet).toContain("export class ExampleComponent {");
-        expect(snippet).toContain("        const response = await this.service.createPost({ /* arguments */ });");
-        expect(snippet).toContain("    }");
-        expect(snippet).toContain("}");
+        expect(snippet).toContain('export class ExampleComponent {');
+        expect(snippet).toContain('        const response = await this.service.createPost({ /* arguments */ });');
+        expect(snippet).toContain('    }');
+        expect(snippet).toContain('}');
     });
 
     it('should handle imports without wrapping correctly', () => {
@@ -70,7 +72,7 @@ describe('generateDocsJson', () => {
         const snippet = result.endpoints['/comments']['delete'];
         expect(snippet).toContain("import { CommentsService } from './api/services/comments.service';");
         expect(snippet).toContain('const response = await this.service.deleteComment({ /* arguments */ });');
-        expect(snippet).not.toContain("export class ExampleComponent");
+        expect(snippet).not.toContain('export class ExampleComponent');
     });
 
     it('should fallback method names correctly and deduplicate', () => {

@@ -59,7 +59,9 @@ export function pascalCase(str: string): string {
     /* v8 ignore next */
     if (!normalized) return '';
     /* v8 ignore next */
-    const result = normalized.replace(/(^|\s)(.)/g, (_: string, __: string, char: string): string => char.toUpperCase());
+    const result = normalized.replace(/(^|\s)(.)/g, (_: string, __: string, char: string): string =>
+        char.toUpperCase(),
+    );
     /* v8 ignore next */
     if (/^[0-9]/.test(result)) {
         return `Api${result}`;

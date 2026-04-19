@@ -70,7 +70,7 @@ export class DateTransformerGenerator {
         const value = body[key]; 
         if (typeof value === 'string' && ISO_DATE_REGEX.test(value)) { 
             transformedBody[key] = new Date(value); 
-        } else if (typeof value === 'object') { 
+        } else if (typeof value === 'object' && value !== null) { 
             transformedBody[key] = transformDates(value); 
         } else { 
             transformedBody[key] = value; 

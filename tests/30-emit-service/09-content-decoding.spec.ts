@@ -185,7 +185,9 @@ describe('Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)', () => {
         const returnType = method.getReturnType().getText();
 
         expect(returnType).toContain('Observable');
-        expect(returnType.replace(/ \| null \| undefined| \| undefined \| null/g, '')).toContain('Observable<string | number | boolean | object>');
+        expect(returnType.replace(/ \| null \| undefined| \| undefined \| null/g, '')).toContain(
+            'Observable<string | number | boolean | object>',
+        );
     });
 
     it('should generate XML decoding config for contentMediaType="application/xml"', () => {
