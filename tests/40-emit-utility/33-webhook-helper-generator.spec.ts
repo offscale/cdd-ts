@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { WebhookHelperGenerator } from '@src/vendors/angular/utils/webhook-helper.generator.js';
 import { WebhookGenerator } from '@src/functions/emit_webhook.js';

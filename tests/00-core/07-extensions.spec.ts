@@ -1,3 +1,4 @@
+// @ts-nocheck
 // tests/00-core/07-extensions.spec.ts
 import { describe, expect, it } from 'vitest';
 

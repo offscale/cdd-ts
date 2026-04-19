@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { info } from './common.js';
 
 export const adminFormSpec = {

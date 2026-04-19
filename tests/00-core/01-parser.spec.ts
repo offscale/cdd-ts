@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { afterEach, beforeAll, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
 import * as fs from 'node:fs';

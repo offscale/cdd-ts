@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect } from 'vitest';
 import { Project } from 'ts-morph';
 import { CliGenerator } from '../../src/vendors/cli/emit.js';

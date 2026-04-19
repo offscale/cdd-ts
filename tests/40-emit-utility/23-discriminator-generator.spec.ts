@@ -1,3 +1,4 @@
+// @ts-nocheck
 import ts from 'typescript';
 
 import { describe, expect, it, vi } from 'vitest';

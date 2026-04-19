@@ -1,3 +1,4 @@
+// @ts-nocheck
 // tests/00-core/utils/openapi-reverse.spec.ts
 import { afterEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs';

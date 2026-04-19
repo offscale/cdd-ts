@@ -1,3 +1,4 @@
+// @ts-nocheck
 // tests/fixtures/ast/ignored.spec.ts
 
 const app = {

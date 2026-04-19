@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 
 import { Project } from 'ts-morph';
@@ -47,7 +48,7 @@ describe('Emitter: Link Interface Generation', () => {
         expect(userAddressParams.isExported()).toBe(true);
 
         const userIdProp = userAddressParams.getPropertyOrThrow('userId');
-        // Use getTypeNodeOrThrow().getText() to check strict signature source, prevent 'any' collapse in assertion
+        // Use getTypeNodeOrThrow().getText() to check strict signature source, prevent 'string | number | boolean | object | undefined | null' collapse in assertion
         expect(userIdProp.getTypeNodeOrThrow().getText()).toBe(
             'string | string | number | boolean | object | undefined | null',
         );

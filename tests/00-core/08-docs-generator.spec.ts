@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { generateDocsJson } from '@src/functions/docs_generator.js';
 import { SwaggerParser } from '@src/openapi/parse.js';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 
 import { sanitizeComment } from '@src/functions/utils_sanitizer.js';

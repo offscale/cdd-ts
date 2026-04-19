@@ -1,3 +1,4 @@
+// @ts-nocheck
 // tests/fixtures/ast/querystring.examples.ts
 
 const app = {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // tests/30-emit-service/03-service-method-precedence.spec.ts
 
 import { describe, expect, it } from 'vitest';

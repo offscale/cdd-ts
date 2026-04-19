@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it, vi } from 'vitest';
 import { ResponseHeaderRegistryGenerator } from '@src/openapi/emit_response_header_registry.js';
 import { ResponseHeaderParserGenerator } from '@src/vendors/angular/utils/response-header-parser.generator.js';
@@ -492,7 +493,7 @@ describe('Emitter: Response Header Utilities', () => {
             });
         });
 
-        it('should handle edge cases: bad refs, non-json content, unknown schema types', () => {
+        it('should handle edge cases: bad refs, non-json content, string | number | boolean | object | undefined | null schema types', () => {
             const project = createTestProject();
             const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 

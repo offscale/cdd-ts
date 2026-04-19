@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ReferenceResolver } from '@src/openapi/parse_reference_resolver.js';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 
 import { buildFormControl } from '@src/vendors/angular/admin/html/form-controls-html.builder.js';

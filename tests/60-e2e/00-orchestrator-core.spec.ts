@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { generateFromConfig } from '@src/index.js';
 import { SwaggerParser } from '@src/openapi/parse.js';

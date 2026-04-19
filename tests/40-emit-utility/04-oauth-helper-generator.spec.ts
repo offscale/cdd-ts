@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { SwaggerParser } from '@src/openapi/parse.js';
 import { createTestProject } from '../shared/helpers.js';

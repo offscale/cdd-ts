@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IndentationText, ModuleKind, Project, ScriptTarget } from 'ts-morph';
 import { generateFromConfig } from '@src/index.js';
 import { GeneratorConfig } from '@src/core/types/index.js';

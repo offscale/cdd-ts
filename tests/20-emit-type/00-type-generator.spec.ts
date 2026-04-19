@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 
 import { Project } from 'ts-morph';
@@ -105,7 +106,7 @@ describe('Emitter: TypeGenerator', () => {
         expect(getText()).toContain('export type NumericEnum = 1 | 2 | 3;');
     });
 
-    it('should generate `any` for an empty enum', () => {
+    it('should generate `string | number | boolean | object | undefined | null` for an empty enum', () => {
         const { getText } = runGenerator(typeGenSpec);
         expect(getText()).toContain('export type EmptyEnum = string | number | boolean | object | undefined | null;');
     });

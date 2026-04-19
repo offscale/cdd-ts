@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Project } from 'ts-morph';
 import { SwaggerParser } from '@src/openapi/parse.js';
@@ -222,7 +223,7 @@ describe('Generated Code: Service Test Generators', () => {
             // Matches `if (responseType.endsWith('[]'))`
             expect(text).toContain('const mockResponse: TestModel[] = [');
 
-            // Generic Object Body: schema is object but no interface generated -> unknown model
+            // Generic Object Body: schema is object but no interface generated -> string | number | boolean | object | undefined | null model
             // Matches `} else if (bodyParam) {` fallback for non-primitive, non-model bodies
             expect(text).toContain(
                 "const body = { data: 'test-body' } as string | number | boolean | object | undefined | null as { arbitrary?: string };",

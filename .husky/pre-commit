@@ -1,8 +1,20 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-npm run test:coverage
-npm run check:types || true
+echo "Running Prettier..."
+npx prettier --write 'src/**/*.ts' 'tests/**/*.ts' || exit 1
+
+echo "Running Lint..."
+npm run lint || exit 1
+
+echo "Running Type Check..."
+npm run check:types || exit 1
+
+echo "Running Build..."
+npm run build || exit 1
+
+echo "Running Tests..."
+npm run test:coverage || exit 1
 
 TEST_COV=$(npx vitest run --coverage | grep 'All files' | awk '{print $4}' | sed 's/\..*//' || echo "100")
 if [ -z "$TEST_COV" ]; then TEST_COV="100"; fi

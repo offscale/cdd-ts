@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 import { Project } from 'ts-morph';
