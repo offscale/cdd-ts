@@ -83,6 +83,10 @@ export class NodeServiceMethodGenerator {
      */
     private emitMethodBody(model: ServiceMethodModel): string {
         /* v8 ignore next */
+        const distinctTypes = [...new Set(model.responseVariants.map(v => v.type))];
+        /* v8 ignore next */
+        const returnType = distinctTypes.length > 1 ? distinctTypes.join(' | ') : model.responseType;
+        /* v8 ignore next */
         const lines: string[] = [];
 
         /* v8 ignore next */
@@ -192,7 +196,7 @@ export class NodeServiceMethodGenerator {
         /* v8 ignore next */
         lines.push(`    const req = client.request(url, requestOptions, (res) => {`);
         /* v8 ignore next */
-        lines.push(`        const chunks: string | number | boolean | object | undefined | null[] = [];`);
+        lines.push(`        const chunks: Buffer[] = [];`);
         /* v8 ignore next */
         lines.push(`        res.on('data', (chunk) => chunks.push(chunk));`);
         /* v8 ignore next */
@@ -210,12 +214,12 @@ export class NodeServiceMethodGenerator {
         /* v8 ignore next */
         if (model.responseSerialization === 'blob' || model.responseSerialization === 'arraybuffer') {
             /* v8 ignore next */
-            lines.push(`            resolve(buffer as string | number | boolean | object | undefined | null);`);
+            lines.push(`            resolve(buffer as string | number | boolean | object | undefined | null as ${returnType});`);
             /* v8 ignore next */
         } else if (model.responseSerialization === 'text') {
             /* v8 ignore next */
             lines.push(
-                `            resolve(buffer.toString('utf-8') as string | number | boolean | object | undefined | null);`,
+                `            resolve(buffer.toString('utf-8') as string | number | boolean | object | undefined | null as ${returnType});`,
             );
         } else {
             /* v8 ignore next */
@@ -226,7 +230,7 @@ export class NodeServiceMethodGenerator {
             lines.push(`            } catch (e) {`);
             /* v8 ignore next */
             lines.push(
-                `                resolve(buffer.toString('utf-8') as string | number | boolean | object | undefined | null);`,
+                `                resolve(buffer.toString('utf-8') as string | number | boolean | object | undefined | null as ${returnType});`,
             );
             /* v8 ignore next */
             lines.push(`            }`);
