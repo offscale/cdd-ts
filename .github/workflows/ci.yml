@@ -29,7 +29,7 @@ jobs:
             - name: Move ts-morph to parent dir
               run: |
                   mv ts-morph-tmp ../ts-morph
-                  cp -r ts-morph-as ../ts-morph/packages/ts-morph-as
+                  rm -rf ../ts-morph/packages/ts-morph-as && cp -r ts-morph-as ../ts-morph/packages/ts-morph-as
 
             - name: Setup Deno
               uses: denoland/setup-deno@v2
