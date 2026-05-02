@@ -24,27 +24,7 @@ export default defineConfig({
             reporter: ['text', 'html', 'lcov', 'json-summary'],
             reportsDirectory: './coverage',
             include: ['src/**/*.ts'],
-            exclude: [
-                'src/cli.ts',
-                'src/custom.d.ts',
-                'src/index.ts',
-                // Exclude the barrel files themselves, coverage should focus on implementation
-                'src/core/types.ts',
-                'src/core/utils.ts',
-                'src/core/constants.ts',
-                'src/core/generator.ts',
-                'src/core/types/**',
-                'src/docstrings/**',
-                'src/functions/types.ts',
-                'src/functions/utils.ts',
-                'src/functions/emit.ts',
-                'src/mocks/parse.ts',
-                'src/routes/parse.ts',
-                'src/tests/**',
-                'src/vendors/angular/admin/analysis/*-types.ts',
-                '**/index.ts',
-                'tests/fixtures/**', // Data
-            ],
+            exclude: ['tests/fixtures/**'],
         },
     },
     plugins: [

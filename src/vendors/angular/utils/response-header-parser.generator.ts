@@ -105,7 +105,7 @@ export class ResponseHeaderParserGenerator {
             case 'xml':
                 return XmlParser.parse(value, xmlConfig || {});
             case 'date':
-                return new Date(value);
+                return new globalThis.Date(value);
             case 'linkset':
                 return LinkSetParser.parseHeader(value);
             case 'linkset+json':

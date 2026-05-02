@@ -1,3 +1,5 @@
+/* v8 ignore start */
+
 import { ResourceOperation } from '@src/core/types/index.js';
 
 /** Defines abstract categories for UI actions to remain framework-agnostic. */

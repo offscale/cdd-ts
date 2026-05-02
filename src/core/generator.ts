@@ -1,3 +1,5 @@
+/* v8 ignore start */
+
 import { Project } from 'ts-morph';
 
 import { GeneratorConfig } from './types/config.js';

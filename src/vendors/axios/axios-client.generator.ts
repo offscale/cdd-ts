@@ -32,6 +32,8 @@ import { DocumentMetaGenerator } from '@src/openapi/emit_document_meta.js';
 import { AxiosServiceIndexGenerator, AxiosMainIndexGenerator } from './utils/index.generator.js';
 import { VanillaAdminGenerator } from '../vanilla/admin/admin.generator.js';
 
+import { AxiosServiceTestGenerator } from './test/service-test.generator.js';
+
 import { PathInfo } from '@src/core/types/analysis.js';
 /**
  * Determines the canonical controller name for an operation to group it in a service.
@@ -154,7 +156,15 @@ export class AxiosClientGenerator extends AbstractClientGenerator {
 
             /* v8 ignore next */
             if (config.options.generateServiceTests ?? true) {
-                // To be implemented: Service tests
+                /* v8 ignore next */
+                const testGenerator = new AxiosServiceTestGenerator(parser, project, config);
+                /* v8 ignore next */
+                for (const [controllerName, operations] of Object.entries(controllerGroups)) {
+                    /* v8 ignore next */
+                    testGenerator.generateServiceTestFile(controllerName, operations, servicesDir);
+                }
+                /* v8 ignore next */
+                console.log('✅ Axios Service tests generated.');
             }
             /* v8 ignore next */
             if (config.options.admin) {

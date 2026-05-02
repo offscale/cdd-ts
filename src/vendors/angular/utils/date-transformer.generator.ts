@@ -68,7 +68,7 @@ export class DateTransformerGenerator {
     for (const key of Object.keys(body as Record<string, string | number | boolean | object | undefined | null>)) { 
         const value = (body as Record<string, string | number | boolean | object | undefined | null>)[key]; 
         if (typeof value === 'string' && ISO_DATE_REGEX.test(value)) { 
-            transformedBody[key] = new Date(value); 
+            transformedBody[key] = new globalThis.Date(value); 
         } else if (typeof value === 'object' && value !== null) { 
             transformedBody[key] = transformDates(value); 
         } else { 

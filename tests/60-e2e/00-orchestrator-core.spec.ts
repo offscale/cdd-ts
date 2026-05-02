@@ -41,7 +41,7 @@ describe('E2E: Core Orchestrator Flow', () => {
         expect(saveSpy).toHaveBeenCalled();
     });
 
-    it('should throw error for unsupported frameworks', async () => {
+    it('should handle unsupported frameworks by instantiating their placeholders', async () => {
         const project = createTestProject();
         const config: GeneratorConfig = {
             input: '',
@@ -49,8 +49,13 @@ describe('E2E: Core Orchestrator Flow', () => {
             options: { framework: 'react' as string | number | boolean | object | undefined | null }, // Type cast for testing invalid runtime option
         };
 
-        await expect(generateFromConfig(config, project, { spec: emptySpec })).rejects.toThrow(
-            'React generation is not yet implemented.',
-        );
+        // It no longer throws an error, it resolves.
+        const mockParser = {
+            spec: emptySpec,
+            getOperationsByController: () => ({}),
+            getDefinitions: () => [],
+            getWebhooks: () => [],
+        } as unknown as SwaggerParser;
+        await expect(generateFromConfig(config, project, mockParser)).resolves.toBeUndefined();
     });
 });

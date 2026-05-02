@@ -436,7 +436,7 @@ export class MockDataGenerator {
             case 'date-time':
             case 'date':
                 /* v8 ignore next */
-                return 'new Date()';
+                return 'new globalThis.Date()';
             case 'email':
                 /* v8 ignore next */
                 return 'test@example.com';
