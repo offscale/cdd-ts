@@ -1,5 +1,3 @@
-/* v8 ignore start */
-
 export type OpenApiValue = string | number | boolean | object | undefined | null;
 // ===================================================================================
 // OpenAPI / Swagger Specification Types

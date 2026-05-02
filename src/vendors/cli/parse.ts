@@ -13,7 +13,6 @@ export function parseGeneratedCliSource(sourceText: string, filePath = 'cli.ts')
     };
 
     function getBaseIdentifier(node: import('ts-morph').Node): string | undefined {
-        /* v8 ignore start */
         if (node.getKind() === SyntaxKind.Identifier) {
             return node.getText();
         }
@@ -24,7 +23,6 @@ export function parseGeneratedCliSource(sourceText: string, filePath = 'cli.ts')
             return getBaseIdentifier((node as import('ts-morph').PropertyAccessExpression).getExpression());
         }
         return undefined;
-        /* v8 ignore stop */
     }
 
     const programDecls = sourceFile.getVariableDeclarations().filter(v => v.getName() === 'program');
@@ -37,15 +35,15 @@ export function parseGeneratedCliSource(sourceText: string, filePath = 'cli.ts')
                 if (baseName === 'program') {
                     const name = prop.getName();
                     const args = call.getArguments();
-                    /* v8 ignore next */
+
                     if (name === 'name' && args[0]) {
                         spec.info!.title = args[0].getText().replace(/['"]/g, '');
                     }
-                    /* v8 ignore next */
+
                     if (name === 'version' && args[0]) {
                         spec.info!.version = args[0].getText().replace(/['"]/g, '');
                     }
-                    /* v8 ignore start */
+
                     if (name === 'description' && args[0]) {
                         // Check that this is chained directly to program.name or program itself
                         let isProgramDesc = false;
@@ -77,7 +75,6 @@ export function parseGeneratedCliSource(sourceText: string, filePath = 'cli.ts')
                             }
                         }
                     }
-                    /* v8 ignore stop */
                 }
             }
         });
@@ -85,7 +82,6 @@ export function parseGeneratedCliSource(sourceText: string, filePath = 'cli.ts')
 
     const groupVars = sourceFile.getVariableDeclarations().filter(v => v.getName().endsWith('Command'));
 
-    /* v8 ignore start */
     groupVars.forEach(v => {
         const tag = v.getName().replace('Command', '');
         (sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression) as CallExpression[]).forEach(call => {
@@ -143,7 +139,6 @@ export function parseGeneratedCliSource(sourceText: string, filePath = 'cli.ts')
             }
         });
     });
-    /* v8 ignore stop */
 
     return spec;
 }

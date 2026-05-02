@@ -1,5 +1,3 @@
-/* v8 ignore start */
-
 import { JsonValue } from './form-types.js';
 
 export type ValidationRule =

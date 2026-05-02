@@ -8,7 +8,7 @@
 [![Doc Coverage](https://img.shields.io/badge/doc_coverage-100%25-brightgreen.svg)](https://github.com/offscale/cdd-ts)
 [![Test Coverage](https://img.shields.io/badge/test_coverage-100%25-brightgreen.svg)](https://github.com/offscale/cdd-ts)
 
-OpenAPI ↔ TypeScript. This is one compiler in a suite, all focussed on the same task: Compiler Driven Development (CDD).
+OpenAPI ↔ TypeScript. This is one compiler in a suite, supporting frameworks and environments like Angular, React, Vue, Vanilla JS, Node.js, Fetch, Axios, and CLI tools, all focussed on the same task: Compiler Driven Development (CDD).
 
 Each compiler is written in its target language, is whitespace and comment sensitive, and has both an SDK and CLI.
 
@@ -30,7 +30,7 @@ The goal of this project is to enable rapid application development without trad
 The `cdd-ts` compiler leverages a unified architecture to support various facets of API and code lifecycle management.
 
 - **Compilation**:
-    - **OpenAPI → `TypeScript`**: Generate idiomatic native models, network routes, client SDKs, and boilerplate directly from OpenAPI (`.json` / `.yaml`) specifications.
+    - **OpenAPI → `TypeScript`**: Generate idiomatic native models, network routes, client SDKs (tailored for Angular, React, Vue, Vanilla, Node.js, Fetch, and Axios), and boilerplate directly from OpenAPI (`.json` / `.yaml`) specifications.
     - **`TypeScript` → OpenAPI**: Statically parse existing `TypeScript` source code and emit compliant OpenAPI specifications.
 - **AST-Driven & Safe**: Employs static analysis instead of unsafe dynamic execution or reflection, allowing it to safely parse and emit code even for incomplete or un-compilable project states.
 - **Seamless Sync**: Keep your docs, tests, database, clients, and routing in perfect harmony. Update your code, and generate the docs; or update the docs, and generate the code.

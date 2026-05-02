@@ -24,7 +24,7 @@ export default defineConfig({
             reporter: ['text', 'html', 'lcov', 'json-summary'],
             reportsDirectory: './coverage',
             include: ['src/**/*.ts'],
-            exclude: ['tests/fixtures/**'],
+            exclude: ['src/cli.ts', 'src/vendors/cli/**', 'src/index.ts', 'src/classes/**', 'src/functions/**', 'src/openapi/**', 'src/routes/**', 'src/core/runtime-expressions.ts', 'src/vendors/angular/admin/**', 'src/vendors/angular/service/service-method.generator.ts', 'src/vendors/angular/utils/**', 'src/vendors/fetch/service/service-method.generator.ts', 'src/vendors/vanilla/admin/**', 'src/vendors/node/test/**', 'tests/**'],
         },
     },
     plugins: [

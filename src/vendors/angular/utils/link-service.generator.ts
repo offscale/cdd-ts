@@ -5,45 +5,36 @@ import { SwaggerParser } from '@src/openapi/parse.js';
 
 export class LinkServiceGenerator {
     constructor(
-        /* v8 ignore next */
         private readonly parser: SwaggerParser,
-        /* v8 ignore next */
+
         private readonly project: Project,
     ) {}
 
     public generate(outputDir: string): void {
         const hasLinks =
-            /* v8 ignore next */
             this.parser.operations.some(
-                /* v8 ignore next */
                 op => op.responses && Object.values(op.responses).some(r => r.links && Object.keys(r.links).length > 0),
             ) ||
             (this.parser.links && Object.keys(this.parser.links).length > 0);
 
-        /* v8 ignore next */
         if (!hasLinks) {
-            /* v8 ignore next */
             return;
         }
 
-        /* v8 ignore next */
         const utilsDir = path.join(outputDir, 'utils');
-        /* v8 ignore next */
+
         const filePath = path.join(utilsDir, 'link.service.ts');
-        /* v8 ignore next */
+
         const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
 
-        /* v8 ignore next */
         sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
-        /* v8 ignore next */
         sourceFile.addImportDeclarations([
             { moduleSpecifier: '@angular/core', namedImports: ['Injectable'] },
             { moduleSpecifier: '@angular/common/http', namedImports: ['HttpResponse', 'HttpRequest'] },
             { moduleSpecifier: '../links', namedImports: ['API_LINKS'] },
         ]);
 
-        /* v8 ignore next */
         const linkServiceClass = sourceFile.addClass({
             name: 'LinkService',
             isExported: true,
@@ -51,7 +42,6 @@ export class LinkServiceGenerator {
             docs: ['Service to resolve OpenAPI Links from HTTP Responses using runtime expressions.'],
         });
 
-        /* v8 ignore next */
         sourceFile.addInterface({
             name: 'ResolvedLink',
             isExported: true,
@@ -76,7 +66,6 @@ export class LinkServiceGenerator {
             ],
         });
 
-        /* v8 ignore next */
         linkServiceClass.addMethod({
             name: 'resolveLink',
             scope: Scope.Public,
@@ -161,7 +150,6 @@ export class LinkServiceGenerator {
         };`,
         });
 
-        /* v8 ignore next */
         linkServiceClass.addMethod({
             name: 'normalizeParameterKey',
             scope: Scope.Private,
@@ -176,7 +164,6 @@ export class LinkServiceGenerator {
         };`,
         });
 
-        /* v8 ignore next */
         linkServiceClass.addMethod({
             name: 'resolveServer',
             scope: Scope.Private,
@@ -201,7 +188,6 @@ export class LinkServiceGenerator {
         return url;`,
         });
 
-        /* v8 ignore next */
         linkServiceClass.addMethod({
             name: 'extractHeaders',
             scope: Scope.Private,
@@ -219,7 +205,6 @@ export class LinkServiceGenerator {
         return result;`,
         });
 
-        /* v8 ignore next */
         linkServiceClass.addMethod({
             name: 'extractQueryParams',
             scope: Scope.Private,
@@ -237,7 +222,6 @@ export class LinkServiceGenerator {
         return result;`,
         });
 
-        /* v8 ignore next */
         linkServiceClass.addMethod({
             name: 'extractPathParams',
             scope: Scope.Private,
@@ -280,7 +264,6 @@ export class LinkServiceGenerator {
         return params;`,
         });
 
-        /* v8 ignore next */
         linkServiceClass.addMethod({
             name: 'evaluate',
             scope: Scope.Private,
@@ -307,7 +290,6 @@ export class LinkServiceGenerator {
         return this.evaluateExpression(expression, context);`,
         });
 
-        /* v8 ignore next */
         linkServiceClass.addMethod({
             name: 'evaluateExpression',
             scope: Scope.Private,
@@ -354,7 +336,6 @@ export class LinkServiceGenerator {
         return undefined;`,
         });
 
-        /* v8 ignore next */
         linkServiceClass.addMethod({
             name: 'resolvePointer',
             scope: Scope.Private,
@@ -389,7 +370,6 @@ export class LinkServiceGenerator {
         return current;`,
         });
 
-        /* v8 ignore next */
         sourceFile.formatText();
     }
 }

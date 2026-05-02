@@ -7,22 +7,17 @@ import { UTILITY_GENERATOR_HEADER_COMMENT } from '../core/constants.js';
  * Pure TS class to build multipart/form-data and multipart/mixed payloads using Browser APIs (FormData/Blob).
  */
 export class MultipartBuilderGenerator {
-    /* v8 ignore next */
     constructor(private project: Project) {}
 
     public generate(outputDir: string): void {
-        /* v8 ignore next */
         const utilsDir = path.join(outputDir, 'utils');
-        /* v8 ignore next */
+
         const filePath = path.join(utilsDir, 'multipart-builder.ts');
 
-        /* v8 ignore next */
         const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
 
-        /* v8 ignore next */
         sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
-        /* v8 ignore next */
         sourceFile.addInterface({
             name: 'EncodingConfig',
             isExported: true,
@@ -39,7 +34,7 @@ export class MultipartBuilderGenerator {
         });
 
         // OAS 3.2 Multipart Configuration
-        /* v8 ignore next */
+
         sourceFile.addInterface({
             name: 'MultipartConfig',
             isExported: true,
@@ -51,7 +46,6 @@ export class MultipartBuilderGenerator {
             ],
         });
 
-        /* v8 ignore next */
         sourceFile.addInterface({
             name: 'MultipartResult',
             isExported: true,
@@ -61,7 +55,6 @@ export class MultipartBuilderGenerator {
             ],
         });
 
-        /* v8 ignore next */
         const classDeclaration = sourceFile.addClass({
             name: 'MultipartBuilder',
             isExported: true,
@@ -70,7 +63,6 @@ export class MultipartBuilderGenerator {
             ],
         });
 
-        /* v8 ignore next */
         classDeclaration.addMethod({
             name: 'serialize',
             isStatic: true,
@@ -126,7 +118,6 @@ export class MultipartBuilderGenerator {
         return this.serializeNative(body, encodingMap);`,
         });
 
-        /* v8 ignore next */
         classDeclaration.addMethod({
             name: 'serializeNative',
             isStatic: true,
@@ -156,7 +147,6 @@ export class MultipartBuilderGenerator {
         return { content: formData };`,
         });
 
-        /* v8 ignore next */
         classDeclaration.addMethod({
             name: 'appendFormData',
             isStatic: true,
@@ -183,7 +173,6 @@ export class MultipartBuilderGenerator {
         }`,
         });
 
-        /* v8 ignore next */
         classDeclaration.addMethod({
             name: 'serializeObjectManual',
             isStatic: true,
@@ -296,7 +285,6 @@ export class MultipartBuilderGenerator {
         };`,
         });
 
-        /* v8 ignore next */
         classDeclaration.addMethod({
             name: 'serializeArrayManual',
             isStatic: true,
@@ -345,7 +333,7 @@ export class MultipartBuilderGenerator {
         });
 
         // Helper method to reduce duplication between Object and Array handling
-        /* v8 ignore next */
+
         classDeclaration.addMethod({
             name: 'appendPart',
             isStatic: true,
@@ -449,7 +437,6 @@ export class MultipartBuilderGenerator {
             `,
         });
 
-        /* v8 ignore next */
         classDeclaration.addMethod({
             name: 'generateBoundary',
             isStatic: true,
@@ -458,7 +445,6 @@ export class MultipartBuilderGenerator {
             statements: `return '----' + Math.random().toString(36).substring(2);`,
         });
 
-        /* v8 ignore next */
         sourceFile.formatText();
     }
 }

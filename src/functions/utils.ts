@@ -1,5 +1,3 @@
-/* v8 ignore start */
-
 export * from './utils_string.js';
 export * from './utils_naming.js';
 export * from '../openapi/parse_spec_extractor.js';

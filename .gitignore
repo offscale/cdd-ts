@@ -158,3 +158,41 @@ $RECYCLE.BIN/
 *.tar
 *.zip
 *.tgz
+
+# ==============================================================================
+# Careless 'git add .' Aggressive Wildcards
+# ==============================================================================
+# Extremely broad catch-alls for temporary/script/log artifacts
+*.log
+*.tmp
+*.temp
+*~
+.*.swp
+.*.swo
+*.bak
+*.orig
+*.rej
+*.bak.*
+*.local
+.env.*
+.DS_Store
+
+# Temporary outputs we created during tasks
+typedoc-warnings*.txt
+missing-docs*.txt
+nuke*.cjs
+strip-*.cjs
+fix-*.cjs
+fix-*.js
+fix-*.ts
+
+# Project specific wildcards
+tests/fixtures/cli-output/
+tests/fixtures/cli-output/**
+**/cli-output/
+**/cli-output/**
+
+# Session specific temporary test fixtures
+tests/fixtures/cdd.bad.mjs
+tests/fixtures/cdd.config.mjs
+tests/fixtures/openapi.json

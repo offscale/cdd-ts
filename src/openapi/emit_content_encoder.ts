@@ -3,22 +3,17 @@ import { Project, Scope } from 'ts-morph';
 import { UTILITY_GENERATOR_HEADER_COMMENT } from '../core/constants.js';
 
 export class ContentEncoderGenerator {
-    /* v8 ignore next */
     constructor(private project: Project) {}
 
     public generate(outputDir: string): void {
-        /* v8 ignore next */
         const utilsDir = path.join(outputDir, 'utils');
-        /* v8 ignore next */
+
         const filePath = path.join(utilsDir, 'content-encoder.ts');
 
-        /* v8 ignore next */
         const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
 
-        /* v8 ignore next */
         sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
-        /* v8 ignore next */
         sourceFile.addInterface({
             name: 'ContentEncoderConfig',
             isExported: true,
@@ -41,7 +36,6 @@ export class ContentEncoderGenerator {
             ],
         });
 
-        /* v8 ignore next */
         const classDeclaration = sourceFile.addClass({
             name: 'ContentEncoder',
             isExported: true,
@@ -50,7 +44,6 @@ export class ContentEncoderGenerator {
             ],
         });
 
-        /* v8 ignore next */
         classDeclaration.addMethod({
             name: 'stringToBytes',
             isStatic: true,
@@ -74,7 +67,6 @@ export class ContentEncoderGenerator {
         return out;`,
         });
 
-        /* v8 ignore next */
         classDeclaration.addMethod({
             name: 'bytesToBase64',
             isStatic: true,
@@ -94,7 +86,6 @@ export class ContentEncoderGenerator {
         return btoa(binary);`,
         });
 
-        /* v8 ignore next */
         classDeclaration.addMethod({
             name: 'applyContentEncoding',
             isStatic: true,
@@ -130,7 +121,6 @@ export class ContentEncoderGenerator {
         return encoded;`,
         });
 
-        /* v8 ignore next */
         classDeclaration.addMethod({
             name: 'encode',
             isStatic: true,
@@ -193,7 +183,6 @@ export class ContentEncoderGenerator {
         return current;`,
         });
 
-        /* v8 ignore next */
         sourceFile.formatText();
     }
 }

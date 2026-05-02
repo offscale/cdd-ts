@@ -46,7 +46,6 @@ export interface DocLanguage {
  * @returns The camelCase valid identifier.
  */
 function toTsIdentifier(name: string): string {
-    /* v8 ignore next */
     return camelCase(name.replace(/[^\w]/g, ' '));
 }
 
@@ -56,17 +55,13 @@ function toTsIdentifier(name: string): string {
  * @returns The controller name.
  */
 function getControllerCanonicalName(op: PathInfo): string {
-    /* v8 ignore next */
     if (Array.isArray(op.tags) && op.tags[0]) {
-        /* v8 ignore next */
         return pascalCase(op.tags[0].toString());
     }
-    /* v8 ignore next */
+
     const firstSegment = op.path.split('/').filter(Boolean)[0];
-    /* v8 ignore next */
-    /* v8 ignore start */
+
     return firstSegment ? pascalCase(firstSegment) : 'Default';
-    /* v8 ignore stop */
 }
 
 /**
@@ -76,36 +71,22 @@ function getControllerCanonicalName(op: PathInfo): string {
  * @returns The suggested TS method name.
  */
 function getMethodName(op: PathInfo, config: GeneratorConfig): string {
-    /* v8 ignore next */
     let suggestedName = op.methodName;
-    /* v8 ignore next */
+
     if (config.options?.customizeMethodName && op.operationId) {
-        /* v8 ignore next */
         suggestedName = config.options.customizeMethodName(op.operationId);
     }
-    /* v8 ignore next */
+
     if (!suggestedName) {
-        /* v8 ignore next */
         if (op.operationId) {
-            /* v8 ignore next */
             suggestedName = toTsIdentifier(op.operationId);
         } else {
-            /* v8 ignore next */
             suggestedName = toTsIdentifier(op.method.toLowerCase() + '_' + op.path);
         }
-        /* v8 ignore next */
-        /* v8 ignore start */
     } else if (suggestedName.includes('-') || !/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(suggestedName)) {
-        /* v8 ignore stop */
-        /* v8 ignore next */
-        /* v8 ignore next */
-        /* v8 ignore next */
-        /* v8 ignore next */
-        /* v8 ignore start */
         suggestedName = toTsIdentifier(suggestedName);
-        /* v8 ignore stop */
     }
-    /* v8 ignore next */
+
     return suggestedName;
 }
 
