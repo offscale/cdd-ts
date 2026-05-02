@@ -36,17 +36,13 @@ function getGeneratorFactory(framework: string, implementation?: string): IClien
     switch (framework) {
         case 'angular':
             return new AngularClientGenerator();
-        /* v8 ignore start */
+
         case 'react':
             return new ReactClientGenerator();
-        /* v8 ignore next */
 
         case 'vue':
-            /* v8 ignore next */
             return new VueClientGenerator();
         default:
-            /* v8 ignore next */
-
             // Default to Angular for backward compatibility if undefined, though config defaults handle this
             return new AngularClientGenerator();
     }
@@ -108,20 +104,16 @@ export async function generateFromConfig(
             swaggerParser = await SwaggerParser.create(config.input, config);
         }
 
-        /* v8 ignore next */
-
         const generator = getGeneratorFactory(framework, implementation);
 
         await generator.generate(activeProject, swaggerParser, config, config.output);
-        /* v8 ignore next */
 
-        /* v8 ignore next 3 */
         if (targetScope === 'to_sdk_cli') {
             new CliGenerator().generate(activeProject, swaggerParser, config, config.output);
         }
 
         // This block is now reachable in our test.
-        /* v8 ignore next 3 */
+
         if (!isTestEnv) {
             await activeProject.save();
         }

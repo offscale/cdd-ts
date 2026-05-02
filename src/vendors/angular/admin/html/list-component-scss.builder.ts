@@ -1,5 +1,4 @@
 export function generateListComponentScss(): string {
-    /* v8 ignore next */
     return `
 .admin-list-container { padding: 24px; }
 .admin-list-toolbar { border-radius: 4px 4px 0 0; }

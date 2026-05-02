@@ -1,5 +1,3 @@
-/* v8 ignore start */
-
 import { ModuleKind, ScriptTarget } from 'ts-morph';
 import { SwaggerSpec } from './openapi.js';
 

@@ -1,4 +1,3 @@
-/* v8 ignore start */
 import { Project } from 'ts-morph';
 import * as path from 'node:path';
 import { SwaggerParser } from '@src/openapi/parse.js';
@@ -113,4 +112,3 @@ export class NodeServiceTestGenerator {
         sourceFile.formatText();
     }
 }
-/* v8 ignore stop */

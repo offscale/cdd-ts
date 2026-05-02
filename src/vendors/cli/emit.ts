@@ -24,11 +24,10 @@ export class CliGenerator {
             namespaceImport: 'services',
         });
 
-        /* v8 ignore start */
         const spec = parser.spec;
 
         // Info Object
-        /* v8 ignore start */
+
         const info = spec.info || { title: 'api-cli', version: '1.0.0' };
         const title = info.title || 'api-cli';
         const version = info.version || '1.0.0';
@@ -36,7 +35,6 @@ export class CliGenerator {
             /'/g,
             "\\'",
         );
-        /* v8 ignore stop */
 
         let extraHelp = '';
         if (info.contact) {
@@ -51,7 +49,6 @@ export class CliGenerator {
         if (spec.externalDocs) {
             extraHelp += `\\nExternal Docs: ${spec.externalDocs.description || ''} ${spec.externalDocs.url || ''}`;
         }
-        /* v8 ignore stop */
 
         let statements = `
 // OpenAPI version: ${spec.openapi || '3.x'}
@@ -66,7 +63,6 @@ const program = new Command();
 program.name('${title}').description('${description}').version('${version}');
 `;
 
-        /* v8 ignore start */
         if (extraHelp) {
             statements += `program.addHelpText('after', '${extraHelp}');\n`;
         }
@@ -100,19 +96,16 @@ program.name('${title}').description('${description}').version('${version}');
                 if (s.deprecated) statements += `// Deprecated security scheme: ${name}\n`;
             }
         }
-        /* v8 ignore stop */
 
         const grouped = parser.operations.reduce((acc: Record<string, PathInfo[]>, op) => {
             const group = op.tags?.[0]
                 ? typeof op.tags[0] === 'string'
                     ? op.tags[0]
-                    : /* v8 ignore start */
-                      (op.tags[0] as object as { name?: string }).name || String(op.tags[0])
-                : /* v8 ignore stop */
-                  'Default';
-            /* v8 ignore start */
+                    : (op.tags[0] as object as { name?: string }).name || String(op.tags[0])
+                : 'Default';
+
             if (!acc[group]) acc[group] = [];
-            /* v8 ignore stop */
+
             acc[group].push(op);
             return acc;
         }, {});
@@ -131,14 +124,11 @@ program.name('${title}').description('${description}').version('${version}');
                 // Path Item Object properties ($ref, summary, description, get, put, post, delete, options, head, patch, trace, query, additionalOperations, servers, parameters)
                 // Operation Object properties (tags, summary, description, externalDocs, operationId, parameters, requestBody, responses, callbacks, deprecated, security, servers)
 
-                /* v8 ignore start */
                 const methodName = op.operationId || op.path.replace(/\//g, '_').replace(/^_/, '');
                 const opDesc = (op.summary || op.description || '').replace(/'/g, "\\'");
-                /* v8 ignore stop */
 
                 statements += `${group.toLowerCase()}Command.command('${methodName}')\n    .description('${opDesc}')`;
 
-                /* v8 ignore start */
                 // External Documentation Object
                 if (op.externalDocs) {
                     statements += `\n    .addHelpText('after', '\\nExternal Docs: ${op.externalDocs.description || ''} ${op.externalDocs.url || ''}')`;
@@ -152,7 +142,6 @@ program.name('${title}').description('${description}').version('${version}');
                 if (op.callbacks) {
                     statements += `\n    // Supports Callbacks`;
                 }
-                /* v8 ignore stop */
 
                 // Link Object inside responses
                 statements += `\n    // Supports Links in Responses`;
@@ -160,7 +149,6 @@ program.name('${title}').description('${description}').version('${version}');
                 // Parameter Object (name, in, description, required, deprecated, allowEmptyValue, example, examples, style, explode, allowReserved, schema, content)
                 const optionsAdded = new Set<string>();
                 if (op.parameters) {
-                    /* v8 ignore start */
                     for (const param of op.parameters) {
                         const pName = (param as Parameter).name;
                         if (!pName || optionsAdded.has(pName)) continue;
@@ -169,14 +157,12 @@ program.name('${title}').description('${description}').version('${version}');
                         const pDesc = ((param as Parameter).description || '').replace(/'/g, "\\'");
                         statements += `\n    .option('--${pName} ${requiredFlag}', '${pDesc}')`;
                     }
-                    /* v8 ignore stop */
                 }
 
                 // Request Body Object (description, content, required)
                 // Media Type Object (schema, itemSchema, example, examples, encoding, prefixEncoding, itemEncoding)
                 // Encoding Object (contentType, headers, encoding, prefixEncoding, itemEncoding, style, explode, allowReserved)
                 if (op.requestBody) {
-                    /* v8 ignore next 2 */
                     statements += `\n    .option('--body <json>', 'Request body (JSON)')`;
                 }
 

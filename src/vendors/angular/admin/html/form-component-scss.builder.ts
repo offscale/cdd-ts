@@ -1,5 +1,4 @@
 export function generateFormComponentScss(): string {
-    /* v8 ignore next */
     return `
 .admin-form-container { padding: 24px; }
 .admin-form-fields { display: flex; flex-direction: column; }
