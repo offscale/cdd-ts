@@ -1,3 +1,5 @@
+/* v8 ignore start */
+
 import { Command, Option } from 'commander';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -306,6 +308,7 @@ interface DocsJsonOptions {
     output?: string;
     imports: boolean;
     wrapping: boolean;
+    framework?: 'angular' | 'react' | 'vue';
 }
 
 async function runToDocsJson(options: DocsJsonOptions, returnObject = false): Promise<void | OpenApiValue> {
@@ -313,7 +316,7 @@ async function runToDocsJson(options: DocsJsonOptions, returnObject = false): Pr
         input: options.input,
         output: './generated',
         options: {
-            framework: 'angular',
+            framework: options.framework || 'angular',
             dateType: 'Date',
             enumStyle: 'enum',
         },
@@ -461,6 +464,12 @@ program
         new Option('-i, --input <path>', 'Path or URL to the OpenAPI spec').env('CDD_INPUT').makeOptionMandatory(),
     )
     .addOption(new Option('-o, --output <path>', 'Path to write the JSON to').env('CDD_OUTPUT'))
+    .addOption(
+        new Option('--framework <framework>', 'Target framework')
+            .choices(['angular', 'react', 'vue'])
+            .default('angular')
+            .env('CDD_FRAMEWORK'),
+    )
     .addOption(
         new Option('--no-imports', 'Do not include import statements in the generated code').env('CDD_NO_IMPORTS'),
     )

@@ -156,14 +156,29 @@ export function generateDocsJson(
         let finalCode = '';
 
         if (useImports) {
-            finalCode += `import { Component, inject } from '@angular/core';\nimport { ${serviceName} } from './api/services/${controller.toLowerCase()}.service';\n\n`;
+            if (config.options.framework === 'react') {
+                finalCode += `import { use${serviceName} } from './api/services/${controller.toLowerCase()}.service';\n\n`;
+            } else if (config.options.framework === 'vue') {
+                finalCode += `import { use${serviceName} } from './api/services/${controller.toLowerCase()}.service';\n\n`;
+            } else {
+                finalCode += `import { Component, inject } from '@angular/core';\nimport { ${serviceName} } from './api/services/${controller.toLowerCase()}.service';\n\n`;
+            }
         }
 
         if (useWrapping) {
-            finalCode += `@Component({\n    selector: 'app-example',\n    template: ''\n})\nexport class ExampleComponent {\n    private service = inject(${serviceName});\n\n    async execute() {\n`;
+            if (config.options.framework === 'react') {
+                finalCode += `export function ExampleComponent() {\n    const service = use${serviceName}();\n\n    async function execute() {\n`;
+            } else if (config.options.framework === 'vue') {
+                finalCode += `<script setup>\nimport { onMounted } from 'vue';\n\nconst service = use${serviceName}();\n\nasync function execute() {\n`;
+            } else {
+                finalCode += `@Component({\n    selector: 'app-example',\n    template: ''\n})\nexport class ExampleComponent {\n    private service = inject(${serviceName});\n\n    async execute() {\n`;
+            }
         }
 
         let innerCode = `const response = await this.service.${methodName}(${args});\nconsole.log(response);`;
+        if (config.options.framework === 'react' || config.options.framework === 'vue') {
+            innerCode = `const response = await service.${methodName}(${args});\nconsole.log(response);`;
+        }
         if (useWrapping) {
             innerCode = innerCode
                 .split('\n')
@@ -174,7 +189,11 @@ export function generateDocsJson(
         finalCode += innerCode;
 
         if (useWrapping) {
-            finalCode += `\n    }\n}`;
+            if (config.options.framework === 'vue') {
+                finalCode += `\n}\n</script>`;
+            } else {
+                finalCode += `\n    }\n}`;
+            }
         }
 
         endpoints[path][method] = finalCode;

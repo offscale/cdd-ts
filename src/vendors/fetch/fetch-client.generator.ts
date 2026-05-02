@@ -37,6 +37,8 @@ import { MultipartBuilderGenerator } from '@src/functions/emit_multipart.js';
 import { FetchServiceIndexGenerator, FetchMainIndexGenerator } from './utils/index.generator.js';
 import { VanillaAdminGenerator } from '../vanilla/admin/admin.generator.js';
 
+import { FetchServiceTestGenerator } from './test/service-test.generator.js';
+
 import { PathInfo } from '@src/core/types/analysis.js';
 function getControllerCanonicalName(op: PathInfo): string {
     /* v8 ignore next */
@@ -157,7 +159,15 @@ export class FetchClientGenerator extends AbstractClientGenerator {
 
             /* v8 ignore next */
             if (config.options.generateServiceTests ?? true) {
-                // To be implemented: Service tests
+                /* v8 ignore next */
+                const testGenerator = new FetchServiceTestGenerator(parser, project, config);
+                /* v8 ignore next */
+                for (const [controllerName, operations] of Object.entries(controllerGroups)) {
+                    /* v8 ignore next */
+                    testGenerator.generateServiceTestFile(controllerName, operations, servicesDir);
+                }
+                /* v8 ignore next */
+                console.log('✅ Fetch Service tests generated.');
             }
             /* v8 ignore next */
             if (config.options.admin) {

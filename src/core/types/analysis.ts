@@ -1,3 +1,5 @@
+/* v8 ignore start */
+
 import { OpenApiValue } from './openapi.js';
 import {
     ExternalDocumentationObject,

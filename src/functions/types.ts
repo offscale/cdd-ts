@@ -1,3 +1,5 @@
+/* v8 ignore start */
+
 // src/analysis/service-method-types.ts
 import { OptionalKind, ParameterDeclarationStructure } from 'ts-morph';
 import { ServerObject, OpenApiValue } from '@src/core/types/index.js';

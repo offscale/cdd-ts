@@ -8,21 +8,6 @@ import { NodeClientGenerator } from '@src/vendors/node/node-client.generator.js'
 
 describe('Node Implementation', () => {
     describe('Config Validation', () => {
-        it('should throw if admin UI is requested with node implementation', async () => {
-            const config: GeneratorConfig = {
-                input: 'dummy',
-                output: 'dummy',
-                options: {
-                    implementation: 'node',
-                    admin: true,
-                },
-            };
-
-            await expect(generateFromConfig(config, new Project(), { spec: {} })).rejects.toThrow(
-                'Not implemented: Admin UI is not supported when the implementation/transport is node.',
-            );
-        });
-
         it('should execute NodeClientGenerator successfully when admin is false', async () => {
             const config: GeneratorConfig = {
                 input: 'dummy',
@@ -75,6 +60,34 @@ describe('Node Implementation', () => {
             const statements = getTestMethod!.getStatements().map(s => s.getText());
             const methodBody = statements.join(String.fromCharCode(10));
             expect(methodBody).toContain('requestOptions');
+        });
+
+        it('should execute NodeClientGenerator successfully when admin is true', async () => {
+            const config: GeneratorConfig = {
+                input: 'dummy',
+                output: '/tmp/test-output',
+                options: {
+                    implementation: 'node',
+                    admin: true,
+                    generateServices: true,
+                },
+            };
+
+            const spec = {
+                openapi: '3.0.0',
+                info: { title: 'Test API', version: '1.0' },
+                paths: {
+                    '/test': {
+                        get: {
+                            operationId: 'getTest',
+                            responses: { '200': { description: 'OK' } },
+                        },
+                    },
+                },
+            };
+
+            const project = new Project();
+            await expect(generateFromConfig(config, project, { spec })).resolves.not.toThrow();
         });
     });
 

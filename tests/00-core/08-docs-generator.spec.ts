@@ -76,6 +76,64 @@ describe('generateDocsJson', () => {
         expect(snippet).not.toContain('export class ExampleComponent');
     });
 
+    it('should generate documentation with imports and wrapping for react', () => {
+        const parser = {
+            operations: [
+                {
+                    path: '/posts/{id}',
+                    method: 'post',
+                    methodName: 'createPost',
+                    operationId: 'createPost',
+                    tags: [],
+                    parameters: [{ name: 'id', in: 'path', required: true }],
+                } as string | number | boolean | object | undefined | null as PathInfo,
+            ],
+        } as string | number | boolean | object | undefined | null as SwaggerParser;
+
+        const config: GeneratorConfig = {
+            output: '',
+            input: '',
+            options: { framework: 'react', imports: false, wrapping: false },
+        };
+        const result = generateDocsJson(parser, config, { imports: true, wrapping: true });
+
+        const snippet = result.endpoints['/posts/{id}']['post'];
+        expect(snippet).toContain("import { usePostsService } from './api/services/posts.service';");
+        expect(snippet).toContain('export function ExampleComponent() {');
+        expect(snippet).toContain('        const response = await service.createPost({ /* arguments */ });');
+        expect(snippet).toContain('    }');
+        expect(snippet).toContain('}');
+    });
+
+    it('should generate documentation with imports and wrapping for vue', () => {
+        const parser = {
+            operations: [
+                {
+                    path: '/posts/{id}',
+                    method: 'post',
+                    methodName: 'createPost',
+                    operationId: 'createPost',
+                    tags: [],
+                    parameters: [{ name: 'id', in: 'path', required: true }],
+                } as string | number | boolean | object | undefined | null as PathInfo,
+            ],
+        } as string | number | boolean | object | undefined | null as SwaggerParser;
+
+        const config: GeneratorConfig = {
+            output: '',
+            input: '',
+            options: { framework: 'vue', imports: false, wrapping: false },
+        };
+        const result = generateDocsJson(parser, config, { imports: true, wrapping: true });
+
+        const snippet = result.endpoints['/posts/{id}']['post'];
+        expect(snippet).toContain("import { usePostsService } from './api/services/posts.service';");
+        expect(snippet).toContain('<script setup>');
+        expect(snippet).toContain('        const response = await service.createPost({ /* arguments */ });');
+        expect(snippet).toContain('}');
+        expect(snippet).toContain('</script>');
+    });
+
     it('should fallback method names correctly and deduplicate', () => {
         const parser = {
             operations: [

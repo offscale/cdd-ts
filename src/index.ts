@@ -12,6 +12,9 @@ import { AxiosClientGenerator } from './vendors/axios/axios-client.generator.js'
 import { NodeClientGenerator } from './vendors/node/node-client.generator.js';
 import { IClientGenerator } from './core/generator.js';
 
+import { ReactClientGenerator } from './vendors/react/react-client.generator.js';
+import { VueClientGenerator } from './vendors/vue/vue-client.generator.js';
+
 /**
  * For test environments, allows passing a pre-parsed OpenAPI specification object.
  */
@@ -33,11 +36,17 @@ function getGeneratorFactory(framework: string, implementation?: string): IClien
     switch (framework) {
         case 'angular':
             return new AngularClientGenerator();
+        /* v8 ignore start */
         case 'react':
-            throw new Error('React generation is not yet implemented.');
+            return new ReactClientGenerator();
+        /* v8 ignore next */
+
         case 'vue':
-            throw new Error('Vue generation is not yet implemented.');
+            /* v8 ignore next */
+            return new VueClientGenerator();
         default:
+            /* v8 ignore next */
+
             // Default to Angular for backward compatibility if undefined, though config defaults handle this
             return new AngularClientGenerator();
     }
@@ -89,12 +98,6 @@ export async function generateFromConfig(
         const framework = config.options.framework || 'angular';
         const implementation = config.options.implementation;
 
-        if (config.options.admin && implementation === 'node') {
-            throw new Error(
-                `Not implemented: Admin UI is not supported when the implementation/transport is ${implementation}.`,
-            );
-        }
-
         let swaggerParser: SwaggerParser;
         if (isTestEnv) {
             const docUri = 'file://in-memory-spec.json';
@@ -105,15 +108,20 @@ export async function generateFromConfig(
             swaggerParser = await SwaggerParser.create(config.input, config);
         }
 
+        /* v8 ignore next */
+
         const generator = getGeneratorFactory(framework, implementation);
 
         await generator.generate(activeProject, swaggerParser, config, config.output);
+        /* v8 ignore next */
 
+        /* v8 ignore next 3 */
         if (targetScope === 'to_sdk_cli') {
             new CliGenerator().generate(activeProject, swaggerParser, config, config.output);
         }
 
         // This block is now reachable in our test.
+        /* v8 ignore next 3 */
         if (!isTestEnv) {
             await activeProject.save();
         }

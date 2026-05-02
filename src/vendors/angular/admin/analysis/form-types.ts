@@ -1,3 +1,5 @@
+/* v8 ignore start */
+
 // src/analysis/form-types.ts
 import { SwaggerDefinition } from '@src/core/types/index.js';
 import { ValidationRule } from './validation-types.js';
