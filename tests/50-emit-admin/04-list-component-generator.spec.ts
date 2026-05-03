@@ -119,20 +119,19 @@ describe('Generators (Angular): ListComponentGenerator', () => {
 
         it('should handle a resource with only read-only properties', () => {
             const project = createTestProject();
-            // type-coverage:ignore-next-line
+
             const specClone = JSON.parse(JSON.stringify(branchCoverageSpec));
-            // type-coverage:ignore-next-line
+
             for (const pathItem of Object.values(specClone.paths ?? {})) {
                 if (!pathItem || typeof pathItem !== 'object') continue;
-                // type-coverage:ignore-next-line
+
                 const operation = (pathItem as string | number | boolean | object | undefined | null).get;
-                // type-coverage:ignore-next-line
+
                 if (operation && operation.responses === undefined) {
-                    // type-coverage:ignore-next-line
                     operation.responses = { '200': { description: 'ok' } };
                 }
             }
-            // type-coverage:ignore-next-line
+
             const parser = new SwaggerParser(
                 specClone as string | number | boolean | object | undefined | null,
                 { options: { admin: true } } as string | number | boolean | object | undefined | null,
@@ -218,25 +217,25 @@ describe('Generators (Angular): ListComponentGenerator', () => {
 
         it('should map kinds to icons via fallback switch cases', () => {
             const generator = new ListComponentGenerator(createTestProject());
-            // type-coverage:ignore-next-line
+
             expect(
                 (generator as string | number | boolean | object | undefined | null).mapKindToIcon(
                     'custom',
                     'state-change',
                 ),
             ).toBe('sync');
-            // type-coverage:ignore-next-line
+
             expect(
                 (generator as string | number | boolean | object | undefined | null).mapKindToIcon(
                     'custom',
                     'navigation',
                 ),
             ).toBe('arrow_forward');
-            // type-coverage:ignore-next-line
+
             expect(
                 (generator as string | number | boolean | object | undefined | null).mapKindToIcon('custom', 'default'),
             ).toBe('play_arrow');
-            // type-coverage:ignore-next-line
+
             expect(
                 (generator as string | number | boolean | object | undefined | null).mapKindToIcon(
                     'editItem',

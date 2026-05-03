@@ -91,4 +91,53 @@ describe('Core Utils: OpenAPI Snapshot', () => {
             readOpenApiSnapshot(filePath, fs as string | number | boolean | object | undefined | null),
         ).toThrow(/Unsupported snapshot file extension/);
     });
+
+    it('should throw if json snapshot does not contain an object', () => {
+        const dir = makeTempDir();
+        const filePath = path.join(dir, 'openapi.snapshot.json');
+        fs.writeFileSync(filePath, 'true');
+        expect(() => readOpenApiSnapshot(filePath, fs as any)).toThrow(
+            'Parsed JSON snapshot did not produce an object.',
+        );
+    });
+
+    it('should throw if yaml snapshot does not contain an object', () => {
+        const dir = makeTempDir();
+        const filePath = path.join(dir, 'openapi.snapshot.yaml');
+        fs.writeFileSync(filePath, 'true');
+        expect(() => readOpenApiSnapshot(filePath, fs as any)).toThrow(
+            'Parsed YAML snapshot did not produce an object.',
+        );
+    });
+
+    it('should resolve .yml snapshot correctly', () => {
+        const dir = makeTempDir();
+        const ymlPath = path.join(dir, 'openapi.snapshot.yml');
+        fs.writeFileSync(ymlPath, 'openapi: 3.0.0');
+
+        const result = readOpenApiSnapshot(dir, fs as any);
+        expect(result.format).toBe('yaml');
+        expect(result.spec.openapi).toBe('3.0.0');
+    });
+
+    it('should throw if input is neither file nor directory', () => {
+        const dir = makeTempDir();
+        const fifoPath = path.join(dir, 'fifo');
+        const customFs = {
+            existsSync: () => true,
+            statSync: () => ({ isFile: () => false, isDirectory: () => false }),
+            readFileSync: () => '',
+        };
+        expect(() => readOpenApiSnapshot(fifoPath, customFs as any)).toThrow(
+            /Input path is neither a file nor a directory/,
+        );
+    });
+
+    it('should skip JSON resolution if yaml is found', () => {
+        const dir = makeTempDir();
+        const yamlPath = path.join(dir, 'openapi.snapshot.yaml');
+        fs.writeFileSync(yamlPath, 'openapi: 3.0.0');
+        const result = readOpenApiSnapshot(dir, fs as any);
+        expect(result.format).toBe('yaml');
+    });
 });

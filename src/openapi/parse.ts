@@ -468,8 +468,6 @@ export class SwaggerParser {
 
         for (const [key, val] of Object.entries(this.spec.components.links)) {
             if ('$ref' in val) {
-                // type-coverage:ignore-next-line
-
                 const resolved = this.resolveReference<LinkObject>((val as { $ref: string }).$ref);
 
                 if (resolved) links[key] = resolved;

@@ -196,3 +196,22 @@ tests/fixtures/cli-output/**
 tests/fixtures/cdd.bad.mjs
 tests/fixtures/cdd.config.mjs
 tests/fixtures/openapi.json
+
+# Additional aggressive wildcards for careless commits
+parse_lcov.cjs
+coverage-*.json
+coverage-*.txt
+test-failures*.txt
+*.patch
+*.diff
+tmp_*
+temp_*
+*.log
+*.sqlite3
+.lcov
+coverage.lcov
+*.out
+*.err
+test_*.ts
+print_*.cjs
+run_*.cjs

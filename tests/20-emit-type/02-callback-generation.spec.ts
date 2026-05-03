@@ -83,7 +83,6 @@ const callbackSpec = {
 };
 
 describe('Emitter: TypeGenerator (Callbacks)', () => {
-    // type-coverage:ignore-next-line
     const runGenerator = (
         spec: string | number | boolean | object | undefined | null,
         options: string | number | boolean | object | undefined | null = {},

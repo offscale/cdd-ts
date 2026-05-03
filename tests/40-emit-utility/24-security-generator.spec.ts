@@ -17,6 +17,22 @@ describe('Emitter: SecurityGenerator', () => {
         return project;
     };
 
+    it('should skip generating schemes if only requirements are present', () => {
+        const project = runGenerator({
+            openapi: '3.2.0',
+            info: { title: 'Security', version: '1.0' },
+            paths: {},
+            security: [{ ApiKeyAuth: [] }],
+            components: {},
+        });
+
+        const sourceFile = project.getSourceFileOrThrow('/out/security.ts');
+        const text = sourceFile.getText();
+
+        expect(text).toContain('API_SECURITY_REQUIREMENTS');
+        expect(text).not.toContain('API_SECURITY_SCHEMES');
+    });
+
     it('should handle empty security schemes gracefully', () => {
         const project = runGenerator({
             openapi: '3.0.0',
@@ -62,7 +78,6 @@ describe('Emitter: SecurityGenerator', () => {
     });
 
     it('should generate HTTP security definitions (Basic, Bearer)', () => {
-        // type-coverage:ignore-next-line
         const schemes: string | number | boolean | object | undefined | null = {
             BasicAuth: {
                 type: 'http',
@@ -149,6 +164,41 @@ describe('Emitter: SecurityGenerator', () => {
         expect(text).toContain('OpenID');
         expect(text).toContain('"type": "openIdConnect"');
         expect(text).toContain('"openIdConnectUrl": "https://example.com/.well-known/openid-configuration"');
+    });
+
+    it('should skip global security requirements when undefined but schemes exist', () => {
+        const project = runGenerator({
+            openapi: '3.2.0',
+            info: { title: 'Security', version: '1.0' },
+            paths: {},
+            components: {
+                securitySchemes: {
+                    ApiKeyAuth: { type: 'apiKey', in: 'header', name: 'X-API-KEY' },
+                },
+            },
+        });
+
+        const sourceFile = project.getSourceFileOrThrow('/out/security.ts');
+        const text = sourceFile.getText();
+
+        expect(text).not.toContain('API_SECURITY_REQUIREMENTS');
+        expect(text).toContain('API_SECURITY_SCHEMES');
+    });
+
+    it('should generate empty array when global security requirements are empty', () => {
+        const project = runGenerator({
+            openapi: '3.2.0',
+            info: { title: 'Security', version: '1.0' },
+            paths: {},
+            security: [],
+            components: {},
+        });
+
+        const sourceFile = project.getSourceFileOrThrow('/out/security.ts');
+        const text = sourceFile.getText();
+
+        expect(text).toContain('API_SECURITY_REQUIREMENTS');
+        expect(text).toContain('[]');
     });
 
     it('should emit global security requirements when present', () => {
@@ -250,5 +300,30 @@ describe('Emitter: SecurityGenerator', () => {
         expect(text).toContain(`${schemeUri}#/ApiKey`);
         expect(text).toContain('"type": "apiKey"');
         expect(text).toContain('"name": "X-API-KEY"');
+    });
+
+    it('should generate empty array for API_SECURITY_REQUIREMENTS if security is missing but schemes exist', () => {
+        const config = { input: '', output: '/out', options: {} };
+        const parser = new SwaggerParser(
+            {
+                openapi: '3.2.0',
+                info: { title: 'Security', version: '1.0' },
+                paths: {},
+                components: {
+                    securitySchemes: {
+                        ApiKeyAuth: { type: 'apiKey', in: 'header', name: 'X-API-KEY' },
+                    },
+                },
+            } as any,
+            config,
+        );
+        // Force securityRequirements to be null instead of undefined to trigger the coalescing operator
+        parser.getSpec().security = null as any;
+
+        const p = new Project({ useInMemoryFileSystem: true });
+        new SecurityGenerator(parser, p).generate('/out');
+        const text = p.getSourceFileOrThrow('/out/security.ts').getText();
+        expect(text).toContain('API_SECURITY_REQUIREMENTS');
+        expect(text).toContain('[]');
     });
 });

@@ -16,7 +16,6 @@ describe('Generators (Angular): FormComponentGenerator', () => {
     let config: GeneratorConfig;
     const validBase = { openapi: '3.0.0', info: { title: 'Test', version: '1.0' }, paths: {} };
 
-    // type-coverage:ignore-next-line
     const run = (
         spec: string | number | boolean | object | undefined | null,
         resourceOverrides: Partial<Resource> = {},
@@ -25,7 +24,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
 
         // Basic resource extraction simulation
         const schemaName = resourceOverrides.modelName || 'Test';
-        // type-coverage:ignore-next-line
+
         const mainSchema = spec.components?.schemas?.[schemaName] || spec.components?.schemas?.Test;
 
         // We need to simulate the behavior of discovery:
@@ -33,7 +32,6 @@ describe('Generators (Angular): FormComponentGenerator', () => {
         // 2. Resolve references so the builder sees the real schema content
         const formProps =
             resourceOverrides.formProperties ||
-            // type-coverage:ignore-next-line
             Object.entries(mainSchema?.properties || {}).map(([name, schema]) => {
                 let s = schema as SwaggerDefinition;
 
@@ -46,7 +44,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                 }
 
                 // Denormalize Required
-                // type-coverage:ignore-next-line
+
                 if (mainSchema.required && mainSchema.required.includes(name)) {
                     // Note: The analyzer expects 'required' to be present/truthy on the schema object
                     return { name, schema: { ...s, required: [name] } };
@@ -419,7 +417,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                         validationRules: [],
                         controlType: 'map',
                         schema: { type: 'object' },
-                        // type-coverage:ignore-next-line
+
                         mapValueControl: {
                             name: 'value',
                             propertyName: 'value',
@@ -485,7 +483,6 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                 listProperties: [],
             };
 
-            // type-coverage:ignore-next-line
             (generator as string | number | boolean | object | undefined | null).generateFormComponentTs(
                 resource,
                 '/admin/test/test-form',
@@ -553,7 +550,6 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                 listProperties: [],
             };
 
-            // type-coverage:ignore-next-line
             (generator as string | number | boolean | object | undefined | null).generateFormComponentTs(
                 resource,
                 '/admin/test-any/test-form',
@@ -613,7 +609,6 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                 listProperties: [],
             };
 
-            // type-coverage:ignore-next-line
             (generator as string | number | boolean | object | undefined | null).generateFormComponentTs(
                 resource,
                 '/admin/test-any-array/test-form',
@@ -651,7 +646,6 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                 listProperties: [],
             };
 
-            // type-coverage:ignore-next-line
             (generator as string | number | boolean | object | undefined | null).addOnSubmit(
                 classDeclaration,
                 createOnly,
@@ -680,7 +674,7 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                 formProperties: [],
                 listProperties: [],
             };
-            // type-coverage:ignore-next-line
+
             (generator as string | number | boolean | object | undefined | null).addOnSubmit(
                 classDeclaration,
                 updateOnly,
@@ -713,7 +707,6 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                 dependencyRules: [],
             };
 
-            // type-coverage:ignore-next-line
             (generator as string | number | boolean | object | undefined | null).addPatchForm(
                 classDeclaration,
                 { name: 'test', modelName: 'Test' } as string | number | boolean | object | undefined | null,
@@ -737,7 +730,6 @@ describe('Generators (Angular): FormComponentGenerator', () => {
                 hasMaps: true,
             };
 
-            // type-coverage:ignore-next-line
             (generator as string | number | boolean | object | undefined | null).addPatchForm(
                 classDeclaration,
                 { name: 'test', modelName: '' } as string | number | boolean | object | undefined | null,

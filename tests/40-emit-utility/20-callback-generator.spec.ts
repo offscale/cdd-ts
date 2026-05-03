@@ -130,11 +130,11 @@ describe('Emitter: CallbackGenerator', () => {
         const sourceFile = project.getSourceFileOrThrow('/out/callbacks.ts');
         const code = sourceFile.getText();
         const jsCode = ts.transpile(code, { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS });
-        // type-coverage:ignore-next-line
+
         const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
-        // type-coverage:ignore-next-line
+
         new Function('exports', jsCode)(moduleHelper.exports);
-        // type-coverage:ignore-next-line
+
         return moduleHelper.exports;
     };
 
@@ -147,43 +147,41 @@ describe('Emitter: CallbackGenerator', () => {
 
     it('should generate registry constant ignoring invalid refs', () => {
         const project = runGenerator(refCallbackSpec);
-        // type-coverage:ignore-next-line
+
         const { API_CALLBACKS } = compileGeneratedFile(project);
 
         // Should contain operation callback and component callback
-        // type-coverage:ignore-next-line
+
         expect(API_CALLBACKS).toHaveLength(2);
-        // type-coverage:ignore-next-line
+
         const opCallback = API_CALLBACKS.find(
             (c: string | number | boolean | object | undefined | null) => c.name === 'myWebhook',
         );
-        // type-coverage:ignore-next-line
+
         const componentCallback = API_CALLBACKS.find(
             (c: string | number | boolean | object | undefined | null) => c.name === 'MyCallback',
         );
 
-        // type-coverage:ignore-next-line
         expect(opCallback).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(opCallback?.scope).toBe('operation');
-        // type-coverage:ignore-next-line
+
         expect(opCallback?.expression).toBe('http://target.com?hook={$request.body#/id}');
-        // type-coverage:ignore-next-line
+
         expect(opCallback?.pathItem?.post?.requestBody?.content?.['application/json']).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(opCallback?.pathItem?.post?.responses?.['200']).toBeDefined();
 
-        // type-coverage:ignore-next-line
         expect(componentCallback).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(componentCallback?.scope).toBe('component');
 
         // Should NOT contain brokenWebhook because it resolves to undefined
-        // type-coverage:ignore-next-line
+
         const broken = API_CALLBACKS.find(
             (c: string | number | boolean | object | undefined | null) => c.name === 'brokenWebhook',
         );
-        // type-coverage:ignore-next-line
+
         expect(broken).toBeUndefined();
     });
 

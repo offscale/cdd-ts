@@ -136,7 +136,6 @@ describe('Analysis: validation.analyzer', () => {
     });
 
     it('should map required property (denormalized)', () => {
-        // type-coverage:ignore-next-line
         const schema: string | number | boolean | object | undefined | null = { required: ['true'] }; // Logic checks if required exists/truthy
         expect(analyzeValidationRules(schema)).toContainEqual({ type: 'required' });
     });
@@ -163,14 +162,13 @@ describe('Analysis: validation.analyzer', () => {
             not: { pattern: '^foo' },
         };
         const rules = analyzeValidationRules(schema);
-        // type-coverage:ignore-next-line
+
         const notRule = rules.find(r => r.type === 'not') as string | number | boolean | object | undefined | null;
 
-        // type-coverage:ignore-next-line
         expect(notRule).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(notRule.rules).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(notRule.rules).toContainEqual({ type: 'pattern', value: '^foo' });
     });
 

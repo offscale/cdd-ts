@@ -47,30 +47,29 @@ describe('Emitter: PathsGenerator', () => {
         const sourceFile = project.getSourceFileOrThrow('/out/paths.ts');
         const code = sourceFile.getText();
         const jsCode = ts.transpile(code, { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS });
-        // type-coverage:ignore-next-line
+
         const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
-        // type-coverage:ignore-next-line
+
         new Function('exports', jsCode)(moduleHelper.exports);
-        // type-coverage:ignore-next-line
+
         return moduleHelper.exports;
     };
 
     it('should generate registry map for path-level metadata', () => {
         const project = runGenerator(specWithPathMeta);
-        // type-coverage:ignore-next-line
+
         const { API_PATHS } = compileGeneratedFile(project);
 
-        // type-coverage:ignore-next-line
         expect(API_PATHS['/pets']).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(API_PATHS['/pets'].summary).toBe('Pets');
-        // type-coverage:ignore-next-line
+
         expect(API_PATHS['/pets'].description).toBe('Pet operations');
-        // type-coverage:ignore-next-line
+
         expect(API_PATHS['/pets'].parameters?.[0]?.name).toBe('trace');
-        // type-coverage:ignore-next-line
+
         expect(API_PATHS['/pets'].servers?.[0]?.url).toBe('https://api.example.com');
-        // type-coverage:ignore-next-line
+
         expect(API_PATHS['/pets']['x-release']).toBe('beta');
     });
 
@@ -83,6 +82,26 @@ describe('Emitter: PathsGenerator', () => {
             },
         };
         const project = runGenerator(emptySpec);
+        const sourceFile = project.getSourceFileOrThrow('/out/paths.ts');
+        expect(sourceFile.getText()).toContain('export { };');
+    });
+
+    it('should skip primitive or non-object paths in the generator', () => {
+        const primitiveSpec: SwaggerSpec = {
+            openapi: '3.2.0',
+            info: { title: 'Empty', version: '1.0' },
+            paths: {
+                '/ping': 'invalid' as any,
+                '/pong': null as any,
+            },
+        };
+        const parser = new SwaggerParser(
+            { openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} } as any,
+            { output: '/out', options: {} } as any,
+        );
+        parser.spec.paths = primitiveSpec.paths; // bypass validation manually
+        const project = new Project({ useInMemoryFileSystem: true });
+        new PathsGenerator(parser, project).generate('/out');
         const sourceFile = project.getSourceFileOrThrow('/out/paths.ts');
         expect(sourceFile.getText()).toContain('export { };');
     });

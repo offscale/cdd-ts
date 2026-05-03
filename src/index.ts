@@ -23,7 +23,13 @@ export type TestGeneratorConfig = {
     spec: object;
 };
 
-function getGeneratorFactory(framework: string, implementation?: string): IClientGenerator {
+/**
+ * Returns a generator factory instance matching the requested framework or implementation.
+ * @param framework The UI framework for the generator (e.g., 'angular', 'react', 'vue').
+ * @param implementation The specific implementation to use instead of a UI framework (e.g., 'fetch', 'axios', 'node').
+ * @returns An instance of a class implementing IClientGenerator.
+ */
+export function getGeneratorFactory(framework: string, implementation?: string): IClientGenerator {
     if (implementation === 'fetch') {
         return new FetchClientGenerator();
     }

@@ -38,6 +38,8 @@ describe('Admin: FormRenderer', () => {
                 { type: 'minProperties', value: 2 },
                 { type: 'maxProperties', value: 5 },
                 { type: 'contains', schema: { type: 'string' }, min: 1, max: 2 },
+                { type: 'contains' },
+                { type: 'contains', schema: { type: 'string' } },
                 { type: 'const', value: 'val' },
                 { type: 'const', value: 123 },
             ];
@@ -48,8 +50,9 @@ describe('Admin: FormRenderer', () => {
             expect(result).toContain('CustomValidators.minProperties(2)');
             expect(result).toContain('CustomValidators.maxProperties(5)');
             expect(result).toContain('CustomValidators.contains({\"type\":\"string\"}, 1, 2)');
+            expect(result).toContain('CustomValidators.contains({"type":"string"}, undefined, undefined)');
+            expect(result).toContain('CustomValidators.contains(true, undefined, undefined)');
         });
-
         it('should render nested `not` validator recursively', () => {
             const rules: ValidationRule[] = [
                 {
@@ -67,7 +70,6 @@ describe('Admin: FormRenderer', () => {
         });
 
         it('should throw an error on unhandled validation rule type', () => {
-            // type-coverage:ignore-next-line
             const badRule = { type: 'futureValidator' } as string | number | boolean | object | undefined | null;
             expect(() => ValidationRenderer.render([badRule])).toThrow(
                 'Unhandled validation rule type: futureValidator',

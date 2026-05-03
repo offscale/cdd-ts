@@ -14,35 +14,28 @@ import {
 import { branchCoverageSpec } from '../shared/specs.js';
 
 describe('Admin: resource-discovery (Coverage)', () => {
-    // type-coverage:ignore-next-line
     const ensureResponses = (spec: string | number | boolean | object | undefined | null) => {
-        // type-coverage:ignore-next-line
         if (!spec?.paths) return spec;
         const methods = ['get', 'post', 'put', 'delete', 'options', 'head', 'patch', 'trace', 'query'];
-        // type-coverage:ignore-next-line
+
         for (const pathItem of Object.values(spec.paths)) {
             if (!pathItem || typeof pathItem !== 'object') continue;
             for (const method of methods) {
-                // type-coverage:ignore-next-line
                 const operation = (pathItem as string | number | boolean | object | undefined | null)[method];
-                // type-coverage:ignore-next-line
+
                 if (operation && operation.responses === undefined) {
-                    // type-coverage:ignore-next-line
                     operation.responses = { '200': { description: 'ok' } };
                 }
             }
-            // type-coverage:ignore-next-line
+
             if ((pathItem as string | number | boolean | object | undefined | null).additionalOperations) {
-                // type-coverage:ignore-next-line
                 for (const operation of Object.values(
                     (pathItem as string | number | boolean | object | undefined | null).additionalOperations,
                 )) {
-                    // type-coverage:ignore-next-line
                     if (
                         operation &&
                         (operation as string | number | boolean | object | undefined | null).responses === undefined
                     ) {
-                        // type-coverage:ignore-next-line
                         (operation as string | number | boolean | object | undefined | null).responses = {
                             '200': { description: 'ok' },
                         };
@@ -50,7 +43,7 @@ describe('Admin: resource-discovery (Coverage)', () => {
                 }
             }
         }
-        // type-coverage:ignore-next-line
+
         return spec;
     };
 
@@ -62,9 +55,9 @@ describe('Admin: resource-discovery (Coverage)', () => {
             | object
             | undefined
             | null;
-        // type-coverage:ignore-next-line
+
         const specClone = ensureResponses(JSON.parse(JSON.stringify(spec)));
-        // type-coverage:ignore-next-line
+
         const parser = new SwaggerParser(specClone as string | number | boolean | object | undefined | null, config);
         return discoverAdminResources(parser);
     };

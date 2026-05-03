@@ -3,6 +3,18 @@ import tseslintParser from "@typescript-eslint/parser";
 
 export default [
     {
+        ignores: [
+            "**/node_modules/**",
+            "**/dist/**",
+            "**/out/**",
+            "**/coverage/**",
+            "**/ts-morph-as/**",
+            "**/wasm-stubs/**",
+            "**/tests/fixtures/cli-output/**",
+            "**/temp_gen_out_*/**"
+        ]
+    },
+    {
         files: ["**/*.ts", "**/*.js"],
         languageOptions: {
             parser: tseslintParser,

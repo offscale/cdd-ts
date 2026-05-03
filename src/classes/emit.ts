@@ -60,19 +60,13 @@ export class TypeGenerator {
                 const postOp = (pathItem as PathItem).post;
 
                 if (postOp && postOp.requestBody) {
-                    // type-coverage:ignore-next-line
-
                     const content =
                         (postOp.requestBody as Record<string, Record<string, { schema?: OpenApiValue }>>).content || {};
 
-                    // type-coverage:ignore-next-line
-
                     const jsonContent = content['application/json'] || content['*/*'];
-                    // type-coverage:ignore-next-line
 
                     if (jsonContent && jsonContent.schema) {
                         const modelName = pascalCase(name) + 'Webhook';
-                        // type-coverage:ignore-next-line
 
                         processDefinition(modelName, jsonContent.schema as SwaggerDefinition);
                     }
@@ -97,17 +91,11 @@ export class TypeGenerator {
                             const operation = pathItem[method];
 
                             if (operation && operation.requestBody) {
-                                // type-coverage:ignore-next-line
-
                                 const content =
                                     (operation.requestBody as Record<string, Record<string, { schema?: OpenApiValue }>>)
                                         .content || {};
 
-                                // type-coverage:ignore-next-line
-
                                 const jsonContent = content['application/json'] || content['*/*'];
-
-                                // type-coverage:ignore-next-line
 
                                 if (jsonContent && jsonContent.schema) {
                                     const opIdBase = op.operationId
@@ -115,7 +103,6 @@ export class TypeGenerator {
                                         : pascalCase(op.method + op.path);
 
                                     const modelName = `${opIdBase}${pascalCase(callbackName)}Request`;
-                                    // type-coverage:ignore-next-line
 
                                     processDefinition(modelName, jsonContent.schema as SwaggerDefinition);
                                 }

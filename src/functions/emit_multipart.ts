@@ -99,7 +99,6 @@ export class MultipartBuilderGenerator {
         }
 
         // Check if we can use native FormData or need Manual Blob
-        // @ts-ignore
         const encodingMap = config.encoding || {};
         const requiresManual = !!config.mediaType || Object.values(encodingMap).some(c => 
             (!!c.headers && Object.keys(c.headers).length > 0) || 
@@ -134,7 +133,6 @@ export class MultipartBuilderGenerator {
             if (value === undefined || value === null) return;
 
             const config = encodings[key] || {};
-            // @ts-ignore
             const contentType = config.contentType;
 
             if (Array.isArray(value)) {
@@ -165,7 +163,6 @@ export class MultipartBuilderGenerator {
                 formData.append(key, value);
             }
         } else if (contentType === 'application/json' || typeof value === 'object') {
-            // @ts-ignore
             const blob = new Blob([JSON.stringify(value)], { type: 'application/json' });
             formData.append(key, blob);
         } else {
@@ -187,7 +184,6 @@ export class MultipartBuilderGenerator {
         const parts: string | number | boolean | object | undefined | null[] = [];
         const crlf = '\\r\\n';
         
-        // @ts-ignore
         
         const encodings = config.encoding || {};
         const normalizeStyle = (style?: string) => style || 'form';
@@ -200,7 +196,6 @@ export class MultipartBuilderGenerator {
             return ',';
         };
         const serializeArrayValue = (items: string | number | boolean | object | undefined | null[], style: string) =>
-            // @ts-ignore
             items.map(v => String(v)).join(getDelimiter(style));
         const serializeObjectValue = (obj: Record<string, string | number | boolean | object | undefined | null>, style: string) =>
             Object.entries(obj)
@@ -224,12 +219,10 @@ export class MultipartBuilderGenerator {
                 if (Array.isArray(value)) {
                     if (explode) {
                         value.forEach(v => {
-                            // @ts-ignore
                             this.appendPart(parts as (string | Blob)[], String(v), { ...itemConfig, contentType: undefined }, boundary, disp);
                         });
                     } else {
                         const serialized = serializeArrayValue(value, style);
-                        // @ts-ignore
                         this.appendPart(parts as (string | Blob)[], serialized, { ...itemConfig, contentType: undefined }, boundary, disp);
                     }
                     return;
@@ -239,7 +232,6 @@ export class MultipartBuilderGenerator {
                     if (explode) {
                         Object.entries(value).forEach(([entryKey, entryValue]) => {
                             const entryDisp = \`Content-Disposition: form-data; name="\${entryKey}"\`;
-                            // @ts-ignore
                             this.appendPart(
                                 parts as (string | Blob)[],
                                 String(entryValue),
@@ -250,13 +242,11 @@ export class MultipartBuilderGenerator {
                         });
                     } else {
                         const serialized = serializeObjectValue(value as Record<string, string | number | boolean | object | undefined | null>, style);
-                        // @ts-ignore
                         this.appendPart(parts as (string | Blob)[], serialized, { ...itemConfig, contentType: undefined }, boundary, disp);
                     }
                     return;
                 }
 
-                // @ts-ignore
 
                 this.appendPart(parts as (string | Blob)[], String(value), { ...itemConfig, contentType: undefined }, boundary, disp);
                 return;
@@ -266,17 +256,14 @@ export class MultipartBuilderGenerator {
             values.forEach(v => {
                 // For Object-based multipart, Content-Disposition is required with a name
                 const disp = \`Content-Disposition: form-data; name="\${key}"\`;
-                // @ts-ignore
                 this.appendPart(parts as (string | Blob)[], v, itemConfig, boundary, disp);
             });
         });
 
-        // @ts-ignore
 
         parts.push('--' + boundary + '--' + crlf);
 
         const mediaType = config.mediaType || 'multipart/form-data';
-        // @ts-ignore
         const blob = new Blob(parts as (string | Blob)[], { type: mediaType });
         
         return { 
@@ -311,18 +298,15 @@ export class MultipartBuilderGenerator {
             }
 
             // For Array-based multipart (mixed), Content-Disposition is usually NOT sent, or sent without name.
-            // @ts-ignore
             this.appendPart(parts as (string | Blob)[], item, itemConfig, boundary, undefined);
         });
 
-        // @ts-ignore
 
         parts.push('--' + boundary + '--' + crlf);
 
         // Default to multipart/mixed for arrays unless specified
         const forcedType = config.mediaType || 'multipart/mixed';
 
-        // @ts-ignore
 
         const blob = new Blob(parts as (string | Blob)[], { type: forcedType });
         
@@ -374,7 +358,6 @@ export class MultipartBuilderGenerator {
         }
 
         // 2. Content-Type
-        // @ts-ignore
         let partContentType = config.contentType;
         if (!partContentType) {
             if (value instanceof Blob) partContentType = value.type || "application/octet-stream";
@@ -383,23 +366,19 @@ export class MultipartBuilderGenerator {
         }
 
         // 3. Value Serialization & Nested Multipart
-        // @ts-ignore
         let payload: string | Blob | FormData = value;
 
         if (partContentType && partContentType.includes('multipart')) {
             // Recurse!
             // Check if we have nested Map-based config
-            // @ts-ignore
             const nestedConfig = config.encoding ? { encoding: config.encoding } : {};
             
             // We simple pass the inner config we have.
             // Note: we ignore mediaType for nested, allowing default or inferred
             const nestedResult = (Array.isArray(value)) 
                 ? this.serializeArrayManual(value, config as MultipartConfig) 
-                // @ts-ignore
                 : this.serializeObjectManual(value, config.encoding ? { encoding: config.encoding } : {});
                 
-            // @ts-ignore
                 
             payload = nestedResult.content as string | number | boolean | object | undefined | null;
             
@@ -409,9 +388,7 @@ export class MultipartBuilderGenerator {
                 const nestedBoundary = boundaryMatch ? boundaryMatch[1] : null;
                 
                 if (nestedBoundary) {
-                    // @ts-ignore
                     if (config.contentType) {
-                        // @ts-ignore
                         const baseType = config.contentType.split(';')[0];
                         partContentType = \`\${baseType}; boundary=\${nestedBoundary}\`;
                     } else {
@@ -427,12 +404,9 @@ export class MultipartBuilderGenerator {
             headersStr += \`Content-Type: \${partContentType}\${crlf}\`;
         }
 
-        // @ts-ignore
 
         parts.push('--' + boundary + crlf + headersStr + crlf);
-        // @ts-ignore
         parts.push(payload as string | number | boolean | object | undefined | null);
-        // @ts-ignore
         parts.push(crlf);
             `,
         });

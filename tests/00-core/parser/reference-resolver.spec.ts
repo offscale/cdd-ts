@@ -49,9 +49,9 @@ describe('Core: ReferenceResolver', () => {
 
         it('should skip inherited properties and avoid re-adding anchors', () => {
             const proto = { inherited: { $anchor: 'skip' } };
-            // type-coverage:ignore-next-line
+
             const spec = Object.create(proto);
-            // type-coverage:ignore-next-line
+
             spec.schemas = {
                 User: { $id: 'http://example.com/user', $anchor: 'local', $dynamicAnchor: 'dyn' },
             };
@@ -116,7 +116,7 @@ describe('Core: ReferenceResolver', () => {
                 },
             };
             cache.set(rootUri, spec as string | number | boolean | object | undefined | null);
-            // type-coverage:ignore-next-line
+
             const res = resolver.resolveReference('#/paths/~12.0~1repositories~1%7Busername%7D/get') as
                 | string
                 | number
@@ -124,7 +124,7 @@ describe('Core: ReferenceResolver', () => {
                 | object
                 | undefined
                 | null;
-            // type-coverage:ignore-next-line
+
             expect(res?.operationId).toBe('getRepo');
         });
 
@@ -158,7 +158,7 @@ describe('Core: ReferenceResolver', () => {
 
         it('should ignore inherited ref properties', () => {
             const proto = { inherited: { $ref: '#/proto' } };
-            // type-coverage:ignore-next-line
+
             const obj = Object.create(proto);
             const refs = ReferenceResolver.findRefs(obj);
             expect(refs).toEqual([]);
@@ -179,13 +179,13 @@ describe('Core: ReferenceResolver', () => {
                 description: 'Overridden',
                 summary: 'Summary',
             };
-            // type-coverage:ignore-next-line
+
             const res: string | number | boolean | object | undefined | null = resolver.resolve(refObj);
-            // type-coverage:ignore-next-line
+
             expect(res.type).toBe('string');
-            // type-coverage:ignore-next-line
+
             expect(res.description).toBe('Overridden');
-            // type-coverage:ignore-next-line
+
             expect(res.summary).toBe('Summary');
         });
 
@@ -201,11 +201,11 @@ describe('Core: ReferenceResolver', () => {
                 $ref: '#/defs/Target',
                 description: 'Only description',
             };
-            // type-coverage:ignore-next-line
+
             const res: string | number | boolean | object | undefined | null = resolver.resolve(refObj);
-            // type-coverage:ignore-next-line
+
             expect(res.description).toBe('Only description');
-            // type-coverage:ignore-next-line
+
             expect(res.summary).toBeUndefined();
         });
 
@@ -221,11 +221,11 @@ describe('Core: ReferenceResolver', () => {
                 $ref: '#/defs/Target',
                 summary: 'Only summary',
             };
-            // type-coverage:ignore-next-line
+
             const res: string | number | boolean | object | undefined | null = resolver.resolve(refObj);
-            // type-coverage:ignore-next-line
+
             expect(res.summary).toBe('Only summary');
-            // type-coverage:ignore-next-line
+
             expect(res.description).toBe('Original');
         });
 
@@ -261,10 +261,9 @@ describe('Core: ReferenceResolver', () => {
             cache.set(rootUri, spec as string | number | boolean | object | undefined | null);
             ReferenceResolver.indexSchemaIds(spec, rootUri, cache);
 
-            // type-coverage:ignore-next-line
             const refObj = (spec as string | number | boolean | object | undefined | null).components.schemas.Foo
                 .properties.bar;
-            // type-coverage:ignore-next-line
+
             const resolved = resolver.resolve(refObj as string | number | boolean | object | undefined | null) as
                 | string
                 | number
@@ -273,9 +272,8 @@ describe('Core: ReferenceResolver', () => {
                 | undefined
                 | null;
 
-            // type-coverage:ignore-next-line
             expect(resolved).toBeDefined();
-            // type-coverage:ignore-next-line
+
             expect(resolved.type).toBe('string');
         });
     });
@@ -316,7 +314,7 @@ describe('Core: ReferenceResolver', () => {
             ReferenceResolver.indexSchemaIds(specificSchema, 'http://base/specific', cache);
 
             const stack = ['http://base/specific', 'http://base/generic'];
-            // type-coverage:ignore-next-line
+
             const resolved = resolver.resolveReference('#item', 'http://base/generic', stack) as
                 | string
                 | number
@@ -325,11 +323,10 @@ describe('Core: ReferenceResolver', () => {
                 | undefined
                 | null;
 
-            // type-coverage:ignore-next-line
             expect(resolved).toBeDefined();
-            // type-coverage:ignore-next-line
+
             expect(resolved.type).toBe('number');
-            // type-coverage:ignore-next-line
+
             expect(resolved.description).toBe('override number');
         });
 
@@ -349,7 +346,6 @@ describe('Core: ReferenceResolver', () => {
             cache.set('http://base/generic', genericSchema as string | number | boolean | object | undefined | null);
             ReferenceResolver.indexSchemaIds(genericSchema, 'http://base/generic', cache);
 
-            // type-coverage:ignore-next-line
             const resolved = resolver.resolveReference('#item', 'http://base/generic', []) as
                 | string
                 | number
@@ -358,9 +354,8 @@ describe('Core: ReferenceResolver', () => {
                 | undefined
                 | null;
 
-            // type-coverage:ignore-next-line
             expect(resolved).toBeDefined();
-            // type-coverage:ignore-next-line
+
             expect(resolved.type).toBe('string');
         });
 
@@ -391,19 +386,16 @@ describe('Core: ReferenceResolver', () => {
             cache.set('http://base/specific', specificSchema as string | number | boolean | object | undefined | null);
             ReferenceResolver.indexSchemaIds(specificSchema, 'http://base/specific', cache);
 
-            // type-coverage:ignore-next-line
             const resolved = resolver.resolveReference('#item', 'http://base/specific', [
                 'http://base/specific#/defs/overrideItem',
             ]) as string | number | boolean | object | undefined | null;
 
-            // type-coverage:ignore-next-line
             expect(resolved?.type).toBe('number');
         });
     });
 
     describe('resolveReference edge cases', () => {
         it('should return entire document when ref has no pointer', () => {
-            // type-coverage:ignore-next-line
             const spec = { openapi: '3.0.0', paths: { '/x': {} } } as
                 | string
                 | number
@@ -413,7 +405,7 @@ describe('Core: ReferenceResolver', () => {
                 | null;
             cache.set('http://doc.com/root.json', spec);
             const res = resolver.resolveReference('http://doc.com/root.json');
-            // type-coverage:ignore-next-line
+
             expect(res).toBe(spec);
         });
 
@@ -432,13 +424,37 @@ describe('Core: ReferenceResolver', () => {
             }
 
             const customCache = new NonHasCache();
-            // type-coverage:ignore-next-line
+
             const spec = { openapi: '3.0.0', paths: {} } as string | number | boolean | object | undefined | null;
             customCache.set('http://doc.com/root.json', spec);
             const customResolver = new ReferenceResolver(customCache, 'http://doc.com/root.json');
             const res = customResolver.resolveReference('http://doc.com/root.json');
-            // type-coverage:ignore-next-line
+
             expect(res).toBe(spec);
+        });
+
+        it('should handle malformed JSON pointer fragments without throwing', () => {
+            // "%" without a valid hex code throws URIError in decodeURIComponent
+            const res = resolver.resolveReference('#/%');
+            expect(res).toBeUndefined();
+        });
+
+        it('should fallback to returning value if split returns empty in stripFragment', () => {
+            // This happens when there is no fragment or some weird JS edge case.
+            // A simple test to cover the `?? value` fallback.
+            // By overriding String.prototype.split temporarily we can force it.
+            const originalSplit = String.prototype.split;
+            String.prototype.split = function (this: string, separator: string | RegExp, limit?: number) {
+                if (separator === '#' && limit === 1) return { 0: undefined } as any; // Mock array where index 0 is undefined
+                return originalSplit.call(this, separator, limit);
+            } as any;
+
+            cache.set('weird#context#weird', 1 as any);
+            // This will call stripFragment in ReferenceResolver.resolveReference for the dynamic schema
+            const res = resolver.resolveReference('weird#weird', rootUri, ['weird#context']);
+            expect(res).toBe(1);
+
+            String.prototype.split = originalSplit;
         });
     });
 });

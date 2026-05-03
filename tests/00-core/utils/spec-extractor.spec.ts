@@ -451,11 +451,9 @@ describe('Core Utils: Spec Extractor', () => {
                 resolveRef as string | number | boolean | object | undefined | null,
             );
             const requestSchema = pathInfo.requestBody?.content?.['application/json'].schema as SwaggerDefinition;
-            // type-coverage:ignore-next-line
-            const responseSchema = // type-coverage:ignore-next-line
-                (pathInfo.responses as string | number | boolean | object | undefined | null)['200']?.content?.[
-                    'application/json'
-                ].schema as SwaggerDefinition;
+
+            const responseSchema = (pathInfo.responses as string | number | boolean | object | undefined | null)['200']
+                ?.content?.['application/json'].schema as SwaggerDefinition;
 
             expect(requestSchema).toEqual({
                 type: 'object',
@@ -510,15 +508,67 @@ describe('Core Utils: Spec Extractor', () => {
                                 in: 'query',
                                 content: { 'application/json': { schema: { type: 'string' } } },
                             },
+                            {
+                                name: 'q2',
+                                in: 'query',
+                                $ref: '#/components/parameters/DeepQuery',
+                            },
+                            {
+                                name: 'q3',
+                                in: 'query',
+                                content: { 'application/json': {} },
+                            },
+                            {
+                                name: 'q4',
+                                in: 'query',
+                                content: {},
+                            },
+                            {
+                                name: 'q5',
+                                in: 'query',
+                                content: { 'application/json': { schema: undefined } },
+                            },
+                            {
+                                name: 'q6',
+                                in: 'query',
+                                content: { '': { schema: undefined } },
+                            },
                         ],
                         responses: { '200': { description: 'ok' } },
                     },
                 },
             };
+
+            const specWithComp = {
+                paths: swaggerPaths,
+                components: {
+                    parameters: {
+                        DeepQuery: {
+                            name: 'q2',
+                            in: 'query',
+                            content: { 'application/json': { schema: { type: 'number' } } },
+                        },
+                    },
+                },
+            };
+            const resolveRef = (ref: string) => {
+                if (ref === '#/components/parameters/DeepQuery') {
+                    return specWithComp.components.parameters.DeepQuery;
+                }
+                return undefined;
+            };
+
             const [pathInfo] = utils.extractPaths(
                 swaggerPaths as string | number | boolean | object | undefined | null,
+                resolveRef as any,
             );
-            expect(pathInfo.parameters![0].schema).toEqual({ type: 'string' });
+            const ps = pathInfo.parameters!;
+
+            expect(ps.find(p => p.name === 'q')?.schema).toEqual({ type: 'string' });
+            expect(ps.find(p => p.name === 'q2')?.schema).toEqual({ type: 'number' });
+            expect(ps.find(p => p.name === 'q3')?.schema).toEqual({});
+            expect(ps.find(p => p.name === 'q4')?.schema).toEqual({});
+            expect(ps.find(p => p.name === 'q5')?.schema).toEqual({});
         });
 
         it('should construct schema from flat parameter properties if schema is missing', () => {
@@ -545,7 +595,7 @@ describe('Core Utils: Spec Extractor', () => {
             expect(schema).toBeDefined();
             const schema0: SwaggerDefinition = schema as SwaggerDefinition;
             expect(schema0.type).toBe('array');
-            // type-coverage:ignore-next-line
+
             expect((schema0!.items as string | number | boolean | object | undefined | null).type).toBe('string');
             expect(schema0!.format).toBe('uuid');
         });
@@ -691,7 +741,11 @@ describe('Core Utils: Spec Extractor', () => {
                 '/mix': {
                     parameters: [undefined, { name: 'shared', in: 'query', schema: { type: 'string' } }],
                     get: {
-                        parameters: [null, { name: 'op', in: 'query', schema: { type: 'string' }, style: 'form' }],
+                        parameters: [
+                            null,
+                            { name: 'op', in: 'query', schema: { type: 'string' }, style: 'form' },
+                            { name: 'c', in: 'query', content: { 'application/json': { schema: { type: 'number' } } } },
+                        ],
                         responses: { '200': { description: 'ok' } },
                     },
                 },
@@ -701,6 +755,8 @@ describe('Core Utils: Spec Extractor', () => {
             );
             const opParam = pathInfo.parameters!.find(p => p.name === 'op');
             expect(opParam?.explode).toBe(true);
+            const cParam = pathInfo.parameters!.find(p => p.name === 'c');
+            expect(cParam?.schema).toEqual({ type: 'number' });
         });
 
         it('should preserve explicit explode values when provided', () => {

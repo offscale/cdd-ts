@@ -9,7 +9,7 @@ import { discoverAdminResources } from '@src/vendors/angular/admin/resource-disc
 import { branchCoverageSpec, coverageSpec, finalCoveragePushSpec } from '../fixtures/coverage.fixture.js';
 
 const config: GeneratorConfig = { input: '', output: '', options: {} };
-// type-coverage:ignore-next-line
+
 const createParser = (spec: string | number | boolean | object | undefined | null) => new SwaggerParser(spec, config);
 const validBase = { openapi: '3.0.0', info: { title: 'Test', version: '1.0' } };
 
@@ -103,7 +103,7 @@ describe('Admin: discoverAdminResources', () => {
             ],
             parser,
         );
-        // type-coverage:ignore-next-line
+
         const propNames = props.map((p: string | number | boolean | object | undefined | null) => p.name);
 
         // Ideally 'petType' is found. 'name' is in the subclass (Cat) and is NOT merged into the top level
@@ -125,7 +125,6 @@ describe('Admin: discoverAdminResources', () => {
         const parser = createParser(spec);
         const schemaWithInline = parser.getDefinition('InlineSchemaProperty')!;
 
-        // type-coverage:ignore-next-line
         const fakeOps = [
             {
                 method: 'GET',
@@ -133,7 +132,6 @@ describe('Admin: discoverAdminResources', () => {
                     '200': {
                         description: 'ok',
                         content: {
-                            // type-coverage:ignore-next-line
                             'application/json': {
                                 schema: (schemaWithInline as string | number | boolean | object | undefined | null)
                                     .properties!.inline,

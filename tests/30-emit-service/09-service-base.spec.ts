@@ -55,7 +55,6 @@ describe('Generators: Service Base', () => {
 
         generator.generate('/out', { Test: operations });
 
-        // type-coverage:ignore-next-line
         expect(operations[0].methodName).toBe('badName');
     });
 });

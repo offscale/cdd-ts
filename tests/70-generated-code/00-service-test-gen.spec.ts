@@ -12,11 +12,8 @@ import { camelCase } from '@src/functions/utils.js';
  * Propagates op.operationId to op.methodName if missing
  */
 function setOperationMethodNames(operations: string | number | boolean | object | undefined | null[]) {
-    // type-coverage:ignore-next-line
     for (const op of operations) {
-        // type-coverage:ignore-next-line
         if (op && op.operationId && !op.methodName) {
-            // type-coverage:ignore-next-line
             op.methodName = camelCase(op.operationId);
         }
     }
@@ -41,20 +38,19 @@ describe('Generated Code: Service Test Generators', () => {
     /**
      * Setup function that always sets methodName on operations as needed.
      */
-    // type-coverage:ignore-next-line
+
     const setupTestGen = (specPart: string | number | boolean | object | undefined | null) => {
-        // type-coverage:ignore-next-line
         const specClone = JSON.parse(JSON.stringify(specPart));
         const spec = {
             openapi: '3.0.0',
             info: { title: 'Test Gen', version: '1.0' },
-            // type-coverage:ignore-next-line
+
             paths: {
                 '/dummy': { get: { responses: { '204': { description: 'ok' } } } },
-                // type-coverage:ignore-next-line
+
                 ...specClone.paths,
             },
-            // type-coverage:ignore-next-line
+
             components: specClone.components || {},
         };
         const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
@@ -138,6 +134,143 @@ describe('Generated Code: Service Test Generators', () => {
             expect(text).toContain('service.getRoot().subscribe({');
         });
 
+        it('should hit branch conditions for test mock string evaluation and parameter sort', () => {
+            const stringMockSpec = {
+                openapi: '3.0.0',
+                info: { title: 'StringMock', version: '1.0' },
+                components: {
+                    schemas: {
+                        StringAlias: { type: 'string', example: 'example-string' },
+                    },
+                },
+                paths: {
+                    '/test': {
+                        post: {
+                            operationId: 'testStringMocks',
+                            parameters: [
+                                { name: 'opt1', in: 'query', schema: { type: 'string' }, required: false },
+                                { name: 'req1', in: 'query', schema: { type: 'string' }, required: true },
+                                { name: 'opt2', in: 'query', schema: { type: 'string' }, required: false },
+                                { name: 'req2', in: 'query', schema: { type: 'string' }, required: true },
+                            ],
+                            requestBody: {
+                                required: true,
+                                content: {
+                                    'application/json': { schema: { $ref: '#/components/schemas/StringAlias' } },
+                                },
+                            },
+                            responses: {
+                                '200': {
+                                    description: 'Single string model',
+                                    content: {
+                                        'application/json': { schema: { $ref: '#/components/schemas/StringAlias' } },
+                                    },
+                                },
+                                '201': {
+                                    description: 'Array of string model',
+                                    content: {
+                                        'application/json': {
+                                            schema: {
+                                                type: 'array',
+                                                items: { $ref: '#/components/schemas/StringAlias' },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    '/test-array': {
+                        post: {
+                            operationId: 'testStringMocksArray',
+                            responses: {
+                                '200': {
+                                    description: 'Array of string model',
+                                    content: {
+                                        'application/json': {
+                                            schema: {
+                                                type: 'array',
+                                                items: { $ref: '#/components/schemas/StringAlias' },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            };
+
+            const { parser, testGen } = setupTestGen(stringMockSpec);
+
+            // Direct mock data generator coverage
+            const mockGen = (testGen as any).mockDataGenerator;
+            expect(mockGen.extractRefName('')).toBeUndefined();
+            expect(mockGen.extractRefName('http://example.com/schema.json')).toBeUndefined();
+            expect(mockGen.extractRefName('#/')).toBeUndefined();
+
+            mockGen.generate('lower-case-schema'); // Missed schemaName !== normalizedName branch
+            mockGen.generateValue({ $ref: 'http://example.com/schema.json' }, new Set(), 5); // Missed fallback branch
+
+            const ops = parser.operations.filter(
+                op => op.operationId === 'testStringMocks' || op.operationId === 'testStringMocksArray',
+            );
+            ops.forEach(op => {
+                op.methodName = op.operationId;
+            });
+
+            testGen.generateServiceTestFile('default', ops as any, '/');
+
+            const sourceFile = project.getSourceFileOrThrow('/default.service.spec.ts');
+            const text = sourceFile.getFullText();
+
+            // We expect req params to be sorted before opt params
+            expect(text).toContain('const req1 =');
+            expect(text).toContain('const req2 =');
+            expect(text).toContain('const opt1 =');
+            expect(text).toContain('const opt2 =');
+            expect(text).toContain('const body = "example-string"');
+        });
+
+        it('should handle named body models', () => {
+            const spec = {
+                openapi: '3.0.0',
+                info: { title: 'Edge', version: '1' },
+                paths: {
+                    '/post-named': {
+                        post: {
+                            operationId: 'postNamed',
+                            requestBody: {
+                                content: {
+                                    'application/json': {
+                                        schema: { $ref: '#/components/schemas/NamedModel' },
+                                    },
+                                },
+                            },
+                            responses: { '200': { description: 'ok' } },
+                        },
+                    },
+                },
+                components: {
+                    schemas: {
+                        NamedModel: { type: 'object', properties: { id: { type: 'integer' } } },
+                    },
+                },
+            };
+            const { parser, testGen } = setupTestGen(spec);
+            const ops = parser.operations;
+            setOperationMethodNames(ops as string | number | boolean | object | undefined | null[]);
+
+            testGen.generateServiceTestFile('named', ops as string | number | boolean | object | undefined | null, '/');
+            const sourceFile = project.getSourceFileOrThrow('/named.service.spec.ts');
+            const text = sourceFile.getFullText();
+
+            expect(text).toContain(
+                'const namedModel = { "id": 123 } as string | number | boolean | object | undefined | null as NamedModel;',
+            );
+            expect(text).toContain('service.postNamed(namedModel).subscribe({');
+        });
+
         it('should handle edge case responses (string, boolean, model arrays) and non-model mixed bodies', () => {
             // Create specialized parser for edge cases covering remaining branches
             const edgeCaseSpec = {
@@ -197,6 +330,19 @@ describe('Generated Code: Service Test Generators', () => {
                             responses: { '200': { description: 'ok' } },
                         },
                     },
+                    '/post-primitive-body': {
+                        post: {
+                            operationId: 'postPrimitiveBody',
+                            requestBody: {
+                                content: {
+                                    'application/json': {
+                                        schema: { type: 'string' },
+                                    },
+                                },
+                            },
+                            responses: { '200': { description: 'ok' } },
+                        },
+                    },
                 },
                 components: {
                     schemas: {
@@ -227,6 +373,10 @@ describe('Generated Code: Service Test Generators', () => {
             // Matches `} else if (bodyParam) {` fallback for non-primitive, non-model bodies
             expect(text).toContain(
                 "const body = { data: 'test-body' } as string | number | boolean | object | undefined | null as { arbitrary?: string };",
+            );
+
+            expect(text).toContain(
+                "const body = 'test-body' as string | number | boolean | object | undefined | null as string;",
             );
         });
 
@@ -411,7 +561,6 @@ describe('Generated Code: Service Test Generators', () => {
 
             // examples map with dataValue/value/serializedValue
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -421,7 +570,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBe("'dv'");
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -431,7 +579,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBe("'val'");
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -447,7 +594,6 @@ describe('Generated Code: Service Test Generators', () => {
                 .mockReturnValueOnce({ serializedValue: 'rser' });
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -457,7 +603,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBe("'rdv'");
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -467,7 +612,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBe("'rval'");
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -480,7 +624,6 @@ describe('Generated Code: Service Test Generators', () => {
 
             // examples map with empty object (no keys)
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -491,7 +634,6 @@ describe('Generated Code: Service Test Generators', () => {
 
             // examples map object missing known example keys
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -502,7 +644,6 @@ describe('Generated Code: Service Test Generators', () => {
 
             const unresolvedSpy = vi.spyOn(parser, 'resolveReference').mockReturnValueOnce(undefined);
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -514,7 +655,6 @@ describe('Generated Code: Service Test Generators', () => {
 
             // examples map literal value
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -525,7 +665,6 @@ describe('Generated Code: Service Test Generators', () => {
 
             // schema-based examples
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -534,7 +673,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBe("'sdv'");
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -543,7 +681,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBe("'sex'");
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -553,7 +690,6 @@ describe('Generated Code: Service Test Generators', () => {
 
             // schema $ref should skip schema example branch
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -563,7 +699,6 @@ describe('Generated Code: Service Test Generators', () => {
 
             // content examples
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -573,7 +708,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBe(JSON.stringify({ a: 1 }));
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -583,7 +717,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBeUndefined();
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -593,7 +726,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBeUndefined();
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -603,7 +735,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBeUndefined();
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -613,7 +744,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBeUndefined();
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -627,7 +757,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBe("'cdv'");
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -641,7 +770,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBe('42');
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -658,14 +786,12 @@ describe('Generated Code: Service Test Generators', () => {
         it('should cover example fallthroughs without value keys', () => {
             const { parser, testGen } = setupTestGen({ paths: {} });
 
-            // type-coverage:ignore-next-line
             const resolvedSerialized = Object.create(null) as string | number | boolean | object | undefined | null;
-            // type-coverage:ignore-next-line
+
             resolvedSerialized.serializedValue = 'rser-null';
 
             const resolveSpy = vi.spyOn(parser, 'resolveReference').mockReturnValueOnce(resolvedSerialized);
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -675,32 +801,27 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBe("'rser-null'");
             resolveSpy.mockRestore();
 
-            // type-coverage:ignore-next-line
             const emptyExamples = Object.create(null);
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
-                    // type-coverage:ignore-next-line
+
                     examples: emptyExamples,
                 }),
             ).toBeUndefined();
 
-            // type-coverage:ignore-next-line
             const contentSerialized = Object.create(null) as string | number | boolean | object | undefined | null;
-            // type-coverage:ignore-next-line
+
             contentSerialized.serializedValue = 'cser-null';
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
                     schema: { type: 'string' },
                     content: {
                         'application/json': {
-                            // type-coverage:ignore-next-line
                             examples: { a: contentSerialized },
                         },
                     },
@@ -713,7 +834,6 @@ describe('Generated Code: Service Test Generators', () => {
 
             const resolvedSpy = vi.spyOn(parser, 'resolveReference').mockReturnValueOnce({ serializedValue: 'only' });
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -724,7 +844,6 @@ describe('Generated Code: Service Test Generators', () => {
             resolvedSpy.mockRestore();
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -738,7 +857,6 @@ describe('Generated Code: Service Test Generators', () => {
             ).toBe("'only-content'");
 
             expect(
-                // type-coverage:ignore-next-line
                 (testGen as string | number | boolean | object | undefined | null).getParameterExampleValue({
                     name: 'p',
                     in: 'query',
@@ -751,7 +869,6 @@ describe('Generated Code: Service Test Generators', () => {
         it('should handle undefined parameters in internal helpers', () => {
             const { testGen } = setupTestGen({ paths: {} });
 
-            // type-coverage:ignore-next-line
             const output = (testGen as string | number | boolean | object | undefined | null).generateMethodTests([
                 {
                     methodName: 'doThing',
@@ -762,10 +879,8 @@ describe('Generated Code: Service Test Generators', () => {
                 },
             ]);
 
-            // type-coverage:ignore-next-line
             expect(output.join('\n')).toContain('doThing');
 
-            // type-coverage:ignore-next-line
             const imports = (testGen as string | number | boolean | object | undefined | null).collectModelImports([
                 {
                     method: 'GET',
@@ -775,29 +890,47 @@ describe('Generated Code: Service Test Generators', () => {
                 },
             ]);
 
-            // type-coverage:ignore-next-line
             expect(imports.size).toBe(0);
         });
 
         it('should handle primitive defaults in generateDefaultPrimitiveValue', () => {
             const { testGen } = setupTestGen({ paths: {} });
 
-            // type-coverage:ignore-next-line
             expect(
                 (testGen as string | number | boolean | object | undefined | null).generateDefaultPrimitiveValue({
                     type: 'integer',
                 }),
             ).toBe('123');
-            // type-coverage:ignore-next-line
+
             expect(
                 (testGen as string | number | boolean | object | undefined | null).generateDefaultPrimitiveValue({
                     type: 'boolean',
                 }),
             ).toBe('true');
-            // type-coverage:ignore-next-line
+
             expect(
                 (testGen as string | number | boolean | object | undefined | null).generateDefaultPrimitiveValue({
                     type: 'string',
+                }),
+            ).toBe("'test-value'");
+
+            expect(
+                (testGen as string | number | boolean | object | undefined | null).generateDefaultPrimitiveValue(
+                    { type: 'string', format: 'binary' },
+                    'File',
+                ),
+            ).toBe('new File([""], "test.txt")');
+
+            expect(
+                (testGen as string | number | boolean | object | undefined | null).generateDefaultPrimitiveValue(
+                    { type: 'string', format: 'binary' },
+                    'Blob',
+                ),
+            ).toBe('new Blob([""])');
+
+            expect(
+                (testGen as string | number | boolean | object | undefined | null).generateDefaultPrimitiveValue({
+                    type: 'null',
                 }),
             ).toBe("'test-value'");
         });
@@ -902,16 +1035,14 @@ describe('Generated Code: Service Test Generators', () => {
                 if (!op.methodName && op.operationId) op.methodName = op.operationId;
             }
 
-            // type-coverage:ignore-next-line
             const imports = (testGen as string | number | boolean | object | undefined | null).collectModelImports(
                 parser.operations,
             );
 
-            // type-coverage:ignore-next-line
             expect(imports.has('Filter')).toBe(true);
-            // type-coverage:ignore-next-line
+
             expect(imports.has('BodyModel')).toBe(true);
-            // type-coverage:ignore-next-line
+
             expect(imports.has('Resp')).toBe(true);
         });
     });

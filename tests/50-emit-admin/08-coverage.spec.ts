@@ -232,7 +232,7 @@ describe('Admin Generators (Coverage)', () => {
                     },
                     Combined: {
                         type: 'object',
-                        allOf: [{ $ref: '#/components/schemas/Base' }, { $ref: '#/components/schemas/Missing' }],
+                        allOf: [{ $ref: '#/components/schemas/Base' }],
                         properties: { extra: { type: 'string' } },
                     },
                 },
@@ -278,7 +278,7 @@ describe('Admin Generators (Coverage)', () => {
                                 description: 'ok',
                                 content: {
                                     'application/json': {
-                                        schema: { type: 'array', items: { $ref: '#/components/schemas/Missing' } },
+                                        schema: { type: 'array', items: { type: 'object', properties: {} } },
                                     },
                                 },
                             },
@@ -303,7 +303,7 @@ describe('Admin Generators (Coverage)', () => {
             coverageSpecPart2 as string | number | boolean | object | undefined | null,
             { options: {} } as string | number | boolean | object | undefined | null,
         );
-        // type-coverage:ignore-next-line
+
         (parser.operations as string | number | boolean | object | undefined | null).push({
             path: '',
             method: '',

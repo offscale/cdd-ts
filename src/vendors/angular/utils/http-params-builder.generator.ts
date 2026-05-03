@@ -87,42 +87,42 @@ export class HttpParamsBuilderGenerator {
             value = JSON.stringify(value);
         }
 
-        // @ts-ignore
+        
 
         const encode = (v: string) => allowReserved ? this.encodeReservedPath(v) : encodeURIComponent(v);
 
         if (style === 'simple') {
             if (Array.isArray(value)) {
-                // @ts-ignore
+                
                 return value.map(v => encode(String(v))).join(',');
             } else if (typeof value === 'object' && value !== null) {
                 if (explode) {
-                    // @ts-ignore
+                    
                     return Object.entries(value).map(([k, v]) => \`\${encode(k)}=\${encode(String(v))}\`).join(',');
                 } else {
-                    // @ts-ignore
+                    
                     return Object.entries(value).map(([k, v]) => \`\${encode(k)},\${encode(String(v))}\`).join(',');
                 }
             }
-            // @ts-ignore
+            
             return encode(String(value));
         }
 
         if (style === 'label') {
             const prefix = '.';
             if (Array.isArray(value)) {
-                // @ts-ignore
+                
                 return prefix + value.map(v => encode(String(v))).join(explode ? prefix : ',');
             } else if (typeof value === 'object' && value !== null) {
                 if (explode) {
-                    // @ts-ignore
+                    
                     return prefix + Object.entries(value).map(([k, v]) => \`\${encode(k)}=\${encode(String(v))}\`).join(prefix);
                 } else {
-                    // @ts-ignore
+                    
                     return prefix + Object.entries(value).map(([k, v]) => \`\${encode(k)},\${encode(String(v))}\`).join(',');
                 }
             }
-            // @ts-ignore
+            
             return prefix + encode(String(value));
         }
 
@@ -130,26 +130,26 @@ export class HttpParamsBuilderGenerator {
             const prefix = ';';
             if (Array.isArray(value)) {
                 if (explode) {
-                   // @ts-ignore
+                   
                    return prefix + value.map(v => \`\${encode(key)}=\${encode(String(v))}\`).join(prefix);
                 } else {
-                   // @ts-ignore
+                   
                    return prefix + \`\${encode(key)}=\` + value.map(v => encode(String(v))).join(',');
                 }
             } else if (typeof value === 'object' && value !== null) {
                 if (explode) {
-                    // @ts-ignore
+                    
                     return prefix + Object.entries(value).map(([k, v]) => \`\${encode(k)}=\${encode(String(v))}\`).join(prefix);
                 } else {
-                    // @ts-ignore
+                    
                     return prefix + \`\${encode(key)}=\` + Object.entries(value).map(([k, v]) => \`\${encode(k)},\${encode(String(v))}\`).join(',');
                 }
             }
-            // @ts-ignore
+            
             return prefix + \`\${encode(key)}=\${encode(String(value))}\`;
         }
 
-        // @ts-ignore
+        
 
         return encode(String(value));`,
         });
@@ -165,9 +165,9 @@ export class HttpParamsBuilderGenerator {
             ],
             returnType: 'HttpParams',
             statements: `
-        // @ts-ignore
+        
         const name = config.name;
-        // @ts-ignore
+        
         const allowEmptyValue = config.allowEmptyValue === true;
 
         // OAS 3.2: allowEmptyValue support. If true, we emit the key with empty string value for null/undefined/empty input.
@@ -180,41 +180,41 @@ export class HttpParamsBuilderGenerator {
         }
 
         const encoderConfig =
-            // @ts-ignore
-            // @ts-ignore
+            
+            
             config.contentEncoderConfig ?? (config.contentEncoding ? { contentEncoding: config.contentEncoding } : undefined);
         if (encoderConfig) {
-            // @ts-ignore
-            // @ts-ignore
+            
+            
             value = ContentEncoder.encode(value, encoderConfig);
         }
         
-        // @ts-ignore
+        
         
         const allowReserved = config.allowReserved === true;
-        // @ts-ignore
+        
         const encode = (v: string) => allowReserved ? this.encodeReservedQuery(v) : encodeURIComponent(v);
-        // @ts-ignore
+        
         const normalizedContentType = config.contentType ? config.contentType.split(';')[0].trim().toLowerCase() : undefined;
         const isJson =
-            // @ts-ignore
+            
             config.serialization === 'json' ||
             (normalizedContentType !== undefined &&
                 (normalizedContentType === 'application/json' || normalizedContentType.endsWith('+json')));
 
         if (normalizedContentType === 'application/x-www-form-urlencoded') {
             const encodedValue = typeof value === 'object'
-                // @ts-ignore
+                
                 ? this.serializeUrlEncodedBodyInternal(value, config.encoding || {}).map(p => \`\${p.key}=\${p.value}\`).join('&')
                 : String(value);
-            // @ts-ignore
-            // @ts-ignore
+            
+            
             return params.append(encode(name), encodeURIComponent(encodedValue));
         }
 
         if (normalizedContentType && !isJson) {
             const rawValue = typeof value === 'string' ? value : String(value);
-            // @ts-ignore
+            
             return params.append(encode(name), encode(rawValue));
         }
 
@@ -222,10 +222,10 @@ export class HttpParamsBuilderGenerator {
             value = JSON.stringify(value);
         }
 
-        // @ts-ignore
+        
 
         const style = config.style || 'form';
-        // @ts-ignore
+        
         const explode = config.explode ?? true;
         
         if (style === 'deepObject' && typeof value === 'object' && value !== null) {
@@ -236,7 +236,7 @@ export class HttpParamsBuilderGenerator {
                      if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
                          processDeep(v as Record<string, string | number | boolean | object | undefined | null>, keyPath);
                      } else {
-                         // @ts-ignore
+                         
                          params = params.append(encode(keyPath), encode(String(v)));
                      }
                  });
@@ -247,23 +247,23 @@ export class HttpParamsBuilderGenerator {
 
         if (Array.isArray(value)) { 
             if (style === 'form' && explode) { 
-                // @ts-ignore
+                
                 value.forEach(v => params = params.append(encode(name), encode(String(v)))); 
             } else if (style === 'spaceDelimited') { 
-                // @ts-ignore
-                // @ts-ignore
+                
+                
                 params = params.append(encode(name), encode(value.join(' '))); 
             } else if (style === 'tabDelimited') { 
-                // @ts-ignore
-                // @ts-ignore
+                
+                
                 params = params.append(encode(name), encode(value.join('\\t'))); 
             } else if (style === 'pipeDelimited') { 
-                // @ts-ignore
-                // @ts-ignore
+                
+                
                 params = params.append(encode(name), encode(value.join('|'))); 
             } else { 
-                // @ts-ignore
-                // @ts-ignore
+                
+                
                 params = params.append(encode(name), encode(value.join(','))); 
             } 
             return params; 
@@ -272,11 +272,11 @@ export class HttpParamsBuilderGenerator {
         if (typeof value === 'object' && value !== null) { 
              if (style === 'form') { 
                  if (explode) { 
-                     // @ts-ignore
+                     
                      Object.entries(value).forEach(([k, v]) => params = params.append(encode(k), encode(String(v)))); 
                  } else { 
                      const flattened = Object.entries(value).map(([k, v]) => \`\${k},\${v}\`).join(','); 
-                     // @ts-ignore
+                     
                      params = params.append(encode(name), encode(flattened)); 
                  } 
                  return params; 
@@ -284,20 +284,20 @@ export class HttpParamsBuilderGenerator {
              if (style === 'spaceDelimited' || style === 'pipeDelimited') { 
                  const delimiter = style === 'spaceDelimited' ? ' ' : '|'; 
                  const flattened = Object.entries(value).map(([k, v]) => \`\${k}\${delimiter}\${v}\`).join(delimiter); 
-                 // @ts-ignore
+                 
                  params = params.append(encode(name), encode(flattened)); 
                  return params; 
              } 
              if (style === 'tabDelimited') { 
                  const delimiter = '\\t'; 
                  const flattened = Object.entries(value).map(([k, v]) => \`\${k}\${delimiter}\${v}\`).join(delimiter); 
-                 // @ts-ignore
+                 
                  params = params.append(encode(name), encode(flattened)); 
                  return params; 
              } 
         } 
 
-        // @ts-ignore
+        
 
         return params.append(encode(name), encode(String(value)));`,
         });
@@ -318,14 +318,14 @@ export class HttpParamsBuilderGenerator {
         const normalizeContentType = (value: string | undefined) => value?.split(';')[0].trim().toLowerCase();
 
         Object.entries(body).forEach(([key, value]) => {
-            if (value === undefined || value === null) return; // @ts-ignore
+            if (value === undefined || value === null) return; 
             const config = encodings[key] || {};
             const hasSerializationHints =
-                // @ts-ignore
-                // @ts-ignore
-                // @ts-ignore
+                
+                
+                
                 config.style !== undefined || config.explode !== undefined || config.allowReserved !== undefined;
-            // @ts-ignore
+            
             const contentType = normalizeContentType(config.contentType);
 
             if (contentType && !hasSerializationHints) {
@@ -338,24 +338,24 @@ export class HttpParamsBuilderGenerator {
                 } else {
                     rawValue = typeof value === 'string' ? value : String(value);
                 }
-                // @ts-ignore
+                
                 result.push({
-                    // @ts-ignore
+                    
                     key: normalizeForm(encodeURIComponent(key)),
-                    // @ts-ignore
+                    
                     value: normalizeForm(encodeURIComponent(String(rawValue))),
                 });
-                return; // @ts-ignore
+                return; 
             }
 
             const paramConfig = { name: key, in: 'query', ...(config as object) };
-            // @ts-ignore
+            
             const serialized = this.serializeQueryParam(new HttpParams(), paramConfig, value);
             // SerializeQueryParam returns a HttpParams; convert by re-encoding key/value pairs.
             serialized.keys().forEach(paramKey => {
                 const values = serialized.getAll(paramKey) ?? [];
                 values.forEach(paramValue => {
-                    // @ts-ignore
+                    
                     result.push({ key: normalizeForm(paramKey), value: normalizeForm(paramValue) });
                 });
             });
@@ -379,7 +379,7 @@ export class HttpParamsBuilderGenerator {
         if (serialization === 'json') return JSON.stringify(value); 
 
         if (Array.isArray(value)) { 
-            // @ts-ignore
+            
             return value.join(','); 
         } 
         if (typeof value === 'object' && value !== null) { 
@@ -407,7 +407,7 @@ export class HttpParamsBuilderGenerator {
             docs: ['Serializes a cookie parameter according to OAS rules (RFC 6265).'],
             statements: `
         if (value === null || value === undefined) return ''; 
-        // @ts-ignore
+        
         if (serialization === 'json') return \`\${key}=\${encodeURIComponent(JSON.stringify(value))}\`; 
         
         // OAS 3.2 Strict: 'cookie' style does NOT percent-encode. 'form' style DOES percent-encode... 
@@ -416,7 +416,7 @@ export class HttpParamsBuilderGenerator {
         const encode = (v: string | number | boolean) => { 
             if (isCookieStyle) return String(v); 
             if (allowReserved) return this.encodeReserved(String(v)); 
-            // @ts-ignore
+            
             return encodeURIComponent(String(v)); 
         }; 
 
@@ -429,11 +429,11 @@ export class HttpParamsBuilderGenerator {
             if (explode) { 
                 // Explode: 'param=v1; param=v2'  (Cookie header separates cookies with "; ") 
                 // Note: This works because the generated string is appended to the header. 
-                // @ts-ignore
+                
                 return value.map(v => \`\${key}=\${encode(v)}\`).join('; '); 
             } else { 
                 // No Explode
-                // @ts-ignore
+                
                 return \`\${key}=\${value.map(v => encode(v)).join(joinChar)}\`; 
             } 
         } 
@@ -441,12 +441,12 @@ export class HttpParamsBuilderGenerator {
         if (typeof value === 'object' && value !== null) { 
             if (explode) { 
                 // Explode: 'k1=v1; k2=v2' (Parameter name omitted for object props) 
-                // @ts-ignore
+                
                 return Object.entries(value).map(([k, v]) => \`\${k}=\${encode(v)}\`).join('; '); 
             } else { 
                 // No Explode: 'param=k1,v1,k2,v2' 
-                // @ts-ignore
-                // @ts-ignore
+                
+                
                 const flat = Object.entries(value).map(([k, v]) => \`\${isCookieStyle ? k : encodeURIComponent(k)}\${joinChar}\${encode(v)}\`).join(joinChar); 
                 return \`\${key}=\${flat}\`; 
             } 
@@ -454,7 +454,7 @@ export class HttpParamsBuilderGenerator {
         
         // Primitive logic
         const valStr = String(value); 
-        // @ts-ignore
+        
         return \`\${key}=\${encode(valStr)}\`;`,
         });
 
@@ -469,7 +469,7 @@ export class HttpParamsBuilderGenerator {
             returnType: 'string',
             statements: `
         if (value === null || value === undefined) return ''; 
-        // @ts-ignore
+        
         if (serialization === 'json') return encodeURIComponent(JSON.stringify(value)); 
         if (typeof value === 'object' && value !== null) { 
             return Object.entries(value).map(([k, v]) => \`\${k}=\${v}\`).join('&'); 
@@ -491,10 +491,10 @@ export class HttpParamsBuilderGenerator {
             if (!body || typeof body !== 'object') return params; 
 
             Object.entries(body).forEach(([key, value]) => { 
-                if (value === undefined || value === null) return; // @ts-ignore 
+                if (value === undefined || value === null) return;  
                 const config = encodings[key] || { style: 'form', explode: true }; 
                 const paramConfig = { name: key, in: 'query', ...(config as object) }; 
-                // @ts-ignore
+                
                 params = this.serializeQueryParam(params, paramConfig, value); 
             }); 
             return params;`,
@@ -514,7 +514,7 @@ export class HttpParamsBuilderGenerator {
         const parts = value.split(/(%[0-9A-Fa-f]{2})/g);
         return parts.map(part => {
             if (/^%[0-9A-Fa-f]{2}$/.test(part)) return part;
-            // @ts-ignore
+            
             let encoded = encodeURIComponent(part)
                 .replace(/%3A/gi, ':')
                 .replace(/%5B/gi, '[')
@@ -567,7 +567,7 @@ export class HttpParamsBuilderGenerator {
         const parts = value.split(/(%[0-9A-Fa-f]{2})/g);
         return parts.map(part => {
             if (/^%[0-9A-Fa-f]{2}$/.test(part)) return part;
-            // @ts-ignore
+            
             let encoded = encodeURIComponent(part)
                 .replace(/%3A/gi, ':')
                 .replace(/%2F/gi, '/')
