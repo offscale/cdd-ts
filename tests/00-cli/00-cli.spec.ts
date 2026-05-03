@@ -160,7 +160,7 @@ describe('cli.ts', () => {
         });
 
         it('loads configuration file with relative paths', async () => {
-            run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--config', 'dummy-config1.js']);
+            run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--config', dummyConfigPath1]);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
             expect(indexModule.generateFromConfig).toHaveBeenCalled();
