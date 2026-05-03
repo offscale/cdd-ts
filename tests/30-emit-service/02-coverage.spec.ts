@@ -9,35 +9,28 @@ import { groupPathsByController } from '@src/functions/utils.js';
 import { createTestProject } from '../shared/helpers.js';
 
 describe('Generators (Angular): Service Generators (Coverage)', () => {
-    // type-coverage:ignore-next-line
     const ensureResponses = (spec: string | number | boolean | object | undefined | null) => {
-        // type-coverage:ignore-next-line
         if (!spec?.paths) return spec;
         const methods = ['get', 'post', 'put', 'delete', 'options', 'head', 'patch', 'trace', 'query'];
-        // type-coverage:ignore-next-line
+
         for (const pathItem of Object.values(spec.paths)) {
             if (!pathItem || typeof pathItem !== 'object') continue;
             for (const method of methods) {
-                // type-coverage:ignore-next-line
                 const operation = (pathItem as string | number | boolean | object | undefined | null)[method];
-                // type-coverage:ignore-next-line
+
                 if (operation && operation.responses === undefined) {
-                    // type-coverage:ignore-next-line
                     operation.responses = { '200': { description: 'ok' } };
                 }
             }
-            // type-coverage:ignore-next-line
+
             if ((pathItem as string | number | boolean | object | undefined | null).additionalOperations) {
-                // type-coverage:ignore-next-line
                 for (const operation of Object.values(
                     (pathItem as string | number | boolean | object | undefined | null).additionalOperations,
                 )) {
-                    // type-coverage:ignore-next-line
                     if (
                         operation &&
                         (operation as string | number | boolean | object | undefined | null).responses === undefined
                     ) {
-                        // type-coverage:ignore-next-line
                         (operation as string | number | boolean | object | undefined | null).responses = {
                             '200': { description: 'ok' },
                         };
@@ -45,7 +38,7 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
                 }
             }
         }
-        // type-coverage:ignore-next-line
+
         return spec;
     };
 
@@ -56,9 +49,9 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
             output: '/out',
             options: { dateType: 'string', enumStyle: 'enum', framework: 'angular' },
         };
-        // type-coverage:ignore-next-line
+
         const specClone = ensureResponses(JSON.parse(JSON.stringify(spec)));
-        // type-coverage:ignore-next-line
+
         const parser = new SwaggerParser(specClone as string | number | boolean | object | undefined | null, config);
         const serviceGen = new ServiceGenerator(parser, project, config);
         const controllerGroups = groupPathsByController(parser);
@@ -75,7 +68,7 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
             (imp: ImportDeclaration) => imp.getModuleSpecifierValue() === '../models',
         );
         expect(modelImport).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(
             modelImport!
                 .getNamedImports()
@@ -140,14 +133,13 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
             (imp: ImportDeclaration) => imp.getModuleSpecifierValue() === '../models',
         );
         expect(modelImport).toBeDefined();
-        // type-coverage:ignore-next-line
     });
 
     it('should handle request body without a schema', () => {
         const project = run(branchCoverageSpec);
         const serviceFile = project.getSourceFileOrThrow('/out/services/bodyNoSchema.service.ts');
         const method = serviceFile.getClassOrThrow('BodyNoSchemaService').getMethodOrThrow('postBodyNoSchema');
-        // type-coverage:ignore-next-line
+
         const param = method
             .getParameters()
             .find((p: string | number | boolean | object | undefined | null) => p.getName() === 'body');
@@ -159,11 +151,11 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
         const serviceFile = project.getSourceFileOrThrow('/out/services/allRequired.service.ts');
         const method = serviceFile.getClassOrThrow('AllRequiredService').getMethodOrThrow('getAllRequired');
         const overloads = method.getOverloads();
-        // type-coverage:ignore-next-line
+
         const responseOverload = overloads.find((o: string | number | boolean | object | undefined | null) =>
             o.getReturnType().getText().includes('HttpResponse'),
         )!;
-        // type-coverage:ignore-next-line
+
         const optionsParam = responseOverload
             .getParameters()
             .find((p: string | number | boolean | object | undefined | null) => p.getName() === 'options')!;
@@ -177,6 +169,62 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
         expect(method.getOverloads()[0].getReturnType().getText()).toBe(
             'Observable<Record<string, string | number | boolean | object | null | undefined>>',
         );
+    });
+
+    it('should cover itemSchema and undefined schema in responses and parameters', () => {
+        const spec = {
+            openapi: '3.0.0',
+            info: { title: 'Test', version: '1.0' },
+            paths: {
+                '/edge': {
+                    get: {
+                        tags: ['Edge'],
+                        operationId: 'getEdge',
+                        parameters: [],
+                        responses: {
+                            '200': {
+                                description: 'ok',
+                                content: {
+                                    'application/json': { schema: { type: 'string' } },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        };
+        const config: GeneratorConfig = {
+            input: '',
+            output: '/out',
+            options: { dateType: 'string', enumStyle: 'enum', framework: 'angular' },
+        };
+        const parser = new SwaggerParser(spec as any, config);
+
+        // Mutate after validation
+        const op = parser.operations.find(o => o.operationId === 'getEdge')!;
+        op.parameters = [
+            { name: 'p1', in: 'query', required: false, style: 'form', explode: true, schema: undefined },
+            { name: 'p2', in: 'query', required: false, style: 'form', explode: true, content: {} },
+            {
+                name: 'p3',
+                in: 'query',
+                required: false,
+                style: 'form',
+                explode: true,
+                content: { 'application/json': {} },
+            },
+        ];
+
+        op.responses!['200'].content!['application/json'].schema = undefined;
+        op.responses!['200'].content!['application/json'].itemSchema = { type: 'string' };
+        op.responses!['200'].content!['text/plain'] = { schema: undefined };
+
+        const project = new Project({ useInMemoryFileSystem: true });
+        const serviceGen = new ServiceGenerator(parser, project, config);
+        serviceGen.generateServiceFile('Edge', [op as any], '/out/services');
+
+        const serviceFile = project.getSourceFileOrThrow('/out/services/edge.service.ts');
+        expect(serviceFile).toBeDefined();
     });
 
     it('should handle default responses and responses without content', () => {
@@ -216,7 +264,7 @@ describe('Generators (Angular): Service Generators (Coverage)', () => {
         const modelImport = serviceFile.getImportDeclaration(
             (imp: ImportDeclaration) => imp.getModuleSpecifierValue() === '../models',
         );
-        // type-coverage:ignore-next-line
+
         expect(
             modelImport!
                 .getNamedImports()

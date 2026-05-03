@@ -161,12 +161,15 @@ export class LinkGenerator {
 
         const path = tokens[1];
 
-        const methodIndex = tokens[2] === 'additionalOperations' && tokens.length >= 4 ? 3 : 2;
+        // #/paths/~1foo/additionalOperations/report -> ['paths', '/foo', 'additionalOperations', 'report']
+        const isAdditional = tokens.length >= 4 && tokens[2] === 'additionalOperations';
+        const methodIndex = isAdditional ? 3 : 2;
 
         const method = tokens[methodIndex];
 
         const pool = root === 'webhooks' ? this.parser.webhooks : this.parser.operations;
 
+        // Note: For additionalOperations we still map it in pool with the extracted path and method
         const op = pool.find(entry => entry.path === path && entry.method.toLowerCase() === method.toLowerCase());
 
         return op?.operationId;

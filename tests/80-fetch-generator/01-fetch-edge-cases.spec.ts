@@ -5,7 +5,56 @@ import { GeneratorConfig } from '@src/core/types/index.js';
 import { Project } from 'ts-morph';
 import { FetchServiceMethodGenerator } from '@src/vendors/fetch/service/service-method.generator.js';
 
+import { FetchServiceTestGenerator } from '@src/vendors/fetch/test/service-test.generator.js';
+import { SwaggerParser } from '@src/openapi/parse.js';
+
 describe('Fetch Implementation Edge Cases', () => {
+    it('should cover missing branches in FetchServiceTestGenerator', () => {
+        const config: GeneratorConfig = {
+            input: 'dummy',
+            output: '/tmp/test-output-mocked',
+            options: { implementation: 'fetch' },
+        };
+
+        const spec = {
+            openapi: '3.0.0',
+            info: { title: 'Test API', version: '1.0' },
+            paths: {
+                '/mocked': {
+                    get: {
+                        // no operationId or methodName
+                        responses: { '200': { description: 'OK' } },
+                    },
+                    post: {
+                        operationId: 'postMocked', // has operationId but no methodName
+                        responses: { '200': { description: 'OK' } },
+                    },
+                    put: {
+                        operationId: 'putMocked', // has methodName set by analyzer usually, we will mock it
+                        responses: { '200': { description: 'OK' } },
+                    },
+                },
+            },
+        };
+
+        const parser = new SwaggerParser(spec as any, config);
+        const project = new Project({ useInMemoryFileSystem: true });
+        const testGen = new FetchServiceTestGenerator(parser, project, config);
+
+        const ops = parser.operations;
+        ops[2].methodName = 'customPutMocked'; // cover op.methodName
+
+        testGen.generateServiceTestFile('mocked', ops as any, '/tmp/test-output-mocked/services');
+
+        const testFile = project.getSourceFile('/tmp/test-output-mocked/services/mocked.service.spec.ts');
+        expect(testFile).toBeDefined();
+
+        const text = testFile!.getText();
+        expect(text).toContain("describe('getMocked'");
+        expect(text).toContain("describe('postMocked'");
+        expect(text).toContain("describe('customPutMocked'");
+    });
+
     it('should handle operations returning multiple distinct response types', async () => {
         const config: GeneratorConfig = {
             input: 'dummy',
@@ -270,4 +319,33 @@ it('should ignore non-exported service classes in index', async () => {
 
     const indexFile = project.getSourceFile('/tmp/test-index-ignore/services/index.ts');
     expect(indexFile!.getText()).not.toContain('AService');
+});
+
+it('should hit branch for non-interface application/json body in FetchServiceGenerator', async () => {
+    const config: GeneratorConfig = {
+        input: 'dummy',
+        output: '/tmp/test-output-json-primitive',
+        options: { implementation: 'fetch' as const },
+    };
+
+    const spec = {
+        openapi: '3.0.0',
+        info: { title: 'Test API', version: '1.0' },
+        paths: {
+            '/primitive-body': {
+                post: {
+                    operationId: 'postPrimitiveBody',
+                    requestBody: {
+                        content: {
+                            'application/json': { schema: { type: 'string' } },
+                        },
+                    },
+                    responses: { '200': { description: 'OK' } },
+                },
+            },
+        },
+    };
+
+    const project = new Project();
+    await generateFromConfig(config, project, { spec });
 });

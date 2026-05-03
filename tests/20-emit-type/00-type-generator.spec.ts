@@ -75,7 +75,6 @@ const typeGenSpec = {
 };
 
 describe('Emitter: TypeGenerator', () => {
-    // type-coverage:ignore-next-line
     const runGenerator = (
         spec: string | number | boolean | object | undefined | null,
         options: string | number | boolean | object | undefined | null = {},

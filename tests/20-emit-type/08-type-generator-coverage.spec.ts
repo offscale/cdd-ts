@@ -111,6 +111,7 @@ describe('Emitter: TypeGenerator (Coverage Edges)', () => {
                                 description: 'ok',
                                 headers: {
                                     'X-Only-Missing': { $ref: '#/components/headers/MissingHeader' },
+                                    'Content-Type': { schema: { type: 'string' } },
                                 },
                             },
                         },

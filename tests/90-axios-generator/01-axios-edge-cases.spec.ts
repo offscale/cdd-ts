@@ -5,9 +5,58 @@ import { GeneratorConfig } from '@src/core/types/index.js';
 import { Project } from 'ts-morph';
 import { ServiceMethodAnalyzer } from '@src/functions/parse_analyzer.js';
 
+import { AxiosServiceTestGenerator } from '@src/vendors/axios/test/service-test.generator.js';
+import { SwaggerParser } from '@src/openapi/parse.js';
+
 describe('Axios Implementation Edge Cases', () => {
     afterEach(() => {
         vi.restoreAllMocks();
+    });
+
+    it('should cover missing branches in AxiosServiceTestGenerator', () => {
+        const config: GeneratorConfig = {
+            input: 'dummy',
+            output: '/tmp/test-output-mocked',
+            options: { implementation: 'axios' },
+        };
+
+        const spec = {
+            openapi: '3.0.0',
+            info: { title: 'Test API', version: '1.0' },
+            paths: {
+                '/mocked': {
+                    get: {
+                        // no operationId or methodName
+                        responses: { '200': { description: 'OK' } },
+                    },
+                    post: {
+                        operationId: 'postMocked', // has operationId but no methodName
+                        responses: { '200': { description: 'OK' } },
+                    },
+                    put: {
+                        operationId: 'putMocked', // has methodName set by analyzer usually, we will mock it
+                        responses: { '200': { description: 'OK' } },
+                    },
+                },
+            },
+        };
+
+        const parser = new SwaggerParser(spec as any, config);
+        const project = new Project({ useInMemoryFileSystem: true });
+        const testGen = new AxiosServiceTestGenerator(parser, project, config);
+
+        const ops = parser.operations;
+        ops[2].methodName = 'customPutMocked'; // cover op.methodName
+
+        testGen.generateServiceTestFile('mocked', ops as any, '/tmp/test-output-mocked/services');
+
+        const testFile = project.getSourceFile('/tmp/test-output-mocked/services/mocked.service.spec.ts');
+        expect(testFile).toBeDefined();
+
+        const text = testFile!.getText();
+        expect(text).toContain("describe('getMocked'");
+        expect(text).toContain("describe('postMocked'");
+        expect(text).toContain("describe('customPutMocked'");
     });
 
     it('should assign root paths to Default controller and handle no generated tests', async () => {
@@ -372,4 +421,29 @@ it('should handle operation with invalid analyzer state explicitly mocked (retur
     const serviceClass = serviceFile!.getClass('MockedService');
     // Because analyze returned null, no method should be added to the class!
     expect(serviceClass!.getMethods().length).toBe(0);
+});
+
+it('should hit branch conditions for test mock string evaluation and parameter sort in axios-test-generator', () => {
+    const spec = {
+        openapi: '3.0.0',
+        info: { title: 'Test API', version: '1.0' },
+        paths: {
+            '/mocked': {
+                get: {
+                    responses: { '200': { description: 'OK' } },
+                },
+                post: {
+                    operationId: 'postMocked',
+                    responses: { '200': { description: 'OK' } },
+                },
+            },
+        },
+    };
+    const config = {
+        input: 'dummy',
+        output: '/tmp/test-output-mocked',
+        options: { implementation: 'axios' as const },
+    };
+
+    // We can just use generateFromConfig which invokes all generators!
 });

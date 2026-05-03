@@ -55,7 +55,6 @@ export type CodeScanFileSystem = {
         isDirectory: () => boolean;
     };
     /** Reads the content of a file. */
-    // type-coverage:ignore-next-line
     readFileSync:
         | ((filePath: string, encoding: string) => string)
         | ((filePath: string, options: OpenApiValue) => string);
@@ -257,8 +256,6 @@ export function scanTypeScriptProject(
     const sources: string[] = [];
 
     for (const filePath of filePaths) {
-        // type-coverage:ignore-next-line
-
         const contents = (fileSystem.readFileSync as (f: string, e: string) => string)(filePath, 'utf-8');
 
         sources.push(filePath);
@@ -757,7 +754,6 @@ function buildExpressOperation(
 }
 
 function analyzeExpressHandler(
-    // type-coverage:ignore-next-line
     handler: import('ts-morph').Node,
     paramMap: Map<string, CodeScanParam>,
 ): {
@@ -765,10 +761,7 @@ function analyzeExpressHandler(
     responses: CodeScanResponse[];
     responseSchema?: SwaggerDefinition | boolean;
 } {
-    // type-coverage:ignore-next-line
-
     const bindings = extractRequestBindings(handler);
-    // type-coverage:ignore-next-line
 
     const body = getFunctionBody(handler);
 
@@ -866,35 +859,23 @@ function analyzeExpressHandler(
     };
 }
 
-// type-coverage:ignore-next-line
 function getFunctionBody(handler: import('ts-morph').Node): Node | undefined {
-    // type-coverage:ignore-next-line
-
     return (handler as OpenApiValue as { getBody?(): import('ts-morph').Node }).getBody?.();
 }
 
-// type-coverage:ignore-next-line
 function extractRequestBindings(handler: import('ts-morph').Node): RequestBindings {
     const bindings: RequestBindings = {};
-    // type-coverage:ignore-next-line
 
     const params =
         (
             handler as OpenApiValue as { getParameters?(): import('ts-morph').ParameterDeclaration[] }
         ).getParameters?.() ?? [];
 
-    // type-coverage:ignore-next-line
-
     const reqParam = params[0];
-    // type-coverage:ignore-next-line
 
     const resParam = params[1];
 
-    // type-coverage:ignore-next-line
-
     if (reqParam) {
-        // type-coverage:ignore-next-line
-
         const nameNode = reqParam.getNameNode();
 
         if (Node.isIdentifier(nameNode)) {
@@ -933,11 +914,7 @@ function extractRequestBindings(handler: import('ts-morph').Node): RequestBindin
         }
     }
 
-    // type-coverage:ignore-next-line
-
     if (resParam) {
-        // type-coverage:ignore-next-line
-
         const nameNode = resParam.getNameNode();
 
         if (Node.isIdentifier(nameNode)) {
@@ -1323,7 +1300,6 @@ function inferOperationId(handler: Node | undefined, method: string, pathValue: 
     return camelCase(`${method} ${pathValue}`) || `${method.toLowerCase()}Operation`;
 }
 
-// type-coverage:ignore-next-line
 function getFunctionLikeName(handler: import('ts-morph').Node): string | undefined {
     if (Node.isFunctionDeclaration(handler) || Node.isMethodDeclaration(handler)) {
         return (handler as import('ts-morph').FunctionDeclaration | import('ts-morph').MethodDeclaration).getName();
@@ -2390,8 +2366,6 @@ function normalizeDocComment(comment: OpenApiValue): string {
 
     if (typeof comment === 'string') return comment;
 
-    // type-coverage:ignore-next-line
-
     if (Array.isArray(comment)) return comment.map((part: OpenApiValue) => normalizeDocComment(part)).join('');
 
     if (Node.isNode(comment)) return comment.getText();
@@ -2672,10 +2646,7 @@ function inferExpressSchemaHints(handler: Node): {
     requestSchema?: SwaggerDefinition | boolean;
     responseSchema?: SwaggerDefinition | boolean;
 } {
-    // type-coverage:ignore-next-line
-
     const fnNode = handler as import('ts-morph').Node;
-    // type-coverage:ignore-next-line
 
     if (
         !fnNode ||
@@ -2684,25 +2655,17 @@ function inferExpressSchemaHints(handler: Node): {
     )
         return {};
 
-    // type-coverage:ignore-next-line
-
     const params = (
         fnNode as OpenApiValue as { getParameters(): import('ts-morph').ParameterDeclaration[] }
     ).getParameters();
-    // type-coverage:ignore-next-line
 
     const reqParam = params[0];
-    // type-coverage:ignore-next-line
 
     const resParam = params[1];
     let requestSchema: SwaggerDefinition | boolean | undefined;
     let responseSchema: SwaggerDefinition | boolean | undefined;
 
-    // type-coverage:ignore-next-line
-
     if (reqParam) {
-        // type-coverage:ignore-next-line
-
         const reqTypeNode = reqParam.getTypeNode();
 
         const extracted = extractSchemasFromRequestType(reqTypeNode);
@@ -2716,11 +2679,7 @@ function inferExpressSchemaHints(handler: Node): {
         }
     }
 
-    // type-coverage:ignore-next-line
-
     if (resParam) {
-        // type-coverage:ignore-next-line
-
         const resTypeNode = resParam.getTypeNode();
 
         const inferred = extractSchemaFromResponseType(resTypeNode);

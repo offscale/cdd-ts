@@ -83,7 +83,7 @@ describe('Emitter: ServiceMethodGenerator (Multipart Defaults)', () => {
         const { methodGen, serviceClass } = createTestEnv();
 
         // Inject a new operation into the parser/spec that uses contentEncoding
-        // type-coverage:ignore-next-line
+
         const op: string | number | boolean | object | undefined | null = {
             method: 'POST',
             path: '/upload-encoding',
@@ -116,7 +116,6 @@ describe('Emitter: ServiceMethodGenerator (Multipart Defaults)', () => {
     it('should handle multipart/byteranges with correct media type config', () => {
         const { methodGen, serviceClass } = createTestEnv();
 
-        // type-coverage:ignore-next-line
         const op: string | number | boolean | object | undefined | null = {
             method: 'POST',
             path: '/ranges',

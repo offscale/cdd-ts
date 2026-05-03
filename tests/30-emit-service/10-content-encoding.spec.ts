@@ -130,7 +130,7 @@ describe('Emitter: ServiceMethodGenerator (Request Encoding)', () => {
 
     it('should apply ContentEncoder.encode to request body with encoded properties', () => {
         const { methodGen, serviceClass } = createTestEnv();
-        // type-coverage:ignore-next-line
+
         const op: string | number | boolean | object | undefined | null = {
             method: 'POST',
             path: '/encode-request',
@@ -151,7 +151,7 @@ describe('Emitter: ServiceMethodGenerator (Request Encoding)', () => {
 
     it('should apply ContentEncoder.encode recursively for nested arrays', () => {
         const { methodGen, serviceClass } = createTestEnv();
-        // type-coverage:ignore-next-line
+
         const op: string | number | boolean | object | undefined | null = {
             method: 'POST',
             path: '/nested-encoding',
@@ -173,7 +173,7 @@ describe('Emitter: ServiceMethodGenerator (Request Encoding)', () => {
 
     it('should include contentEncoding in ContentEncoder config', () => {
         const { methodGen, serviceClass } = createTestEnv();
-        // type-coverage:ignore-next-line
+
         const op: string | number | boolean | object | undefined | null = {
             method: 'POST',
             path: '/base64-request',

@@ -82,6 +82,13 @@ describe('Core: Runtime Expression Evaluator', () => {
             expect(evaluateJsonPointer(extended, '/a%2Fb/c%20d')).toBe(42);
         });
 
+        it('should fallback to raw token if decodeURIComponent throws', () => {
+            const data = {
+                '%invalid': 'ok',
+            };
+            expect(evaluateJsonPointer(data, '/%invalid')).toBe('ok');
+        });
+
         it('should return undefined for non-existent paths', () => {
             expect(evaluateJsonPointer(data, '/baz')).toBeUndefined();
             expect(evaluateJsonPointer(data, '/nested/foo')).toBeUndefined();

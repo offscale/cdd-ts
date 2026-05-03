@@ -76,11 +76,9 @@ export class XmlParserGenerator {
                 const cfg = prefixItems[i] || {}; 
                 const child = nodes[cursor]; 
                 if (!child) { 
-                    // @ts-ignore
                     result.push(undefined); 
                     continue; 
                 } 
-                // @ts-ignore
                 result.push(this.parseArrayNode(child, cfg)); 
                 cursor++; 
             } 
@@ -92,7 +90,6 @@ export class XmlParserGenerator {
                     if (child.nodeType === 1 && itemsConfig.name && !this.nodeMatchesName(child as Element, itemsConfig.name)) { 
                         continue; 
                     } 
-                    // @ts-ignore
                     result.push(this.parseArrayNode(child, itemsConfig)); 
                 } 
             } 
@@ -109,7 +106,6 @@ export class XmlParserGenerator {
             for (let i = 0; i < children.length; i++) { 
                 const child = children[i]; 
                 if (!itemName || this.nodeMatchesName(child, itemName)) { 
-                    // @ts-ignore
                     result.push(this.parseNode(child, itemsConfig)); 
                 } 
             } 
@@ -149,7 +145,6 @@ export class XmlParserGenerator {
                      const children = node.children; 
                      for(let i=0; i<children.length; i++) { 
                          if (this.nodeMatchesName(children[i], childTagName)) { 
-                             // @ts-ignore
                              items.push(this.parseNode(children[i], propConfig.items || {})); 
                          } 
                      } 

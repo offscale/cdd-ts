@@ -20,7 +20,6 @@ import {
 import * as http from 'node:http';
 
 const packageJsonPath = new URL('../package.json', import.meta.url);
-// type-coverage:ignore-next-line
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8')) as { version: string };
 
 /** Defines the shape of the options object from the 'from_openapi' command. */
@@ -56,20 +55,14 @@ async function loadConfigFile(configPath: string): Promise<Partial<GeneratorConf
     }
 
     try {
-        // type-coverage:ignore-next-line
         const configModule = await import(resolvedPath);
-        // type-coverage:ignore-next-line
         const config = configModule.default || configModule.config || configModule;
 
         const configDir = path.dirname(resolvedPath);
-        // type-coverage:ignore-next-line
         if (config.input && !isUrl(config.input) && !path.isAbsolute(config.input)) {
-            // type-coverage:ignore-next-line
             config.input = path.resolve(configDir, config.input);
         }
-        // type-coverage:ignore-next-line
         if (config.output && !path.isAbsolute(config.output)) {
-            // type-coverage:ignore-next-line
             config.output = path.resolve(configDir, config.output);
         }
         return config;
@@ -199,10 +192,8 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
 }
 
 async function runToOpenApi(options: ToActionOptions, returnObject = false): Promise<void | OpenApiValue> {
-    // type-coverage:ignore-next-line
     let spec: OpenApiValue;
     try {
-        // type-coverage:ignore-next-line
         ({ spec } = readOpenApiSnapshot(
             options.input,
             fs as OpenApiValue as Parameters<typeof readOpenApiSnapshot>[1],
@@ -236,7 +227,6 @@ async function runToOpenApi(options: ToActionOptions, returnObject = false): Pro
                 console.warn('ℹ️  Continuing without reconstructed component schemas.');
             }
 
-            // type-coverage:ignore-next-line
             spec = buildOpenApiSpecFromServices(
                 services,
                 {},
@@ -248,7 +238,6 @@ async function runToOpenApi(options: ToActionOptions, returnObject = false): Pro
                     options.input,
                     fs as OpenApiValue as Parameters<typeof parseGeneratedMetadata>[1],
                 );
-                // type-coverage:ignore-next-line
                 spec = applyReverseMetadata(
                     spec as OpenApiValue as Parameters<typeof applyReverseMetadata>[0],
                     metadata,
@@ -266,14 +255,12 @@ async function runToOpenApi(options: ToActionOptions, returnObject = false): Pro
                 options.input,
                 fs as OpenApiValue as Parameters<typeof scanTypeScriptProject>[1],
             );
-            // type-coverage:ignore-next-line
             spec = buildOpenApiSpecFromScan(scan);
             try {
                 const metadata = parseGeneratedMetadata(
                     options.input,
                     fs as OpenApiValue as Parameters<typeof parseGeneratedMetadata>[1],
                 );
-                // type-coverage:ignore-next-line
                 spec = applyReverseMetadata(
                     spec as OpenApiValue as Parameters<typeof applyReverseMetadata>[0],
                     metadata,
@@ -290,9 +277,7 @@ async function runToOpenApi(options: ToActionOptions, returnObject = false): Pro
         return spec;
     }
 
-    const output =
-        // type-coverage:ignore-next-line
-        options.format === 'json' ? JSON.stringify(spec, null, 2) : yaml.dump(spec, { noRefs: true });
+    const output = options.format === 'json' ? JSON.stringify(spec, null, 2) : yaml.dump(spec, { noRefs: true });
 
     if (options.output) {
         fs.writeFileSync(options.output, output.trimEnd() + '\n', 'utf8');
@@ -341,7 +326,6 @@ async function runToDocsJson(options: DocsJsonOptions, returnObject = false): Pr
 }
 
 const program = new Command();
-// type-coverage:ignore-next-line
 program.name('cdd-ts').description('OpenAPI ↔ Angular').version(packageJson.version);
 
 const fromOpenApi = program.command('from_openapi').description('Generate code from OpenAPI');
@@ -570,4 +554,17 @@ program
         });
     });
 
-program.parse(process.argv);
+export function run(argv: string[]) {
+    program.parse(argv);
+}
+
+// Check if run directly
+import { fileURLToPath } from 'node:url';
+export function checkIsMain(argv1: string, metaUrl: string): boolean {
+    return argv1 === fileURLToPath(metaUrl);
+}
+
+const isMain = checkIsMain(process.argv[1], import.meta.url);
+if (isMain) {
+    run(process.argv);
+}

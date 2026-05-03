@@ -70,7 +70,6 @@ export class XmlBuilderGenerator {
             returnType: 'string',
             statements: `
     // 1. Resolve Name and Prefix
-    // @ts-ignore
     let name = config.name || tagName; 
     if (config.prefix) { 
         name = \`\${config.prefix}:\${name}\`; 
@@ -106,7 +105,6 @@ export class XmlBuilderGenerator {
         const isWrapped = config.wrapped || nodeType === 'element'; 
 
         const resolveItemConfig = (index: number) => (index < prefixItems.length ? prefixItems[index] : itemConfig); 
-        // @ts-ignore
         const resolveItemName = (cfg: string | number | boolean | object | undefined | null, fallback: string) => (cfg && cfg.name ? cfg.name : fallback); 
 
         if (isWrapped && !isNone) { 

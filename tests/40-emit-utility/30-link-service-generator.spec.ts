@@ -6,7 +6,6 @@ import { SwaggerParser } from '@src/openapi/parse.js';
 import ts from 'typescript';
 
 describe('Emitter: LinkServiceGenerator', () => {
-    // type-coverage:ignore-next-line
     const createParser = (spec: string | number | boolean | object | undefined | null) =>
         new SwaggerParser(spec, { options: {} } as string | number | boolean | object | undefined | null);
 
@@ -77,11 +76,10 @@ describe('Emitter: LinkServiceGenerator', () => {
             },
         };
 
-        // type-coverage:ignore-next-line
         const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
 
         // Returns a decorator function that does nothing, satisfying usage like @Injectable()
-        // type-coverage:ignore-next-line
+
         const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
 
         // Inject mock API_LINKS into global scope of evaluation
@@ -90,22 +88,18 @@ describe('Emitter: LinkServiceGenerator', () => {
             ${jsCode} 
         `;
 
-        // type-coverage:ignore-next-line
         new Function('exports', 'Injectable', wrappedCode)(moduleScope.exports, mockInjectable);
 
-        // type-coverage:ignore-next-line
         const ServiceClass = moduleScope.exports.LinkService;
-        // type-coverage:ignore-next-line
+
         const service = new ServiceClass();
 
-        // type-coverage:ignore-next-line
         const result = service.resolveLink('op1', responseMock, 'nextPage');
 
-        // type-coverage:ignore-next-line
         expect(result).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(result.targetOperationId).toBe('op2');
-        // type-coverage:ignore-next-line
+
         expect(result.parameters['id']).toBe(123);
     });
 
@@ -150,28 +144,24 @@ describe('Emitter: LinkServiceGenerator', () => {
             body: {},
         };
 
-        // type-coverage:ignore-next-line
         const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
-        // type-coverage:ignore-next-line
+
         const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-        // type-coverage:ignore-next-line
         new Function('exports', 'Injectable', wrappedCode)(moduleScope.exports, mockInjectable);
-        // type-coverage:ignore-next-line
+
         const service = new moduleScope.exports.LinkService();
 
-        // type-coverage:ignore-next-line
         const result = service.resolveLink('opHeading', responseMock, 'detail');
 
-        // type-coverage:ignore-next-line
         expect(result).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.uuid).toBe('abc-123');
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.static).toBe('constant');
     });
 
@@ -224,37 +214,34 @@ describe('Emitter: LinkServiceGenerator', () => {
 
         const responseMock = { status: 201, headers: {}, body: {} };
 
-        // type-coverage:ignore-next-line
         const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
-        // type-coverage:ignore-next-line
+
         const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-        // type-coverage:ignore-next-line
         new Function('exports', 'Injectable', wrappedCode)(moduleScope.exports, mockInjectable);
-        // type-coverage:ignore-next-line
+
         const service = new moduleScope.exports.LinkService();
 
         // Call with request arg and urlTemplate
-        // type-coverage:ignore-next-line
+
         const result = service.resolveLink('createItem', responseMock, 'getRelated', requestMock, '/items/{id}');
 
-        // type-coverage:ignore-next-line
         expect(result).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.u).toBe('https://api.com/v1/items/999?filter=active');
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.m).toBe('POST');
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.q).toBe('active');
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.h).toBe('req-99');
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.b).toBe('foo');
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.p).toBe('999'); // extracted path param
     });
 
@@ -302,32 +289,28 @@ describe('Emitter: LinkServiceGenerator', () => {
 
         const responseMock = { status: 200, headers: {}, body: {} };
 
-        // type-coverage:ignore-next-line
         const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
-        // type-coverage:ignore-next-line
+
         const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-        // type-coverage:ignore-next-line
         new Function('exports', 'Injectable', wrappedCode)(moduleScope.exports, mockInjectable);
-        // type-coverage:ignore-next-line
+
         const service = new moduleScope.exports.LinkService();
 
-        // type-coverage:ignore-next-line
         const result = service.resolveLink('op1', responseMock, 'next', requestMock, '/items/{id}');
 
-        // type-coverage:ignore-next-line
         expect(result).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.id).toBe('123');
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.filter).toBe('active');
-        // type-coverage:ignore-next-line
+
         expect(result.parameters['x-req-id']).toBe('req-1');
-        // type-coverage:ignore-next-line
+
         expect(result.parameterLocations).toEqual({
             id: 'path',
             filter: 'query',
@@ -369,26 +352,23 @@ describe('Emitter: LinkServiceGenerator', () => {
         };
 
         const responseMock = { status: 200, headers: {}, body: {} };
-        // type-coverage:ignore-next-line
+
         const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
-        // type-coverage:ignore-next-line
+
         const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-        // type-coverage:ignore-next-line
         new Function('exports', 'Injectable', wrappedCode)(moduleScope.exports, mockInjectable);
-        // type-coverage:ignore-next-line
+
         const service = new moduleScope.exports.LinkService();
 
-        // type-coverage:ignore-next-line
         const result = service.resolveLink('op1', responseMock, 'crossServer');
 
-        // type-coverage:ignore-next-line
         expect(result).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(result.targetServer).toBe('https://eu-west.api.com/v1');
     });
 
@@ -427,30 +407,27 @@ describe('Emitter: LinkServiceGenerator', () => {
         };
 
         const responseMock = { status: 200, headers: {}, body: {} };
-        // type-coverage:ignore-next-line
+
         const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
-        // type-coverage:ignore-next-line
+
         const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-        // type-coverage:ignore-next-line
         new Function('exports', 'Injectable', wrappedCode)(moduleScope.exports, mockInjectable);
-        // type-coverage:ignore-next-line
+
         const service = new moduleScope.exports.LinkService();
 
-        // type-coverage:ignore-next-line
         const result = service.resolveLink('opMissing', responseMock, 'next');
 
-        // type-coverage:ignore-next-line
         expect(result).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.ok).toBe('static');
-        // type-coverage:ignore-next-line
+
         expect(Object.prototype.hasOwnProperty.call(result.parameters, 'missing')).toBe(false);
-        // type-coverage:ignore-next-line
+
         expect(Object.prototype.hasOwnProperty.call(result.parameters, 'templated')).toBe(false);
     });
 
@@ -487,26 +464,23 @@ describe('Emitter: LinkServiceGenerator', () => {
         };
 
         const responseMock = { status: 200, headers: {}, body: { 'a/b': 42 } };
-        // type-coverage:ignore-next-line
+
         const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
-        // type-coverage:ignore-next-line
+
         const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-        // type-coverage:ignore-next-line
         new Function('exports', 'Injectable', wrappedCode)(moduleScope.exports, mockInjectable);
-        // type-coverage:ignore-next-line
+
         const service = new moduleScope.exports.LinkService();
 
-        // type-coverage:ignore-next-line
         const result = service.resolveLink('opPointer', responseMock, 'next');
 
-        // type-coverage:ignore-next-line
         expect(result).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(result.parameters.value).toBe(42);
     });
 
@@ -549,21 +523,19 @@ describe('Emitter: LinkServiceGenerator', () => {
         };
 
         const responseMock = { status: 200, headers: {}, body: {} };
-        // type-coverage:ignore-next-line
+
         const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
-        // type-coverage:ignore-next-line
+
         const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
         const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)};
             ${jsCode}
         `;
 
-        // type-coverage:ignore-next-line
         new Function('exports', 'Injectable', wrappedCode)(moduleScope.exports, mockInjectable);
-        // type-coverage:ignore-next-line
+
         const service = new moduleScope.exports.LinkService();
 
-        // type-coverage:ignore-next-line
         expect(() => service.resolveLink('opInvalid', responseMock, 'invalidServer')).toThrow(
             'Value "mars" for variable "region" is not in the allowed enum: earth, moon',
         );

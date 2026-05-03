@@ -52,12 +52,9 @@ export class ContentEncoderGenerator {
             returnType: 'Uint8Array',
             statements: `
         if (typeof TextEncoder !== 'undefined') {
-            // @ts-ignore
             return new TextEncoder().encode(input);
         }
-        // @ts-ignore
         if (typeof (globalThis as string | number | boolean | object | undefined | null).Buffer !== 'undefined') {
-            // @ts-ignore
             return Uint8Array.from((globalThis as string | number | boolean | object | undefined | null).Buffer.from(input, 'utf-8'));
         }
         const out = new Uint8Array(input.length);
@@ -74,9 +71,7 @@ export class ContentEncoderGenerator {
             parameters: [{ name: 'bytes', type: 'Uint8Array' }],
             returnType: 'string',
             statements: `
-        // @ts-ignore
         if (typeof (globalThis as string | number | boolean | object | undefined | null).Buffer !== 'undefined') {
-            // @ts-ignore
             return (globalThis as string | number | boolean | object | undefined | null).Buffer.from(bytes).toString('base64');
         }
         let binary = '';
@@ -145,10 +140,8 @@ export class ContentEncoderGenerator {
             } 
         }
 
-        // @ts-ignore
 
         if (config.contentEncoding) {
-            // @ts-ignore
             const encoded = this.applyContentEncoding(current, config.contentEncoding);
             if (typeof encoded === 'string') {
                 return encoded;
@@ -161,7 +154,6 @@ export class ContentEncoderGenerator {
 
         // 2. Arrays
         if (Array.isArray(current) && config.items) { 
-            // @ts-ignore
             return current.map(item => this.encode(item, config.items)); 
         } 
 
@@ -172,7 +164,6 @@ export class ContentEncoderGenerator {
                 const result = { ...current }; 
                 Object.keys(config.properties).forEach(key => { 
                     if (Object.prototype.hasOwnProperty.call(current, key)) { 
-                        // @ts-ignore
                         result[key] = this.encode((current as string | number | boolean | object | undefined | null)[key], config.properties![key]); 
                     } 
                 }); 

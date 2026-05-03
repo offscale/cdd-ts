@@ -111,7 +111,7 @@ describe('Emitter: ServiceMethodGenerator (Edge Cases)', () => {
 
     it('should NOT apply SECURITY_CONTEXT_TOKEN for explicit skip (default behavior)', () => {
         const { methodGen, serviceClass, parser } = createTestEnvironment(specEdgeTests);
-        // type-coverage:ignore-next-line
+
         const op = parser.operations.find(
             (o: string | number | boolean | object | undefined | null) => o.operationId === 'getPublic',
         )!;
@@ -125,7 +125,7 @@ describe('Emitter: ServiceMethodGenerator (Edge Cases)', () => {
 
     it('should generate context with SECURITY_CONTEXT_TOKEN when security scopes are present', () => {
         const { methodGen, serviceClass, parser } = createTestEnvironment(specEdgeTests);
-        // type-coverage:ignore-next-line
+
         const op = parser.operations.find(
             (o: string | number | boolean | object | undefined | null) => o.operationId === 'getOauthProtected',
         )!;

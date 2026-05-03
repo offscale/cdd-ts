@@ -133,10 +133,7 @@ export class ServiceTestGenerator {
 
                     if (bodyParam.type.includes('[]') && mockData) mockData = `[${mockData}]`;
 
-                    mockData =
-                        typeof mockData === 'string' && mockData.startsWith('"') && mockData.endsWith('"')
-                            ? mockData
-                            : String(mockData);
+                    mockData = mockData.startsWith('"') ? mockData : String(mockData);
 
                     lines.push(
                         `      const ${bodyParam.name} = ${mockData.replace(/"new Date\(\)"/g, 'new globalThis.Date()')} as string | number | boolean | object | undefined | null as ${bodyParam.type};`,
@@ -178,19 +175,13 @@ export class ServiceTestGenerator {
                 if (responseType.endsWith('[]')) {
                     let mockData = this.mockDataGenerator.generate(responseModel);
 
-                    mockData =
-                        typeof mockData === 'string' && mockData.startsWith('"') && mockData.endsWith('"')
-                            ? mockData
-                            : String(mockData);
+                    mockData = mockData.startsWith('"') ? mockData : String(mockData);
 
                     mockResponseValue = `[${mockData.replace(/"new Date\(\)"/g, 'new globalThis.Date()')}]`;
                 } else {
                     let mockData = this.mockDataGenerator.generate(responseModel);
 
-                    mockResponseValue =
-                        typeof mockData === 'string' && mockData.startsWith('"') && mockData.endsWith('"')
-                            ? mockData
-                            : String(mockData);
+                    mockResponseValue = mockData.startsWith('"') ? mockData : String(mockData);
 
                     mockResponseValue = mockResponseValue.replace(/"new Date\(\)"/g, 'new globalThis.Date()');
                 }
@@ -351,8 +342,6 @@ export class ServiceTestGenerator {
                     typeof firstExample === 'object' &&
                     Object.prototype.hasOwnProperty.call(firstExample, '$ref')
                 ) {
-                    // type-coverage:ignore-next-line
-
                     const resolved = this.parser.resolveReference<ExampleObject>(
                         (firstExample as Record<string, string>).$ref,
                     );

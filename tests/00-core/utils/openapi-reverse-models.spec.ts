@@ -228,32 +228,30 @@ describe('Core Utils: OpenAPI Reverse Models', () => {
         const schemas = parseGeneratedModelSource(modelSource, '/models/index.ts');
 
         expect(schemas.Base).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect((schemas.Base as string | number | boolean | object | undefined | null).properties.id.type).toBe(
             'string',
         );
-        // type-coverage:ignore-next-line
+
         expect(
             (schemas.Base as string | number | boolean | object | undefined | null).properties.createdAt.readOnly,
         ).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(
             (schemas.Base as string | number | boolean | object | undefined | null).properties.createdAt.format,
         ).toBe('date-time');
 
-        // type-coverage:ignore-next-line
         expect((schemas.Status as string | number | boolean | object | undefined | null).enum).toEqual([
             'active',
             'inactive',
         ]);
-        // type-coverage:ignore-next-line
+
         expect((schemas.Status as string | number | boolean | object | undefined | null).deprecated).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect((schemas.Level as string | number | boolean | object | undefined | null).type).toBe('number');
-        // type-coverage:ignore-next-line
+
         expect((schemas.Mixed as string | number | boolean | object | undefined | null).type).toBeUndefined();
 
-        // type-coverage:ignore-next-line
         expect((schemas.Mode as string | number | boolean | object | undefined | null).enum).toEqual([
             'auto',
             'manual',
@@ -261,303 +259,282 @@ describe('Core Utils: OpenAPI Reverse Models', () => {
         expect(schemas.AnyAlias).toBeDefined();
         expect(schemas.UnknownAlias).toBeDefined();
         expect(schemas.ObjAlias).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect((schemas.LiteralNum as string | number | boolean | object | undefined | null).const).toBe(42);
-        // type-coverage:ignore-next-line
+
         expect((schemas.LiteralTrue as string | number | boolean | object | undefined | null).const).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect((schemas.LiteralFalse as string | number | boolean | object | undefined | null).const).toBe(false);
-        // type-coverage:ignore-next-line
+
         expect((schemas.LiteralNull as string | number | boolean | object | undefined | null).type).toBe('null');
-        // type-coverage:ignore-next-line
+
         expect((schemas.LiteralNull as string | number | boolean | object | undefined | null).const).toBe(null);
-        // type-coverage:ignore-next-line
+
         expect((schemas.ParenAlias as string | number | boolean | object | undefined | null).type).toBe('string');
 
-        // type-coverage:ignore-next-line
         expect((schemas.NullableName as string | number | boolean | object | undefined | null).type).toEqual([
             'string',
             'null',
         ]);
-        // type-coverage:ignore-next-line
+
         expect((schemas.OptionalName as string | number | boolean | object | undefined | null).type).toBe('string');
-        // type-coverage:ignore-next-line
+
         expect((schemas.UnionAnyOf as string | number | boolean | object | undefined | null).anyOf.length).toBe(2);
 
-        // type-coverage:ignore-next-line
         expect((schemas.ArrayAlias as string | number | boolean | object | undefined | null).type).toBe('array');
-        // type-coverage:ignore-next-line
+
         expect((schemas.ArrayAlias as string | number | boolean | object | undefined | null).items.type).toBe('string');
-        // type-coverage:ignore-next-line
+
         expect((schemas.TupleAlias as string | number | boolean | object | undefined | null).prefixItems.length).toBe(
             2,
         );
-        // type-coverage:ignore-next-line
+
         expect((schemas.TupleAlias as string | number | boolean | object | undefined | null).minItems).toBe(2);
-        // type-coverage:ignore-next-line
+
         expect((schemas.TupleAlias as string | number | boolean | object | undefined | null).maxItems).toBe(2);
-        // type-coverage:ignore-next-line
+
         expect((schemas.TupleAlias as string | number | boolean | object | undefined | null).items).toBe(false);
-        // type-coverage:ignore-next-line
+
         expect(
             (schemas.OptionalTuple as string | number | boolean | object | undefined | null).prefixItems.length,
         ).toBe(2);
-        // type-coverage:ignore-next-line
+
         expect((schemas.OptionalTuple as string | number | boolean | object | undefined | null).minItems).toBe(1);
-        // type-coverage:ignore-next-line
+
         expect((schemas.OptionalTuple as string | number | boolean | object | undefined | null).maxItems).toBe(2);
-        // type-coverage:ignore-next-line
+
         expect((schemas.OptionalTuple as string | number | boolean | object | undefined | null).items).toBe(false);
-        // type-coverage:ignore-next-line
+
         expect((schemas.NamedTuple as string | number | boolean | object | undefined | null).prefixItems.length).toBe(
             2,
         );
-        // type-coverage:ignore-next-line
+
         expect((schemas.NamedTuple as string | number | boolean | object | undefined | null).minItems).toBe(1);
-        // type-coverage:ignore-next-line
+
         expect((schemas.NamedTuple as string | number | boolean | object | undefined | null).maxItems).toBe(2);
-        // type-coverage:ignore-next-line
+
         expect((schemas.NamedTuple as string | number | boolean | object | undefined | null).items).toBe(false);
-        // type-coverage:ignore-next-line
+
         expect((schemas.RestTuple as string | number | boolean | object | undefined | null).prefixItems.length).toBe(1);
-        // type-coverage:ignore-next-line
+
         expect((schemas.RestTuple as string | number | boolean | object | undefined | null).minItems).toBe(1);
-        // type-coverage:ignore-next-line
+
         expect((schemas.RestTuple as string | number | boolean | object | undefined | null).items.type).toBe('number');
-        // type-coverage:ignore-next-line
+
         expect((schemas.ReadonlyAlias as string | number | boolean | object | undefined | null).items.type).toBe(
             'string',
         );
-        // type-coverage:ignore-next-line
+
         expect((schemas.ArrayRef as string | number | boolean | object | undefined | null).items.type).toBe('number');
-        // type-coverage:ignore-next-line
+
         expect((schemas.SetAlias as string | number | boolean | object | undefined | null).items.type).toBe('boolean');
-        // type-coverage:ignore-next-line
+
         expect(
             (schemas.RecordAlias as string | number | boolean | object | undefined | null).additionalProperties.type,
         ).toBe('number');
-        // type-coverage:ignore-next-line
+
         expect(
             (schemas.MapAlias as string | number | boolean | object | undefined | null).additionalProperties.type,
         ).toBe('string');
-        // type-coverage:ignore-next-line
+
         expect((schemas.DateAlias as string | number | boolean | object | undefined | null).format).toBe('date-time');
-        // type-coverage:ignore-next-line
+
         expect((schemas.BlobAlias as string | number | boolean | object | undefined | null).format).toBe('binary');
-        // type-coverage:ignore-next-line
+
         expect((schemas.FileAlias as string | number | boolean | object | undefined | null).format).toBe('binary');
 
-        // type-coverage:ignore-next-line
         const extensionModel = schemas.ExtensionModel as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(extensionModel['x-entity']).toBe('internal');
-        // type-coverage:ignore-next-line
+
         expect(extensionModel['x-meta']).toEqual({ tier: 1 });
-        // type-coverage:ignore-next-line
+
         expect(extensionModel.properties.value['x-prop']).toBe(true);
 
-        // type-coverage:ignore-next-line
         const eventPayload = schemas.EventPayload as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(eventPayload.properties.data.contentMediaType).toBe('application/json');
-        // type-coverage:ignore-next-line
+
         expect(eventPayload.properties.data.contentSchema.properties.id.type).toBe('string');
 
-        // type-coverage:ignore-next-line
         expect((schemas.RefAlias as string | number | boolean | object | undefined | null).$ref).toBe(
             '#/components/schemas/Base',
         );
-        // type-coverage:ignore-next-line
+
         expect((schemas.IntersectionAlias as string | number | boolean | object | undefined | null).allOf.length).toBe(
             2,
         );
 
-        // type-coverage:ignore-next-line
         const typeLiteral = schemas.TypeLiteralAlias as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(typeLiteral.properties.foo.type).toBe('string');
-        // type-coverage:ignore-next-line
+
         expect(typeLiteral.properties['bar-baz'].type).toBe('number');
-        // type-coverage:ignore-next-line
+
         expect(typeLiteral.properties.ro.readOnly).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(typeLiteral.additionalProperties.type).toBe('string');
 
-        // type-coverage:ignore-next-line
         const derived = schemas.Derived as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(derived.allOf.length).toBe(2);
-        // type-coverage:ignore-next-line
+
         expect(derived.allOf[1].properties.name.type).toBe('string');
 
-        // type-coverage:ignore-next-line
         const derivedNoProps = schemas.DerivedNoProps as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(derivedNoProps.allOf.length).toBe(1);
 
-        // type-coverage:ignore-next-line
         const derivedIndexOnly = schemas.DerivedIndexOnly as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(derivedIndexOnly.allOf.length).toBe(2);
-        // type-coverage:ignore-next-line
+
         expect(derivedIndexOnly.allOf[1].additionalProperties.type).toBe('string');
 
-        // type-coverage:ignore-next-line
         const discriminated = schemas.Discriminated as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(discriminated.discriminator).toEqual({
             propertyName: 'kind',
             mapping: { cat: 'Cat', dog: 'Dog' },
         });
 
-        // type-coverage:ignore-next-line
         const pet = schemas.Pet as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(pet.discriminator).toEqual({
             propertyName: 'kind',
             mapping: { cat: '#/components/schemas/Cat', dog: '#/components/schemas/Dog' },
         });
-        // type-coverage:ignore-next-line
+
         expect(pet.oneOf?.length).toBe(2);
-        // type-coverage:ignore-next-line
+
         expect(pet.anyOf).toBeUndefined();
 
-        // type-coverage:ignore-next-line
         const inlinePet = schemas.InlinePet as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(inlinePet.discriminator).toEqual({ propertyName: 'kind' });
-        // type-coverage:ignore-next-line
+
         expect(inlinePet.oneOf?.length).toBe(2);
-        // type-coverage:ignore-next-line
+
         expect(inlinePet.anyOf).toBeUndefined();
 
-        // type-coverage:ignore-next-line
         const withDocs = schemas.WithDocs as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(withDocs.description).toBe('With docs.');
-        // type-coverage:ignore-next-line
+
         expect(withDocs.example).toEqual({ flag: true });
-        // type-coverage:ignore-next-line
+
         expect(withDocs.default).toEqual({ flag: false });
-        // type-coverage:ignore-next-line
+
         expect(withDocs.properties.flag.example).toBe('value');
-        // type-coverage:ignore-next-line
+
         expect(withDocs.properties.mode.default).toBe('not-json');
 
-        // type-coverage:ignore-next-line
         const multiExample = schemas.MultiExample as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(multiExample.example).toBeUndefined();
-        // type-coverage:ignore-next-line
+
         expect(multiExample.examples).toEqual([{ id: 1 }, { id: 2 }]);
 
-        // type-coverage:ignore-next-line
         const binaryPayload = schemas.BinaryPayload as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(binaryPayload.properties.data.contentMediaType).toBe('image/png');
-        // type-coverage:ignore-next-line
+
         expect(binaryPayload.properties.data.contentEncoding).toBe('base64');
 
-        // type-coverage:ignore-next-line
         const constraints = schemas.Constraints as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(constraints.minProperties).toBe(1);
-        // type-coverage:ignore-next-line
+
         expect(constraints.maxProperties).toBe(5);
-        // type-coverage:ignore-next-line
+
         expect(constraints.propertyNames).toEqual({ pattern: '^[a-z]+$' });
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.name.minimum).toBe(1);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.name.maximum).toBe(10);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.name.pattern).toBe('^[a-z]+$');
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.name.format).toBe('uuid');
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.name.minLength).toBe(2);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.name.maxLength).toBe(5);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.tags.minItems).toBe(1);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.tags.maxItems).toBe(3);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.tags.uniqueItems).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.values.contains).toEqual({ type: 'string' });
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.values.minContains).toBe(1);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.values.maxContains).toBe(2);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.ratio.multipleOf).toBe(0.5);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.positive.exclusiveMinimum).toBe(0);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.below.exclusiveMaximum).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.secret.readOnly).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(constraints.properties.secret.writeOnly).toBe(true);
 
-        // type-coverage:ignore-next-line
         const xmlDoc = schemas.XmlDoc as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(xmlDoc.properties.value.xml.name).toBe('doc');
-        // type-coverage:ignore-next-line
+
         expect(xmlDoc.properties.value.xml.namespace).toBe('https://example.com');
-        // type-coverage:ignore-next-line
+
         expect(xmlDoc.properties.value.xml.prefix).toBe('ex');
 
-        // type-coverage:ignore-next-line
         const closedMap = schemas.ClosedMap as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(closedMap.additionalProperties).toBe(false);
 
-        // type-coverage:ignore-next-line
         const tagged = schemas.TaggedSchema as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(tagged.patternProperties).toEqual({ '^x-': { type: 'string' } });
-        // type-coverage:ignore-next-line
+
         expect(tagged.dependentSchemas.paymentMethod.properties.cardNumber.type).toBe('string');
-        // type-coverage:ignore-next-line
+
         expect(tagged.dependentSchemas.paymentMethod.required).toEqual(['cardNumber']);
-        // type-coverage:ignore-next-line
+
         expect(tagged.dependentRequired.paymentMethod).toEqual(['cardNumber']);
-        // type-coverage:ignore-next-line
+
         expect(tagged.unevaluatedProperties).toBe(false);
-        // type-coverage:ignore-next-line
+
         expect(tagged.unevaluatedItems).toEqual({ type: 'string' });
-        // type-coverage:ignore-next-line
+
         expect(tagged.$schema).toBe('https://spec.openapis.org/oas/3.1/dialect/base');
-        // type-coverage:ignore-next-line
+
         expect(tagged.$id).toBe('https://example.com/schemas/Tagged');
-        // type-coverage:ignore-next-line
+
         expect(tagged.$anchor).toBe('TaggedAnchor');
-        // type-coverage:ignore-next-line
+
         expect(tagged.$dynamicAnchor).toBe('TaggedDynamic');
-        // type-coverage:ignore-next-line
+
         expect(tagged.externalDocs).toEqual({ url: 'https://example.com/docs', description: 'Tagged docs' });
 
-        // type-coverage:ignore-next-line
         const conditional = schemas.ConditionalTagged as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(conditional.const).toEqual({ status: 'fixed', count: 1 });
-        // type-coverage:ignore-next-line
+
         expect(conditional.if).toEqual({ properties: { kind: { const: 'A' } } });
-        // type-coverage:ignore-next-line
+
         expect(conditional.then).toEqual({ required: ['a'] });
-        // type-coverage:ignore-next-line
+
         expect(conditional.else).toEqual({ required: ['b'] });
-        // type-coverage:ignore-next-line
+
         expect(conditional.not).toEqual({ properties: { banned: { type: 'string' } } });
 
-        // type-coverage:ignore-next-line
         const taggedUnion = schemas.TaggedUnion as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(taggedUnion.oneOf).toEqual([{ type: 'string' }, { type: 'number' }]);
-        // type-coverage:ignore-next-line
+
         expect(taggedUnion.anyOf).toBeUndefined();
     });
 

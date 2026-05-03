@@ -1,0 +1,7 @@
+node_modules
+dist
+out
+coverage
+ts-morph-as
+wasm-stubs
+temp_gen_out_*

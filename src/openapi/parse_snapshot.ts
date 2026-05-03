@@ -45,7 +45,11 @@ function fileExists(fileSystem: SnapshotFileSystem, filePath: string): boolean {
  */
 function parseSnapshot(contents: string, format: SnapshotFormat): SwaggerSpec {
     if (format === 'json') {
-        return JSON.parse(contents) as SwaggerSpec;
+        const parsed = JSON.parse(contents);
+        if (!parsed || typeof parsed !== 'object') {
+            throw new Error('Parsed JSON snapshot did not produce an object.');
+        }
+        return parsed as SwaggerSpec;
     }
 
     const parsed = yaml.load(contents);

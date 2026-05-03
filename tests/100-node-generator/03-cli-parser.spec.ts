@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect } from 'vitest';
 import { parseGeneratedCliSource } from '../../src/vendors/cli/parse.js';
 
@@ -57,6 +56,27 @@ usersCommand.command('getUser')
         expect(Object.keys(spec.paths!).length).toBe(0);
     });
 
+    it('should handle an invalid call expression and return undefined', () => {
+        const spec = parseGeneratedCliSource(`
+const program = new Command();
+foo.bar();
+        `);
+        expect(spec.info?.title).toBe('api-cli'); // default
+    });
+
+    it('should extract operations from command chain correctly including tags from default operation ID', () => {
+        const sourceText = `
+import { Command } from "commander";
+const program = new Command();
+program.name('api-cli');
+const defaultCommand = program.command('default').description('Default');
+defaultCommand.command('getSomething')
+    .description('Desc')
+    .action(() => {});
+`;
+        const spec = parseGeneratedCliSource(sourceText);
+        expect(spec.paths!['/default/getSomething'].post!.tags).toEqual(['Default']);
+    });
     it('should fall back for missing chained operations', () => {
         const sourceText = `
 import { Command } from "commander";
@@ -67,5 +87,26 @@ program();
 `;
         const spec = parseGeneratedCliSource(sourceText);
         expect(spec.info?.title).toBe('api-cli');
+    });
+
+    it('should hit line 25 in parse.ts by passing a literal to getBaseIdentifier', () => {
+        const sourceText = `
+import { Command } from "commander";
+const program = new Command();
+"hello".command('test');
+`;
+        const spec = parseGeneratedCliSource(sourceText);
+        expect(spec.paths).toBeDefined();
+    });
+
+    it('should handle property access without call expression', () => {
+        const sourceText = `
+import { Command } from "commander";
+const program = new Command();
+const usersCommand = program.command('users');
+usersCommand.command('getUser').description;
+`;
+        const spec = parseGeneratedCliSource(sourceText);
+        expect(spec.paths).toBeDefined();
     });
 });

@@ -172,17 +172,17 @@ app.post('/users/:id', createUser);
 `;
         const ir = scanTypeScriptSource(sourceText, '/virtual.ts');
         const spec = buildOpenApiSpecFromScan(ir);
-        // type-coverage:ignore-next-line
+
         const createUser = (spec.paths as string | number | boolean | object | undefined | null)['/users/{id}'].post;
-        // type-coverage:ignore-next-line
+
         const idParam = createUser.parameters.find(
             (param: string | number | boolean | object | undefined | null) => param.name === 'id',
         );
-        // type-coverage:ignore-next-line
+
         expect(idParam?.example).toBe(123);
-        // type-coverage:ignore-next-line
+
         expect(createUser.requestBody.content['application/json'].example).toEqual({ name: 'Ada' });
-        // type-coverage:ignore-next-line
+
         expect(createUser.responses['200'].content['application/json'].example).toEqual({ id: 123, name: 'Ada' });
     });
 
@@ -213,22 +213,20 @@ app.post('/plain', postPlain);
         const ir = scanTypeScriptSource(sourceText, '/virtual.ts');
         const spec = buildOpenApiSpecFromScan(ir);
 
-        // type-coverage:ignore-next-line
         const getPlain = (spec.paths as string | number | boolean | object | undefined | null)['/plain'].get;
-        // type-coverage:ignore-next-line
+
         const responseContent = getPlain.responses['200']?.content?.['text/plain'];
-        // type-coverage:ignore-next-line
+
         expect(responseContent?.example).toBeUndefined();
-        // type-coverage:ignore-next-line
+
         expect(responseContent?.examples?.example?.serializedValue).toBe('OK');
 
-        // type-coverage:ignore-next-line
         const postPlain = (spec.paths as string | number | boolean | object | undefined | null)['/plain'].post;
-        // type-coverage:ignore-next-line
+
         const requestContent = postPlain.requestBody?.content?.['text/plain'];
-        // type-coverage:ignore-next-line
+
         expect(requestContent?.example).toBeUndefined();
-        // type-coverage:ignore-next-line
+
         expect(requestContent?.examples?.example?.externalValue).toBe('./examples/request.txt');
     });
 
@@ -237,20 +235,19 @@ app.post('/plain', postPlain);
         const ir = scanTypeScriptSource(sourceText, querystringExampleFixture);
         const spec = buildOpenApiSpecFromScan(ir);
 
-        // type-coverage:ignore-next-line
         const rawQuery = (spec.paths as string | number | boolean | object | undefined | null)['/raw-query-example']
             .get;
-        // type-coverage:ignore-next-line
+
         const param = rawQuery.parameters.find(
             (entry: string | number | boolean | object | undefined | null) => entry.in === 'querystring',
         );
-        // type-coverage:ignore-next-line
+
         const content = param?.content?.['application/x-www-form-urlencoded'];
-        // type-coverage:ignore-next-line
+
         expect(content?.example).toBeUndefined();
-        // type-coverage:ignore-next-line
+
         expect(content?.examples?.example?.serializedValue).toBe('foo=bar&baz=qux');
-        // type-coverage:ignore-next-line
+
         expect(content?.encoding).toEqual({ tags: { style: 'pipeDelimited', explode: false } });
     });
 
@@ -273,26 +270,25 @@ app.get('/resources/:id', fetchResource);
 `;
         const ir = scanTypeScriptSource(sourceText, '/virtual.ts');
         const spec = buildOpenApiSpecFromScan(ir);
-        // type-coverage:ignore-next-line
+
         const op = (spec.paths as string | number | boolean | object | undefined | null)['/resources/{id}'].get;
-        // type-coverage:ignore-next-line
+
         const idParam = op.parameters.find(
             (param: string | number | boolean | object | undefined | null) => param.name === 'id',
         );
-        // type-coverage:ignore-next-line
+
         const searchParam = op.parameters.find(
             (param: string | number | boolean | object | undefined | null) => param.name === 'search',
         );
-        // type-coverage:ignore-next-line
+
         const filterParam = op.parameters.find(
             (param: string | number | boolean | object | undefined | null) => param.name === 'filter',
         );
 
-        // type-coverage:ignore-next-line
         expect(idParam?.schema).toEqual({ type: 'string', format: 'uuid' });
-        // type-coverage:ignore-next-line
+
         expect(searchParam?.schema).toEqual({ type: 'string' });
-        // type-coverage:ignore-next-line
+
         expect(filterParam?.schema).toEqual({ $ref: '#/components/schemas/Filter' });
     });
 
@@ -310,17 +306,17 @@ app.get('/headers', headerHandler);
 `;
         const ir = scanTypeScriptSource(sourceText, '/virtual.ts');
         const spec = buildOpenApiSpecFromScan(ir);
-        // type-coverage:ignore-next-line
+
         const op = (spec.paths as string | number | boolean | object | undefined | null)['/headers'].get;
-        // type-coverage:ignore-next-line
+
         const headerParams = (op.parameters || []).filter(
             (param: string | number | boolean | object | undefined | null) => param.in === 'header',
         );
-        // type-coverage:ignore-next-line
+
         const headerNames = headerParams.map((param: string | number | boolean | object | undefined | null) =>
             String(param.name).toLowerCase(),
         );
-        // type-coverage:ignore-next-line
+
         expect(headerNames).toEqual(['x-custom']);
     });
 
@@ -377,32 +373,29 @@ app.get('/headers', headerHandler);
         expect(spec.info.title).toBe('AST Scan');
         expect(spec.info.version).toBe('1.2.3');
 
-        // type-coverage:ignore-next-line
         const getUser = (spec.paths as string | number | boolean | object | undefined | null)['/users/{id}'].get;
-        // type-coverage:ignore-next-line
+
         expect(getUser.operationId).toBe('getUser');
-        // type-coverage:ignore-next-line
+
         expect(
             getUser.parameters.some(
                 (param: string | number | boolean | object | undefined | null) =>
                     param.name === 'id' && param.in === 'path',
             ),
         ).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(getUser.tags).toEqual(['Users', 'Accounts']);
         expect(spec.tags?.map(tag => tag.name)).toEqual(['Users', 'Accounts']);
         const usersTag = spec.tags?.find(tag => tag.name === 'Users');
         expect(usersTag?.summary).toBe('User operations');
         expect(usersTag?.kind).toBe('nav');
 
-        // type-coverage:ignore-next-line
         const search = (spec.paths as string | number | boolean | object | undefined | null)['/search'].query;
-        // type-coverage:ignore-next-line
+
         expect(search).toBeDefined();
 
-        // type-coverage:ignore-next-line
         const rawQuery = (spec.paths as string | number | boolean | object | undefined | null)['/raw-query'].get;
-        // type-coverage:ignore-next-line
+
         expect(rawQuery.parameters).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
@@ -415,38 +408,34 @@ app.get('/headers', headerHandler);
             ]),
         );
 
-        // type-coverage:ignore-next-line
         const copyPath = (spec.paths as string | number | boolean | object | undefined | null)['/files/{id}'];
-        // type-coverage:ignore-next-line
+
         expect(copyPath.additionalOperations?.COPY).toBeDefined();
 
-        // type-coverage:ignore-next-line
         const messages = (spec.paths as string | number | boolean | object | undefined | null)['/messages'].post;
-        // type-coverage:ignore-next-line
+
         expect(messages.requestBody.content['application/json']).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(messages.responses['200'].content['text/plain']).toBeDefined();
 
-        // type-coverage:ignore-next-line
         const typedMessages = (spec.paths as string | number | boolean | object | undefined | null)['/typed-messages']
             .post;
-        // type-coverage:ignore-next-line
+
         expect(typedMessages.requestBody.content['application/json'].schema).toEqual({
             $ref: '#/components/schemas/CreateMessageBody',
         });
-        // type-coverage:ignore-next-line
+
         expect(typedMessages.responses['201'].content['application/json'].schema).toEqual({
             $ref: '#/components/schemas/MessageReceipt',
         });
 
-        // type-coverage:ignore-next-line
         const secure = (spec.paths as string | number | boolean | object | undefined | null)['/secure'].get;
-        // type-coverage:ignore-next-line
+
         expect(secure.externalDocs).toEqual({
             url: 'https://example.com/secure',
             description: 'Secure docs',
         });
-        // type-coverage:ignore-next-line
+
         expect(secure.servers).toEqual([
             {
                 url: 'https://api.example.com/v2',
@@ -456,29 +445,28 @@ app.get('/headers', headerHandler);
             },
             { url: 'https://staging.example.com/v2', description: 'Staging' },
         ]);
-        // type-coverage:ignore-next-line
+
         expect(secure.security).toEqual([{ ApiKey: [] }, { OAuth2: ['read:items', 'write:items'] }]);
-        // type-coverage:ignore-next-line
+
         expect(secure['x-feature-flag']).toBe('beta');
 
-        // type-coverage:ignore-next-line
         const documented = (spec.paths as string | number | boolean | object | undefined | null)['/documented/{id}']
             .get;
-        // type-coverage:ignore-next-line
+
         expect(documented.operationId).toBe('fetchDocumented');
-        // type-coverage:ignore-next-line
+
         const documentedParam = documented.parameters.find(
             (param: string | number | boolean | object | undefined | null) => param.name === 'id',
         );
-        // type-coverage:ignore-next-line
+
         expect(documentedParam.description).toBe('Documented id.');
-        // type-coverage:ignore-next-line
+
         expect(documented.responses['202'].summary).toBe('Accepted summary');
-        // type-coverage:ignore-next-line
+
         expect(documented.responses['202'].description).toBe('Accepted payload');
-        // type-coverage:ignore-next-line
+
         expect(documented.responses['202'].content['application/json']).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(documented.responses['404'].content['text/plain']).toBeDefined();
 
         expect(spec.components?.schemas).toHaveProperty('CreateMessage');
@@ -514,18 +502,16 @@ app.get('/headers', headerHandler);
             { title: 'Custom', version: '0.1.0' },
         );
 
-        // type-coverage:ignore-next-line
         const customPath = (customSpec.paths as string | number | boolean | object | undefined | null)['/things/{id}'];
-        // type-coverage:ignore-next-line
+
         expect(customPath.additionalOperations?.COPY).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(customPath.additionalOperations.COPY.responses['200']).toBeDefined();
 
-        // type-coverage:ignore-next-line
         const uploadPath = (customSpec.paths as string | number | boolean | object | undefined | null)['/upload'].post;
-        // type-coverage:ignore-next-line
+
         expect(uploadPath.requestBody.content['multipart/form-data']).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(uploadPath.requestBody.content['application/octet-stream']).toBeDefined();
     });
 

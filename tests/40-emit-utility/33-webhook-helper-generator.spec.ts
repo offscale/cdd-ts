@@ -7,7 +7,6 @@ import { SwaggerParser } from '@src/openapi/parse.js';
 import ts from 'typescript';
 
 describe('Emitter: WebhookHelperGenerator', () => {
-    // type-coverage:ignore-next-line
     const createParser = (spec: string | number | boolean | object | undefined | null) =>
         new SwaggerParser(spec, { options: {} } as string | number | boolean | object | undefined | null);
 
@@ -73,9 +72,8 @@ describe('Emitter: WebhookHelperGenerator', () => {
             module: ts.ModuleKind.CommonJS,
         });
 
-        // type-coverage:ignore-next-line
         const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
-        // type-coverage:ignore-next-line
+
         const mockInjectable = () => (target: string | number | boolean | object | undefined | null) => target;
 
         const wrappedCode = `
@@ -84,38 +82,34 @@ describe('Emitter: WebhookHelperGenerator', () => {
             ${jsService} 
         `;
 
-        // type-coverage:ignore-next-line
         new Function('exports', 'Injectable', wrappedCode)(moduleScope.exports, mockInjectable);
 
-        // type-coverage:ignore-next-line
         const ServiceClass = moduleScope.exports.WebhookService;
-        // type-coverage:ignore-next-line
+
         const service = new ServiceClass();
 
         // Test Find Logic
-        // type-coverage:ignore-next-line
+
         const shipped = service.findEntry('order.shipped');
-        // type-coverage:ignore-next-line
+
         expect(shipped).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(shipped.method).toBe('POST');
 
-        // type-coverage:ignore-next-line
         const cancelled = service.findEntry('order.cancelled', 'PUT');
-        // type-coverage:ignore-next-line
+
         expect(cancelled).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(cancelled.method).toBe('PUT');
 
         // Test Type Guard Logic
-        // type-coverage:ignore-next-line
+
         const isShipped = service.isWebhookEvent('order.shipped', {}, 'POST');
-        // type-coverage:ignore-next-line
+
         expect(isShipped).toBe(true);
 
-        // type-coverage:ignore-next-line
         const isFake = service.isWebhookEvent('order.fake', {}, 'POST');
-        // type-coverage:ignore-next-line
+
         expect(isFake).toBe(false);
     });
 
@@ -131,7 +125,7 @@ describe('Emitter: WebhookHelperGenerator', () => {
         };
         const parser = createParser(spec);
         // Force parser.webhooks empty to exercise fallback branch
-        // type-coverage:ignore-next-line
+
         (parser as string | number | boolean | object | undefined | null).webhooks = [];
 
         new WebhookHelperGenerator(parser, project).generate('/out');

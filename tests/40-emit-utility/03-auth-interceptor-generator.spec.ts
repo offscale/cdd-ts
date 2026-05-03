@@ -227,26 +227,23 @@ describe('Emitter: AuthInterceptorGenerator', () => {
         const parser = new SwaggerParser(emptySpec as string | number | boolean | object | undefined | null, config);
         const generator = new AuthInterceptorGenerator(parser, project);
 
-        // type-coverage:ignore-next-line
         const prefix = (generator as string | number | boolean | object | undefined | null).getAuthPrefix({
             type: 'apiKey',
         });
-        // type-coverage:ignore-next-line
+
         expect(prefix).toBe('Bearer');
 
-        // type-coverage:ignore-next-line
         const bearerDefault = (generator as string | number | boolean | object | undefined | null).getAuthPrefix({
             type: 'http',
         });
-        // type-coverage:ignore-next-line
+
         expect(bearerDefault).toBe('Bearer');
 
-        // type-coverage:ignore-next-line
         const basicPrefix = (generator as string | number | boolean | object | undefined | null).getAuthPrefix({
             type: 'http',
             scheme: 'basic',
         });
-        // type-coverage:ignore-next-line
+
         expect(basicPrefix).toBe('Basic');
     });
 });

@@ -41,21 +41,36 @@ describe('E2E: Core Orchestrator Flow', () => {
         expect(saveSpy).toHaveBeenCalled();
     });
 
-    it('should handle unsupported frameworks by instantiating their placeholders', async () => {
+    it('should generate react client when framework is react', async () => {
         const project = createTestProject();
         const config: GeneratorConfig = {
             input: '',
             output: '/generated',
-            options: { framework: 'react' as string | number | boolean | object | undefined | null }, // Type cast for testing invalid runtime option
+            options: { framework: 'react' },
         };
+        const testConfig = { spec: emptySpec };
+        await expect(generateFromConfig(config, project, testConfig)).resolves.toBeUndefined();
+    });
 
-        // It no longer throws an error, it resolves.
-        const mockParser = {
-            spec: emptySpec,
-            getOperationsByController: () => ({}),
-            getDefinitions: () => [],
-            getWebhooks: () => [],
-        } as unknown as SwaggerParser;
-        await expect(generateFromConfig(config, project, mockParser)).resolves.toBeUndefined();
+    it('should generate vue client when framework is vue', async () => {
+        const project = createTestProject();
+        const config: GeneratorConfig = {
+            input: '',
+            output: '/generated',
+            options: { framework: 'vue' },
+        };
+        const testConfig = { spec: emptySpec };
+        await expect(generateFromConfig(config, project, testConfig)).resolves.toBeUndefined();
+    });
+
+    it('should call CliGenerator when targetScope is to_sdk_cli', async () => {
+        const project = createTestProject();
+        const config: GeneratorConfig = {
+            input: '',
+            output: '/generated',
+            options: { framework: 'angular' },
+        };
+        const testConfig = { spec: emptySpec };
+        await expect(generateFromConfig(config, project, testConfig, 'to_sdk_cli')).resolves.toBeUndefined();
     });
 });

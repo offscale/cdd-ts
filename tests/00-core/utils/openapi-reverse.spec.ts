@@ -210,6 +210,11 @@ export class TypedService {
     return this.http.post<User>(url, payload, requestOptions as string | number | boolean | object | undefined | null); 
   } 
 
+  public exactUser(payload: ExactMatch): Observable<User> { 
+    const url = \`\${basePath}/users/exact\`; 
+    return this.http.post<User>(url, payload, requestOptions as string | number | boolean | object | undefined | null); 
+  } 
+
   public streamUsers(): Observable<User[]> { 
     const url = \`\${basePath}/users/stream\`; 
     return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null).pipe(map(response => response.split('\\\\n'))); 
@@ -224,6 +229,8 @@ export class ParamDocService {
    * @param userId The user id. 
    * @param verbose Include extra details. 
    * @param body Updated payload. 
+   * @querystring {"name":"verbose","contentType":"application/json","encoding":{"foo":{"style":"form"}},"required":true,"description":"desc"}
+   * @paramExample userId {"__oasExample":{"value":"123"}}
    */ 
   public updateUser(userId: string, verbose?: boolean, body?: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/users/\${ParameterSerializer.serializePathParam('userId', userId, 'simple', false, false)}\`; 
@@ -244,11 +251,25 @@ export class DocTagService {
    * @server {"url":"https://example.com","description":"Primary","name":"prod"} 
    * @security [{"ApiKey":[]}] 
    * @x-feature-flag "beta" 
+   * @response 200 application/json ok
+   * @response 200 application/xml
+   * @responseSummary 200 list ok
    */ 
   public list(options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/items\`; 
     return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); 
   } 
+
+  /**
+   * Unstructured tags
+   * @server https://api.example.com
+   * @security ApiKey read,write
+   * @x-feature-flag
+   * @responseSummary 200 raw summary
+   */
+  public getRaw() { 
+    return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions);
+  }
 } 
 `;
 
@@ -271,7 +292,7 @@ export class ExampleCarrierService {
    * Sends plain text. 
    * @requestExample text/plain {"__oasExample":{"externalValue":"./examples/request.txt"}} 
    */ 
-  public postPlain(body?: string | number | boolean | object | undefined | null, options?: string | number | boolean | object | undefined | null) { 
+  public postPlain(body, options?: string | number | boolean | object | undefined | null) { 
     const url = \`\${basePath}/plain\`; 
     let headers = new HttpHeaders(); 
     if (body != null && !headers.has('Content-Type')) { headers = headers.set('Content-Type', 'text/plain'); } 
@@ -307,17 +328,17 @@ describe('Core Utils: OpenAPI Reverse', () => {
         const specOp = spec.paths!['/users/{id}'].post!;
         expect(specOp.operationId).toBe('getUserById');
         expect(Object.keys(specOp.responses || {})).toEqual(expect.arrayContaining(['200', '404']));
-        // type-coverage:ignore-next-line
+
         expect(
             (specOp.responses['200'] as string | number | boolean | object | undefined | null).content?.[
                 'application/json'
             ],
         ).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect((specOp.responses['200'] as string | number | boolean | object | undefined | null).summary).toBe(
             'User response',
         );
-        // type-coverage:ignore-next-line
+
         expect((specOp.responses['404'] as string | number | boolean | object | undefined | null).description).toBe(
             'Not found',
         );
@@ -356,10 +377,9 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(filterParam?.allowReserved).toBe(true);
         expect(filterParam?.contentEncoding).toBe('base64');
 
-        // type-coverage:ignore-next-line
         const listWithServerSpec = (spec.paths as string | number | boolean | object | undefined | null)['/server-test']
             .get;
-        // type-coverage:ignore-next-line
+
         expect(listWithServerSpec.servers).toEqual([{ url: 'https://api.example.com/v1', description: 'primary' }]);
 
         const cookieParam = getUser.params.find(p => p.name === 'session');
@@ -369,6 +389,53 @@ describe('Core Utils: OpenAPI Reverse', () => {
 
         const listWithServerOp = userService!.operations.find(op => op.methodName === 'listWithServer')!;
         expect(listWithServerOp.servers).toEqual([{ url: 'https://api.example.com/v1', description: 'primary' }]);
+    });
+
+    it('should handle complex param splitting edge cases and invalid JSON in params', () => {
+        const source = `
+        export class EdgeCaseService {
+            public getEdge(options?: any) {
+                const url = \`\${basePath}/edge\${ParameterSerializer.serializePathParam('id', Number(123), 'simple', false, false)}\`;
+                let params = new HttpParams();
+                const queryString = ParameterSerializer.serializeRawQuerystring('val', String(undefined), 'invalid-json(', 'invalid-json2', 'invalid-json3');
+                return this.http.get<string>(url, { params });
+            }
+
+            public fetchEdge() {
+                const url = \`\${basePath}/fetch-edge\`;
+                return fetch(url, { method: 'POST', body: 'x' });
+            }
+
+            public fetchEdgeWithReturn(): Observable<Blob> {
+                const url = \`\${basePath}/fetch-obs\`;
+                return new Observable<Blob>(obs => fetch(url, { method: 'DELETE' }));
+            }
+
+            public requestEdge(): Observable<string> {
+                const url = \`\${basePath}/req-edge\`;
+                return this.http.request('PATCH', url, {});
+            }
+
+            public requestEdgeWithType(): Observable<number> {
+                const url = \`\${basePath}/req-edge-type\`;
+                return this.http.request<number>('HEAD', url, {});
+            }
+
+            public unbalanced(options?: any) {
+                const url = \`\${basePath}/edge\`;
+                let requestOptions: any = { context: this.createContextWithClientId(options?.context).set(EXTENSIONS_CONTEXT_TOKEN, {"x-rate-limit":120,"x-feature-flag":"alpha") };
+                return this.http.get<string>(url, { params });
+            }
+        }`;
+        const services = parseGeneratedServiceSource(source, '/edge.service.ts');
+        const op = services[0].operations[0];
+        const valParam = op.params.find(p => p.name === 'val');
+        expect(valParam?.in).toBe('querystring');
+        expect(valParam?.encoding).toBeUndefined();
+        expect(valParam?.contentEncoderConfig).toBeUndefined();
+
+        const unbOp = services[0].operations.find(o => o.methodName === 'unbalanced')!;
+        expect(unbOp.extensions).toBeUndefined();
     });
 
     it('should extract @param descriptions into parameter metadata', () => {
@@ -381,19 +448,19 @@ describe('Core Utils: OpenAPI Reverse', () => {
         const bodyParam = operation.params.find(p => p.in === 'body');
 
         expect(idParam?.description).toBe('The user id.');
-        expect(verboseParam?.description).toBe('Include extra details.');
+        expect(verboseParam?.description).toBe('desc');
         expect(bodyParam?.description).toBe('Updated payload.');
 
         const specParams = spec.paths!['/users/{userId}'].put!.parameters!;
-        // type-coverage:ignore-next-line
+
         const specId = specParams.find(
             (p: string | number | boolean | object | undefined | null) => p.name === 'userId',
         );
-        // type-coverage:ignore-next-line
+
         const specVerbose = specParams.find(
             (p: string | number | boolean | object | undefined | null) => p.name === 'verbose',
         );
-        // type-coverage:ignore-next-line
+
         const specBody = spec.paths!['/users/{userId}'].put!.requestBody as
             | string
             | number
@@ -401,13 +468,11 @@ describe('Core Utils: OpenAPI Reverse', () => {
             | object
             | undefined
             | null;
-        // type-coverage:ignore-next-line
+
         expect((specId as string | number | boolean | object | undefined | null).description).toBe('The user id.');
-        // type-coverage:ignore-next-line
-        expect((specVerbose as string | number | boolean | object | undefined | null).description).toBe(
-            'Include extra details.',
-        );
-        // type-coverage:ignore-next-line
+
+        expect((specVerbose as string | number | boolean | object | undefined | null).description).toBe('desc');
+
         expect(specBody.description).toBe('Updated payload.');
     });
 
@@ -418,33 +483,37 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(operation.servers).toEqual([{ url: 'https://example.com', description: 'Primary', name: 'prod' }]);
         expect(operation.security).toEqual([{ ApiKey: [] }]);
         expect(operation.extensions).toEqual({ 'x-feature-flag': 'beta' });
+        expect(operation.responseHints?.find(r => r.status === '200')?.summary).toBe('list ok');
+
+        const raw = services[0].operations[1];
+        expect(raw.servers).toEqual([{ url: 'https://api.example.com' }]);
+        expect(raw.security).toEqual([{ ApiKey: ['read', 'write'] }]);
+        expect(raw.extensions).toEqual({ 'x-feature-flag': true });
+        expect(raw.responseHints?.find(r => r.status === '200')?.summary).toBe('raw summary');
     });
 
     it('should preserve serialized/external examples from wrapped example carriers', () => {
         const services = parseGeneratedServiceSource(exampleCarrierServiceSource, '/example-carrier.service.ts');
         const spec = buildOpenApiSpecFromServices(services, { title: 'Recovered', version: '1.0.0' });
 
-        // type-coverage:ignore-next-line
         const getPlain = (spec.paths as string | number | boolean | object | undefined | null)['/plain'].get;
-        // type-coverage:ignore-next-line
+
         const responseContent = getPlain.responses['200']?.content?.['text/plain'];
-        // type-coverage:ignore-next-line
+
         expect(responseContent?.example).toBeUndefined();
-        // type-coverage:ignore-next-line
+
         expect(responseContent?.examples?.example?.serializedValue).toBe('OK');
 
-        // type-coverage:ignore-next-line
         const postPlain = (spec.paths as string | number | boolean | object | undefined | null)['/plain'].post;
-        // type-coverage:ignore-next-line
+
         const requestContent = postPlain.requestBody?.content?.['text/plain'];
-        // type-coverage:ignore-next-line
+
         expect(requestContent?.example).toBeUndefined();
-        // type-coverage:ignore-next-line
+
         expect(requestContent?.examples?.example?.externalValue).toBe('./examples/request.txt');
     });
 
     it('should keep component webhooks scoped to components only', () => {
-        // type-coverage:ignore-next-line
         const baseSpec: string | number | boolean | object | undefined | null = {
             openapi: '3.2.0',
             info: { title: 'T', version: '1' },
@@ -469,7 +538,6 @@ describe('Core Utils: OpenAPI Reverse', () => {
     });
 
     it('should apply root-scoped webhooks to the OpenAPI Object', () => {
-        // type-coverage:ignore-next-line
         const baseSpec: string | number | boolean | object | undefined | null = {
             openapi: '3.2.0',
             info: { title: 'T', version: '1' },
@@ -510,7 +578,6 @@ describe('Core Utils: OpenAPI Reverse', () => {
         const metadata = parseGeneratedMetadata(dir, fs as string | number | boolean | object | undefined | null);
         expect(metadata.documentMeta?.extensions).toEqual(documentMeta.extensions);
 
-        // type-coverage:ignore-next-line
         const baseSpec: string | number | boolean | object | undefined | null = {
             openapi: '3.2.0',
             info: { title: 'T', version: '1' },
@@ -527,7 +594,6 @@ describe('Core Utils: OpenAPI Reverse', () => {
         const expectedSelf = pathToFileURL(path.resolve(dir, 'openapi.yaml')).href;
         expect(metadata.inferredSelf).toBe(expectedSelf);
 
-        // type-coverage:ignore-next-line
         const baseSpec: string | number | boolean | object | undefined | null = {
             openapi: '3.2.0',
             info: { title: 'T', version: '1' },
@@ -647,6 +713,9 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(() =>
             parseGeneratedServices(noOpDir, fs as string | number | boolean | object | undefined | null),
         ).toThrow(/No operations could be reconstructed/);
+
+        // Add test for empty metadata file parsing
+        expect(parseGeneratedMetadata(dir, fs as any).servers).toBeUndefined();
     });
 
     it('should build a minimal OpenAPI spec from services', () => {
@@ -659,113 +728,106 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(spec.info.version).toBe('1.2.3');
         expect(spec.tags?.map(tag => tag.name)).toEqual(['users', 'admin']);
 
-        // type-coverage:ignore-next-line
         const getUser = (spec.paths as string | number | boolean | object | undefined | null)['/users/{id}'].post;
-        // type-coverage:ignore-next-line
+
         const params = getUser.parameters as string | number | boolean | object | undefined | null[];
-        // type-coverage:ignore-next-line
+
         expect(getUser.operationId).toBe('getUserById');
-        // type-coverage:ignore-next-line
+
         expect(getUser.summary).toBe('Get a user by id.');
-        // type-coverage:ignore-next-line
+
         expect(getUser.description).toBe('Returns a user payload.');
-        // type-coverage:ignore-next-line
+
         expect(getUser.deprecated).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(getUser.externalDocs).toEqual({ url: 'https://example.com/users', description: 'User docs' });
-        // type-coverage:ignore-next-line
+
         expect(params.find(p => p.name === 'id')?.required).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(params.find(p => p.name === 'id')?.style).toBe('simple');
-        // type-coverage:ignore-next-line
+
         expect(getUser.security).toEqual([{ api_key: [] }, { petstore_auth: ['read:pets'] }]);
-        // type-coverage:ignore-next-line
+
         expect((getUser as string | number | boolean | object | undefined | null)['x-rate-limit']).toBe(120);
-        // type-coverage:ignore-next-line
+
         expect((getUser as string | number | boolean | object | undefined | null)['x-feature-flag']).toBe('alpha');
-        // type-coverage:ignore-next-line
+
         const querystringParam = params.find(p => p.name === 'q');
-        // type-coverage:ignore-next-line
+
         expect(querystringParam?.in).toBe('querystring');
-        // type-coverage:ignore-next-line
+
         expect(querystringParam?.content?.['application/x-www-form-urlencoded']).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(querystringParam?.content?.['application/x-www-form-urlencoded']?.encoding).toEqual({
             tags: { style: 'pipeDelimited', explode: false },
         });
-        // type-coverage:ignore-next-line
+
         const searchParam = params.find(p => p.name === 'search');
-        // type-coverage:ignore-next-line
+
         expect(searchParam?.style).toBe('form');
-        // type-coverage:ignore-next-line
+
         expect(searchParam?.explode).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(searchParam?.allowReserved).toBe(false);
-        // type-coverage:ignore-next-line
+
         expect(searchParam?.allowEmptyValue).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(searchParam?.schema?.contentMediaType).toBe('application/json');
-        // type-coverage:ignore-next-line
+
         const filterParam = params.find(p => p.name === 'filter');
-        // type-coverage:ignore-next-line
+
         expect(filterParam?.style).toBe('simple');
-        // type-coverage:ignore-next-line
+
         expect(filterParam?.explode).toBe(false);
-        // type-coverage:ignore-next-line
+
         expect(filterParam?.allowReserved).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(filterParam?.schema?.contentEncoding).toBe('base64');
-        // type-coverage:ignore-next-line
+
         expect(params.find(p => p.name === 'id')?.example).toBe(123);
 
-        // type-coverage:ignore-next-line
         const requestExample = getUser.requestBody?.content?.['application/json']?.example;
-        // type-coverage:ignore-next-line
+
         expect(requestExample).toEqual({ name: 'Ada' });
-        // type-coverage:ignore-next-line
+
         const responseExample = getUser.responses['200']?.content?.['application/json']?.example;
-        // type-coverage:ignore-next-line
+
         expect(responseExample).toEqual({ id: 123, name: 'Ada' });
 
-        // type-coverage:ignore-next-line
         const uploadBody = (spec.paths as string | number | boolean | object | undefined | null)['/upload'].post
             .requestBody;
-        // type-coverage:ignore-next-line
+
         expect(uploadBody.content['multipart/form-data'].schema.type).toBe('object');
-        // type-coverage:ignore-next-line
+
         expect(uploadBody.content['multipart/form-data'].schema.properties).toHaveProperty('file');
 
-        // type-coverage:ignore-next-line
         const uploadAdvancedBody = (spec.paths as string | number | boolean | object | undefined | null)[
             '/upload-advanced'
         ].post.requestBody;
-        // type-coverage:ignore-next-line
+
         expect(uploadAdvancedBody.content['multipart/form-data'].encoding).toEqual({
             meta: { contentType: 'application/json' },
             file: { contentType: 'image/png' },
         });
 
-        // type-coverage:ignore-next-line
         const uploadMixedBody = (spec.paths as string | number | boolean | object | undefined | null)['/mixed'].post
             .requestBody;
-        // type-coverage:ignore-next-line
+
         expect(uploadMixedBody.content['multipart/mixed'].itemEncoding).toEqual({ contentType: 'image/png' });
 
-        // type-coverage:ignore-next-line
         const encodeMapBody = (spec.paths as string | number | boolean | object | undefined | null)['/encode-map'].post
             .requestBody;
-        // type-coverage:ignore-next-line
+
         expect(encodeMapBody.content['application/x-www-form-urlencoded'].encoding).toEqual({
             foo: { style: 'form', explode: true },
             bar: { allowReserved: true },
         });
 
-        // type-coverage:ignore-next-line
         const textBody = (spec.paths as string | number | boolean | object | undefined | null)['/text'].post
             .requestBody;
-        // type-coverage:ignore-next-line
+
         expect(textBody.required).toBe(true);
-        // type-coverage:ignore-next-line
+
         expect(textBody.content['text/plain']).toBeDefined();
 
         const noContentSpec = buildOpenApiSpecFromServices([
@@ -785,10 +847,9 @@ describe('Core Utils: OpenAPI Reverse', () => {
             },
         ]);
 
-        // type-coverage:ignore-next-line
         const pingResponse = (noContentSpec.paths as string | number | boolean | object | undefined | null)['/ping'].get
             .responses['200'];
-        // type-coverage:ignore-next-line
+
         expect(pingResponse.content).toBeUndefined();
     });
 
@@ -796,7 +857,8 @@ describe('Core Utils: OpenAPI Reverse', () => {
         const services = parseGeneratedServiceSource(typedServiceSource, '/typed.service.ts');
         const schemas = {
             User: { type: 'object' },
-            CreateUserRequest: { type: 'object' },
+            CreateUser: { type: 'object' },
+            ExactMatch: { type: 'object' },
         };
         const spec = buildOpenApiSpecFromServices(
             services,
@@ -804,23 +866,89 @@ describe('Core Utils: OpenAPI Reverse', () => {
             schemas as string | number | boolean | object | undefined | null,
         );
 
-        // type-coverage:ignore-next-line
         const createUser = (spec.paths as string | number | boolean | object | undefined | null)['/users'].post;
-        // type-coverage:ignore-next-line
+
         expect(createUser.requestBody.content['application/json'].schema).toEqual({
             $ref: '#/components/schemas/CreateUserRequest',
         });
-        // type-coverage:ignore-next-line
+
+        const exactUser = (spec.paths as string | number | boolean | object | undefined | null)['/users/exact'].post;
+
+        expect(exactUser.requestBody.content['application/json'].schema).toEqual({
+            $ref: '#/components/schemas/ExactMatch',
+        });
+
         expect(createUser.responses['200'].content['application/json'].schema).toEqual({
             $ref: '#/components/schemas/User',
         });
 
-        // type-coverage:ignore-next-line
         const streamUsers = (spec.paths as string | number | boolean | object | undefined | null)['/users/stream'].get;
-        // type-coverage:ignore-next-line
+
         expect(streamUsers.responses['200'].content['application/jsonl'].itemSchema).toEqual({
             $ref: '#/components/schemas/User',
         });
+    });
+
+    it('should handle missing schemas or json-seq arrays', () => {
+        const spec = buildOpenApiSpecFromServices(
+            [
+                {
+                    serviceName: 'MissingSchemaService',
+                    filePath: '/missing.service.ts',
+                    operations: [
+                        {
+                            methodName: 'doSomething',
+                            httpMethod: 'GET',
+                            path: '/do',
+                            params: [],
+                            requestMediaTypes: [],
+                            responseMediaTypes: ['application/json'],
+                            responseTypeHint: 'MissingSchema',
+                            responseIsArray: true,
+                            responseExamples: [{ description: 'Example', dataValue: 'test' }],
+                        },
+                        {
+                            methodName: 'doSeq',
+                            httpMethod: 'GET',
+                            path: '/seq',
+                            params: [],
+                            requestMediaTypes: [],
+                            responseMediaTypes: ['application/jsonl'],
+                            responseTypeHint: 'User',
+                            responseIsArray: true,
+                        },
+                        {
+                            methodName: 'doHints',
+                            httpMethod: 'GET',
+                            path: '/hints',
+                            params: [],
+                            requestMediaTypes: [],
+                            responseMediaTypes: [],
+                            responseHints: [
+                                {
+                                    status: '200',
+                                    mediaTypes: ['application/jsonl'],
+                                    description: 'Example',
+                                    summary: 'Summary',
+                                },
+                            ],
+                            responseTypeHint: 'User',
+                            responseIsArray: true,
+                        },
+                    ],
+                },
+            ],
+            {},
+            { User: { type: 'object' } } as any,
+        );
+
+        expect((spec.paths as any)['/do'].get.responses['200'].content['application/json'].schema.type).toBe('array');
+        expect((spec.paths as any)['/seq'].get.responses['200'].content['application/jsonl'].itemSchema.$ref).toBe(
+            '#/components/schemas/User',
+        );
+        expect((spec.paths as any)['/hints'].get.responses['200'].content['application/jsonl'].itemSchema.$ref).toBe(
+            '#/components/schemas/User',
+        );
     });
 
     it('should parse generated metadata and apply it to the recovered spec', () => {
@@ -1031,28 +1159,26 @@ describe('Core Utils: OpenAPI Reverse', () => {
         expect(merged.security).toEqual([{ api_key: [] }]);
         expect(merged.servers?.length).toBe(1);
         expect(merged.components?.securitySchemes).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(
             (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
                 .headers['X-Rate-Limit'],
         ).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(
             (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
                 .headers['X-Rate-Limit'].description,
         ).toBe('Rate limit');
-        // type-coverage:ignore-next-line
+
         expect(
             (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
                 .headers['X-Rate-Limit'].schema.type,
         ).toBe('integer');
         expect(
-            // type-coverage:ignore-next-line
             (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
                 .headers['X-Xml'].content?.['application/xml'],
         ).toBeDefined();
         expect(
-            // type-coverage:ignore-next-line
             (
                 (
                     (
@@ -1064,7 +1190,6 @@ describe('Core Utils: OpenAPI Reverse', () => {
             )?.xml?.name,
         ).toBe('Root');
         expect(
-            // type-coverage:ignore-next-line
             (
                 (merged.paths!['/ping'].get!.responses['200'] as import('../../src/core/types/openapi').SwaggerResponse)
                     .headers!['X-Linkset-Json'] as import('../../src/core/types/openapi').HeaderObject
@@ -1102,40 +1227,39 @@ describe('Core Utils: OpenAPI Reverse', () => {
         ).toBe('string');
         expect(merged.components?.pathItems?.PingItem?.get?.responses?.['200']).toBeDefined();
         expect(merged.components?.parameters?.LimitParam?.name).toBe('limit');
-        // type-coverage:ignore-next-line
+
         expect(
             (merged.components as string | number | boolean | object | undefined | null)?.requestBodies?.CreateUser
                 ?.content?.['application/json'],
         ).toBeDefined();
         expect(merged.components?.responses?.NotFound?.description).toBe('Not found');
-        // type-coverage:ignore-next-line
+
         expect((merged.paths as string | number | boolean | object | undefined | null)['/meta']?.summary).toBe(
             'Meta path',
         );
-        // type-coverage:ignore-next-line
+
         expect(
             (merged.paths as string | number | boolean | object | undefined | null)['/meta']?.parameters?.[0]?.name,
         ).toBe('trace');
-        // type-coverage:ignore-next-line
+
         expect(
             (merged.paths as string | number | boolean | object | undefined | null)['/meta']?.servers?.[0]?.url,
         ).toBe('https://meta.example.com');
         expect((merged.paths as string | number | boolean | object | undefined | null)['/meta']?.['x-meta']).toBe(true);
-        // type-coverage:ignore-next-line
+
         const callbacks = merged.components?.callbacks as string | number | boolean | object | undefined | null;
         expect(
-            // type-coverage:ignore-next-line
             callbacks?.onPing?.['{$request.body#/callbackUrl}']?.post?.requestBody?.content?.['application/json'],
         ).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(callbacks?.onPing?.['{$request.body#/callbackUrl}']?.post?.responses?.['204']).toBeDefined();
-        // type-coverage:ignore-next-line
+
         const webhooks = merged.components?.webhooks as string | number | boolean | object | undefined | null;
-        // type-coverage:ignore-next-line
+
         expect(webhooks?.pinged?.post?.requestBody?.content?.['application/json']).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(webhooks?.pinged?.post?.responses?.['201']).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(
             (merged as string | number | boolean | object | undefined | null).webhooks?.pinged?.post?.requestBody
                 ?.content?.['application/json'],
@@ -1168,11 +1292,105 @@ describe('Core Utils: OpenAPI Reverse', () => {
             },
         ]);
 
-        // type-coverage:ignore-next-line
         const pathItem = (spec.paths as string | number | boolean | object | undefined | null)['/things/{id}'];
-        // type-coverage:ignore-next-line
+
         expect(pathItem.additionalOperations?.COPY).toBeDefined();
-        // type-coverage:ignore-next-line
+
         expect(pathItem.copy).toBeUndefined();
+    });
+
+    it('should apply reverse metadata additionalOperations cleanly', () => {
+        const dir = makeTempDir();
+        fs.mkdirSync(path.join(dir, 'services'), { recursive: true });
+
+        fs.writeFileSync(
+            path.join(dir, 'response-headers.ts'),
+            `export const API_RESPONSE_HEADER_OBJECTS = {"copyOp":{"200":{"X-Rate-Limit":{"description":"Rate limit","schema":{"type":"integer"}}}}};\n`,
+        );
+
+        fs.writeFileSync(
+            path.join(dir, 'links.ts'),
+            `export const API_LINKS = {"copyOp":{"200":{"next":{"operationId":"listThings"}}}};\n`,
+        );
+
+        fs.writeFileSync(
+            path.join(dir, 'services', 'dummy.service.ts'),
+            'export class DummyService { public copyThing() {} }',
+        );
+
+        const metadata = parseGeneratedMetadata(dir, fs as any);
+
+        const spec = buildOpenApiSpecFromServices([
+            {
+                serviceName: 'DummyService',
+                filePath: '/dummy.service.ts',
+                operations: [
+                    {
+                        methodName: 'copyThing',
+                        httpMethod: 'COPY',
+                        path: '/things/{id}',
+                        params: [],
+                        requestMediaTypes: [],
+                        responseMediaTypes: [],
+                        operationId: 'copyOp',
+                    },
+                ],
+            },
+        ]);
+
+        const merged = applyReverseMetadata(spec, metadata);
+
+        expect(
+            (merged.paths as any)['/things/{id}'].additionalOperations.COPY.responses['200'].headers['X-Rate-Limit'],
+        ).toBeDefined();
+
+        expect(
+            (merged.paths as any)['/things/{id}'].additionalOperations.COPY.responses['200'].links['next'],
+        ).toBeDefined();
+    });
+
+    it('should ignore header objects and links if operationId cannot be found in the current spec', () => {
+        const dir = makeTempDir();
+        fs.mkdirSync(path.join(dir, 'services'), { recursive: true });
+
+        fs.writeFileSync(
+            path.join(dir, 'response-headers.ts'),
+            `export const API_RESPONSE_HEADER_OBJECTS = {"missingOp":{"200":{"X-Rate-Limit":{"description":"Rate limit","schema":{"type":"integer"}}}}};\n`,
+        );
+
+        fs.writeFileSync(
+            path.join(dir, 'links.ts'),
+            `export const API_LINKS = {"missingOp":{"200":{"next":{"operationId":"listThings"}}}};\n`,
+        );
+
+        fs.writeFileSync(
+            path.join(dir, 'services', 'dummy.service.ts'),
+            'export class DummyService { public copyThing() {} }',
+        );
+
+        const metadata = parseGeneratedMetadata(dir, fs as any);
+
+        const spec = buildOpenApiSpecFromServices([
+            {
+                serviceName: 'DummyService',
+                filePath: '/dummy.service.ts',
+                operations: [
+                    {
+                        methodName: 'copyThing',
+                        httpMethod: 'COPY',
+                        path: '/things/{id}',
+                        params: [],
+                        requestMediaTypes: [],
+                        responseMediaTypes: [],
+                        operationId: 'copyOp',
+                    },
+                ],
+            },
+        ]);
+
+        const merged = applyReverseMetadata(spec, metadata);
+        expect(
+            (merged.paths as any)['/things/{id}'].additionalOperations.COPY.responses['200'].headers,
+        ).toBeUndefined();
     });
 });
