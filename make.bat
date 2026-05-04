@@ -95,7 +95,7 @@ if not exist wasm mkdir wasm
 cd ..\ts-morph\packages\compiler-go-source
 set GOOS=wasip1
 set GOARCH=wasm
-call go build -o ..\..\..\cdd-ts\wasm\typescript-go.wasm .\cmd\wasm-wasi
+call go build -buildvcs=false -o ..\..\..\cdd-ts\wasm\typescript-go.wasm .\cmd\wasm-wasi
 set GOOS=
 set GOARCH=
 cd ..\..\..\cdd-ts

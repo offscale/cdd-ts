@@ -71,7 +71,7 @@ build_with_ts_go:
 build_with_ts_go_assemblyscript:
 	@echo "Building Go engine (WASM)..."
 	mkdir -p bin
-	cd ../ts-morph/packages/compiler-go-source && GOOS=wasip1 GOARCH=wasm go build -o ../../../cdd-ts/bin/typescript-go.wasm ./cmd/wasm-wasi
+	cd ../ts-morph/packages/compiler-go-source && GOOS=wasip1 GOARCH=wasm go build -buildvcs=false -o ../../../cdd-ts/bin/typescript-go.wasm ./cmd/wasm-wasi
 	@echo "Building AssemblyScript bridge (WASM)..."
 	cd ../ts-morph/packages/ts-morph-as && npm install --legacy-peer-deps && npm run asbuild:release
 	cp ../ts-morph/packages/ts-morph-as/build/release.wasm bin/cdd-ts.wasm
