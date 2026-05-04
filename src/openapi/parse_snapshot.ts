@@ -45,7 +45,7 @@ function fileExists(fileSystem: SnapshotFileSystem, filePath: string): boolean {
  */
 function parseSnapshot(contents: string, format: SnapshotFormat): SwaggerSpec {
     if (format === 'json') {
-        const parsed = JSON.parse(contents);
+        const parsed: unknown = JSON.parse(contents);
         if (!parsed || typeof parsed !== 'object') {
             throw new Error('Parsed JSON snapshot did not produce an object.');
         }

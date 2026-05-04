@@ -14,8 +14,7 @@ describe('Analysis: ServiceMethodAnalyzer', () => {
 
     it('should return null if operation has no methodName', () => {
         const { analyzer } = setupAnalyzer({ openapi: '3.0.0', info: { title: 'T', version: '1' }, paths: {} });
-        // @ts-ignore forcing incorrect input
-        const model = analyzer.analyze({ method: 'get', path: '/test' });
+        const model = analyzer.analyze({ method: 'get', path: '/test' } as unknown as SpecOperation);
         expect(model).toBeNull();
     });
 
