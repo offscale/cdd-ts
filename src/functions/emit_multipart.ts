@@ -181,7 +181,7 @@ export class MultipartBuilderGenerator {
             returnType: 'MultipartResult',
             statements: `
         const boundary = this.generateBoundary();
-        const parts: string | number | boolean | object | undefined | null[] = [];
+        const parts: Array<string | number | boolean | object | undefined | null> = [];
         const crlf = '\\r\\n';
         
         
@@ -195,7 +195,7 @@ export class MultipartBuilderGenerator {
             if (style === 'tabDelimited') return '\\t';
             return ',';
         };
-        const serializeArrayValue = (items: string | number | boolean | object | undefined | null[], style: string) =>
+        const serializeArrayValue = (items: Array<string | number | boolean | object | undefined | null>, style: string) =>
             items.map(v => String(v)).join(getDelimiter(style));
         const serializeObjectValue = (obj: Record<string, string | number | boolean | object | undefined | null>, style: string) =>
             Object.entries(obj)
@@ -277,13 +277,13 @@ export class MultipartBuilderGenerator {
             isStatic: true,
             scope: Scope.Private,
             parameters: [
-                { name: 'body', type: 'string | number | boolean | object | undefined | null[]' },
+                { name: 'body', type: 'Array<string | number | boolean | object | undefined | null>' },
                 { name: 'config', type: 'MultipartConfig' },
             ],
             returnType: 'MultipartResult',
             statements: `
         const boundary = this.generateBoundary();
-        const parts: string | number | boolean | object | undefined | null[] = [];
+        const parts: Array<string | number | boolean | object | undefined | null> = [];
         const crlf = '\\r\\n';
 
         (body as (string | number | boolean | object | null)[]).forEach((item, index) => {

@@ -136,7 +136,7 @@ export class ServiceTestGenerator {
                     mockData = mockData.startsWith('"') ? mockData : String(mockData);
 
                     lines.push(
-                        `      const ${bodyParam.name} = ${mockData.replace(/"new Date\(\)"/g, 'new globalThis.Date()')} as string | number | boolean | object | undefined | null as ${bodyParam.type};`,
+                        `      const ${bodyParam.name} = ${mockData.replace(/"new globalThis\.Date\(\)"/g, 'new globalThis.Date()')} as string | number | boolean | object | undefined | null as ${bodyParam.type};`,
                     );
                 } else if (bodyParam?.isPrimitive) {
                     lines.push(
@@ -177,13 +177,16 @@ export class ServiceTestGenerator {
 
                     mockData = mockData.startsWith('"') ? mockData : String(mockData);
 
-                    mockResponseValue = `[${mockData.replace(/"new Date\(\)"/g, 'new globalThis.Date()')}]`;
+                    mockResponseValue = `[${mockData.replace(/"new globalThis\.Date\(\)"/g, 'new globalThis.Date()')}]`;
                 } else {
                     let mockData = this.mockDataGenerator.generate(responseModel);
 
                     mockResponseValue = mockData.startsWith('"') ? mockData : String(mockData);
 
-                    mockResponseValue = mockResponseValue.replace(/"new Date\(\)"/g, 'new globalThis.Date()');
+                    mockResponseValue = mockResponseValue.replace(
+                        /"new globalThis\.Date\(\)"/g,
+                        'new globalThis.Date()',
+                    );
                 }
             } else if (responseType === 'string') {
                 mockResponseValue = "'test-string'";

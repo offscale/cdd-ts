@@ -21,7 +21,25 @@ export class ParameterSerializerGenerator {
 
         sourceFile.addImportDeclaration({
             moduleSpecifier: './content-encoder',
-            namedImports: ['ContentEncoder'],
+            namedImports: ['ContentEncoder', 'ContentEncoderConfig'],
+        });
+
+        sourceFile.addInterface({
+            name: 'SerializeQueryParamConfig',
+            isExported: true,
+            properties: [
+                { name: 'name', type: 'string' },
+                { name: 'in', type: 'string', hasQuestionToken: true },
+                { name: 'allowEmptyValue', type: 'boolean', hasQuestionToken: true },
+                { name: 'contentEncoderConfig', type: 'ContentEncoderConfig', hasQuestionToken: true },
+                { name: 'contentEncoding', type: 'string', hasQuestionToken: true },
+                { name: 'allowReserved', type: 'boolean', hasQuestionToken: true },
+                { name: 'contentType', type: 'string', hasQuestionToken: true },
+                { name: 'serialization', type: 'string', hasQuestionToken: true },
+                { name: 'encoding', type: 'Record<string, SerializeQueryParamConfig>', hasQuestionToken: true },
+                { name: 'style', type: 'string', hasQuestionToken: true },
+                { name: 'explode', type: 'boolean', hasQuestionToken: true },
+            ],
         });
 
         const classDeclaration = sourceFile.addClass({
@@ -142,7 +160,7 @@ export class ParameterSerializerGenerator {
                 { name: 'serialization', type: "'json' | undefined", hasQuestionToken: true },
                 {
                     name: 'contentEncoderConfig',
-                    type: 'string | number | boolean | object | undefined | null',
+                    type: 'ContentEncoderConfig',
                     hasQuestionToken: true,
                 },
             ],
@@ -219,7 +237,7 @@ export class ParameterSerializerGenerator {
             isStatic: true,
             scope: Scope.Public,
             parameters: [
-                { name: 'config', type: 'string | number | boolean | object | undefined | null' },
+                { name: 'config', type: 'SerializeQueryParamConfig' },
                 { name: 'value', type: 'string | number | boolean | object | undefined | null' },
             ],
             returnType: 'SerializedQueryParam[]',
@@ -341,12 +359,12 @@ export class ParameterSerializerGenerator {
                 { name: 'contentType', type: 'string | undefined', hasQuestionToken: true },
                 {
                     name: 'encoding',
-                    type: 'Record<string, string | number | boolean | object | undefined | null> | undefined',
+                    type: 'Record<string, SerializeQueryParamConfig> | undefined',
                     hasQuestionToken: true,
                 },
                 {
                     name: 'contentEncoderConfig',
-                    type: 'string | number | boolean | object | undefined | null',
+                    type: 'ContentEncoderConfig',
                     hasQuestionToken: true,
                 },
             ],
@@ -401,7 +419,7 @@ export class ParameterSerializerGenerator {
                 { name: 'serialization', type: "'json' | undefined", hasQuestionToken: true },
                 {
                     name: 'contentEncoderConfig',
-                    type: 'string | number | boolean | object | undefined | null',
+                    type: 'ContentEncoderConfig',
                     hasQuestionToken: true,
                 },
             ],
@@ -456,12 +474,12 @@ export class ParameterSerializerGenerator {
                 { name: 'contentType', type: 'string | undefined', hasQuestionToken: true },
                 {
                     name: 'encodings',
-                    type: 'Record<string, string | number | boolean | object | undefined | null> | undefined',
+                    type: 'Record<string, SerializeQueryParamConfig> | undefined',
                     hasQuestionToken: true,
                 },
                 {
                     name: 'contentEncoderConfig',
-                    type: 'string | number | boolean | object | undefined | null',
+                    type: 'ContentEncoderConfig',
                     hasQuestionToken: true,
                 },
             ],
@@ -509,7 +527,7 @@ export class ParameterSerializerGenerator {
                 { name: 'body', type: 'string | number | boolean | object | undefined | null' },
                 {
                     name: 'encodings',
-                    type: 'Record<string, string | number | boolean | object | undefined | null>',
+                    type: 'Record<string, SerializeQueryParamConfig>',
                     initializer: '{}',
                 },
             ],

@@ -21,7 +21,12 @@ export class HttpParamsBuilderGenerator {
 
         sourceFile.addImportDeclaration({
             moduleSpecifier: './content-encoder',
-            namedImports: ['ContentEncoder'],
+            namedImports: ['ContentEncoder', 'ContentEncoderConfig'],
+        });
+
+        sourceFile.addImportDeclaration({
+            moduleSpecifier: './parameter-serializer',
+            namedImports: ['SerializeQueryParamConfig'],
         });
 
         sourceFile.addClass({
@@ -160,7 +165,7 @@ export class HttpParamsBuilderGenerator {
             scope: Scope.Public,
             parameters: [
                 { name: 'params', type: 'HttpParams' },
-                { name: 'config', type: 'string | number | boolean | object | undefined | null' },
+                { name: 'config', type: 'SerializeQueryParamConfig' },
                 { name: 'value', type: 'string | number | boolean | object | undefined | null' },
             ],
             returnType: 'HttpParams',
@@ -308,7 +313,7 @@ export class HttpParamsBuilderGenerator {
             scope: Scope.Private,
             parameters: [
                 { name: 'body', type: 'string | number | boolean | object | undefined | null' },
-                { name: 'encodings', type: 'string | number | boolean | object | undefined | null', initializer: '{}' },
+                { name: 'encodings', type: 'Record<string, SerializeQueryParamConfig>', initializer: '{}' },
             ],
             returnType: 'Array<{ key: string; value: string }>',
             statements: `
@@ -483,7 +488,7 @@ export class HttpParamsBuilderGenerator {
             scope: Scope.Public,
             parameters: [
                 { name: 'body', type: 'string | number | boolean | object | undefined | null' },
-                { name: 'encodings', type: 'string | number | boolean | object | undefined | null', initializer: '{}' },
+                { name: 'encodings', type: 'Record<string, SerializeQueryParamConfig>', initializer: '{}' },
             ],
             returnType: 'HttpParams',
             statements: `
