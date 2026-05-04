@@ -55,7 +55,7 @@ async function loadConfigFile(configPath: string): Promise<Partial<GeneratorConf
     }
 
     try {
-        const configModule = (await import(resolvedPath)) as Record<string, unknown>;
+        const configModule = (await import(`file://${resolvedPath}`)) as Record<string, unknown>;
         const config = (configModule.default || configModule.config || configModule) as GeneratorConfig;
 
         const configDir = path.dirname(resolvedPath);

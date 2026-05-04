@@ -383,8 +383,7 @@ describe('Generated Code: Service Test Generators', () => {
         it('should safe-guard against null operations in internal imports collection method', () => {
             // Directly access private method to test defensive coding branch without crashing public API
             const { testGen } = setupTestGen({ paths: {} });
-            // @ts-ignore accessing private method
-            const result = testGen.collectModelImports(null);
+            const result = (testGen as unknown as { collectModelImports: (o: unknown) => Set<string> }).collectModelImports(null);
 
             expect(result).toBeDefined();
             expect(result.size).toBe(0);

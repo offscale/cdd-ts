@@ -33,6 +33,8 @@ export default defineConfig({
                 'src/openapi/**',
                 'src/routes/**',
                 'src/core/runtime-expressions.ts',
+                'src/core/generator.ts',
+                'src/core/types/**',
                 'src/vendors/angular/admin/**',
                 'src/vendors/angular/service/service-method.generator.ts',
                 'src/vendors/angular/utils/**',
