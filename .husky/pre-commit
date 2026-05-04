@@ -3,6 +3,7 @@
 
 echo "Running Prettier..."
 npx prettier --write 'src/**/*.ts' 'tests/**/*.ts' || exit 1
+git add src/ tests/
 
 echo "Running Lint..."
 npm run lint || exit 1
@@ -10,11 +11,23 @@ npm run lint || exit 1
 echo "Running Type Check..."
 npm run check:types || exit 1
 
+echo "Running Docs..."
+npm run docs || exit 1
+
 echo "Running Build..."
 npm run build || exit 1
 
 echo "Running Tests..."
 npm run test:coverage || exit 1
+
+echo "Building WASM..."
+make build_wasm || exit 1
+
+echo "Building cdd-ts utilizing the local ts-morph wasm fork..."
+make build_with_ts_go || exit 1
+
+echo "Building cdd-ts utilizing the new AOT Go+AS architecture..."
+make build_with_ts_go_assemblyscript || exit 1
 
 TEST_COV=$(npx vitest run --coverage | grep 'All files' | awk '{print $4}' | sed 's/\..*//' || echo "100")
 if [ -z "$TEST_COV" ]; then TEST_COV="100"; fi

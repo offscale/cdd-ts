@@ -554,8 +554,8 @@ program
         });
     });
 
-export function run(argv: string[]) {
-    program.parse(argv);
+export async function run(argv: string[]) {
+    await program.parseAsync(argv);
 }
 
 // Check if run directly
@@ -566,5 +566,8 @@ export function checkIsMain(argv1: string, metaUrl: string): boolean {
 
 const isMain = checkIsMain(process.argv[1], import.meta.url);
 if (isMain) {
-    run(process.argv);
+    run(process.argv).catch(err => {
+        console.error(err);
+        process.exit(1);
+    });
 }

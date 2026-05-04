@@ -44,7 +44,7 @@ vi.mock('node:fs', async importOriginal => {
 });
 
 describe('cli.ts', () => {
-    let run: (argv: string[]) => void;
+    let run: (argv: string[]) => Promise<void>;
     let consoleLogSpy: import('vitest').MockInstance;
     let consoleWarnSpy: import('vitest').MockInstance;
     let consoleErrorSpy: import('vitest').MockInstance;
@@ -105,7 +105,7 @@ describe('cli.ts', () => {
 
     describe('from_openapi', () => {
         it('to_sdk_cli with full options', async () => {
-            run([
+            await run([
                 'node',
                 'cli.js',
                 'from_openapi',
@@ -139,7 +139,7 @@ describe('cli.ts', () => {
         });
 
         it('to_sdk defaults and relative output resolution', async () => {
-            run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--input-dir', 'dir']);
+            await run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--input-dir', 'dir']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
             expect(indexModule.generateFromConfig).toHaveBeenCalled();
@@ -152,7 +152,7 @@ describe('cli.ts', () => {
                     return undefined as never;
                 });
             });
-            run(['node', 'cli.js', 'from_openapi', 'to_server']);
+            await run(['node', 'cli.js', 'from_openapi', 'to_server']);
             const code = await exitPromise;
             expect(code).toBe(1);
             expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -162,7 +162,7 @@ describe('cli.ts', () => {
         });
 
         it('loads configuration file with relative paths', async () => {
-            run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--config', dummyConfigPath1]);
+            await run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--config', dummyConfigPath1]);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
             expect(indexModule.generateFromConfig).toHaveBeenCalled();
@@ -180,13 +180,13 @@ describe('cli.ts', () => {
                     return undefined as never;
                 });
             });
-            run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--config', 'dummy-config-throw.js']);
+            await run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--config', 'dummy-config-throw.js']);
             const code = await exitPromise;
             expect(code).toBe(1);
         });
 
         it('resolves output path relative to cwd if not absolute from options', async () => {
-            run(['node', 'cli.js', 'from_openapi', 'to_sdk', '-i', 'spec.json', '-o', 'outdir']);
+            await run(['node', 'cli.js', 'from_openapi', 'to_sdk', '-i', 'spec.json', '-o', 'outdir']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
             const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as Record<string, unknown>;
@@ -200,7 +200,7 @@ describe('cli.ts', () => {
                     return undefined as never;
                 });
             });
-            run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--config', 'non-existent.js']);
+            await run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--config', 'non-existent.js']);
             const code = await exitPromise;
             expect(code).toBe(1);
             expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -214,7 +214,7 @@ describe('cli.ts', () => {
         it('generates yaml spec normally', async () => {
             const utils = await import('../../src/functions/utils.js');
             vi.mocked(utils.readOpenApiSnapshot).mockReturnValueOnce({ spec: { openapi: '3.0.0' } } as any);
-            run(['node', 'cli.js', 'to_openapi', '-i', 'in']);
+            await run(['node', 'cli.js', 'to_openapi', '-i', 'in']);
             await new Promise(resolve => setTimeout(resolve, 100));
             expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('openapi: 3.0.0'));
         });
@@ -222,7 +222,7 @@ describe('cli.ts', () => {
         it('generates json spec to file', async () => {
             const utils = await import('../../src/functions/utils.js');
             vi.mocked(utils.readOpenApiSnapshot).mockReturnValueOnce({ spec: { openapi: '3.0.0' } } as any);
-            run(['node', 'cli.js', 'to_openapi', '-i', 'in', '-o', 'out.json', '--format', 'json']);
+            await run(['node', 'cli.js', 'to_openapi', '-i', 'in', '-o', 'out.json', '--format', 'json']);
             await new Promise(resolve => setTimeout(resolve, 100));
             expect(fs.writeFileSync).toHaveBeenCalledWith(
                 'out.json',
@@ -242,7 +242,7 @@ describe('cli.ts', () => {
                     return undefined as never;
                 }),
             );
-            run(['node', 'cli.js', 'to_openapi', '-i', 'in']);
+            await run(['node', 'cli.js', 'to_openapi', '-i', 'in']);
             const code = await exitPromise;
             expect(code).toBe(1);
             expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -263,7 +263,7 @@ describe('cli.ts', () => {
                 throw new Error('Meta fail AST');
             });
 
-            run(['node', 'cli.js', 'to_openapi', '-i', 'in']);
+            await run(['node', 'cli.js', 'to_openapi', '-i', 'in']);
             await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(utils.scanTypeScriptProject).toHaveBeenCalled();
@@ -284,7 +284,7 @@ describe('cli.ts', () => {
                 throw new Error('Meta fail models');
             });
 
-            run(['node', 'cli.js', 'to_openapi', '-i', 'in']);
+            await run(['node', 'cli.js', 'to_openapi', '-i', 'in']);
             await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Models fail'));
@@ -294,7 +294,7 @@ describe('cli.ts', () => {
 
     describe('to_docs_json', () => {
         it('generates docs json and outputs to stdout', async () => {
-            run([
+            await run([
                 'node',
                 'cli.js',
                 'to_docs_json',
@@ -310,7 +310,7 @@ describe('cli.ts', () => {
         });
 
         it('generates docs json and outputs to file', async () => {
-            run(['node', 'cli.js', 'to_docs_json', '-i', 'spec.json', '-o', 'docs.json']);
+            await run(['node', 'cli.js', 'to_docs_json', '-i', 'spec.json', '-o', 'docs.json']);
             await new Promise(resolve => setTimeout(resolve, 100));
             expect(fs.writeFileSync).toHaveBeenCalledWith('docs.json', expect.stringContaining('"docs": true'), 'utf8');
         });
@@ -324,7 +324,7 @@ describe('cli.ts', () => {
                     return undefined as never;
                 }),
             );
-            run(['node', 'cli.js', 'to_docs_json', '-i', 'in']);
+            await run(['node', 'cli.js', 'to_docs_json', '-i', 'in']);
             const code = await exitPromise;
             expect(code).toBe(1);
             expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -351,7 +351,7 @@ describe('cli.ts', () => {
         };
 
         it('starts server and responds with 405 for GET', async () => {
-            run(['node', 'cli.js', 'serve_json_rpc', '--port', '9000', '--listen', '0.0.0.0']);
+            await run(['node', 'cli.js', 'serve_json_rpc', '--port', '9000', '--listen', '0.0.0.0']);
             await new Promise(resolve => setTimeout(resolve, 100));
             expect(http.createServer).toHaveBeenCalled();
             expect(mockServer.listen).toHaveBeenCalledWith(9000, '0.0.0.0', expect.any(Function));
@@ -364,7 +364,7 @@ describe('cli.ts', () => {
         });
 
         it('returns parse error for invalid JSON', async () => {
-            run(['node', 'cli.js', 'serve_json_rpc']);
+            await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const { req, res } = createMockReqRes('POST', '{ invalid }');
             await requestHandler!(req as any, res as any);
@@ -374,7 +374,7 @@ describe('cli.ts', () => {
         });
 
         it('returns method not found', async () => {
-            run(['node', 'cli.js', 'serve_json_rpc']);
+            await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const { req, res } = createMockReqRes('POST', JSON.stringify({ method: 'unknown' }));
             await requestHandler!(req as any, res as any);
@@ -383,7 +383,7 @@ describe('cli.ts', () => {
         });
 
         it('executes version command', async () => {
-            run(['node', 'cli.js', 'serve_json_rpc']);
+            await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const { req, res } = createMockReqRes('POST', JSON.stringify({ method: 'version', id: 1 }));
             await requestHandler!(req as any, res as any);
@@ -392,7 +392,7 @@ describe('cli.ts', () => {
         });
 
         it('executes from_openapi_to_sdk_cli', async () => {
-            run(['node', 'cli.js', 'serve_json_rpc']);
+            await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const { req, res } = createMockReqRes(
                 'POST',
@@ -404,7 +404,7 @@ describe('cli.ts', () => {
         });
 
         it('executes from_openapi_to_sdk', async () => {
-            run(['node', 'cli.js', 'serve_json_rpc']);
+            await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const { req, res } = createMockReqRes(
                 'POST',
@@ -416,7 +416,7 @@ describe('cli.ts', () => {
         });
 
         it('executes from_openapi_to_server', async () => {
-            run(['node', 'cli.js', 'serve_json_rpc']);
+            await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const { req, res } = createMockReqRes(
                 'POST',
@@ -428,7 +428,7 @@ describe('cli.ts', () => {
         });
 
         it('executes to_openapi', async () => {
-            run(['node', 'cli.js', 'serve_json_rpc']);
+            await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const utils = await import('../../src/functions/utils.js');
             vi.mocked(utils.readOpenApiSnapshot).mockReturnValueOnce({ spec: { openapi: '3.0.0' } } as any);
@@ -442,7 +442,7 @@ describe('cli.ts', () => {
         });
 
         it('executes to_docs_json', async () => {
-            run(['node', 'cli.js', 'serve_json_rpc']);
+            await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const { req, res } = createMockReqRes(
                 'POST',
@@ -454,7 +454,7 @@ describe('cli.ts', () => {
         });
 
         it('handles internal generation errors gracefully', async () => {
-            run(['node', 'cli.js', 'serve_json_rpc']);
+            await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
             vi.mocked(indexModule.generateFromConfig).mockRejectedValueOnce(new Error('Gen Error'));
@@ -469,7 +469,7 @@ describe('cli.ts', () => {
         });
 
         it('handles internal generation errors gracefully without code', async () => {
-            run(['node', 'cli.js', 'serve_json_rpc']);
+            await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
             vi.mocked(indexModule.generateFromConfig).mockRejectedValueOnce('String Error');
@@ -517,7 +517,7 @@ describe('to_sdk_cli error handling', () => {
                 return undefined as never;
             });
         });
-        run(['node', 'cli.js', 'from_openapi', 'to_sdk_cli']);
+        await run(['node', 'cli.js', 'from_openapi', 'to_sdk_cli']);
         const code = await exitPromise;
         expect(code).toBe(1);
     });
@@ -531,7 +531,7 @@ describe('to_sdk error handling', () => {
                 return undefined as never;
             });
         });
-        run(['node', 'cli.js', 'from_openapi', 'to_sdk']);
+        await run(['node', 'cli.js', 'from_openapi', 'to_sdk']);
         const code = await exitPromise;
         expect(code).toBe(1);
     });
