@@ -19,7 +19,7 @@ vi.mock('../../src/functions/docs_generator.js', () => ({
 }));
 
 vi.mock('../../src/functions/utils.js', () => ({
-    applyReverseMetadata: vi.fn(spec => spec),
+    applyReverseMetadata: vi.fn((spec: unknown) => spec),
     buildOpenApiSpecFromServices: vi.fn(() => ({ openapi: '3.0.0', services: true })),
     buildOpenApiSpecFromScan: vi.fn(() => ({ openapi: '3.0.0', scan: true })),
     isUrl: vi.fn((url: string) => url.startsWith('http')),
@@ -45,11 +45,11 @@ vi.mock('node:fs', async importOriginal => {
 
 describe('cli.ts', () => {
     let run: (argv: string[]) => void;
-    let consoleLogSpy: any;
-    let consoleWarnSpy: any;
-    let consoleErrorSpy: any;
-    let stdoutSpy: any;
-    let mockServer: any;
+    let consoleLogSpy: import('vitest').MockInstance;
+    let consoleWarnSpy: import('vitest').MockInstance;
+    let consoleErrorSpy: import('vitest').MockInstance;
+    let stdoutSpy: import('vitest').MockInstance;
+    let mockServer: import('node:http').Server;
     let requestHandler: http.RequestListener | undefined;
     let actualFs: typeof import('node:fs');
 
@@ -83,15 +83,17 @@ describe('cli.ts', () => {
         stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
 
         mockServer = {
-            listen: vi.fn((port, host, cb) => {
+            listen: vi.fn((port: number, host: string, cb: () => void) => {
                 if (cb) cb();
                 return mockServer;
             }),
-        };
-        (http.createServer as any).mockImplementation((handler: http.RequestListener) => {
-            requestHandler = handler;
-            return mockServer;
-        });
+        } as unknown as import('node:http').Server;
+        (http.createServer as unknown as import('vitest').MockInstance).mockImplementation(
+            (handler: http.RequestListener) => {
+                requestHandler = handler;
+                return mockServer;
+            },
+        );
 
         const cli = await import('../../src/cli.js');
         run = cli.run;
@@ -132,7 +134,7 @@ describe('cli.ts', () => {
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
             expect(indexModule.generateFromConfig).toHaveBeenCalled();
-            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0][0] as any;
+            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as Record<string, unknown>;
             expect(config.input).toBe('test.json');
         });
 
@@ -164,7 +166,7 @@ describe('cli.ts', () => {
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
             expect(indexModule.generateFromConfig).toHaveBeenCalled();
-            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0][0] as any;
+            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as Record<string, unknown>;
             expect(config.input).toBe(path.resolve(process.cwd(), 'dummy.json'));
         });
 
@@ -187,7 +189,7 @@ describe('cli.ts', () => {
             run(['node', 'cli.js', 'from_openapi', 'to_sdk', '-i', 'spec.json', '-o', 'outdir']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
-            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0][0] as any;
+            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as Record<string, unknown>;
             expect(config.output).toBe(path.resolve(process.cwd(), 'outdir'));
         });
 
@@ -336,7 +338,7 @@ describe('cli.ts', () => {
         const createMockReqRes = (method: string, bodyStr?: string) => {
             const req = {
                 method,
-                on: vi.fn((event, cb) => {
+                on: vi.fn((event: string, cb: (data?: Buffer) => void) => {
                     if (event === 'data' && bodyStr) cb(Buffer.from(bodyStr));
                     if (event === 'end') cb();
                 }),

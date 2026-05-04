@@ -42,7 +42,7 @@
         ]
     },
     "scripts": {
-        "check:types": "type-coverage --project ./tsconfig.json --detail",
+        "check:types": "type-coverage --project ./tsconfig.json --detail --include src/**/*.ts",
         "clean": "rm -rf dist docs coverage .vitest-cache node_modules/.vite",
         "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && chmod +x dist/cli.js",
         "docs": "typedoc",

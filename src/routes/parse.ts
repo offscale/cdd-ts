@@ -30,7 +30,7 @@ export function parsePathsMetadata(sourceFile: SourceFile): Record<string, PathI
         // E.g. const API_PATHS = { "/pet": { ... } };
         // We evaluate it securely using Function constructor since we are dealing with our own generated AST node
         // and we only extract data.
-        const parsed = new Function(`return ${text}`)();
+        const parsed: unknown = new Function(`return ${text}`)();
 
         if (typeof parsed === 'object' && parsed !== null) {
             return parsed as Record<string, PathItem>;

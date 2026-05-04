@@ -154,9 +154,23 @@ describe('generateDocsJson', () => {
                 {
                     path: '/test3',
                     method: 'get',
-                    methodName: '',
+                    methodName: 'invalidNameFormat!',
                     operationId: 'Invalid-Name-Format!',
                     tags: ['TestTag'],
+                } as string | number | boolean | object | undefined | null as PathInfo,
+                {
+                    path: '/test4',
+                    method: 'get',
+                    methodName: 'validName',
+                    operationId: 'validName',
+                    tags: ['TestTag'],
+                } as string | number | boolean | object | undefined | null as PathInfo,
+                {
+                    path: '/',
+                    method: 'get',
+                    methodName: 'rootMethod',
+                    operationId: 'rootMethod',
+                    tags: [],
                 } as string | number | boolean | object | undefined | null as PathInfo,
             ],
         } as string | number | boolean | object | undefined | null as SwaggerParser;

@@ -28,7 +28,7 @@ export function parseExamplesMetadata(sourceFile: SourceFile): Record<string, Ex
 
         // Similarly to API_PATHS, API_EXAMPLES is generated using JSON.stringify.
         // We use Function constructor for safe, localized evaluation of the literal.
-        const parsed = new Function('return ' + text)();
+        const parsed: unknown = new Function('return ' + text)();
 
         if (typeof parsed === 'object' && parsed !== null) {
             return parsed as Record<string, ExampleObject>;
