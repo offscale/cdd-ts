@@ -69,7 +69,7 @@ export class XmlParserGenerator {
         const prefixItems = Array.isArray(config.prefixItems) ? config.prefixItems : undefined; 
         if (prefixItems && prefixItems.length > 0) { 
             const nodes = this.collectArrayNodes(node); 
-            const result: string | number | boolean | object | undefined | null[] = []; 
+            const result: Array<string | number | boolean | object | undefined | null> = []; 
             let cursor = 0; 
 
             for (let i = 0; i < prefixItems.length; i++) { 
@@ -100,7 +100,7 @@ export class XmlParserGenerator {
             const itemsConfig = config.items || {}; 
             const itemName = itemsConfig.name; 
             
-            const result: string | number | boolean | object | undefined | null[] = []; 
+            const result: Array<string | number | boolean | object | undefined | null> = []; 
             const children = node.children; 
             
             for (let i = 0; i < children.length; i++) { 
@@ -141,7 +141,7 @@ export class XmlParserGenerator {
                 const childTagName = propConfig.name || key; 
                 
                 if (propConfig.items && !propConfig.wrapped && propConfig.nodeType !== 'element') { 
-                     const items: string | number | boolean | object | undefined | null[] = []; 
+                     const items: Array<string | number | boolean | object | undefined | null> = []; 
                      const children = node.children; 
                      for(let i=0; i<children.length; i++) { 
                          if (this.nodeMatchesName(children[i], childTagName)) { 

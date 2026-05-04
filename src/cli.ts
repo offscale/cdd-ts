@@ -566,7 +566,7 @@ export function checkIsMain(argv1: string, metaUrl: string): boolean {
 
 const isMain = checkIsMain(process.argv[1], import.meta.url);
 if (isMain) {
-    run(process.argv).catch(err => {
+    run(process.argv).catch((err: unknown) => {
         console.error(err);
         process.exit(1);
     });
