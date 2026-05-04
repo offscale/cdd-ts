@@ -52,7 +52,7 @@ function parseSnapshot(contents: string, format: SnapshotFormat): SwaggerSpec {
         return parsed as SwaggerSpec;
     }
 
-    const parsed = yaml.load(contents);
+    const parsed: unknown = yaml.load(contents);
 
     if (!parsed || typeof parsed !== 'object') {
         throw new Error('Parsed YAML snapshot did not produce an object.');

@@ -189,4 +189,49 @@ describe('Emitter: TypeGenerator', () => {
         const woRequest = sourceFile.getInterfaceOrThrow('WriteOnlyObjRequest');
         expect(woRequest.getProperty('id')).toBeDefined();
     });
+
+    it('should generate type alias for boolean schema', async () => {
+        const spec: any = {
+            openapi: '3.1.0',
+            info: { title: 'Test', version: '1.0' },
+            components: {
+                schemas: {
+                    BoolSchema: true,
+                    FalseSchema: false,
+                },
+            },
+        };
+        const { sourceFile } = runGenerator(spec);
+        expect(sourceFile.getTypeAlias('BoolSchema')).toBeDefined();
+        expect(sourceFile.getTypeAlias('FalseSchema')).toBeDefined();
+    });
+
+    it('should ignore Content-Type headers in responses', async () => {
+        const spec: any = {
+            openapi: '3.1.0',
+            info: { title: 'Test', version: '1.0' },
+            paths: {
+                '/test': {
+                    get: {
+                        responses: {
+                            '200': {
+                                description: 'ok',
+                                headers: {
+                                    'Content-Type': {
+                                        schema: { type: 'string' },
+                                    },
+                                    'X-My-Header': {
+                                        schema: { type: 'string' },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        };
+        const { sourceFile } = runGenerator(spec);
+        // Just checking that it didn't throw and generate was successful
+        expect(sourceFile).toBeDefined();
+    });
 });

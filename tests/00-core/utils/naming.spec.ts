@@ -40,6 +40,9 @@ describe('Core Utils: Naming', () => {
             expect(naming.normalizeSecurityKey('myKey')).toBe('myKey');
             expect(naming.normalizeSecurityKey('#/components/securitySchemes/MyAuth')).toBe('MyAuth');
             expect(naming.normalizeSecurityKey('https://example.com/schemes.json#/ApiKey')).toBe('ApiKey');
+            expect(naming.normalizeSecurityKey('?foo=bar')).toBe('?foo=bar');
+            expect(naming.normalizeSecurityKey('///')).toBe('///');
+            expect(naming.normalizeSecurityKey('#///')).toBe('#///');
         });
     });
 });
