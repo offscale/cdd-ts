@@ -55,7 +55,7 @@ export class RoutingGenerator {
         const filePath = path.join(adminDir, `app.tsx`);
         const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
 
-        let statements = `import React from 'react';\nimport { BrowserRouter, Routes, Route, Link } from 'react-router-dom';\nimport { useTranslation } from './shared/i18n.js';\n`;
+        let statements = `import React, { Suspense, lazy } from 'react';\nimport { BrowserRouter, Routes, Route, Link } from 'react-router-dom';\nimport { useTranslation } from './shared/i18n.js';\n\n`;
 
         const routeLines: string[] = [];
         const linkLines: string[] = [];
@@ -63,17 +63,19 @@ export class RoutingGenerator {
         for (const res of resources) {
             const compName = `${pascalCase(res.name)}List`;
             if (res.operations.some(op => op.action === 'list')) {
-                statements += `import { ${compName} } from './${res.name}/${res.name}-list.js';\n`;
-                routeLines.push(`                    <Route path="/${res.name}" element={<${compName} />} />`);
+                statements += `const ${compName} = lazy(() => import('./${res.name}/${res.name}-list.js').then(m => ({ default: m.${compName} })));\n`;
+                routeLines.push(`                        <Route path="/${res.name}" element={<${compName} />} />`);
                 linkLines.push(
                     `                        <li><Link to="/${res.name}">{t('nav.${res.name}', '${pascalCase(res.name)}')}</Link></li>`,
                 );
             }
             if (res.isEditable) {
                 const formName = `${pascalCase(res.name)}Form`;
-                statements += `import { ${formName} } from './${res.name}/${res.name}-form.js';\n`;
-                routeLines.push(`                    <Route path="/${res.name}/new" element={<${formName} />} />`);
-                routeLines.push(`                    <Route path="/${res.name}/edit/:id" element={<${formName} />} />`);
+                statements += `const ${formName} = lazy(() => import('./${res.name}/${res.name}-form.js').then(m => ({ default: m.${formName} })));\n`;
+                routeLines.push(`                        <Route path="/${res.name}/new" element={<${formName} />} />`);
+                routeLines.push(
+                    `                        <Route path="/${res.name}/edit/:id" element={<${formName} />} />`,
+                );
             }
         }
 
@@ -92,10 +94,12 @@ ${linkLines.join('\n')}
                     </nav>
                 </aside>
                 <main style={{ flex: 1, padding: '2rem' }} role="main">
-                    <Routes>
+                    <Suspense fallback={<div role="status" aria-live="polite">{t('loading_module', 'Loading module...')}</div>}>
+                        <Routes>
 ${routeLines.join('\n')}
-                        <Route path="/" element={<div>{t('welcome_message', 'Welcome to the Admin Dashboard')}</div>} />
-                    </Routes>
+                            <Route path="/" element={<div>{t('welcome_message', 'Welcome to the Admin Dashboard')}</div>} />
+                        </Routes>
+                    </Suspense>
                 </main>
             </div>
         </BrowserRouter>
