@@ -53,28 +53,62 @@ export class VueClientGenerator extends AbstractClientGenerator {
             overwrite: true,
         });
 
+        const pluginFile = project.createSourceFile(path.join(outputRoot, 'plugin.ts'), '', { overwrite: true });
+        pluginFile.addImportDeclarations([{ moduleSpecifier: 'vue', namedImports: ['App', 'InjectionKey'] }]);
+
         const operationsByController = groupPathsByCanonicalController(parser);
+
+        const serviceImports: string[] = [];
+        const injectionKeys: string[] = [];
+        const provideStatements: string[] = [];
 
         for (const controllerName of Object.keys(operationsByController)) {
             const serviceName = `${pascalCase(controllerName)}Service`;
             const hookName = `use${serviceName}`;
+            const injectionKeyName = `${serviceName}Key`;
             const fileName = `${camelCase(controllerName)}.composable.ts`;
             const filePath = path.join(composablesDir, fileName);
+
+            serviceImports.push(`import { ${serviceName} } from './services/${camelCase(controllerName)}.service.js';`);
+            injectionKeys.push(
+                `export const ${injectionKeyName}: InjectionKey<${serviceName}> = Symbol('${serviceName}');`,
+            );
+            provideStatements.push(`app.provide(${injectionKeyName}, new ${serviceName}(options?.config));`);
 
             const hookFile = project.createSourceFile(filePath, '', { overwrite: true });
 
             hookFile.addImportDeclarations([
+                {
+                    moduleSpecifier: 'vue',
+                    namedImports: ['inject'],
+                },
+                {
+                    moduleSpecifier: `../plugin.js`,
+                    namedImports: [injectionKeyName],
+                },
                 {
                     moduleSpecifier: `../services/${camelCase(controllerName)}.service.js`,
                     namedImports: [serviceName],
                 },
             ]);
 
-            hookFile.addFunction({
-                name: hookName,
-                isExported: true,
-                statements: `return new ${serviceName}();`,
-            });
+            hookFile.addStatements(
+                [
+                    `/**`,
+                    ` * Injects the ${serviceName} instance.`,
+                    ` * Ensure the API plugin is installed in your Vue app.`,
+                    ` * @returns The ${serviceName} instance.`,
+                    ` * @throws If the service is not provided.`,
+                    ` */`,
+                    `export function ${hookName}(): ${serviceName} {`,
+                    `    const service = inject(${injectionKeyName});`,
+                    `    if (!service) {`,
+                    `        throw new Error('API Client not installed. Please use the ApiClientPlugin in your Vue app.');`,
+                    `    }`,
+                    `    return service;`,
+                    `}`,
+                ].join('\n'),
+            );
             hookFile.formatText();
 
             composablesIndex.addExportDeclaration({
@@ -83,5 +117,41 @@ export class VueClientGenerator extends AbstractClientGenerator {
             });
         }
         composablesIndex.formatText();
+
+        pluginFile.addStatements(`
+${serviceImports.join('\n')}
+
+${injectionKeys.join('\n')}
+
+/**
+ * Configuration options for the API Client Plugin.
+ */
+export interface ApiClientPluginOptions {
+    /**
+     * Optional configuration object to pass to the services.
+     */
+    config?: any; // Replace with actual config type if available
+}
+
+/**
+ * Vue Plugin to provide API services.
+ */
+export const ApiClientPlugin = {
+    install(app: App, options?: ApiClientPluginOptions) {
+${provideStatements.map(stmt => `        ${stmt}`).join('\n')}
+    }
+};
+        `);
+        pluginFile.formatText();
+
+        // Export plugin from main index
+        const mainIndexFilePath = path.join(outputRoot, 'index.ts');
+        const mainIndexFile = project.getSourceFile(mainIndexFilePath);
+        if (mainIndexFile) {
+            mainIndexFile.addExportDeclaration({
+                moduleSpecifier: './plugin.js',
+            });
+            mainIndexFile.formatText();
+        }
     }
 }
