@@ -97,9 +97,21 @@ export class AxiosServiceMethodGenerator {
             );
         }
 
-        lines.push(`const url = new URL(\`\${basePath}${urlTemplate}\`);`);
+        lines.push(
+            `const axiosConfig: AxiosRequestConfig = { ...options, method: '${model.httpMethod.toUpperCase()}', baseURL: basePath, url: \`${urlTemplate}\` };`,
+        );
+
+        lines.push(`axiosConfig.headers = { ...options?.headers } as any;`);
+
+        model.headerParams.forEach((p: ParamSerialization) => {
+            lines.push(
+                `if (${p.paramName} != null) { axiosConfig.headers['${p.originalName}'] = ParameterSerializer.serializeHeaderParam(${p.paramName}, ${p.explode}); }`,
+            );
+        });
 
         if (model.queryParams.length > 0) {
+            lines.push(`const queryParams = new URLSearchParams(options?.params as any);`);
+
             model.queryParams.forEach((p: ParamSerialization) => {
                 const configObj = JSON.stringify({
                     name: p.originalName,
@@ -114,18 +126,12 @@ export class AxiosServiceMethodGenerator {
                 );
 
                 lines.push(
-                    `serialized_${p.paramName}.forEach((entry: { key: string; value: string }) => url.searchParams.append(entry.key, entry.value));`,
+                    `serialized_${p.paramName}.forEach((entry: { key: string; value: string }) => queryParams.append(entry.key, entry.value));`,
                 );
             });
+
+            lines.push(`axiosConfig.params = queryParams;`);
         }
-
-        lines.push(`const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };`);
-
-        model.headerParams.forEach((p: ParamSerialization) => {
-            lines.push(
-                `if (${p.paramName} != null) { headers['${p.originalName}'] = ParameterSerializer.serializeHeaderParam(${p.paramName}, ${p.explode}); }`,
-            );
-        });
 
         let dataArgument = 'undefined';
 
@@ -144,24 +150,24 @@ export class AxiosServiceMethodGenerator {
                 dataArgument = 'formBody';
 
                 lines.push(
-                    `if (!headers['Content-Type']) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; }`,
+                    `if (!axiosConfig.headers['Content-Type']) { axiosConfig.headers['Content-Type'] = 'application/x-www-form-urlencoded'; }`,
                 );
             } else {
                 dataArgument = model.body.paramName;
 
                 if (model.body.type === 'json') {
-                    lines.push(`if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }`);
+                    lines.push(
+                        `if (!axiosConfig.headers['Content-Type']) { axiosConfig.headers['Content-Type'] = 'application/json'; }`,
+                    );
                 } else if (model.body.type === 'multipart') {
                     // Axios automatically sets multipart/form-data boundary when data is FormData
                 } else {
-                    lines.push(`if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }`); // Default fallback
+                    lines.push(
+                        `if (!axiosConfig.headers['Content-Type']) { axiosConfig.headers['Content-Type'] = 'application/json'; }`,
+                    ); // Default fallback
                 }
             }
         }
-
-        lines.push(
-            `const axiosConfig: AxiosRequestConfig = { ...options, method: '${model.httpMethod.toUpperCase()}', url: url.toString(), headers };`,
-        );
 
         if (dataArgument !== 'undefined') {
             lines.push(`axiosConfig.data = ${dataArgument};`);

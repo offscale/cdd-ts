@@ -69,9 +69,24 @@ describe('Vue Implementation', () => {
         const composableFile = project.getSourceFile('/output/composables/users.composable.ts');
         expect(composableFile).toBeDefined();
         const composableText = composableFile!.getFullText();
+        expect(composableText).toContain(`import { inject } from "vue";`);
+        expect(composableText).toContain(`import { UsersServiceKey } from "../plugin.js";`);
         expect(composableText).toContain(`import { UsersService } from "../services/users.service.js";`);
-        expect(composableText).toContain(`export function useUsersService() {`);
-        expect(composableText).toContain(`return new UsersService();`);
+        expect(composableText).toContain(`export function useUsersService(): UsersService {`);
+        expect(composableText).toContain(`const service = inject(UsersServiceKey);`);
+
+        const pluginFile = project.getSourceFile('/output/plugin.ts');
+        expect(pluginFile).toBeDefined();
+        const pluginText = pluginFile!.getFullText();
+        expect(pluginText).toContain(
+            `export const UsersServiceKey: InjectionKey<UsersService> = Symbol('UsersService');`,
+        );
+        expect(pluginText).toContain(`app.provide(UsersServiceKey, new UsersService(options?.config));`);
+
+        const mainIndex = project.getSourceFile('/output/index.ts');
+        if (mainIndex) {
+            expect(mainIndex.getFullText()).toContain(`export * from "./plugin.js";`);
+        }
 
         expect(FetchClientGenerator.prototype.generate).toHaveBeenCalled();
     });
