@@ -67,8 +67,8 @@ describe('Emitter: ProviderGenerator', () => {
         expect(fileContent).toContain('enableDateTransform?: boolean');
         expect(fileContent).not.toContain('apiKey?: string');
         expect(fileContent).not.toContain('bearerToken?:');
-        expect(fileContent).not.toContain('AuthInterceptor');
-        expect(fileContent).not.toContain('DateInterceptor');
+        expect(fileContent).not.toContain('authInterceptor');
+        expect(fileContent).not.toContain('dateInterceptor');
     });
 
     it('should add providers for both API key and Bearer token when spec contains both', () => {
@@ -77,9 +77,7 @@ describe('Emitter: ProviderGenerator', () => {
         expect(fileContent).toContain('bearerToken?: string | (() => string)');
         expect(fileContent).toContain('if (config.apiKey)');
         expect(fileContent).toContain('if (config.bearerToken)');
-        expect(fileContent).toContain(
-            'providers.push({ provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true });',
-        );
+        expect(fileContent).toContain('fns.push(authInterceptor);');
     });
 
     it('should add providers for ONLY API key when spec contains only that', () => {
@@ -92,7 +90,7 @@ describe('Emitter: ProviderGenerator', () => {
         expect(fileContent).not.toContain('bearerToken?:');
         expect(fileContent).toContain('if (config.apiKey)');
         expect(fileContent).not.toContain('if (config.bearerToken)');
-        expect(fileContent).toContain('AuthInterceptor');
+        expect(fileContent).toContain('authInterceptor');
     });
 
     it('should add providers for ONLY Bearer token when spec contains only that', () => {
@@ -105,7 +103,7 @@ describe('Emitter: ProviderGenerator', () => {
         expect(fileContent).toContain('bearerToken?: string | (() => string)');
         expect(fileContent).not.toContain('if (config.apiKey)');
         expect(fileContent).toContain('if (config.bearerToken)');
-        expect(fileContent).toContain('AuthInterceptor');
+        expect(fileContent).toContain('authInterceptor');
     });
 
     it('should add providers for mutualTLS', () => {
@@ -129,13 +127,13 @@ describe('Emitter: ProviderGenerator', () => {
             options: { dateType: 'Date' } as string | number | boolean | object | undefined | null,
         });
         expect(fileContent).toContain('if (config.enableDateTransform !== false)');
-        expect(fileContent).toContain('customInterceptors.unshift(new DateInterceptor());');
+        expect(fileContent).toContain('fns.push(dateInterceptor);');
     });
 
     it('should generate an empty custom interceptors array if none are provided', () => {
         const fileContent = runGenerator(emptySpec, { clientName: 'Test' });
         expect(fileContent).toContain(
-            'const customInterceptors = config.interceptors?.map(InterceptorClass => new InterceptorClass()) || [];',
+            'const customInterceptors = config.interceptors?.map(InterceptorClass => typeof InterceptorClass === "function" && !InterceptorClass.prototype?.intercept ? InterceptorClass : new (InterceptorClass as any)()) || [];',
         );
         expect(fileContent).toContain(`provide: HTTP_INTERCEPTORS_TEST, useValue: customInterceptors`);
     });
@@ -154,9 +152,7 @@ describe('Emitter: ProviderGenerator', () => {
         expect(fileContent).toContain('providers.push({ provide: COOKIE_AUTH_TOKEN, useValue: config.cookieAuth });');
 
         // It should ALSO register the AuthInterceptor now since cookie auth is supported via interceptor logic
-        expect(fileContent).toContain(
-            'providers.push({ provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true });',
-        );
+        expect(fileContent).toContain('fns.push(authInterceptor);');
     });
 
     it('should return early if generateServices is explicitly false', () => {

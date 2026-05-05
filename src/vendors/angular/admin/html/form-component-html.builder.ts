@@ -8,9 +8,12 @@ import { buildFormControl } from './form-controls-html.builder.js';
 export function generateFormComponentHtml(resource: Resource, analysis: FormAnalysisResult): string {
     const root = _.create('div').addClass('admin-form-container');
 
-    const title = _.create('h1').setTextContent('{{formTitle}}');
+    const title = _.create('h1').setAttribute('i18n', '').setTextContent('{{formTitle()}}');
 
-    const form = _.create('form').setAttribute('[formGroup]', 'form').setAttribute('(ngSubmit)', 'onSubmit()');
+    const form = _.create('form')
+        .setAttribute('[formGroup]', 'form')
+        .setAttribute('(ngSubmit)', 'onSubmit()')
+        .setAttribute('aria-label', 'Admin Form');
 
     const fieldsContainer = _.create('div').addClass('admin-form-fields');
 
@@ -73,21 +76,24 @@ export function generateFormComponentHtml(resource: Resource, analysis: FormAnal
         }
     }
 
-    const actionsContainer = _.create('div').addClass('admin-form-actions');
+    const actionsContainer = _.create('div').addClass('admin-form-actions').setAttribute('role', 'group');
 
     const cancelButton = _.create('button')
         .setAttribute('mat-stroked-button', '')
         .setAttribute('type', 'button')
         .setAttribute('(click)', 'onCancel()')
+        .setAttribute('aria-label', 'Cancel form editing')
+        .setAttribute('i18n', '')
         .setTextContent('Cancel');
 
     const saveButton = _.create('button')
         .setAttribute('mat-flat-button', '')
         .setAttribute('color', 'primary')
         .setAttribute('type', 'submit')
+        .setAttribute('aria-label', 'Save form changes')
         .setAttribute('[disabled]', 'form.invalid || form.pristine');
 
-    const saveButtonContent = `\n@if (isEditMode()) { \n  <span>Save Changes</span>\n} @else { \n  <span>Create ${resource.modelName}</span>\n}\n`;
+    const saveButtonContent = `\n@if (isEditMode()) { \n  <span i18n>Save Changes</span>\n} @else { \n  <span i18n>Create ${resource.modelName}</span>\n}\n`;
 
     saveButton.setInnerHtml(saveButtonContent);
 

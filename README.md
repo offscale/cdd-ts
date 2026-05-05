@@ -1,4 +1,5 @@
-# cdd-ts
+cdd-ts
+======
 
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Angular Integration](https://github.com/offscale/cdd-ts/actions/workflows/integration.yml/badge.svg)](https://github.com/offscale/cdd-ts/actions/workflows/integration.yml)
@@ -132,7 +133,7 @@ Commands:
 
 ### `from_openapi`
 
-```
+```sh
 $ dist/cli.js from_openapi --help
 Usage: cdd-ts from_openapi [options] [command]
 
@@ -150,7 +151,7 @@ Commands:
 
 ### `to_openapi`
 
-```
+```sh
 $ dist/cli.js to_openapi --help
 Usage: cdd-ts to_openapi [options]
 
@@ -168,7 +169,7 @@ Options:
 
 ### `to_docs_json`
 
-```
+```sh
 $ dist/cli.js to_docs_json --help
 Usage: cdd-ts to_docs_json [options]
 
@@ -182,8 +183,6 @@ Options:
   --no-wrapping        Do not wrap the generated code in a function or block
                        (env: CDD_NO_WRAPPING)
   -h, --help           display help for command
-```
-
 ```
 
 ---
@@ -202,4 +201,3 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
-```

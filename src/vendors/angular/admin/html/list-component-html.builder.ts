@@ -27,28 +27,41 @@ export function generateListComponentHtml(
 
     const root = _.create('div').addClass('admin-list-container');
 
-    const toolbar = _.create('mat-toolbar').addClass('admin-list-toolbar');
+    const toolbar = _.create('mat-toolbar').addClass('admin-list-toolbar').setAttribute('role', 'toolbar');
 
-    toolbar.appendChild(_.create('span').setTextContent(pascalCase(resourceName)));
+    toolbar.appendChild(_.create('span').setAttribute('i18n', '').setTextContent(pascalCase(resourceName)));
 
     toolbar.appendChild(_.create('span').addClass('toolbar-spacer'));
 
     for (const action of customCollectionActions) {
         toolbar.appendChild(
             _.create('button')
+                .setAttribute('type', 'button')
                 .setAttribute('mat-stroked-button', '')
                 .setAttribute('(click)', `${action.action}()`)
-                .appendChild(_.create('mat-icon').setTextContent(iconMap.get(action.action)!))
-                .appendChild(` ${pascalCase(action.action)}`),
+                .setAttribute('aria-label', pascalCase(action.action))
+                .appendChild(
+                    _.create('mat-icon')
+                        .setAttribute('aria-hidden', 'true')
+                        .setTextContent(iconMap.get(action.action)!),
+                )
+                .appendChild(
+                    _.create('span')
+                        .setAttribute('i18n', '')
+                        .setTextContent(` ${pascalCase(action.action)}`),
+                ),
         );
     }
 
     if (hasCreate) {
         toolbar.appendChild(
             _.create('button')
+                .setAttribute('type', 'button')
                 .setAttribute('mat-flat-button', '')
                 .setAttribute('color', 'primary')
                 .setAttribute('(click)', 'onCreate()')
+                .setAttribute('aria-label', `Create ${singular(modelName)}`)
+                .setAttribute('i18n', '')
                 .setTextContent(`Create ${singular(modelName)}`),
         );
     }
@@ -57,7 +70,10 @@ export function generateListComponentHtml(
 
     const tableContainer = _.create('div').addClass('mat-elevation-z8 table-container');
 
-    const table = _.create('table').setAttribute('mat-table', '').setAttribute('[dataSource]', 'dataSource');
+    const table = _.create('table')
+        .setAttribute('mat-table', '')
+        .setAttribute('[dataSource]', 'dataSource')
+        .setAttribute('aria-label', `${pascalCase(resourceName)} list`);
 
     const listableProps = resource.listProperties;
 
@@ -72,6 +88,8 @@ export function generateListComponentHtml(
                     _.create('th')
                         .setAttribute('mat-header-cell', '')
                         .setAttribute('*matHeaderCellDef', '')
+                        .setAttribute('scope', 'col')
+                        .setAttribute('i18n', '')
                         .setTextContent(pascalCase(colName)),
                 )
                 .appendChild(
@@ -89,30 +107,40 @@ export function generateListComponentHtml(
         if (hasEdit)
             actionsCell.appendChild(
                 _.create('button')
+                    .setAttribute('type', 'button')
                     .setAttribute('mat-icon-button', '')
                     .setAttribute('color', 'primary')
                     .setAttribute('(click)', `onEdit(row[idProperty])`)
                     .setAttribute('matTooltip', `Edit ${singular(modelName)}`)
-                    .appendChild(_.create('mat-icon').setTextContent('edit')),
+                    .setAttribute('aria-label', `Edit ${singular(modelName)}`)
+                    .appendChild(_.create('mat-icon').setAttribute('aria-hidden', 'true').setTextContent('edit')),
             );
 
         if (hasDelete)
             actionsCell.appendChild(
                 _.create('button')
+                    .setAttribute('type', 'button')
                     .setAttribute('mat-icon-button', '')
                     .setAttribute('color', 'warn')
                     .setAttribute('(click)', `onDelete(row[idProperty])`)
                     .setAttribute('matTooltip', `Delete ${singular(modelName)}`)
-                    .appendChild(_.create('mat-icon').setTextContent('delete')),
+                    .setAttribute('aria-label', `Delete ${singular(modelName)}`)
+                    .appendChild(_.create('mat-icon').setAttribute('aria-hidden', 'true').setTextContent('delete')),
             );
 
         for (const action of customItemActions)
             actionsCell.appendChild(
                 _.create('button')
+                    .setAttribute('type', 'button')
                     .setAttribute('mat-icon-button', '')
                     .setAttribute('(click)', `${action.action}(row[idProperty])`)
                     .setAttribute('matTooltip', pascalCase(action.action))
-                    .appendChild(_.create('mat-icon').setTextContent(iconMap.get(action.action)!)),
+                    .setAttribute('aria-label', pascalCase(action.action))
+                    .appendChild(
+                        _.create('mat-icon')
+                            .setAttribute('aria-hidden', 'true')
+                            .setTextContent(iconMap.get(action.action)!),
+                    ),
             );
 
         table.appendChild(
@@ -122,6 +150,8 @@ export function generateListComponentHtml(
                     _.create('th')
                         .setAttribute('mat-header-cell', '')
                         .setAttribute('*matHeaderCellDef', '')
+                        .setAttribute('scope', 'col')
+                        .setAttribute('i18n', '')
                         .setTextContent('Actions'),
                 )
                 .appendChild(actionsCell),
@@ -144,6 +174,7 @@ export function generateListComponentHtml(
                 _.create('td')
                     .addClass('mat-cell')
                     .setAttribute('[attr.colspan]', 'displayedColumns.length')
+                    .setAttribute('i18n', '')
                     .setTextContent('No data matching the filter'),
             ),
     );

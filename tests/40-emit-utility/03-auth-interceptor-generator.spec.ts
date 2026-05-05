@@ -25,7 +25,7 @@ describe('Emitter: AuthInterceptorGenerator', () => {
     it('should generate logic for mixed security schemes using applicators map', () => {
         const { tokenNames, project } = runGenerator(securitySpec);
         const file = project.getSourceFileOrThrow('/out/auth/auth.interceptor.ts');
-        const interceptorMethod = file.getClassOrThrow('AuthInterceptor').getMethodOrThrow('intercept');
+        const interceptorMethod = file.getFunctionOrThrow('authInterceptor');
         const body = interceptorMethod.getBodyText() ?? '';
 
         expect(tokenNames).toEqual(['apiKey', 'bearerToken']);
@@ -33,14 +33,14 @@ describe('Emitter: AuthInterceptorGenerator', () => {
         // Check schema applicator definitions
         // Note: 'ApiKeyQuery' should be in there
         expect(body).toContain(
-            "'ApiKeyHeader': (req) => this.apiKey ? req.clone({ headers: req.headers.set('X-API-KEY', this.apiKey) }) : null",
+            "'ApiKeyHeader': (req, scopes, deps) => deps.apiKey ? req.clone({ headers: req.headers.set('X-API-KEY', deps.apiKey) }) : null",
         );
         expect(body).toContain(
-            "'ApiKeyQuery': (req) => this.apiKey ? req.clone({ params: req.params.set('api_key_query', this.apiKey) }) : null",
+            "'ApiKeyQuery': (req, scopes, deps) => deps.apiKey ? req.clone({ params: req.params.set('api_key_query', deps.apiKey) }) : null",
         );
 
         // Check Bearer
-        expect(body).toContain("'BearerAuth': (req) => {");
+        expect(body).toContain("'BearerAuth': (req, scopes, deps) => {");
         expect(body).toContain("req.clone({ headers: req.headers.set('Authorization', `Bearer ${token}`) })");
 
         // Check iterating logic
@@ -69,8 +69,7 @@ describe('Emitter: AuthInterceptorGenerator', () => {
         });
         const body = project
             .getSourceFileOrThrow('/out/auth/auth.interceptor.ts')
-            .getClassOrThrow('AuthInterceptor')!
-            .getMethodOrThrow('intercept')!
+            .getFunctionOrThrow('authInterceptor')!
             .getBodyText()!;
         expect(tokenNames).toEqual(['bearerToken']);
         expect(body).toContain("'BearerAuth':");
@@ -92,8 +91,7 @@ describe('Emitter: AuthInterceptorGenerator', () => {
         });
         const body = project
             .getSourceFileOrThrow('/out/auth/auth.interceptor.ts')
-            .getClassOrThrow('AuthInterceptor')!
-            .getMethodOrThrow('intercept')!
+            .getFunctionOrThrow('authInterceptor')!
             .getBodyText()!;
         expect(tokenNames).toEqual(['bearerToken']);
         expect(body).toContain("'OIDC':");
@@ -113,14 +111,13 @@ describe('Emitter: AuthInterceptorGenerator', () => {
 
         const body = project
             .getSourceFileOrThrow('/out/auth/auth.interceptor.ts')
-            .getClassOrThrow('AuthInterceptor')!
-            .getMethodOrThrow('intercept')!
+            .getFunctionOrThrow('authInterceptor')!
             .getBodyText()!;
 
         expect(tokenNames).toEqual(['bearerToken']);
 
         // Basic -> "Basic ${token}"
-        expect(body).toContain("'BasicAuth': (req) => {");
+        expect(body).toContain("'BasicAuth': (req, scopes, deps) => {");
         expect(body).toContain("req.clone({ headers: req.headers.set('Authorization', `Basic ${token}`) })");
 
         // Digest -> "Digest ${token}"
@@ -146,12 +143,12 @@ describe('Emitter: AuthInterceptorGenerator', () => {
         const file = project.getSourceFileOrThrow('/out/auth/auth.interceptor.ts');
         expect(file.getImportDeclaration('../utils/http-params-builder')).toBeDefined();
 
-        const body = file.getClassOrThrow('AuthInterceptor')!.getMethodOrThrow('intercept')!.getBodyText()!;
+        const body = file.getFunctionOrThrow('authInterceptor').getBodyText()!;
 
-        expect(body).toContain("'CookieAuth': (req) => {");
-        expect(body).toContain('if (!this.cookieAuth) return null;');
+        expect(body).toContain("'CookieAuth': (req, scopes, deps) => {");
+        expect(body).toContain('if (!deps.cookieAuth) return null;');
         expect(body).toContain(
-            "HttpParamsBuilder.serializeCookieParam('session_id', this.cookieAuth, 'form', true, false)",
+            "HttpParamsBuilder.serializeCookieParam('session_id', deps.cookieAuth, 'form', true, false)",
         );
         expect(body).toContain("req.clone({ headers: req.headers.set('Cookie', newCookie) })");
     });
@@ -168,15 +165,14 @@ describe('Emitter: AuthInterceptorGenerator', () => {
         const { project, tokenNames } = runGenerator(specWithMtls);
         const body = project
             .getSourceFileOrThrow('/out/auth/auth.interceptor.ts')
-            .getClassOrThrow('AuthInterceptor')!
-            .getMethodOrThrow('intercept')!
+            .getFunctionOrThrow('authInterceptor')!
             .getBodyText()!;
 
         expect(tokenNames).toContain('httpsAgentConfig');
         expect(body).toContain('HTTPS_AGENT_CONTEXT_TOKEN');
         // Adjusted expectation for new implementation
         expect(body).toContain(
-            "'MyCert': (req) => this.mtlsConfig ? req.clone({ context: req.context.set(HTTPS_AGENT_CONTEXT_TOKEN, this.mtlsConfig) }) : req",
+            "'MyCert': (req, scopes, deps) => deps.mtlsConfig ? req.clone({ context: req.context.set(HTTPS_AGENT_CONTEXT_TOKEN, deps.mtlsConfig) }) : req",
         );
     });
 
@@ -184,13 +180,12 @@ describe('Emitter: AuthInterceptorGenerator', () => {
         const { project } = runGenerator(securitySpec);
         const body = project
             .getSourceFileOrThrow('/out/auth/auth.interceptor.ts')
-            .getClassOrThrow('AuthInterceptor')!
-            .getMethodOrThrow('intercept')!
+            .getFunctionOrThrow('authInterceptor')!
             .getBodyText()!;
 
         // If requirements array is empty (default), skip auth
         expect(body).toContain('if (requirements.length === 0)');
-        expect(body).toContain('return next.handle(req);');
+        expect(body).toContain('return next(req);');
     });
 
     it('should reject apiKey schemes with unsupported in-location', () => {
