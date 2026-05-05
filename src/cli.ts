@@ -39,6 +39,8 @@ interface CliOptions {
     testsForAdmin?: boolean;
     noGithubActions?: boolean;
     noInstallablePackage?: boolean;
+    orm?: 'typeorm';
+    serverFramework?: 'express' | 'node' | 'bun' | 'deno';
 }
 
 /** Defines the shape of the options object from the 'to_openapi' command. */
@@ -46,6 +48,7 @@ interface ToActionOptions {
     input: string;
     format: 'json' | 'yaml';
     output?: string;
+    orm?: 'typeorm';
 }
 
 async function loadConfigFile(configPath: string): Promise<Partial<GeneratorConfig>> {
@@ -71,7 +74,7 @@ async function loadConfigFile(configPath: string): Promise<Partial<GeneratorConf
     }
 }
 
-async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_sdk_cli' | 'to_server') {
+async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_sdk_cli' | 'to_server' | 'to_orm') {
     const startTime = Date.now();
     try {
         let baseConfig: Partial<GeneratorConfig> = {};
@@ -89,6 +92,8 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
         if (options.admin !== undefined) cliOptions.admin = options.admin;
         if (options.testsForService !== undefined) cliOptions.generateServiceTests = options.testsForService;
         if (options.testsForAdmin !== undefined) cliOptions.generateAdminTests = options.testsForAdmin;
+        if (options.orm) cliOptions.orm = options.orm;
+        if (options.serverFramework) cliOptions.serverFramework = options.serverFramework;
 
         const defaults: GeneratorConfigOptions = {
             framework: 'angular',
@@ -227,6 +232,16 @@ async function runToOpenApi(options: ToActionOptions, returnObject = false): Pro
                 console.warn('ℹ️  Continuing without reconstructed component schemas.');
             }
 
+            if (options.orm === 'typeorm') {
+                console.log(`📡 Parsing TypeORM entities from ${options.input}`);
+                const { Project } = await import('ts-morph');
+                const { TypeOrmParser } = await import('./vendors/typeorm/parse.js');
+                const project = new Project();
+                project.addSourceFilesAtPaths(`${options.input}/**/*.ts`);
+                const ormSchemas = new TypeOrmParser().parse(project);
+                schemas = { ...schemas, ...ormSchemas };
+            }
+
             spec = buildOpenApiSpecFromServices(
                 services,
                 {},
@@ -353,6 +368,15 @@ const addFromOpenApiOptions = (cmd: Command) => {
         .addOption(
             new Option('--enumStyle <style>', 'Style for enums').choices(['enum', 'union']).env('CDD_ENUM_STYLE'),
         )
+        .addOption(
+            new Option('--orm <type>', 'Target ORM implementation for models').choices(['typeorm']).env('CDD_ORM'),
+        )
+        .addOption(
+            new Option('--serverFramework <type>', 'Target server framework')
+                .choices(['express', 'node', 'bun', 'deno'])
+                .default('express')
+                .env('CDD_SERVER_FRAMEWORK'),
+        )
         .addOption(new Option('--admin', 'Generate an auto-admin UI').env('CDD_ADMIN'))
         .addOption(
             new Option('--no-generate-services', 'Disable generation of services').env('CDD_NO_GENERATE_SERVICES'),
@@ -412,6 +436,21 @@ addFromOpenApiOptions(fromOpenApi.command('to_server'))
         }
     });
 
+addFromOpenApiOptions(fromOpenApi.command('to_orm'))
+    .description('Generate ORM entities/models from an OpenAPI specification')
+    .action(async (options: CliOptions) => {
+        if (!options.orm) {
+            console.error('❌ You must specify an ORM implementation using the --orm flag (e.g., --orm typeorm)');
+            process.exit(1);
+        }
+        try {
+            await runGeneration(options, 'to_orm');
+        } catch (err) {
+            console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
+            process.exit(1);
+        }
+    });
+
 program
     .command('to_openapi')
     .description('Generate an OpenAPI specification from TypeScript code (snapshot-based with AST fallback)')
@@ -426,6 +465,11 @@ program
             .choices(['json', 'yaml'])
             .default('yaml')
             .env('CDD_FORMAT'),
+    )
+    .addOption(
+        new Option('--orm <type>', 'Target ORM implementation to parse entities from')
+            .choices(['typeorm'])
+            .env('CDD_ORM'),
     )
     .action(async (options: ToActionOptions) => {
         try {

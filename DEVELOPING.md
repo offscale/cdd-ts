@@ -15,8 +15,12 @@
 ## Architecture Map
 
 - `src/openapi/parse.ts` - Entrypoint for parsing OpenAPI JSON/YAML to IR.
+- `src/core/server/` - Core abstraction for generating Server Frameworks.
+- `src/core/orm/` - Core abstraction for parsing/generating ORMs.
 - `src/vendors/angular/` - Emitters for Angular.
 - `src/vendors/fetch/` - Emitters for generic `fetch`.
+- `src/vendors/typeorm/` - Parsers and Emitters for TypeORM.
+- `src/vendors/express/` - Emitters for Express.js.
 - `src/functions/utils.ts` - Parsing TypeScript models and routes back to OpenAPI.
 - `src/cli.ts` - CLI argument parsing and dispatching.
 

@@ -19,6 +19,24 @@ Add support for:
 - [x] [Axios](https://axios-http.com)
 - [x] Node.js (builtin)
 
+## Server Framework interoperability
+
+Add support for server-side generation:
+
+- [x] Express.js
+- [ ] Raw Node.js
+- [ ] Bun.serve()
+- [ ] Deno.serve()
+
+## ORM interoperability
+
+Add support for Data Model parsing/emitting:
+
+- [x] TypeORM
+- [ ] Prisma
+- [ ] Drizzle ORM
+- [ ] Sequelize
+
 ## Framework interoperability
 
 Add support for creating an auto-admin UI for/with:

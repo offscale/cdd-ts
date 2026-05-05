@@ -1,14 +1,10 @@
 # Guide to Extending the Code Generator
 
-This document provides detailed instructions on how to extend the `cdd-ts` generator to support new frameworks (
-like [React](https://react.dev) and [Vue](https://vuejs.org)) and integrate different HTTP clients (
-like [Axios](https://axios-http.com) or [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)).
+This document provides detailed instructions on how to extend the `cdd-ts` generator to support new front-end frameworks (like [React](https://react.dev) and [Vue](https://vuejs.org)), new server environments (like [Bun](https://bun.sh) and [Deno](https://deno.com)), and new ORMs (like [TypeORM](https://typeorm.io) or [Prisma](https://prisma.io)).
 
 ## Architectural Overview
 
-The generator is built on a clean, three-layer architecture designed for maximum extensibility. The system is not
-limited to Angular; it acts as an engine that consumes an OpenAPI specification and outputs code for any target
-framework (React, Vue, Svelte, etc.).
+The generator is built on a clean, decoupled architecture designed for maximum extensibility. The system acts as an engine that consumes an OpenAPI specification and outputs code for any target framework (React, Vue, Express, TypeORM, etc.).
 
 ```mermaid
 graph LR
@@ -29,9 +25,9 @@ graph LR
         %% The Fork
         subgraph Targets [Targets]
             direction TB
-            T_Ang(<strong>Angular</strong><br/>Default Impl)
-            T_React(<strong>React / Vue</strong><br/><em>Extension Examples</em>)
-            T_Other(<strong>...</strong><br/><em>Future Frameworks</em>)
+            T_Client(<strong>Client SDKs</strong><br/>Angular/React/Vue/Axios)
+            T_Server(<strong>Server Frameworks</strong><br/>Express/Node/Bun)
+            T_ORM(<strong>ORMs</strong><br/>TypeORM)
         end
     end
 
@@ -40,9 +36,9 @@ graph LR
     Parser --> IR
     IR --> Base
 
-    Base -- "Existing" --> T_Ang
-    Base -- "Extension 1" --> T_React
-    Base -. "Extension N" .-> T_Other
+    Base -- "Existing" --> T_Client
+    Base -- "Extension 1" --> T_Server
+    Base -. "Extension N" .-> T_ORM
 
     %% --- STYLING ---
     classDef blue fill:#4285f4,stroke:#ffffff,color:#ffffff,stroke-width:0px

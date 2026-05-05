@@ -5,11 +5,11 @@ cdd-ts
 [![Angular Integration](https://github.com/offscale/cdd-ts/actions/workflows/integration.yml/badge.svg)](https://github.com/offscale/cdd-ts/actions/workflows/integration.yml)
 [![Deploy docs to Pages](https://github.com/offscale/cdd-ts/actions/workflows/docs.yml/badge.svg)](https://github.com/offscale/cdd-ts/actions/workflows/docs.yml)
 [![Linting and Code Quality](https://github.com/offscale/cdd-ts/actions/workflows/lint.yml/badge.svg)](https://github.com/offscale/cdd-ts/actions/workflows/lint.yml)
-[![Tests and coverage](https://github.com/offscale/cdd-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/offscale/cdd-ts/actions/workflows/ci.yml)
+[![CI](https://github.com/offscale/cdd-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/offscale/cdd-ts/actions/workflows/ci.yml)
 [![Doc Coverage](https://img.shields.io/badge/doc_coverage-100%25-brightgreen.svg)](https://github.com/offscale/cdd-ts)
 [![Test Coverage](https://img.shields.io/badge/test_coverage-100%25-brightgreen.svg)](https://github.com/offscale/cdd-ts)
 
-OpenAPI ↔ TypeScript. This is one compiler in a suite, supporting frameworks and environments like Angular, React, Vue, Vanilla JS, Node.js, Fetch, Axios, and CLI tools, all focussed on the same task: Compiler Driven Development (CDD).
+OpenAPI ↔ TypeScript. This is one compiler in a suite, supporting clients and frontends (Angular; React; Vue; vanilla JS; Node.js; Fetch; Axios); backends (Express and TypeORM), all focussed on the same task: Compiler Driven Development (CDD).
 
 Each compiler is written in its target language, is whitespace and comment sensitive, and has both an SDK and CLI.
 
@@ -20,6 +20,7 @@ The CLI—at a minimum—has:
 - `cdd-ts from_openapi to_sdk_cli -i spec.json`
 - `cdd-ts from_openapi to_sdk -i spec.json`
 - `cdd-ts from_openapi to_server -i spec.json`
+- `cdd-ts from_openapi to_orm -i spec.json --orm typeorm`
 - `cdd-ts to_openapi -f path/to/code`
 - `cdd-ts to_docs_json --no-imports --no-wrapping -i spec.json`
 - `cdd-ts serve_json_rpc --port 8080 --listen 0.0.0.0`
@@ -100,10 +101,10 @@ _(The boxes below reflect the features supported by this specific `cdd-ts` imple
 | ---------------------------- | ------------ | --------- |
 | OpenAPI 3.2.0                | ✅           | ✅        |
 | API Client SDK               | ✅           | ✅        |
-| API Client CLI               | [ ]          | ✅        |
+| API Client CLI               | ✅           | ✅        |
 | Server Routes / Endpoints    | ✅           | ✅        |
-| ORM / DB Schema              | [ ]          | [ ]       |
-| Mocks + Tests                | [ ]          | [ ]       |
+| ORM / DB Schema              | ✅           | ✅        |
+| Mocks + Tests                | ✅           | ✅        |
 | Model Context Protocol (MCP) | [ ]          | [ ]       |
 
 ### Uncommon Features
@@ -198,6 +199,4 @@ at your option.
 
 ### Contribution
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
-dual licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
