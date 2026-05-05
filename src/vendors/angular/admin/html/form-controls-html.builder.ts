@@ -259,15 +259,23 @@ function createSelect(
 
 function createFile(control: FormControlModel, label: string): HtmlElementBuilder {
     const inputId = `fileInput_${control.name}`;
+    const labelId = `fileLabel_${control.name}`;
 
     const container = _.create('div').addClass('admin-file-input');
 
-    container.appendChild(_.create('span').addClass('mat-body-1').setTextContent(label));
+    container.appendChild(
+        _.create('label')
+            .setAttribute('id', labelId)
+            .setAttribute('for', inputId)
+            .addClass('mat-body-1')
+            .setTextContent(label),
+    );
 
     container.appendChild(
         _.create('input')
             .setAttribute('type', 'file')
-            .setAttribute(`#${inputId}`, '')
+            .setAttribute('id', inputId)
+            .setAttribute('aria-labelledby', labelId)
             .setAttribute('(change)', `onFileSelected($event, '${control.name}')`)
             .setAttribute('style', 'display: none;')
             .selfClosing(),
@@ -277,6 +285,7 @@ function createFile(control: FormControlModel, label: string): HtmlElementBuilde
         _.create('button')
             .setAttribute('mat-stroked-button', '')
             .setAttribute('type', 'button')
+            .setAttribute('aria-labelledby', labelId)
             .setAttribute('(click)', `${inputId}.click()`)
             .setTextContent('Choose File'),
     );
@@ -284,6 +293,7 @@ function createFile(control: FormControlModel, label: string): HtmlElementBuilde
     container.appendChild(
         _.create('span')
             .addClass('file-name')
+            .setAttribute('aria-live', 'polite')
             .setTextContent(`{{ form.get('${control.name}')?.value?.name || 'No file selected' }}`),
     );
 
@@ -292,15 +302,17 @@ function createFile(control: FormControlModel, label: string): HtmlElementBuilde
 
 function createRadio(control: FormControlModel, label: string, optionsName: string): HtmlElementBuilder {
     const group = _.create('div').addClass('admin-radio-group');
+    const labelId = `radioLabel_${control.name}`;
 
-    const radioGroup = _.create('mat-radio-group').setAttribute('formControlName', control.name);
+    const radioGroup = _.create('mat-radio-group')
+        .setAttribute('formControlName', control.name)
+        .setAttribute('aria-labelledby', labelId);
 
     radioGroup.setInnerHtml(
         `@for (option of ${optionsName}; track option) { <mat-radio-button [value]="option">{{option}}</mat-radio-button> }`,
     );
 
-    group.appendChild(_.create('label').addClass('mat-label').setTextContent(label));
-
+    group.appendChild(_.create('label').setAttribute('id', labelId).addClass('mat-label').setTextContent(label));
     group.appendChild(radioGroup);
 
     return group;
@@ -308,15 +320,16 @@ function createRadio(control: FormControlModel, label: string, optionsName: stri
 
 function createToggle(control: FormControlModel, label: string): HtmlElementBuilder {
     const group = _.create('div').addClass('admin-toggle-group');
+    const labelId = `toggleLabel_${control.name}`;
 
-    const toggleGroup = _.create('mat-button-toggle-group').setAttribute('formControlName', control.name);
+    const toggleGroup = _.create('mat-button-toggle-group')
+        .setAttribute('formControlName', control.name)
+        .setAttribute('aria-labelledby', labelId);
 
     toggleGroup.appendChild(_.create('mat-button-toggle').setAttribute('value', 'true').setTextContent('Yes'));
-
     toggleGroup.appendChild(_.create('mat-button-toggle').setAttribute('value', 'false').setTextContent('No'));
 
-    group.appendChild(_.create('label').addClass('mat-label').setTextContent(label));
-
+    group.appendChild(_.create('label').setAttribute('id', labelId).addClass('mat-label').setTextContent(label));
     group.appendChild(toggleGroup);
 
     return group;
@@ -329,8 +342,9 @@ function createSlider(
     max: number | string,
 ): HtmlElementBuilder {
     const container = _.create('div').addClass('admin-slider-container');
+    const labelId = `sliderLabel_${control.name}`;
 
-    container.appendChild(_.create('label').addClass('mat-label').setTextContent(label));
+    container.appendChild(_.create('label').setAttribute('id', labelId).addClass('mat-label').setTextContent(label));
 
     container.appendChild(
         _.create('mat-slider')
@@ -338,6 +352,7 @@ function createSlider(
             .setAttribute('max', String(max))
             .setAttribute('discrete', '')
             .setAttribute('showTickMarks', '')
+            .setAttribute('aria-labelledby', labelId)
             .setAttribute('formControlName', control.name),
     );
 

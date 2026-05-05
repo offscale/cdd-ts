@@ -279,9 +279,11 @@ describe('Generators (Angular): FormComponentGenerator', () => {
             const { sourceFile } = run(spec, { modelName: 'Test' });
             const classText = sourceFile.getClass('TestFormComponent')!.getText();
 
-            // Expect dependent schema effect block in constructor (which is where effects live)
-            expect(classText).toContain('effect(() => {');
-            expect(classText).toContain("const hasPhoneValue = this.form.get('hasPhone')?.value;");
+            // Expect dependent schema effect block in setupDynamicFormEffects
+            expect(classText).toContain('setupDynamicFormEffects');
+            expect(classText).toContain(
+                "this.form.get('hasPhone')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(hasPhoneValue",
+            );
             expect(classText).toContain(
                 "if (hasPhoneValue !== null && hasPhoneValue !== undefined && hasPhoneValue !== '')",
             );
@@ -312,8 +314,10 @@ describe('Generators (Angular): FormComponentGenerator', () => {
             const { sourceFile } = run(spec, { modelName: 'Test' });
             const classText = sourceFile.getClass('TestFormComponent')!.getText();
 
-            expect(classText).toContain('effect(() => {');
-            expect(classText).toContain("const hasEmailValue = this.form.get('hasEmail')?.value;");
+            expect(classText).toContain('setupDynamicFormEffects');
+            expect(classText).toContain(
+                "this.form.get('hasEmail')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(hasEmailValue",
+            );
             expect(classText).toContain(
                 "if (hasEmailValue !== null && hasEmailValue !== undefined && hasEmailValue !== '')",
             );

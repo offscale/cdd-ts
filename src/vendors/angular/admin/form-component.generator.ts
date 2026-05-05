@@ -218,76 +218,7 @@ export class FormComponentGenerator {
         // Dynamic Effects (Polymorphism + Dependent Schemas)
 
         if (analysis.isPolymorphic || analysis.dependencyRules.length > 0) {
-            componentClass.addConstructor({
-                statements: writer => {
-                    writer.writeLine('// Setup dynamic form effects');
-
-                    // 1. Polymorphism logic
-
-                    if (analysis.isPolymorphic) {
-                        analysis.polymorphicProperties.forEach(poly => {
-                            const propName = poly.propertyName;
-
-                            const updateMethod = `updateFormFor${pascalCase(propName)}`;
-
-                            writer.write(`effect(() => {
-    const val = this.form.get('${propName}')?.value;
-    if (val) { this.${updateMethod}(val); }
-});\n`);
-                        });
-                    }
-
-                    // 2. Dependent Schemas/Required Logic (OAS 3.1)
-
-                    if (analysis.dependencyRules.length > 0) {
-                        writer.writeLine('// Dependent Schemas: If trigger field is present, target is required.');
-
-                        writer.writeLine('effect(() => {');
-
-                        // Group targets by trigger to avoid duplicate subscribes (though effect handles deps fine)
-
-                        const groups = new Map<string, string[]>();
-
-                        analysis.dependencyRules.forEach(r => {
-                            if (!groups.has(r.triggerField)) groups.set(r.triggerField, []);
-
-                            groups.get(r.triggerField)?.push(r.targetField);
-                        });
-
-                        groups.forEach((targets, trigger) => {
-                            writer.writeLine(`  const ${trigger}Value = this.form.get('${trigger}')?.value;`);
-
-                            writer.writeLine(
-                                `  if (${trigger}Value !== null && ${trigger}Value !== undefined && ${trigger}Value !== '') {`,
-                            );
-
-                            targets.forEach(target => {
-                                writer.writeLine(`    this.form.get('${target}')?.addValidators(Validators.required);`);
-
-                                writer.writeLine(
-                                    `    this.form.get('${target}')?.updateValueAndValidity({ emitEvent: false });`,
-                                );
-                            });
-
-                            writer.writeLine(`  } else {`);
-
-                            targets.forEach(target => {
-                                writer.writeLine(
-                                    `    this.form.get('${target}')?.removeValidators(Validators.required);`,
-                                );
-
-                                writer.writeLine(
-                                    `    this.form.get('${target}')?.updateValueAndValidity({ emitEvent: false });`,
-                                );
-                            });
-
-                            writer.writeLine(`  }`);
-                        });
-
-                        writer.writeLine('});');
-                    }
-                },
-            });
+            this.addDynamicFormEffectsMethod(componentClass, analysis);
         }
 
         this.addNgOnInit(
@@ -295,6 +226,7 @@ export class FormComponentGenerator {
             resource,
             serviceName,
             analysis.hasFormArrays || analysis.isPolymorphic || !!analysis.hasMaps,
+            analysis.isPolymorphic || analysis.dependencyRules.length > 0,
         );
 
         this.addInitForm(componentClass, formInterfaceName, analysis.topLevelControls);
@@ -411,11 +343,68 @@ export class FormComponentGenerator {
         findEnums(analysis.topLevelControls);
     }
 
+    private addDynamicFormEffectsMethod(classDeclaration: ClassDeclaration, analysis: FormAnalysisResult): void {
+        classDeclaration.addMethod({
+            name: 'setupDynamicFormEffects',
+            scope: Scope.Private,
+            statements: writer => {
+                writer.writeLine('// Setup dynamic form effects');
+
+                if (analysis.isPolymorphic) {
+                    analysis.polymorphicProperties.forEach(poly => {
+                        const propName = poly.propertyName;
+                        const updateMethod = `updateFormFor${pascalCase(propName)}`;
+
+                        writer.writeLine(
+                            `this.form.get('${propName}')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(val => {`,
+                        );
+                        writer.writeLine(`    if (val) { this.${updateMethod}(val); }`);
+                        writer.writeLine(`});`);
+                    });
+                }
+
+                if (analysis.dependencyRules.length > 0) {
+                    writer.writeLine('// Dependent Schemas: If trigger field is present, target is required.');
+                    const groups = new Map<string, string[]>();
+                    analysis.dependencyRules.forEach(r => {
+                        if (!groups.has(r.triggerField)) groups.set(r.triggerField, []);
+                        groups.get(r.triggerField)?.push(r.targetField);
+                    });
+
+                    groups.forEach((targets, trigger) => {
+                        writer.writeLine(
+                            `this.form.get('${trigger}')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(${trigger}Value => {`,
+                        );
+                        writer.writeLine(
+                            `  if (${trigger}Value !== null && ${trigger}Value !== undefined && ${trigger}Value !== '') {`,
+                        );
+                        targets.forEach(target => {
+                            writer.writeLine(`    this.form.get('${target}')?.addValidators(Validators.required);`);
+                            writer.writeLine(
+                                `    this.form.get('${target}')?.updateValueAndValidity({ emitEvent: false });`,
+                            );
+                        });
+                        writer.writeLine(`  } else {`);
+                        targets.forEach(target => {
+                            writer.writeLine(`    this.form.get('${target}')?.removeValidators(Validators.required);`);
+                            writer.writeLine(
+                                `    this.form.get('${target}')?.updateValueAndValidity({ emitEvent: false });`,
+                            );
+                        });
+                        writer.writeLine(`  }`);
+                        writer.writeLine(`});`);
+                    });
+                }
+            },
+        });
+    }
+
     private addNgOnInit(
         classDeclaration: ClassDeclaration,
         resource: Resource,
         serviceName: string,
         needsComplexPatch: boolean,
+        hasDynamicEffects: boolean,
     ): void {
         const getByIdOp = resource.operations.find(op => op.action === 'getById');
 
@@ -423,7 +412,11 @@ export class FormComponentGenerator {
             ? 'this.patchForm(entity)'
             : 'this.form.patchValue(entity as Record<string, string | number | boolean | object | undefined | null>)';
 
-        let body = `this.initForm();\nconst id = this.route.snapshot.paramMap.get('id');\nif (id) {\n  this.id.set(id);`;
+        let body = `this.initForm();\n`;
+        if (hasDynamicEffects) {
+            body += `this.setupDynamicFormEffects();\n`;
+        }
+        body += `const id = this.route.snapshot.paramMap.get('id');\nif (id) {\n  this.id.set(id);`;
 
         if (getByIdOp?.methodName) {
             body += `\n  this.${camelCase(serviceName)}.${getByIdOp.methodName}(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(entity => {\n    ${patchCall};\n  });`;
