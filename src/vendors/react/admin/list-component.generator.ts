@@ -48,26 +48,28 @@ export class ListComponentGenerator {
             <Link to="/${resource.name}/new" className="btn-create" aria-label={t('create_new_aria', 'Create New ${pascalCase(resource.name)}')}>
                 {t('create_new', 'Create New')}
             </Link>
-            <table>
-                <thead>
-                    <tr>
-                        ${props.map(p => `<th scope="col">{t('field.${p.name}', '${pascalCase(p.name)}')}</th>`).join('\n                        ')}
-                        <th scope="col">{t('actions', 'Actions')}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {data?.map((item: any) => (
-                        <tr key={item.id}>
-                            ${props.map(p => `<td>{item.${p.name}}</td>`).join('\n                            ')}
-                            <td>
-                                <Link to={\`/${resource.name}/edit/\${item.id}\`} aria-label={t('edit_item_aria', 'Edit item \${item.id}')}>
-                                    {t('edit', 'Edit')}
-                                </Link>
-                            </td>
+            <div className="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            ${props.map(p => `<th scope="col">{t('field.${p.name}', '${pascalCase(p.name)}')}</th>`).join('\n                            ')}
+                            <th scope="col">{t('actions', 'Actions')}</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>`;
+                    </thead>
+                    <tbody>
+                        {data?.map((item: any) => (
+                            <tr key={item.id} className="list-item-row" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 50px' }}>
+                                ${props.map(p => `<td>{item.${p.name}}</td>`).join('\n                                ')}
+                                <td>
+                                    <Link to={\`/${resource.name}/edit/\${item.id}\`} aria-label={t('edit_item_aria', 'Edit item \${item.id}')}>
+                                        {t('edit', 'Edit')}
+                                    </Link>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>`;
 
         const content = ReactElementBuilder.buildFunctionalComponent(componentName, imports, body, render);
         sourceFile.addStatements(content);

@@ -39,6 +39,7 @@ describe('E2E: Angular Generator Output', () => {
         expect(hasFile(project, 'admin.routes.ts')).toBe(true);
         expect(hasFile(project, 'users-list.component.ts')).toBe(true);
         expect(hasFile(project, 'users-form.component.ts')).toBe(true);
+        expect(hasFile(project, 'i18n.service.ts')).toBe(true);
     });
 
     it('should run without auth generation for a spec with no security', async () => {

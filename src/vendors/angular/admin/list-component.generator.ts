@@ -107,6 +107,7 @@ export class ListComponentGenerator {
             `import { MatTableDataSource } from '@angular/material/table';`,
             `import { Router, ActivatedRoute } from '@angular/router';`,
             `import { MatSnackBar } from '@angular/material/snack-bar';`,
+            `import { TranslationService } from '../../shared/i18n.service';`,
             `import { of, catchError, startWith, switchMap } from 'rxjs';`,
             `import { ${model.serviceName} } from '@src/../services/${camelCase(model.resourceName)}.service';`,
             `import { ${model.modelName} } from '@src/../models';`,
@@ -156,6 +157,7 @@ export class ListComponentGenerator {
             { name: 'router', isReadonly: true, initializer: 'inject(Router)' },
             { name: 'route', isReadonly: true, initializer: 'inject(ActivatedRoute)' },
             { name: 'snackBar', isReadonly: true, initializer: 'inject(MatSnackBar)' },
+            { name: 'i18n', isReadonly: true, initializer: 'inject(TranslationService)' },
             {
                 name: `${camelCase(model.serviceName)}`,
                 isReadonly: true,
@@ -210,7 +212,7 @@ export class ListComponentGenerator {
                         writer.writeLine(`this.dataSource.data = [];`);
                         writer.writeLine(`this.totalItems.set(0);`);
                         writer.writeLine(
-                            `this.snackBar.open('Error fetching data', 'Close', { duration: 5000, panelClass: 'error-snackbar' });`,
+                            `this.snackBar.open(this.i18n.t('error_fetching_data', 'Error fetching data'), this.i18n.t('close', 'Close'), { duration: 5000, panelClass: 'error-snackbar' });`,
                         );
                     });
                     writer.writeLine(`} else {`);
@@ -264,9 +266,9 @@ export class ListComponentGenerator {
                     name: 'onDelete',
                     parameters: [{ name: 'id', type: 'string' }],
                     statements: [
-                        `if (confirm('Are you sure you want to delete this item?')) {`,
+                        `if (confirm(this.i18n.t('confirm_delete', 'Are you sure you want to delete this item?'))) {`,
                         `  this.${camelCase(model.serviceName)}.${deleteOp.methodName}(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {`,
-                        `    this.snackBar.open('Item deleted successfully!', 'Close', { duration: 3000 });`,
+                        `    this.snackBar.open(this.i18n.t('item_deleted', 'Item deleted successfully!'), this.i18n.t('close', 'Close'), { duration: 3000 });`,
                         `    this.refresh();`,
                         `  });`,
                         `}`,
@@ -291,12 +293,12 @@ export class ListComponentGenerator {
             const body = `this.${camelCase(model.serviceName)}.${action.operation.methodName}(${args}).pipe(
     takeUntilDestroyed(this.destroyRef),
     catchError((err: Error) => {        console.error('Action failed', err);
-        this.snackBar.open('Action failed', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+        this.snackBar.open(this.i18n.t('action_failed', 'Action failed'), this.i18n.t('close', 'Close'), { duration: 5000, panelClass: 'error-snackbar' });
         return of(null);
     })
 ).subscribe(response => {
     if (response !== null) {
-        this.snackBar.open('Action successful!', 'Close', { duration: 3000 });
+        this.snackBar.open(this.i18n.t('action_successful', 'Action successful!'), this.i18n.t('close', 'Close'), { duration: 3000 });
         this.refresh();
     }
 });`;

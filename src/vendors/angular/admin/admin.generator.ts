@@ -10,6 +10,7 @@ import { ListComponentGenerator } from './list-component.generator.js';
 import { RoutingGenerator } from './routing.generator.js';
 import { CustomValidatorsGenerator } from './custom-validators.generator.js';
 import { ElementsGenerator } from './elements.generator.js';
+import { I18nGenerator } from './i18n.generator.js';
 
 /**
  * Main coordinator for generating the Angular Admin Interface.
@@ -60,6 +61,8 @@ export class AdminGenerator {
 
         const elementsGen = new ElementsGenerator(this.project);
 
+        const i18nGen = new I18nGenerator(this.project);
+
         let needsCustomValidators = false;
 
         for (const resource of this.allResources) {
@@ -81,6 +84,9 @@ export class AdminGenerator {
         }
 
         routeGen.generateMaster(this.allResources, adminDir);
+
+        console.log('  -> Generating i18n service...');
+        i18nGen.generate(adminDir);
 
         if (needsCustomValidators) {
             console.log('  -> Generating shared custom validators...');

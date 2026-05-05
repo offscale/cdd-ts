@@ -81,6 +81,7 @@ export class FormComponentGenerator {
 
                 ...commonStandaloneImports.map(a => `import { ${a[0]} } from "${a[1]}";`),
                 `import { MatSnackBar } from '@angular/material/snack-bar';`,
+                `import { TranslationService } from '../../shared/i18n.service';`,
                 `import { ${serviceName} } from '@src/services/${camelCase(resource.name)}.service';`,
                 `import { ${resource.modelName}${oneOfImports ? ', ' + oneOfImports : ''} } from '@src/models';`,
                 analysis.usesCustomValidators
@@ -274,6 +275,7 @@ export class FormComponentGenerator {
             { name: 'route', isReadonly: true, initializer: 'inject(ActivatedRoute)' },
             { name: 'router', isReadonly: true, initializer: 'inject(Router)' },
             { name: 'snackBar', isReadonly: true, initializer: 'inject(MatSnackBar)' },
+            { name: 'i18n', isReadonly: true, initializer: 'inject(TranslationService)' },
             {
                 name: `${camelCase(serviceName)}`,
                 isReadonly: true,
@@ -615,7 +617,16 @@ export class FormComponentGenerator {
             body += `const action$ = this.${camelCase(serviceName)}.${createOp!.methodName}(finalPayload);\n`;
         }
 
-        body += `action$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({\n  next: () => {\n    this.snackBar.open('${resource.modelName} saved successfully!', 'Close', { duration: 3000 });\n    this.router.navigate(['../'], { relativeTo: this.route });\n  },\n  error: (err) => {\n    console.error('Error saving ${resource.modelName}', err);\n    this.snackBar.open('Error saving ${resource.modelName}', 'Close', { duration: 5000, panelClass: 'error-snackbar' });\n  }\n});`;
+        body += `action$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+  next: () => {
+    this.snackBar.open(this.i18n.t('saved_successfully', '${resource.modelName} saved successfully!'), this.i18n.t('close', 'Close'), { duration: 3000 });
+    this.router.navigate(['../'], { relativeTo: this.route });
+  },
+  error: (err) => {
+    console.error('Error saving ${resource.modelName}', err);
+    this.snackBar.open(this.i18n.t('error_saving', 'Error saving ${resource.modelName}'), this.i18n.t('close', 'Close'), { duration: 5000, panelClass: 'error-snackbar' });
+  }
+});`;
 
         classDeclaration.addMethod({ name: 'onSubmit', statements: body });
     }

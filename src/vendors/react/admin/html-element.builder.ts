@@ -29,6 +29,6 @@ export class ReactElementBuilder {
      */
     public static buildInput(name: string, type: string = 'text', required: boolean = false): string {
         const requiredAttr = required ? ' required aria-required="true"' : '';
-        return `            <div className="form-group">\n                <label htmlFor="${name}">{t('field.${name}', '${name}')}</label>\n                <input type="${type}" id="${name}" name="${name}" defaultValue=""${requiredAttr} />\n            </div>`;
+        return `            <div className="form-group">\n                <label htmlFor="${name}">{t('field.${name}', '${name}')}</label>\n                <input type="${type}" id="${name}" name="${name}" defaultValue=""${requiredAttr} aria-invalid={false} aria-describedby={\`${name}-error\`} />\n                <span id={\`${name}-error\`} className="error-message" aria-live="polite"></span>\n            </div>`;
     }
 }
