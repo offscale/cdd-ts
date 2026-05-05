@@ -35,11 +35,10 @@ describe('E2E: Admin UI Generation', () => {
                 .getClass('UserFormComponent')!;
             routingFile = project.getSourceFileOrThrow('/generated/admin/users/users.routes.ts')!;
         });
-
         it('should generate a fully-featured list component', () => {
             expect(listComponent).toBeDefined();
-            const constructorBody = listComponent.getConstructors()[0].getBodyText() ?? '';
-            expect(constructorBody).toContain('this.usersService.getUsers(');
+            const ngAfterViewInitBody = listComponent.getMethod('ngAfterViewInit')?.getBodyText() ?? '';
+            expect(ngAfterViewInitBody).toContain('this.usersService.getUsers(');
             expect(listComponent.getMethod('onCreate')).toBeDefined();
             expect(listComponent.getMethod('onEdit')).toBeDefined();
             expect(listComponent.getMethod('onDelete')).toBeDefined();

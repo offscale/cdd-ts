@@ -34,16 +34,20 @@ describe('Generators (Angular): ListComponentGenerator', () => {
     describe('General Generation', () => {
         it('should handle API errors gracefully in generated code', () => {
             const listClass = project.getSourceFileOrThrow('/admin/users/users-list/users-list.component.ts');
-            const ctor = listClass.getClassOrThrow('UsersListComponent').getConstructors()[0];
-            const effectBody = ctor.getBodyText()!;
+            const ngAfterViewInitMethod = listClass
+                .getClassOrThrow('UsersListComponent')
+                .getMethodOrThrow('ngAfterViewInit');
+            const effectBody = ngAfterViewInitMethod.getBodyText()!;
             expect(effectBody).toContain(`catchError(() => of(null))`);
             expect(effectBody).toContain(`if (response === null)`);
         });
 
         it('should handle responses without X-Total-Count header', () => {
             const listClass = project.getSourceFileOrThrow('/admin/users/users-list/users-list.component.ts');
-            const ctor = listClass.getClassOrThrow('UsersListComponent').getConstructors()[0];
-            const effectBody = ctor.getBodyText()!;
+            const ngAfterViewInitMethod = listClass
+                .getClassOrThrow('UsersListComponent')
+                .getMethodOrThrow('ngAfterViewInit');
+            const effectBody = ngAfterViewInitMethod.getBodyText()!;
             expect(effectBody).toContain(`this.totalItems.set(totalCount ? +totalCount : response.body?.length ?? 0);`);
         });
 

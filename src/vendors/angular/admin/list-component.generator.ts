@@ -137,9 +137,7 @@ export class ListComponentGenerator {
 
         this.addProperties(componentClass, model);
 
-        this.addConstructorAndDataLoadingEffect(componentClass, model);
-
-        this.addLifecycleAndUtilityMethods(componentClass);
+        this.addLifecycleAndUtilityMethods(componentClass, model);
 
         this.addCrudActions(componentClass, model, resource);
 
@@ -175,97 +173,56 @@ export class ListComponentGenerator {
                 initializer: `new MatTableDataSource<${model.modelName}>()`,
             },
             { name: 'totalItems', initializer: 'signal(0)' },
-            { name: 'isViewInitialized', scope: Scope.Private, initializer: 'signal(false)' },
             { name: 'displayedColumns: string[]', initializer: JSON.stringify(model.displayedColumns) },
             { name: 'idProperty: string', initializer: `'${model.idProperty}'` },
         ]);
     }
 
-    /**
-     * Adds the constructor and the data-loading `effect`.
-     * @private
-     */
-    private addConstructorAndDataLoadingEffect(componentClass: ClassDeclaration, model: ListViewModel): void {
-        const constructor = componentClass.addConstructor();
-
-        constructor.setBodyText(writer => {
-            writer
-                .writeLine('effect(() => {')
-                .indent(() => {
-                    writer.writeLine(`if (!this.isViewInitialized()) { return; }`);
-
-                    writer
-                        .writeLine('this.paginator().page.pipe(')
-                        .indent(() => {
-                            writer.writeLine(`startWith({} as PageEvent),`);
-
-                            writer.writeLine(`switchMap((pageEvent: PageEvent) => {`);
-
-                            writer.indent(() => {
-                                writer.writeLine(`const page = pageEvent.pageIndex ?? this.paginator().pageIndex;`);
-
-                                writer.writeLine(`const limit = pageEvent.pageSize ?? this.paginator().pageSize;`);
-
-                                writer.writeLine(`const query = { _page: page + 1, _limit: limit };`);
-
-                                writer
-                                    .writeLine(
-                                        `return this.${camelCase(model.serviceName)}.${model.listOperationName}(query, 'response').pipe(`,
-                                    )
-                                    .indent(() => {
-                                        writer.writeLine(`catchError(() => of(null))`);
-                                    })
-                                    .write(');');
-                            });
-
-                            writer.writeLine('}),');
-
-                            writer.writeLine('takeUntilDestroyed(this.destroyRef)');
-                        })
-                        .write(').subscribe(response => {');
-
-                    writer.indent(() => {
-                        writer.writeLine(`if (response === null) {`);
-
-                        writer.indent(() => {
-                            writer.writeLine(`this.dataSource.data = [];`);
-
-                            writer.writeLine(`this.totalItems.set(0);`);
-
-                            writer.writeLine(
-                                `this.snackBar.open('Error fetching data', 'Close', { duration: 5000, panelClass: 'error-snackbar' });`,
-                            );
-                        });
-
-                        writer.writeLine(`} else {`);
-
-                        writer.indent(() => {
-                            writer.writeLine(`this.dataSource.data = response.body ?? [];`);
-
-                            writer.writeLine(`const totalCount = response.headers.get('X-Total-Count');`);
-
-                            writer.writeLine(
-                                `this.totalItems.set(totalCount ? +totalCount : response.body?.length ?? 0);`,
-                            );
-                        });
-
-                        writer.writeLine('}');
-                    });
-
-                    writer.write('});');
-                })
-                .write('});');
-        });
-    }
-
-    /**
-     * Adds standard Angular lifecycle and utility methods like `ngAfterViewInit`.
-     * @private
-     */
-    private addLifecycleAndUtilityMethods(componentClass: ClassDeclaration): void {
+    private addLifecycleAndUtilityMethods(componentClass: ClassDeclaration, model: ListViewModel): void {
         componentClass.addMethod({
             name: 'ngAfterViewInit',
-            statements: ['this.dataSource.paginator = this.paginator();', 'this.isViewInitialized.set(true);'],
+            statements: writer => {
+                writer.writeLine('this.dataSource.paginator = this.paginator();');
+
+                writer.writeLine('this.paginator().page.pipe(');
+                writer.indent(() => {
+                    writer.writeLine(`startWith({} as PageEvent),`);
+                    writer.writeLine(`switchMap((pageEvent: PageEvent) => {`);
+                    writer.indent(() => {
+                        writer.writeLine(`const page = pageEvent.pageIndex ?? this.paginator().pageIndex;`);
+                        writer.writeLine(`const limit = pageEvent.pageSize ?? this.paginator().pageSize;`);
+                        writer.writeLine(`const query = { _page: page + 1, _limit: limit };`);
+                        writer.writeLine(
+                            `return this.${camelCase(model.serviceName)}.${model.listOperationName}(query, 'response').pipe(`,
+                        );
+                        writer.indent(() => {
+                            writer.writeLine(`catchError(() => of(null))`);
+                        });
+                        writer.writeLine(');');
+                    });
+                    writer.writeLine('}),');
+                    writer.writeLine('takeUntilDestroyed(this.destroyRef)');
+                });
+                writer.writeLine(').subscribe(response => {');
+                writer.indent(() => {
+                    writer.writeLine(`if (response === null) {`);
+                    writer.indent(() => {
+                        writer.writeLine(`this.dataSource.data = [];`);
+                        writer.writeLine(`this.totalItems.set(0);`);
+                        writer.writeLine(
+                            `this.snackBar.open('Error fetching data', 'Close', { duration: 5000, panelClass: 'error-snackbar' });`,
+                        );
+                    });
+                    writer.writeLine(`} else {`);
+                    writer.indent(() => {
+                        writer.writeLine(`this.dataSource.data = response.body ?? [];`);
+                        writer.writeLine(`const totalCount = response.headers.get('X-Total-Count');`);
+                        writer.writeLine(`this.totalItems.set(totalCount ? +totalCount : response.body?.length ?? 0);`);
+                    });
+                    writer.writeLine('}');
+                });
+                writer.writeLine('});');
+            },
         });
 
         componentClass.addMethod({
