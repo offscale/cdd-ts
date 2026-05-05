@@ -79,6 +79,31 @@ describe('ReactAdminGenerator', () => {
         const fs = project.getFileSystem();
         expect(fs.directoryExistsSync('/out/admin')).toBe(false);
     });
+
+    it('generates only list components and skips forms when resources are read-only', async () => {
+        const readOnlyDoc: any = {
+            openapi: '3.0.0',
+            info: { title: 'Read Only API', version: '1.0.0' },
+            paths: {
+                '/reports': {
+                    get: {
+                        operationId: 'getReports',
+                        responses: { '200': { description: 'OK' } },
+                    },
+                },
+            },
+        };
+        const readOnlyParser = new SwaggerParser(readOnlyDoc, {} as any);
+
+        const generator = new ReactAdminGenerator(readOnlyParser, project);
+        await generator.generate('/out');
+
+        expect(project.getSourceFile('/out/admin/reports/reports-list.tsx')).toBeDefined();
+        // Should not generate form for read-only resource
+        expect(project.getSourceFile('/out/admin/reports/reports-form.tsx')).toBeUndefined();
+        // Should not generate validators if no resource is editable
+        expect(project.getSourceFile('/out/admin/shared/validators.ts')).toBeUndefined();
+    });
 });
 
 describe('ListComponentGenerator', () => {
