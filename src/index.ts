@@ -67,7 +67,7 @@ export async function generateFromConfig(
     config: GeneratorConfig,
     project?: Project,
     testConfig?: TestGeneratorConfig,
-    targetScope?: 'to_sdk' | 'to_sdk_cli' | 'to_server',
+    targetScope?: 'to_sdk' | 'to_sdk_cli' | 'to_server' | 'to_orm',
 ): Promise<void> {
     const isTestEnv = !!testConfig;
 
@@ -110,9 +110,45 @@ export async function generateFromConfig(
             swaggerParser = await SwaggerParser.create(config.input, config);
         }
 
-        const generator = getGeneratorFactory(framework, implementation);
+        if (targetScope === 'to_orm' || (targetScope === 'to_server' && config.options.orm)) {
+            if (config.options.orm === 'typeorm') {
+                const { TypeOrmGenerator } = await import('./vendors/typeorm/emit.js');
+                await new TypeOrmGenerator().generate(activeProject, swaggerParser, config, config.output);
+            }
+        }
 
-        await generator.generate(activeProject, swaggerParser, config, config.output);
+        if (targetScope === 'to_server') {
+            const serverFramework = config.options.serverFramework || 'express';
+            if (serverFramework === 'express') {
+                const { ExpressServerGenerator } = await import('./vendors/express/express-server.generator.js');
+                const serverGenerator = new ExpressServerGenerator();
+                const schemas = swaggerParser.schemas;
+
+                if (schemas && schemas.length > 0) {
+                    const path = await import('path');
+                    const entitiesDir = path.join(config.output, 'entities');
+                    for (const schema of schemas) {
+                        if (
+                            schema.definition &&
+                            typeof schema.definition === 'object' &&
+                            schema.definition.type === 'object'
+                        ) {
+                            serverGenerator.generateEntityRoutes(
+                                activeProject,
+                                schema.name,
+                                entitiesDir,
+                                config.options.orm,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        if (targetScope !== 'to_orm' && targetScope !== 'to_server') {
+            const generator = getGeneratorFactory(framework, implementation);
+            await generator.generate(activeProject, swaggerParser, config, config.output);
+        }
 
         if (targetScope === 'to_sdk_cli') {
             new CliGenerator().generate(activeProject, swaggerParser, config, config.output);
@@ -149,3 +185,7 @@ export {
     type CodeScanRequestBody,
     type CodeScanResponse,
 } from './functions/parse.js';
+
+export { type IOrmParser, type IOrmGenerator } from './core/orm/index.js';
+export { TypeOrmParser } from './vendors/typeorm/parse.js';
+export { TypeOrmGenerator } from './vendors/typeorm/emit.js';

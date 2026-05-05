@@ -25,7 +25,15 @@ Commands:
 
 - `to_sdk_cli`: Generate Client SDK CLI from an OpenAPI specification
 - `to_sdk`: Generate Client SDK from an OpenAPI specification
-- `to_server`: Generate Server from an OpenAPI specification
+- `to_server`: Generate Server from an OpenAPI specification (supports `--serverFramework express|node|bun|deno`)
+- `to_orm`: Generate ORM entities/models from an OpenAPI specification (requires `--orm typeorm`)
+
+### from_openapi global flags
+- `--orm <type>`: Target ORM implementation for models (e.g. `typeorm`)
+- `--serverFramework <type>`: Target server framework (e.g. `express`, `node`, `bun`, `deno`)
+
+### to_openapi flags
+- `--orm <type>`: Target ORM implementation to parse entities from (e.g. `typeorm`)
 
 ## Environment Variables
 

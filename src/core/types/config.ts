@@ -47,6 +47,19 @@ export interface GeneratorConfigOptions {
     platform?: 'browser' | 'node';
     /** A callback to provide a custom method name for an operation. */
     customizeMethodName?: (operationId: string) => string;
+    /**
+     * The ORM implementation to generate entities for or parse entities from.
+     * - 'typeorm': Uses TypeORM decorators and patterns.
+     */
+    orm?: 'typeorm';
+    /**
+     * The server framework to use when generating server routes.
+     * - 'express': Generates Express.js routers and integrations.
+     * - 'node': Generates raw Node.js HTTP servers.
+     * - 'bun': Generates raw Bun.serve() handlers.
+     * - 'deno': Generates Deno.serve() handlers.
+     */
+    serverFramework?: 'express' | 'node' | 'bun' | 'deno';
 }
 
 /** The main configuration object for the entire generation process. */
