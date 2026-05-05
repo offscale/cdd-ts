@@ -1,7 +1,7 @@
-import { Project, Scope } from 'ts-morph';
+import { Project } from 'ts-morph';
 import * as path from 'node:path';
 import { UTILITY_GENERATOR_HEADER_COMMENT } from '@src/core/constants.js';
-import { getClientContextTokenName, getInterceptorsTokenName, pascalCase } from '@src/functions/utils.js';
+import { camelCase, getClientContextTokenName, getInterceptorsTokenName, pascalCase } from '@src/functions/utils.js';
 
 export class BaseInterceptorGenerator {
     private readonly clientName: string;
@@ -31,11 +31,11 @@ export class BaseInterceptorGenerator {
 
         sourceFile.addImportDeclarations([
             {
-                namedImports: ['HttpContextToken', 'HttpEvent', 'HttpHandler', 'HttpInterceptor', 'HttpRequest'],
+                namedImports: ['HttpContextToken', 'HttpEvent', 'HttpHandlerFn', 'HttpInterceptorFn', 'HttpRequest'],
                 moduleSpecifier: '@angular/common/http',
             },
             {
-                namedImports: ['inject', 'Injectable'],
+                namedImports: ['inject'],
                 moduleSpecifier: '@angular/core',
             },
             {
@@ -48,55 +48,38 @@ export class BaseInterceptorGenerator {
             },
         ]);
 
-        sourceFile.addClass({
-            name: `${this.capitalizedClientName}BaseInterceptor`,
+        sourceFile.addFunction({
+            name: `${camelCase(this.clientName)}BaseInterceptor`,
             isExported: true,
-            decorators: [{ name: 'Injectable', arguments: [`{ providedIn: 'root' }`] }],
-            implements: ['HttpInterceptor'],
-            docs: [`Base HttpInterceptor for the ${this.capitalizedClientName} client.`],
-            properties: [
+            docs: [`Base functional HttpInterceptor for the ${this.capitalizedClientName} client.`],
+            parameters: [
                 {
-                    name: 'httpInterceptors',
-                    type: 'HttpInterceptor[]',
-                    scope: Scope.Private,
-                    isReadonly: true,
-                    initializer: `inject(${interceptorsTokenName})`,
+                    name: 'req',
+                    type: 'HttpRequest<unknown>',
                 },
-                {
-                    name: 'clientContextToken',
-                    type: 'HttpContextToken<string>',
-                    scope: Scope.Private,
-                    isReadonly: true,
-                    initializer: clientContextTokenName,
-                },
+                { name: 'next', type: 'HttpHandlerFn' },
             ],
-            methods: [
-                {
-                    name: 'intercept',
-                    parameters: [
-                        {
-                            name: 'req',
-                            type: 'HttpRequest<Record<string, string | number | boolean | object | undefined | null>>',
-                        },
-                        { name: 'next', type: 'HttpHandler' },
-                    ],
-                    returnType:
-                        'Observable<HttpEvent<Record<string, string | number | boolean | object | undefined | null>>>',
-                    statements: `
-    if (!req.context.has(this.clientContextToken)) { 
-      return next.handle(req); 
+            returnType: 'Observable<HttpEvent<unknown>>',
+            statements: `
+    const clientContext = inject(${clientContextTokenName});
+    if (!req.context.has(clientContext)) { 
+      return next(req); 
     } 
 
-    const handler: HttpHandler = this.httpInterceptors.reduceRight( 
-      (nextHandler, interceptor) => ({ 
-        handle: (request: HttpRequest<Record<string, string | number | boolean | object | undefined | null>>) => interceptor.intercept(request, nextHandler), 
-      }), 
-      next
-    ); 
+    const customInterceptors = inject(${interceptorsTokenName}, { optional: true }) || [];
 
-    return handler.handle(req);`,
-                },
-            ],
+    const executeInterceptors = (request: HttpRequest<unknown>, index: number): Observable<HttpEvent<unknown>> => {
+        if (index >= customInterceptors.length) {
+            return next(request);
+        }
+        const interceptor = customInterceptors[index];
+        // Handle class-based custom interceptors for backwards compatibility
+        return interceptor.intercept(request, {
+            handle: (req) => executeInterceptors(req, index + 1)
+        });
+    };
+
+    return executeInterceptors(req, 0);`,
         });
 
         sourceFile.formatText();

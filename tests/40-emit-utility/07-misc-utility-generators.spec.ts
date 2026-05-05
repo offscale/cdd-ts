@@ -28,7 +28,7 @@ describe('Emitter: Miscellaneous Utility Generators', () => {
 
         expect(fileContent).toContain('export const ISO_DATE_REGEX');
         expect(fileContent).toContain('export function transformDates<T>(body: T): T');
-        expect(fileContent).toContain('export class DateInterceptor implements HttpInterceptor');
+        expect(fileContent).toContain('export function dateInterceptor');
     });
 
     it('FileDownloadGenerator should generate all download helpers', () => {

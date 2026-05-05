@@ -67,10 +67,10 @@ describe('Generators (Angular): ListComponentGenerator', () => {
             expect(html).toContain('rebootServerItem(row[idProperty])');
 
             // Verifies the specific overrides for icon names work
-            expect(html).toContain('<mat-icon>refresh</mat-icon>');
+            expect(html).toContain('<mat-icon aria-hidden="true">refresh</mat-icon>');
 
             // Verifies that the mapping from 'default' kind to 'play_arrow' works
-            expect(html).toContain('<mat-icon>play_arrow</mat-icon>');
+            expect(html).toContain('<mat-icon aria-hidden="true">play_arrow</mat-icon>');
         });
 
         it('should fall back to the first property if no "id" is present', () => {
@@ -177,24 +177,24 @@ describe('Generators (Angular): ListComponentGenerator', () => {
                 .readFileSync('/admin/iconTests/iconTests-list/iconTests-list.component.html');
 
             // 'addItem', 'createItem' -> constructive -> 'add'
-            expect(html).toContain('<mat-icon>add</mat-icon>');
+            expect(html).toContain('<mat-icon aria-hidden="true">add</mat-icon>');
             // 'deleteItem', 'removeItem' -> destructive -> 'delete'
-            expect(html).toContain('<mat-icon>delete</mat-icon>');
+            expect(html).toContain('<mat-icon aria-hidden="true">delete</mat-icon>');
             // 'updateItem' -> 'edit' (override)
-            expect(html).toContain('<mat-icon>edit</mat-icon>');
+            expect(html).toContain('<mat-icon aria-hidden="true">edit</mat-icon>');
             // 'approveItem' -> 'check'
-            expect(html).toContain('<mat-icon>check</mat-icon>');
+            expect(html).toContain('<mat-icon aria-hidden="true">check</mat-icon>');
             // 'blockUser' -> 'block'
-            expect(html).toContain('<mat-icon>block</mat-icon>');
+            expect(html).toContain('<mat-icon aria-hidden="true">block</mat-icon>');
             // **THE FIX**: 'syncAll' now correctly maps to 'refresh'
-            expect(html).toContain('<mat-icon>refresh</mat-icon>');
+            expect(html).toContain('<mat-icon aria-hidden="true">refresh</mat-icon>');
             // 'pauseProcess' -> 'pause'
-            expect(html).toContain('<mat-icon>pause</mat-icon>');
+            expect(html).toContain('<mat-icon aria-hidden="true">pause</mat-icon>');
 
             const startButtonHtml = html.match(
                 /<button[^>]+?\(click\)="startItem\([^)]+\)"[^>]+?>([\s\S]+?)<\/button>/,
             );
-            expect(startButtonHtml?.[1]).toContain('<mat-icon>play_arrow</mat-icon>');
+            expect(startButtonHtml?.[1]).toContain('<mat-icon aria-hidden="true">play_arrow</mat-icon>');
         });
 
         it('should generate an "id" column when a resource has no properties at all', () => {

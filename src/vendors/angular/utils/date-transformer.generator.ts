@@ -16,12 +16,8 @@ export class DateTransformerGenerator {
 
         sourceFile.addImportDeclarations([
             {
-                namedImports: ['HttpEvent', 'HttpHandler', 'HttpInterceptor', 'HttpRequest', 'HttpResponse'],
+                namedImports: ['HttpEvent', 'HttpHandlerFn', 'HttpInterceptorFn', 'HttpRequest', 'HttpResponse'],
                 moduleSpecifier: '@angular/common/http',
-            },
-            {
-                namedImports: ['Injectable'],
-                moduleSpecifier: '@angular/core',
             },
             {
                 namedImports: ['Observable', 'map'],
@@ -71,26 +67,20 @@ export class DateTransformerGenerator {
     return transformedBody as T;`,
         });
 
-        sourceFile.addClass({
-            name: 'DateInterceptor',
+        sourceFile.addFunction({
+            name: 'dateInterceptor',
             isExported: true,
-            decorators: [{ name: 'Injectable', arguments: [`{ providedIn: 'root' }`] }],
-            implements: ['HttpInterceptor'],
-            docs: ['Intercepts HTTP responses and transforms ISO date strings to Date objects in the response body.'],
-            methods: [
+            parameters: [
                 {
-                    name: 'intercept',
-                    parameters: [
-                        {
-                            name: 'req',
-                            type: 'HttpRequest<Record<string, string | number | boolean | object | undefined | null>>',
-                        },
-                        { name: 'next', type: 'HttpHandler' },
-                    ],
-                    returnType:
-                        'Observable<HttpEvent<Record<string, string | number | boolean | object | undefined | null>>>',
-                    statements: `
-    return next.handle(req).pipe( 
+                    name: 'req',
+                    type: 'HttpRequest<unknown>',
+                },
+                { name: 'next', type: 'HttpHandlerFn' },
+            ],
+            returnType: 'Observable<HttpEvent<unknown>>',
+            docs: ['Intercepts HTTP responses and transforms ISO date strings to Date objects in the response body.'],
+            statements: `
+    return next(req).pipe( 
         map(event => { 
             if (event instanceof HttpResponse && event.body) { 
                 return event.clone({ body: transformDates(event.body) }); 
@@ -98,8 +88,6 @@ export class DateTransformerGenerator {
             return event; 
         }) 
     );`,
-                },
-            ],
         });
 
         sourceFile.formatText();

@@ -1,5 +1,5 @@
 import * as path from 'node:path';
-import { Project, Scope } from 'ts-morph';
+import { Project } from 'ts-morph';
 import { SwaggerParser } from '@src/openapi/parse.js';
 import { UTILITY_GENERATOR_HEADER_COMMENT } from '@src/core/constants.js';
 import { SecurityScheme } from '@src/core/types/index.js';
@@ -72,9 +72,9 @@ export class AuthInterceptorGenerator {
         sourceFile.addImportDeclarations([
             {
                 moduleSpecifier: '@angular/common/http',
-                namedImports: ['HttpEvent', 'HttpHandler', 'HttpInterceptor', 'HttpRequest', 'HttpHeaders'],
+                namedImports: ['HttpEvent', 'HttpHandlerFn', 'HttpInterceptorFn', 'HttpRequest', 'HttpHeaders'],
             },
-            { moduleSpecifier: '@angular/core', namedImports: ['inject', 'Injectable'] },
+            { moduleSpecifier: '@angular/core', namedImports: ['inject'] },
             { moduleSpecifier: 'rxjs', namedImports: ['Observable'] },
             { moduleSpecifier: './auth.tokens', namedImports: tokenImports },
             // Helper used for correct cookie serialization logic (OAS 3.2)
@@ -88,54 +88,6 @@ export class AuthInterceptorGenerator {
                 : []),
         ]);
 
-        const interceptorClass = sourceFile.addClass({
-            name: `AuthInterceptor`,
-            isExported: true,
-            decorators: [{ name: 'Injectable', arguments: [`{ providedIn: 'root' }`] }],
-            implements: ['HttpInterceptor'],
-            docs: ['Intercepts HTTP requests to apply authentication credentials based on OpenAPI security schemes.'],
-        });
-
-        if (hasApiKeyHeader || hasApiKeyQuery) {
-            interceptorClass.addProperty({
-                name: 'apiKey',
-                isReadonly: true,
-                scope: Scope.Private,
-                type: 'string | null',
-                initializer: `inject(API_KEY_TOKEN, { optional: true })`,
-            });
-        }
-
-        if (hasApiKeyCookie) {
-            interceptorClass.addProperty({
-                name: 'cookieAuth',
-                isReadonly: true,
-                scope: Scope.Private,
-                type: 'string | null',
-                initializer: `inject(COOKIE_AUTH_TOKEN, { optional: true })`,
-            });
-        }
-
-        if (hasHttpToken) {
-            interceptorClass.addProperty({
-                name: 'bearerToken',
-                isReadonly: true,
-                scope: Scope.Private,
-                type: '(string | (() => string)) | null',
-                initializer: `inject(BEARER_TOKEN_TOKEN, { optional: true })`,
-            });
-        }
-
-        if (hasMutualTLS) {
-            interceptorClass.addProperty({
-                name: 'mtlsConfig',
-                isReadonly: true,
-                scope: Scope.Private,
-                type: 'Record<string, string | number | boolean | object | undefined | null>',
-                initializer: `inject(HTTPS_AGENT_CONFIG_TOKEN, { optional: true })`,
-            });
-        }
-
         const schemeLogicParts: string[] = [];
 
         const uniqueSchemesMap = this.parser.getSecuritySchemes();
@@ -144,23 +96,19 @@ export class AuthInterceptorGenerator {
             if (scheme.type === 'apiKey' && scheme.name) {
                 if (scheme.in === 'header') {
                     schemeLogicParts.push(
-                        `'${name}': (req) => this.apiKey ? req.clone({ headers: req.headers.set('${scheme.name}', this.apiKey) }) : null`,
+                        `'${name}': (req, scopes, deps) => deps.apiKey ? req.clone({ headers: req.headers.set('${scheme.name}', deps.apiKey) }) : null`,
                     );
                 } else if (scheme.in === 'query') {
                     schemeLogicParts.push(
-                        `'${name}': (req) => this.apiKey ? req.clone({ params: req.params.set('${scheme.name}', this.apiKey) }) : null`,
+                        `'${name}': (req, scopes, deps) => deps.apiKey ? req.clone({ params: req.params.set('${scheme.name}', deps.apiKey) }) : null`,
                     );
                 } else if (scheme.in === 'cookie') {
-                    // Cookie handling: Must serialize correctly (form style, explode true, allowReserved false is standard for simple api keys)
-                    // NOTE: Setting Cookie header manually triggers warnings in browsers but is valid for Node/SSR
-
-                    schemeLogicParts.push(`'${name}': (req) => {
-                        if (!this.cookieAuth) return null;
+                    schemeLogicParts.push(`'${name}': (req, scopes, deps) => {
+                        if (!deps.cookieAuth) return null;
                         if (typeof window !== 'undefined') {
                             console.warn('Setting "Cookie" header manually for scheme "${name}". This usually fails in browsers.');
                         }
-                        // Simple serialization for API Key (treat as primitive string, style=form implicit)
-                        const cookieVal = HttpParamsBuilder.serializeCookieParam('${scheme.name}', this.cookieAuth, 'form', true, false);
+                        const cookieVal = HttpParamsBuilder.serializeCookieParam('${scheme.name}', deps.cookieAuth, 'form', true, false);
                         const existing = req.headers.get('Cookie') || '';
                         const newCookie = existing ? \`\${existing}; \${cookieVal}\` : cookieVal;
                         return req.clone({ headers: req.headers.set('Cookie', newCookie) });
@@ -169,34 +117,40 @@ export class AuthInterceptorGenerator {
             } else if (this.isHttpTokenScheme(scheme)) {
                 const prefix = this.getAuthPrefix(scheme);
 
-                schemeLogicParts.push(`'${name}': (req) => {
-                    const token = typeof this.bearerToken === 'function' ? this.bearerToken() : this.bearerToken;
-                    // Use derived prefix (e.g. "Bearer", "Basic", "Digest")
+                schemeLogicParts.push(`'${name}': (req, scopes, deps) => {
+                    const token = typeof deps.bearerToken === 'function' ? deps.bearerToken() : deps.bearerToken;
                     return token ? req.clone({ headers: req.headers.set('Authorization', \`${prefix} \${token}\`) }) : null;
                 }`);
             } else if (scheme.type === 'mutualTLS') {
                 schemeLogicParts.push(
-                    `'${name}': (req) => this.mtlsConfig ? req.clone({ context: req.context.set(HTTPS_AGENT_CONTEXT_TOKEN, this.mtlsConfig) }) : req`,
+                    `'${name}': (req, scopes, deps) => deps.mtlsConfig ? req.clone({ context: req.context.set(HTTPS_AGENT_CONTEXT_TOKEN, deps.mtlsConfig) }) : req`,
                 );
             }
         });
 
         const statementsBody = `
+        const deps = {
+            ${hasApiKeyHeader || hasApiKeyQuery ? 'apiKey: inject(API_KEY_TOKEN, { optional: true }),' : ''}
+            ${hasApiKeyCookie ? 'cookieAuth: inject(COOKIE_AUTH_TOKEN, { optional: true }),' : ''}
+            ${hasHttpToken ? 'bearerToken: inject(BEARER_TOKEN_TOKEN, { optional: true }),' : ''}
+            ${hasMutualTLS ? 'mtlsConfig: inject(HTTPS_AGENT_CONFIG_TOKEN, { optional: true }),' : ''}
+        };
+
         const requirements = req.context.get(SECURITY_CONTEXT_TOKEN);
-        const applicators: Record<string, (r: HttpRequest<Record<string, string | number | boolean | object | undefined | null>>, scopes?: string[]) => HttpRequest<Record<string, string | number | boolean | object | undefined | null>> | null> = {
+        const applicators: Record<string, (r: HttpRequest<unknown>, scopes: string[] | undefined, d: typeof deps) => HttpRequest<unknown> | null> = {
             ${schemeLogicParts.join(',\n            ')}
         };
 
         if (requirements.length === 0) {
-            return next.handle(req);
+            return next(req);
         }
 
         for (const requirement of requirements) {
-            let clone: HttpRequest<Record<string, string | number | boolean | object | undefined | null>> | null = req;
+            let clone: HttpRequest<unknown> | null = req;
             let satisfied = true;
 
             if (Object.keys(requirement).length === 0) {
-                return next.handle(req);
+                return next(req);
             }
 
             for (const [scheme, scopes] of Object.entries(requirement)) {
@@ -205,7 +159,7 @@ export class AuthInterceptorGenerator {
                     satisfied = false;
                     break;
                 }
-                clone = apply(clone!, scopes);
+                clone = apply(clone!, scopes, deps);
                 if (!clone) {
                     satisfied = false;
                     break;
@@ -213,23 +167,25 @@ export class AuthInterceptorGenerator {
             }
 
             if (satisfied && clone) {
-                return next.handle(clone);
+                return next(clone);
             }
         }
 
-        return next.handle(req);
+        return next(req);
         `;
 
-        interceptorClass.addMethod({
-            name: 'intercept',
+        sourceFile.addFunction({
+            name: `authInterceptor`,
+            isExported: true,
             parameters: [
                 {
                     name: 'req',
-                    type: 'HttpRequest<Record<string, string | number | boolean | object | undefined | null>>',
+                    type: 'HttpRequest<unknown>',
                 },
-                { name: 'next', type: 'HttpHandler' },
+                { name: 'next', type: 'HttpHandlerFn' },
             ],
-            returnType: 'Observable<HttpEvent<Record<string, string | number | boolean | object | undefined | null>>>',
+            returnType: 'Observable<HttpEvent<unknown>>',
+            docs: ['Functional interceptor to apply authentication credentials based on OpenAPI security schemes.'],
             statements: statementsBody,
         });
 

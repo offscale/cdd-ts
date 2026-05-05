@@ -14,28 +14,25 @@ describe('Emitter: BaseInterceptorGenerator', () => {
 
     it('should generate a default interceptor when no clientName is provided', () => {
         const fileContent = runGenerator();
-        expect(fileContent).toContain('export class DefaultBaseInterceptor');
-        expect(fileContent).toContain('inject(HTTP_INTERCEPTORS_DEFAULT)');
-        expect(fileContent).toContain('if (!req.context.has(this.clientContextToken))');
+        expect(fileContent).toContain('export function defaultBaseInterceptor');
+        expect(fileContent).toContain('inject(HTTP_INTERCEPTORS_DEFAULT');
+        expect(fileContent).toContain('if (!req.context.has(clientContext))');
     });
 
     it('should generate a named interceptor when a clientName is provided', () => {
         const fileContent = runGenerator('MyApi');
-        expect(fileContent).toContain('export class MyApiBaseInterceptor');
-        expect(fileContent).toContain('inject(HTTP_INTERCEPTORS_MYAPI)');
-        expect(fileContent).toContain(
-            'private readonly clientContextToken: HttpContextToken<string> = CLIENT_CONTEXT_TOKEN_MYAPI;',
-        );
+        expect(fileContent).toContain('export function myApiBaseInterceptor');
+        expect(fileContent).toContain('inject(HTTP_INTERCEPTORS_MYAPI');
+        expect(fileContent).toContain('const clientContext = inject(CLIENT_CONTEXT_TOKEN_MYAPI);');
     });
 
     it('should contain the correct intercept logic', () => {
         const fileContent = runGenerator();
-        const logic = fileContent.substring(fileContent.indexOf('intercept(')); // Get the method body for inspection
+        const logic = fileContent.substring(fileContent.indexOf('const executeInterceptors =')); // Get the method body for inspection
 
-        expect(logic).toContain('if (!req.context.has(this.clientContextToken))');
-        expect(logic).toContain('return next.handle(req);');
-        expect(logic).toContain('const handler: HttpHandler = this.httpInterceptors.reduceRight(');
-        expect(logic).toContain('=> interceptor.intercept(request, nextHandler)');
-        expect(logic).toContain('return handler.handle(req);');
+        expect(logic).toContain('if (index >= customInterceptors.length)');
+        expect(logic).toContain('return next(request);');
+        expect(logic).toContain('const interceptor = customInterceptors[index];');
+        expect(logic).toContain('return interceptor.intercept(request, {');
     });
 });

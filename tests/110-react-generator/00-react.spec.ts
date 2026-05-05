@@ -34,8 +34,40 @@ describe('React Implementation', () => {
                     post: {
                         tags: ['Users'],
                         operationId: 'createUser',
+                        parameters: [
+                            {
+                                name: 'body',
+                                in: 'query',
+                                schema: { type: 'string' },
+                            },
+                        ],
                         responses: {
                             '201': { description: 'Created' },
+                        },
+                    },
+                },
+                '/foo-bar': {
+                    get: {
+                        tags: ['Collision'],
+                        responses: {
+                            '200': { description: 'Success' },
+                        },
+                    },
+                },
+                '/foo_bar': {
+                    get: {
+                        tags: ['Collision'],
+                        responses: {
+                            '200': { description: 'Success' },
+                        },
+                    },
+                },
+                '/invalid-chars': {
+                    get: {
+                        tags: ['Invalid'],
+                        operationId: 'my-invalid-name!',
+                        responses: {
+                            '200': { description: 'Success' },
                         },
                     },
                 },
@@ -44,6 +76,12 @@ describe('React Implementation', () => {
                         operationId: 'getUntagged',
                         responses: {
                             '200': { description: 'Success' },
+                        },
+                    },
+                    post: {
+                        operationId: 'postUntagged',
+                        responses: {
+                            '201': { description: 'Created' },
                         },
                     },
                 },
@@ -70,10 +108,33 @@ describe('React Implementation', () => {
         const hookFile = project.getSourceFile('/output/hooks/users.hook.ts');
         expect(hookFile).toBeDefined();
         const hookText = hookFile!.getFullText();
-        expect(hookText).toContain(`import { useMemo } from "react";`);
+        console.log('HOOK TEXT:', hookText);
+        expect(hookText).toContain(`import { useState } from "react";`);
+        expect(hookText).toContain(`import { useApiContext } from "../provider.js";`);
         expect(hookText).toContain(`import { UsersService } from "../services/users.service.js";`);
-        expect(hookText).toContain(`export function useUsersService() {`);
-        expect(hookText).toContain(`return useMemo(() => new UsersService(), []);`);
+        expect(hookText).toContain(`export function useUsersService()`);
+        expect(hookText).toContain(`const [service] = useState(() => new UsersService());`);
+        expect(hookText).toContain(`return service;`);
+
+        expect(hookText).toContain(
+            `export function useGetUsers(config?: SWRConfiguration<string | number | boolean | object | undefined | null, any>)`,
+        );
+        expect(hookText).toContain(`useSWR(`);
+        expect(hookText).toContain(`() => service.getUsers(apiConfig)`);
+
+        expect(hookText).toContain(
+            `export function useCreateUser(config?: SWRMutationConfiguration<string | number | boolean | object | undefined | null, any, any, any>)`,
+        );
+        expect(hookText).toContain(`useSWRMutation(`);
+        expect(hookText).toContain(`'createUser',`);
+        expect(hookText).toContain(`service.createUser(arg.body, apiConfig)`);
+
+        const collisionHookText = project.getSourceFile('/output/hooks/collision.hook.ts')!.getFullText();
+        expect(collisionHookText).toContain('useGetFooBar');
+        expect(collisionHookText).toContain('useGetFooBar2');
+
+        const invalidHookText = project.getSourceFile('/output/hooks/invalid.hook.ts')!.getFullText();
+        expect(invalidHookText).toContain('useMyInvalidName');
 
         expect(FetchClientGenerator.prototype.generate).toHaveBeenCalled();
     });

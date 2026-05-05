@@ -7,6 +7,7 @@ import {
     getInterceptorsTokenName,
     getServerVariablesTokenName,
     pascalCase,
+    camelCase,
 } from '@src/functions/utils.js';
 import { PROVIDER_GENERATOR_HEADER_COMMENT } from '@src/core/constants.js';
 
@@ -69,7 +70,10 @@ export class ProviderGenerator {
                 namedImports: ['EnvironmentProviders', 'Provider', 'makeEnvironmentProviders'],
                 moduleSpecifier: '@angular/core',
             },
-            { namedImports: ['HTTP_INTERCEPTORS', 'HttpInterceptor'], moduleSpecifier: '@angular/common/http' },
+            {
+                namedImports: ['provideHttpClient', 'withInterceptors', 'HttpInterceptorFn'],
+                moduleSpecifier: '@angular/common/http',
+            },
             {
                 namedImports: [
                     getBasePathTokenName(this.clientName),
@@ -79,21 +83,21 @@ export class ProviderGenerator {
                 moduleSpecifier: './tokens',
             },
             {
-                namedImports: [`${this.capitalizedClientName}BaseInterceptor`],
+                namedImports: [`${camelCase(this.clientName)}BaseInterceptor`],
                 moduleSpecifier: './utils/base-interceptor',
             },
         ]);
 
         if (this.config.options.dateType === 'Date') {
             sourceFile.addImportDeclaration({
-                namedImports: ['DateInterceptor'],
+                namedImports: ['dateInterceptor'],
                 moduleSpecifier: './utils/date-transformer',
             });
         }
 
         if (hasSecurity) {
             sourceFile.addImportDeclaration({
-                namedImports: ['AuthInterceptor'],
+                namedImports: ['authInterceptor'],
                 moduleSpecifier: './auth/auth.interceptor',
             });
 
@@ -136,9 +140,11 @@ export class ProviderGenerator {
                 },
                 {
                     name: 'interceptors',
-                    type: `(new (...args: Array<string | number | boolean | null>) => HttpInterceptor)[]`,
+                    type: `HttpInterceptorFn[] | (new (...args: Array<string | number | boolean | null>) => any)[]`,
                     hasQuestionToken: true,
-                    docs: ['An array of custom HttpInterceptor classes.'],
+                    docs: [
+                        'An array of HttpInterceptorFn (or custom HttpInterceptor classes for backwards compatibility).',
+                    ],
                 },
             ],
             docs: [`Configuration for the ${this.capitalizedClientName} API client.`],
@@ -201,20 +207,12 @@ export class ProviderGenerator {
                     writer.writeLine(
                         `{ provide: ${getServerVariablesTokenName(this.clientName)}, useValue: config.serverVariables || {} },`,
                     );
-
-                    writer.writeLine(
-                        `{ provide: HTTP_INTERCEPTORS, useClass: ${this.capitalizedClientName}BaseInterceptor, multi: true }`,
-                    );
                 });
 
                 writer.writeLine(`];`);
 
                 if (hasSecurity) {
                     writer.blankLine();
-
-                    writer.writeLine(
-                        `providers.push({ provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true });`,
-                    );
 
                     if (this.hasApiKey) {
                         writer.write('if (config.apiKey)').block(() => {
@@ -248,16 +246,22 @@ export class ProviderGenerator {
                 }
 
                 writer.blankLine();
-
-                writer.writeLine(
-                    'const customInterceptors = config.interceptors?.map(InterceptorClass => new InterceptorClass()) || [];',
-                );
-
+                writer.writeLine('const fns: HttpInterceptorFn[] = [];');
+                writer.writeLine(`fns.push(${camelCase(this.clientName)}BaseInterceptor);`);
+                if (hasSecurity) {
+                    writer.writeLine('fns.push(authInterceptor);');
+                }
                 if (this.config.options.dateType === 'Date') {
                     writer.write('if (config.enableDateTransform !== false)').block(() => {
-                        writer.writeLine('customInterceptors.unshift(new DateInterceptor());');
+                        writer.writeLine('fns.push(dateInterceptor);');
                     });
                 }
+                writer.writeLine('providers.push(provideHttpClient(withInterceptors(fns)));');
+
+                writer.blankLine();
+                writer.writeLine(
+                    'const customInterceptors = config.interceptors?.map(InterceptorClass => typeof InterceptorClass === "function" && !InterceptorClass.prototype?.intercept ? InterceptorClass : new (InterceptorClass as any)()) || [];',
+                );
 
                 writer.writeLine(
                     `providers.push({ provide: ${getInterceptorsTokenName(this.clientName)}, useValue: customInterceptors });`,

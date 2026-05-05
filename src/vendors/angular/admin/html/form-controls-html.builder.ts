@@ -12,121 +12,149 @@ export function buildErrorMessages(control: FormControlModel): HtmlElementBuilde
         switch (rule.type) {
             case 'required':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('required')) { This field is required. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('required')) { This field is required. }`,
+                        ),
                 );
 
                 break;
             case 'minLength':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('minlength')) { Must be at least ${rule.value} characters long. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('minlength')) { Must be at least ${rule.value} characters long. }`,
+                        ),
                 );
 
                 break;
             case 'maxLength':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('maxlength')) { Cannot exceed ${rule.value} characters. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('maxlength')) { Cannot exceed ${rule.value} characters. }`,
+                        ),
                 );
 
                 break;
             case 'min':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('min')) { Value must be at least ${rule.value}. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('min')) { Value must be at least ${rule.value}. }`,
+                        ),
                 );
 
                 break;
             case 'max':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('max')) { Value cannot exceed ${rule.value}. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('max')) { Value cannot exceed ${rule.value}. }`,
+                        ),
                 );
 
                 break;
             case 'exclusiveMinimum':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('exclusiveMinimum')) { Value must be greater than ${rule.value}. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('exclusiveMinimum')) { Value must be greater than ${rule.value}. }`,
+                        ),
                 );
 
                 break;
             case 'exclusiveMaximum':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('exclusiveMaximum')) { Value must be less than ${rule.value}. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('exclusiveMaximum')) { Value must be less than ${rule.value}. }`,
+                        ),
                 );
 
                 break;
             case 'pattern':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('pattern')) { Invalid format. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(`@if (form.get('${control.name}')?.hasError('pattern')) { Invalid format. }`),
                 );
 
                 break;
             case 'email':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('email')) { Please enter a valid email address. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('email')) { Please enter a valid email address. }`,
+                        ),
                 );
 
                 break;
             case 'multipleOf':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('multipleOf')) { Value must be a multiple of ${rule.value}. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('multipleOf')) { Value must be a multiple of ${rule.value}. }`,
+                        ),
                 );
 
                 break;
             case 'uniqueItems':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('uniqueItems')) { All items must be unique. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('uniqueItems')) { All items must be unique. }`,
+                        ),
                 );
 
                 break;
             case 'minItems':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('minlength')) { Must contain at least ${rule.value} items. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('minlength')) { Must contain at least ${rule.value} items. }`,
+                        ),
                 );
 
                 break;
             case 'maxItems':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('maxlength')) { Cannot contain more than ${rule.value} items. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('maxlength')) { Cannot contain more than ${rule.value} items. }`,
+                        ),
                 );
 
                 break;
             case 'const':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('const')) { Value must be {{ form.get('${control.name}')?.errors?.['const'].required }}. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('const')) { Value must be {{ form.get('${control.name}')?.errors?.['const'].required }}. }`,
+                        ),
                 );
 
                 break;
             case 'not':
                 errors.push(
-                    _.create('mat-error').setInnerHtml(
-                        `@if (form.get('${control.name}')?.hasError('not')) { Value matches a restricted format. }`,
-                    ),
+                    _.create('mat-error')
+                        .setAttribute('i18n', '')
+                        .setInnerHtml(
+                            `@if (form.get('${control.name}')?.hasError('not')) { Value matches a restricted format. }`,
+                        ),
                 );
 
                 break;
@@ -194,7 +222,7 @@ export function buildFormControl(control: FormControlModel): HtmlElementBuilder 
 function createInput(control: FormControlModel, label: string, type: 'text' | 'number'): HtmlElementBuilder {
     const field = _.create('mat-form-field');
 
-    field.appendChild(_.create('mat-label').setTextContent(label));
+    field.appendChild(_.create('mat-label').setAttribute('i18n', '').setTextContent(label));
 
     const input = _.create('input')
         .setAttribute('matInput', '')
@@ -217,7 +245,7 @@ function createDatepicker(control: FormControlModel, label: string): HtmlElement
 
     const field = _.create('mat-form-field');
 
-    field.appendChild(_.create('mat-label').setTextContent(label));
+    field.appendChild(_.create('mat-label').setAttribute('i18n', '').setTextContent(label));
 
     field.appendChild(
         _.create('input')
@@ -250,7 +278,7 @@ function createSelect(
         `@for (option of ${optionsName}; track option) {\n  <mat-option [value]="option">{{option}}</mat-option>\n}`,
     );
 
-    field.appendChild(_.create('mat-label').setTextContent(label));
+    field.appendChild(_.create('mat-label').setAttribute('i18n', '').setTextContent(label));
 
     field.appendChild(select);
 
@@ -268,6 +296,7 @@ function createFile(control: FormControlModel, label: string): HtmlElementBuilde
             .setAttribute('id', labelId)
             .setAttribute('for', inputId)
             .addClass('mat-body-1')
+            .setAttribute('i18n', '')
             .setTextContent(label),
     );
 
@@ -287,6 +316,7 @@ function createFile(control: FormControlModel, label: string): HtmlElementBuilde
             .setAttribute('type', 'button')
             .setAttribute('aria-labelledby', labelId)
             .setAttribute('(click)', `${inputId}.click()`)
+            .setAttribute('i18n', '')
             .setTextContent('Choose File'),
     );
 
@@ -312,7 +342,13 @@ function createRadio(control: FormControlModel, label: string, optionsName: stri
         `@for (option of ${optionsName}; track option) { <mat-radio-button [value]="option">{{option}}</mat-radio-button> }`,
     );
 
-    group.appendChild(_.create('label').setAttribute('id', labelId).addClass('mat-label').setTextContent(label));
+    group.appendChild(
+        _.create('label')
+            .setAttribute('id', labelId)
+            .addClass('mat-label')
+            .setAttribute('i18n', '')
+            .setTextContent(label),
+    );
     group.appendChild(radioGroup);
 
     return group;
@@ -326,10 +362,20 @@ function createToggle(control: FormControlModel, label: string): HtmlElementBuil
         .setAttribute('formControlName', control.name)
         .setAttribute('aria-labelledby', labelId);
 
-    toggleGroup.appendChild(_.create('mat-button-toggle').setAttribute('value', 'true').setTextContent('Yes'));
-    toggleGroup.appendChild(_.create('mat-button-toggle').setAttribute('value', 'false').setTextContent('No'));
+    toggleGroup.appendChild(
+        _.create('mat-button-toggle').setAttribute('value', 'true').setAttribute('i18n', '').setTextContent('Yes'),
+    );
+    toggleGroup.appendChild(
+        _.create('mat-button-toggle').setAttribute('value', 'false').setAttribute('i18n', '').setTextContent('No'),
+    );
 
-    group.appendChild(_.create('label').setAttribute('id', labelId).addClass('mat-label').setTextContent(label));
+    group.appendChild(
+        _.create('label')
+            .setAttribute('id', labelId)
+            .addClass('mat-label')
+            .setAttribute('i18n', '')
+            .setTextContent(label),
+    );
     group.appendChild(toggleGroup);
 
     return group;
@@ -344,7 +390,13 @@ function createSlider(
     const container = _.create('div').addClass('admin-slider-container');
     const labelId = `sliderLabel_${control.name}`;
 
-    container.appendChild(_.create('label').setAttribute('id', labelId).addClass('mat-label').setTextContent(label));
+    container.appendChild(
+        _.create('label')
+            .setAttribute('id', labelId)
+            .addClass('mat-label')
+            .setAttribute('i18n', '')
+            .setTextContent(label),
+    );
 
     container.appendChild(
         _.create('mat-slider')
@@ -370,7 +422,7 @@ function createChips(control: FormControlModel, label: string): HtmlElementBuild
         `@for (item of form.get('${control.name}')?.value; track item) {\n  <mat-chip-row>{{item}}</mat-chip-row>\n}`,
     );
 
-    field.appendChild(_.create('mat-label').setTextContent(label));
+    field.appendChild(_.create('mat-label').setAttribute('i18n', '').setTextContent(label));
 
     field.appendChild(chipGrid);
 
@@ -382,7 +434,7 @@ function createChips(control: FormControlModel, label: string): HtmlElementBuild
 function createTextarea(control: FormControlModel, label: string): HtmlElementBuilder {
     const field = _.create('mat-form-field');
 
-    field.appendChild(_.create('mat-label').setTextContent(label));
+    field.appendChild(_.create('mat-label').setAttribute('i18n', '').setTextContent(label));
 
     const area = _.create('textarea').setAttribute('matInput', '').setAttribute('formControlName', control.name);
 
@@ -396,7 +448,7 @@ function createTextarea(control: FormControlModel, label: string): HtmlElementBu
 function createFormGroup(control: FormControlModel): HtmlElementBuilder {
     const container = _.create('div').addClass('admin-form-group').setAttribute('formGroupName', control.name);
 
-    container.appendChild(_.create('h3').setTextContent(pascalCase(control.name)));
+    container.appendChild(_.create('h3').setAttribute('i18n', '').setTextContent(pascalCase(control.name)));
 
     for (const nestedControl of control.nestedControls!) {
         const builder = buildFormControl(nestedControl);
@@ -410,16 +462,13 @@ function createFormGroup(control: FormControlModel): HtmlElementBuilder {
 function createFormArray(control: FormControlModel, label: string): HtmlElementBuilder {
     const container = _.create('div').addClass('admin-form-array');
 
-    container.appendChild(_.create('h3').setTextContent(label));
+    container.appendChild(_.create('h3').setAttribute('i18n', '').setTextContent(label));
 
     const arrayContainer = _.create('div').setAttribute('formArrayName', control.name);
 
-    const itemContainer = _.create('div').setAttribute(
-        '@for',
-        `item of ${camelCase(control.name)}Array.controls; track $index; let i = $index;`,
-    );
+    const itemWrapper = _.create('div');
 
-    itemContainer.setAttribute('[formGroupName]', 'i');
+    const itemContainer = _.create('div').setAttribute('[formGroupName]', 'i');
 
     if (control.nestedControls) {
         for (const nestedControl of control.nestedControls) {
@@ -431,13 +480,19 @@ function createFormArray(control: FormControlModel, label: string): HtmlElementB
 
     itemContainer.appendChild(
         _.create('button')
+            .setAttribute('type', 'button')
             .setAttribute('mat-icon-button', '')
             .setAttribute('color', 'warn')
             .setAttribute('(click)', `remove${pascalCase(singular(control.name))}(i)`)
             .appendChild(_.create('mat-icon').setTextContent('delete')),
     );
 
-    arrayContainer.appendChild(itemContainer);
+    const innerItemHtml = itemContainer.render(1);
+    itemWrapper.setInnerHtml(
+        `@for (item of ${camelCase(control.name)}Array.controls; track $index; let i = $index) {\n${innerItemHtml}\n}`,
+    );
+
+    arrayContainer.appendChild(itemWrapper);
 
     container.appendChild(arrayContainer);
 
@@ -446,6 +501,7 @@ function createFormArray(control: FormControlModel, label: string): HtmlElementB
             .setAttribute('mat-stroked-button', '')
             .setAttribute('type', 'button')
             .setAttribute('(click)', `add${pascalCase(singular(control.name))}()`)
+            .setAttribute('i18n', '')
             .setTextContent(`Add ${pascalCase(singular(control.name))}`),
     );
 
@@ -455,22 +511,19 @@ function createFormArray(control: FormControlModel, label: string): HtmlElementB
 function createMapEditor(control: FormControlModel, label: string): HtmlElementBuilder {
     const container = _.create('div').addClass('admin-map-editor');
 
-    container.appendChild(_.create('h3').setTextContent(label));
+    container.appendChild(_.create('h3').setAttribute('i18n', '').setTextContent(label));
 
     const arrayContainer = _.create('div').setAttribute('formArrayName', control.name);
 
     const mapGetter = `${camelCase(control.name)}Map`;
 
-    const loopContainer = _.create('div').setAttribute(
-        '@for',
-        `pair of ${mapGetter}.controls; track $index; let i = $index;`,
-    );
+    const loopWrapper = _.create('div');
 
-    loopContainer.setAttribute('[formGroupName]', 'i').addClass('map-pair-row');
+    const loopContainer = _.create('div').setAttribute('[formGroupName]', 'i').addClass('map-pair-row');
 
     const keyField = _.create('mat-form-field').addClass('map-key-field');
 
-    keyField.appendChild(_.create('mat-label').setTextContent('Key'));
+    keyField.appendChild(_.create('mat-label').setAttribute('i18n', '').setTextContent('Key'));
 
     keyField.appendChild(_.create('input').setAttribute('matInput', '').setAttribute('formControlName', 'key'));
 
@@ -488,13 +541,19 @@ function createMapEditor(control: FormControlModel, label: string): HtmlElementB
 
     loopContainer.appendChild(
         _.create('button')
+            .setAttribute('type', 'button')
             .setAttribute('mat-icon-button', '')
             .setAttribute('color', 'warn')
             .setAttribute('(click)', `remove${pascalCase(control.name)}Entry(i)`)
             .appendChild(_.create('mat-icon').setTextContent('delete')),
     );
 
-    arrayContainer.appendChild(loopContainer);
+    const innerLoopHtml = loopContainer.render(1);
+    loopWrapper.setInnerHtml(
+        `@for (pair of ${mapGetter}.controls; track $index; let i = $index) {\n${innerLoopHtml}\n}`,
+    );
+
+    arrayContainer.appendChild(loopWrapper);
 
     container.appendChild(arrayContainer);
 
@@ -503,6 +562,7 @@ function createMapEditor(control: FormControlModel, label: string): HtmlElementB
             .setAttribute('mat-stroked-button', '')
             .setAttribute('type', 'button')
             .setAttribute('(click)', `add${pascalCase(control.name)}Entry()`)
+            .setAttribute('i18n', '')
             .setTextContent(`Add Entry`),
     );
 
