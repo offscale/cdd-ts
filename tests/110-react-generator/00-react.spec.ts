@@ -4,7 +4,6 @@ import { FetchClientGenerator } from '../../src/vendors/fetch/fetch-client.gener
 import { Project } from 'ts-morph';
 import { SwaggerParser } from '../../src/openapi/parse.js';
 import { GeneratorConfig } from '../../src/core/types/index.js';
-import * as path from 'node:path';
 
 describe('React Implementation', () => {
     beforeEach(() => {
@@ -137,5 +136,33 @@ describe('React Implementation', () => {
         expect(invalidHookText).toContain('useMyInvalidName');
 
         expect(FetchClientGenerator.prototype.generate).toHaveBeenCalled();
+    });
+
+    it('should generate admin UI if config.options.admin is true', async () => {
+        const project = new Project({ useInMemoryFileSystem: true });
+        const config = { options: { admin: true } } as unknown as GeneratorConfig;
+
+        const spec = {
+            openapi: '3.1.0',
+            info: { title: 'Test API', version: '1.0.0' },
+            paths: {
+                '/admin-users': {
+                    get: {
+                        tags: ['AdminUsers'],
+                        operationId: 'getAdminUsers',
+                        responses: {
+                            '200': { description: 'Success' },
+                        },
+                    },
+                },
+            },
+        };
+        const parser = new SwaggerParser(spec, {} as any);
+
+        const generator = new ReactClientGenerator();
+        await generator.generate(project, parser, config, '/out');
+
+        // Check that an admin generator was run (app.tsx is created by Admin Generator's Master Routing)
+        expect(project.getSourceFile('/out/admin/app.tsx')).toBeDefined();
     });
 });

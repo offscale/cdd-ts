@@ -6,6 +6,7 @@ import { AbstractClientGenerator } from '../../core/generator.js';
 import { FetchClientGenerator } from '../fetch/fetch-client.generator.js';
 import { camelCase, pascalCase } from '@src/functions/utils.js';
 import { ServiceMethodAnalyzer } from '@src/functions/parse_analyzer.js';
+import { ReactAdminGenerator } from './admin/admin.generator.js';
 
 function getControllerCanonicalName(op: PathInfo): string {
     if (Array.isArray(op.tags) && op.tags[0]) {
@@ -48,6 +49,11 @@ export class ReactClientGenerator extends AbstractClientGenerator {
         // React utilizes the Fetch client primitives
         const baseGenerator = new FetchClientGenerator();
         await baseGenerator.generate(project, parser, config, outputRoot);
+
+        if (config.options?.admin) {
+            const adminGenerator = new ReactAdminGenerator(parser, project);
+            await adminGenerator.generate(outputRoot);
+        }
 
         project.createSourceFile(
             path.join(outputRoot, 'provider.tsx'),
