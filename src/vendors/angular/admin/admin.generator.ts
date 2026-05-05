@@ -11,6 +11,7 @@ import { RoutingGenerator } from './routing.generator.js';
 import { CustomValidatorsGenerator } from './custom-validators.generator.js';
 import { ElementsGenerator } from './elements.generator.js';
 import { I18nGenerator } from './i18n.generator.js';
+import { AdminTestGenerator } from './admin-test.generator.js';
 
 /**
  * Main coordinator for generating the Angular Admin Interface.
@@ -63,10 +64,14 @@ export class AdminGenerator {
 
         const i18nGen = new I18nGenerator(this.project);
 
+        const testGen = new AdminTestGenerator(this.project);
+
         let needsCustomValidators = false;
 
         for (const resource of this.allResources) {
             console.log(`  -> Generating for resource: ${resource.name}`);
+
+            const resourceDir = path.join(adminDir, resource.name);
 
             if (resource.operations.some(op => op.action === 'list')) {
                 listGen.generate(resource, adminDir);
@@ -81,6 +86,7 @@ export class AdminGenerator {
             }
 
             routeGen.generate(resource, adminDir);
+            testGen.generate(resource, resourceDir);
         }
 
         routeGen.generateMaster(this.allResources, adminDir);
