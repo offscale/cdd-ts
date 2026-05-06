@@ -37,6 +37,7 @@ interface CliOptions {
     generateServices?: boolean;
     testsForService?: boolean;
     testsForAdmin?: boolean;
+    noTestGen?: boolean;
     noGithubActions?: boolean;
     noInstallablePackage?: boolean;
     orm?: 'typeorm';
@@ -391,6 +392,7 @@ const addFromOpenApiOptions = (cmd: Command) => {
                 'CDD_NO_TESTS_FOR_ADMIN',
             ),
         )
+        .addOption(new Option('--no-test-gen', 'Disable all test generation').env('CDD_NO_TEST_GEN'))
         .addOption(
             new Option('--no-github-actions', 'Disable generation of github actions scaffolding').env(
                 'CDD_NO_GITHUB_ACTIONS',
