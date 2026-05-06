@@ -5,7 +5,12 @@ import { SwaggerParser } from '../../src/openapi/parse.js';
 import { GeneratorConfig } from '../../src/core/types/config.js';
 
 class MockGenerator extends AbstractClientGenerator {
-    async generate(project: Project, parser: SwaggerParser, config: GeneratorConfig, outputDir: string): Promise<void> {
+    async generate(
+        _project: Project,
+        _parser: SwaggerParser,
+        _config: GeneratorConfig,
+        _outputDir: string,
+    ): Promise<void> {
         // Mock implementation
     }
 }

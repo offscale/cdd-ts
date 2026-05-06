@@ -253,7 +253,7 @@ describe('ReactElementBuilder', () => {
         expect(result).toContain('<span/>');
     });
     it('builds an input element', () => {
-        const result = ReactElementBuilder.buildInput('myField', 'number');
+        const result = ReactElementBuilder.buildInput('myField', 'number', false);
         expect(result).toContain('name="myField"');
         expect(result).toContain('type="number"');
     });

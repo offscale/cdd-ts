@@ -45,7 +45,6 @@ vi.mock('node:fs', async importOriginal => {
 
 describe('cli.ts', () => {
     let run: (argv: string[]) => Promise<void>;
-    let consoleLogSpy: import('vitest').MockInstance;
     let consoleWarnSpy: import('vitest').MockInstance;
     let consoleErrorSpy: import('vitest').MockInstance;
     let stdoutSpy: import('vitest').MockInstance;
@@ -77,13 +76,13 @@ describe('cli.ts', () => {
         vi.resetModules();
         vi.clearAllMocks();
 
-        consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        vi.spyOn(console, 'log').mockImplementation(() => {});
         consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
 
         mockServer = {
-            listen: vi.fn((port: number, host: string, cb: () => void) => {
+            listen: vi.fn((_port: number, _host: string, cb: () => void) => {
                 if (cb) cb();
                 return mockServer;
             }),
@@ -134,7 +133,10 @@ describe('cli.ts', () => {
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
             expect(indexModule.generateFromConfig).toHaveBeenCalled();
-            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as Record<string, unknown>;
+            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as unknown as Record<
+                string,
+                unknown
+            >;
             expect(config.input).toBe('test.json');
         });
 
@@ -166,7 +168,10 @@ describe('cli.ts', () => {
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
             expect(indexModule.generateFromConfig).toHaveBeenCalled();
-            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as Record<string, unknown>;
+            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as unknown as Record<
+                string,
+                unknown
+            >;
             expect(config.input).toBe(path.resolve(process.cwd(), 'dummy.json'));
         });
 
@@ -189,7 +194,10 @@ describe('cli.ts', () => {
             await run(['node', 'cli.js', 'from_openapi', 'to_sdk', '-i', 'spec.json', '-o', 'outdir']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
-            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as Record<string, unknown>;
+            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as unknown as Record<
+                string,
+                unknown
+            >;
             expect(config.output).toBe(path.resolve(process.cwd(), 'outdir'));
         });
 

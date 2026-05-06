@@ -7,7 +7,7 @@ import { FetchClientGenerator } from '../../src/vendors/fetch/fetch-client.gener
 import { AxiosClientGenerator } from '../../src/vendors/axios/axios-client.generator.js';
 import { NodeClientGenerator } from '../../src/vendors/node/node-client.generator.js';
 import { Project } from 'ts-morph';
-import { GeneratorConfig, SwaggerSpec } from '../../src/core/types/index.js';
+import { GeneratorConfig } from '../../src/core/types/index.js';
 import * as utils from '../../src/functions/utils.js';
 import { SwaggerParser } from '../../src/openapi/parse.js';
 
@@ -126,7 +126,7 @@ describe('index.ts', () => {
         });
 
         it('should default framework to angular if not provided', async () => {
-            config.options.framework = undefined;
+            delete config.options.framework;
             const testConfig = {
                 spec: {
                     openapi: '3.0.0',
