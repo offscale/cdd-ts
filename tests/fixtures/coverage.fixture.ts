@@ -119,6 +119,30 @@ export const coverageSpec = {
                 },
             },
         },
+        '/complex-only': {
+            post: {
+                tags: ['ComplexOnly'],
+                operationId: 'createComplex',
+                requestBody: {
+                    content: { 'application/json': { schema: { $ref: '#/components/schemas/ComplexOnly' } } },
+                },
+                responses: { '200': { description: 'ok' } },
+            },
+            get: {
+                tags: ['ComplexOnly'],
+                operationId: 'listComplex',
+                responses: {
+                    '200': {
+                        description: 'ok',
+                        content: {
+                            'application/json': {
+                                schema: { type: 'array', items: { $ref: '#/components/schemas/ComplexOnly' } },
+                            },
+                        },
+                    },
+                },
+            },
+        },
         '/no-content': {
             delete: {
                 tags: ['NoContent'],
@@ -131,7 +155,18 @@ export const coverageSpec = {
         ...fullCRUD_Users.components,
         schemas: {
             ...fullCRUD_Users.components.schemas,
-            Publication: { type: 'object' },
+            Publication: {
+                type: 'object',
+                properties: {
+                    title: { type: 'string' },
+                    isPublished: { type: 'boolean' },
+                    pageCount: { type: 'number' },
+                },
+            },
+            ComplexOnly: {
+                type: 'object',
+                properties: { nested: { type: 'object', properties: { foo: { type: 'string' } } } },
+            },
             Event: { type: 'object', properties: { eventId: { type: 'string' }, timestamp: { type: 'string' } } },
         },
     },

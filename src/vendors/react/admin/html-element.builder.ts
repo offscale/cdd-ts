@@ -27,7 +27,7 @@ export class ReactElementBuilder {
      * @param required Indicates if the input is required for aria-required.
      * @returns The JSX string for the input.
      */
-    public static buildInput(name: string, type: string = 'text', required: boolean = false): string {
+    public static buildInput(name: string, type: string, required: boolean): string {
         const requiredAttr = required ? ' required aria-required="true"' : '';
         return `            <div className="form-group">\n                <label htmlFor="${name}">{t('field.${name}', '${name}')}</label>\n                <input type="${type}" id="${name}" name="${name}" defaultValue=""${requiredAttr} aria-invalid={false} aria-describedby={\`${name}-error\`} />\n                <span id={\`${name}-error\`} className="error-message" aria-live="polite"></span>\n            </div>`;
     }
