@@ -19,7 +19,7 @@ describe('Admin: discoverAdminResources', () => {
         const resources = discoverAdminResources(parser);
         const usersResource = resources.find(r => r.name === 'users');
 
-        expect(resources.length).toBe(12);
+        expect(resources.length).toBe(13);
         expect(usersResource).toBeDefined();
         expect(usersResource?.modelName).toBe('User');
         expect(usersResource?.isEditable).toBe(true);
