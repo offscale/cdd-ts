@@ -41,6 +41,9 @@ interface CliOptions {
     noInstallablePackage?: boolean;
     orm?: 'typeorm';
     serverFramework?: 'express' | 'node' | 'bun' | 'deno';
+    int64Type?: 'number' | 'string' | 'bigint';
+    platform?: 'browser' | 'node';
+    customHeader?: string[];
 }
 
 /** Defines the shape of the options object from the 'to_openapi' command. */
@@ -94,6 +97,17 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
         if (options.testsForAdmin !== undefined) cliOptions.generateAdminTests = options.testsForAdmin;
         if (options.orm) cliOptions.orm = options.orm;
         if (options.serverFramework) cliOptions.serverFramework = options.serverFramework;
+        if (options.int64Type) cliOptions.int64Type = options.int64Type;
+        if (options.platform) cliOptions.platform = options.platform;
+        if (options.customHeader && options.customHeader.length > 0) {
+            cliOptions.customHeaders = {};
+            for (const header of options.customHeader) {
+                const [key, ...valueParts] = header.split(':');
+                if (key && valueParts.length > 0) {
+                    cliOptions.customHeaders[key.trim()] = valueParts.join(':').trim();
+                }
+            }
+        }
 
         const defaults: GeneratorConfigOptions = {
             framework: 'angular',
@@ -367,6 +381,22 @@ const addFromOpenApiOptions = (cmd: Command) => {
         .addOption(new Option('--dateType <type>', 'Date type to use').choices(['string', 'Date']).env('CDD_DATE_TYPE'))
         .addOption(
             new Option('--enumStyle <style>', 'Style for enums').choices(['enum', 'union']).env('CDD_ENUM_STYLE'),
+        )
+        .addOption(
+            new Option('--int64Type <type>', 'Type for int64 formatting')
+                .choices(['number', 'string', 'bigint'])
+                .env('CDD_INT64_TYPE'),
+        )
+        .addOption(
+            new Option('--platform <platform>', 'Target runtime platform')
+                .choices(['browser', 'node'])
+                .env('CDD_PLATFORM'),
+        )
+        .addOption(
+            new Option(
+                '--customHeader <header...>',
+                'Custom headers to add to generated requests, formatted as Key:Value',
+            ),
         )
         .addOption(
             new Option('--orm <type>', 'Target ORM implementation for models').choices(['typeorm']).env('CDD_ORM'),
