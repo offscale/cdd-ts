@@ -14,7 +14,7 @@ describe('Vue Admin Generation', () => {
         });
 
         // Call a second time to cover directoryExistsSync(dir) branch
-        const parser = new SwaggerParser(coverageSpec as any, {});
+        const parser = new SwaggerParser(coverageSpec as any, {} as any);
         const adminGen = new VueAdminGenerator(parser, project);
         await adminGen.generate('/generated');
 

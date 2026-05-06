@@ -356,29 +356,16 @@ async function runToDocsJson(options: DocsJsonOptions, returnObject = false): Pr
 }
 
 const program = new Command();
-program.name('cdd-ts').description('OpenAPI ↔ Angular').version(packageJson.version);
+program.name('cdd-ts').description('OpenAPI ↔ TypeScript').version(packageJson.version);
 
 const fromOpenApi = program.command('from_openapi').description('Generate code from OpenAPI');
 
-const addFromOpenApiOptions = (cmd: Command) => {
+const addCommonOptions = (cmd: Command) => {
     return cmd
         .addOption(new Option('-c, --config <path>', 'Path to a configuration file').env('CDD_CONFIG'))
         .addOption(new Option('-i, --input <path>', 'Path or URL to the OpenAPI spec').env('CDD_INPUT'))
         .addOption(new Option('--input-dir <path>', 'Path to directory of OpenAPI specs').env('CDD_INPUT_DIR'))
         .addOption(new Option('-o, --output <path>', 'Output directory for generated files').env('CDD_OUTPUT'))
-        .addOption(new Option('--clientName <name>', 'Name for the generated client').env('CDD_CLIENT_NAME'))
-        .addOption(
-            new Option('--framework <framework>', 'Target framework')
-                .choices(['angular', 'react', 'vue'])
-                .default('angular')
-                .env('CDD_FRAMEWORK'),
-        )
-        .addOption(
-            new Option('--implementation <implementation>', 'HTTP implementation')
-                .choices(['angular', 'fetch', 'axios', 'node'])
-                .default('angular')
-                .env('CDD_IMPLEMENTATION'),
-        )
         .addOption(new Option('--dateType <type>', 'Date type to use').choices(['string', 'Date']).env('CDD_DATE_TYPE'))
         .addOption(
             new Option('--enumStyle <style>', 'Style for enums').choices(['enum', 'union']).env('CDD_ENUM_STYLE'),
@@ -387,40 +374,6 @@ const addFromOpenApiOptions = (cmd: Command) => {
             new Option('--int64Type <type>', 'Type for int64 formatting')
                 .choices(['number', 'string', 'bigint'])
                 .env('CDD_INT64_TYPE'),
-        )
-        .addOption(
-            new Option('--platform <platform>', 'Target runtime platform')
-                .choices(['browser', 'node'])
-                .env('CDD_PLATFORM'),
-        )
-        .addOption(
-            new Option(
-                '--customHeader <header...>',
-                'Custom headers to add to generated requests, formatted as Key:Value',
-            ),
-        )
-        .addOption(
-            new Option('--orm <type>', 'Target ORM implementation for models').choices(['typeorm']).env('CDD_ORM'),
-        )
-        .addOption(
-            new Option('--serverFramework <type>', 'Target server framework')
-                .choices(['express', 'node', 'bun', 'deno'])
-                .default('express')
-                .env('CDD_SERVER_FRAMEWORK'),
-        )
-        .addOption(new Option('--admin', 'Generate an auto-admin UI').env('CDD_ADMIN'))
-        .addOption(
-            new Option('--no-generate-services', 'Disable generation of services').env('CDD_NO_GENERATE_SERVICES'),
-        )
-        .addOption(
-            new Option('--no-tests-for-service', 'Disable generation of tests for services').env(
-                'CDD_NO_TESTS_FOR_SERVICE',
-            ),
-        )
-        .addOption(
-            new Option('--no-tests-for-admin', 'Disable generation of tests for the admin UI').env(
-                'CDD_NO_TESTS_FOR_ADMIN',
-            ),
         )
         .addOption(new Option('--no-test-gen', 'Disable all test generation').env('CDD_NO_TEST_GEN'))
         .addOption(
@@ -435,7 +388,68 @@ const addFromOpenApiOptions = (cmd: Command) => {
         );
 };
 
-addFromOpenApiOptions(fromOpenApi.command('to_sdk_cli'))
+const addSdkOptions = (cmd: Command) => {
+    return cmd
+        .addOption(new Option('--clientName <name>', 'Name for the generated client').env('CDD_CLIENT_NAME'))
+        .addOption(
+            new Option('--framework <framework>', 'Target framework')
+                .choices(['angular', 'react', 'vue'])
+                .default('angular')
+                .env('CDD_FRAMEWORK'),
+        )
+        .addOption(
+            new Option('--implementation <implementation>', 'HTTP implementation')
+                .choices(['angular', 'fetch', 'axios', 'node'])
+                .default('angular')
+                .env('CDD_IMPLEMENTATION'),
+        )
+        .addOption(
+            new Option('--platform <platform>', 'Target runtime platform')
+                .choices(['browser', 'node'])
+                .env('CDD_PLATFORM'),
+        )
+        .addOption(
+            new Option(
+                '--customHeader <header...>',
+                'Custom headers to add to generated requests, formatted as Key:Value',
+            ),
+        )
+        .addOption(new Option('--admin', 'Generate an auto-admin UI').env('CDD_ADMIN'))
+        .addOption(
+            new Option('--no-generate-services', 'Disable generation of services').env('CDD_NO_GENERATE_SERVICES'),
+        )
+        .addOption(
+            new Option('--no-tests-for-service', 'Disable generation of tests for services').env(
+                'CDD_NO_TESTS_FOR_SERVICE',
+            ),
+        )
+        .addOption(
+            new Option('--no-tests-for-admin', 'Disable generation of tests for the admin UI').env(
+                'CDD_NO_TESTS_FOR_ADMIN',
+            ),
+        );
+};
+
+const addServerOptions = (cmd: Command) => {
+    return cmd
+        .addOption(
+            new Option('--serverFramework <type>', 'Target server framework')
+                .choices(['express', 'node', 'bun', 'deno'])
+                .default('express')
+                .env('CDD_SERVER_FRAMEWORK'),
+        )
+        .addOption(
+            new Option('--orm <type>', 'Target ORM implementation for models').choices(['typeorm']).env('CDD_ORM'),
+        );
+};
+
+const addOrmOptions = (cmd: Command) => {
+    return cmd.addOption(
+        new Option('--orm <type>', 'Target ORM implementation for models').choices(['typeorm']).env('CDD_ORM'),
+    );
+};
+
+addSdkOptions(addCommonOptions(fromOpenApi.command('to_sdk_cli')))
     .description('Generate Client SDK CLI from an OpenAPI specification')
     .action(async (options: CliOptions) => {
         try {
@@ -446,7 +460,7 @@ addFromOpenApiOptions(fromOpenApi.command('to_sdk_cli'))
         }
     });
 
-addFromOpenApiOptions(fromOpenApi.command('to_sdk'))
+addSdkOptions(addCommonOptions(fromOpenApi.command('to_sdk')))
     .description('Generate Client SDK from an OpenAPI specification')
     .action(async (options: CliOptions) => {
         try {
@@ -457,7 +471,7 @@ addFromOpenApiOptions(fromOpenApi.command('to_sdk'))
         }
     });
 
-addFromOpenApiOptions(fromOpenApi.command('to_server'))
+addServerOptions(addCommonOptions(fromOpenApi.command('to_server')))
     .description('Generate Server from an OpenAPI specification')
     .action(async (options: CliOptions) => {
         try {
@@ -468,7 +482,7 @@ addFromOpenApiOptions(fromOpenApi.command('to_server'))
         }
     });
 
-addFromOpenApiOptions(fromOpenApi.command('to_orm'))
+addOrmOptions(addCommonOptions(fromOpenApi.command('to_orm')))
     .description('Generate ORM entities/models from an OpenAPI specification')
     .action(async (options: CliOptions) => {
         if (!options.orm) {
