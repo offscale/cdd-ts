@@ -41,7 +41,7 @@ test:
 run: build
 	node $(BIN_DIR)/cli.js $(ARGS)
 
-build_wasm:
+build_wasm: build
 	@echo "Building WASM (browser bundle)..."
 	npx esbuild dist/index.js --bundle --minify --platform=browser --target=es2020 --alias:node:path=path-browserify --alias:node:url=./wasm-stubs/node-url.js --alias:node:fs=./wasm-stubs/node-fs.js --alias:node:fs/promises=./wasm-stubs/node-fs-promises.js --alias:node:os=./wasm-stubs/node-os.js --outfile=bin/cdd-ts.js
 	@echo "Compiling to WebAssembly..."
