@@ -14,6 +14,7 @@ tmp*
 *.spec.js
 *.d.ts
 *.js
+!wasm-stubs/*.js
 
 # Temporary evaluation & fix scripts
 evaluate*.cjs
