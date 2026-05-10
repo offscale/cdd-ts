@@ -1,4 +1,4 @@
-import { CallExpression, SourceFile, SyntaxKind, StringLiteral, NoSubstitutionTemplateLiteral } from 'ts-morph';
+import { CallExpression, SourceFile, SyntaxKind, Node } from 'ts-morph';
 
 export interface ParsedTestBlock {
     description: string;
@@ -36,11 +36,11 @@ function extractTestBlock(callExpr: CallExpression, processedNodes: Set<any>): P
         return undefined;
     }
 
-    const firstArg = args[0] as any;
+    const firstArg = args[0] as Node;
     let description = '';
 
-    if (firstArg.isKind(SyntaxKind.StringLiteral) || firstArg.isKind(SyntaxKind.NoSubstitutionTemplateLiteral)) {
-        description = (firstArg as StringLiteral | NoSubstitutionTemplateLiteral).getLiteralText();
+    if (Node.isStringLiteral(firstArg) || Node.isNoSubstitutionTemplateLiteral(firstArg)) {
+        description = firstArg.getLiteralText();
     } else {
         description = firstArg.getText();
     }
@@ -49,12 +49,12 @@ function extractTestBlock(callExpr: CallExpression, processedNodes: Set<any>): P
     const children: ParsedTestBlock[] = [];
 
     if (type === 'describe') {
-        const bodyFn = args[1] as any;
-        if (bodyFn && (bodyFn.isKind(SyntaxKind.ArrowFunction) || bodyFn.isKind(SyntaxKind.FunctionExpression))) {
+        const bodyFn = args[1] as Node;
+        if (bodyFn && (Node.isArrowFunction(bodyFn) || Node.isFunctionExpression(bodyFn))) {
             const nestedCalls = bodyFn.getDescendantsOfKind(SyntaxKind.CallExpression);
             for (const nestedCall of nestedCalls) {
                 if (!processedNodes.has(nestedCall)) {
-                    const nestedBlock = extractTestBlock(nestedCall as any, processedNodes);
+                    const nestedBlock = extractTestBlock(nestedCall, processedNodes);
                     if (nestedBlock) {
                         children.push(nestedBlock);
                     }

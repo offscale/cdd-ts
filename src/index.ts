@@ -73,32 +73,32 @@ export function generateFromConfigSync(
 ): void {
     const isTestEnv = !!testConfig;
 
-    const isJavy = typeof globalThis !== 'undefined' && (globalThis as any).__FsData;
+    const isJavy: boolean = typeof globalThis !== 'undefined' && !!(globalThis as { __FsData?: unknown }).__FsData;
     const fsPolyfill = isJavy
         ? ({
               getCurrentDirectory: () => '/',
               directoryExistsSync: () => true,
               fileExistsSync: (p: string) => {
-                  const fs = require('node:fs');
+                  const fs = require('node:fs') as typeof import('node:fs');
                   return fs.existsSync(p);
               },
               readFileSync: (p: string) => {
-                  const fs = require('node:fs');
+                  const fs = require('node:fs') as typeof import('node:fs');
                   return fs.readFileSync(p, 'utf8');
               },
               readdirSync: () => [],
-              statSync: () => ({ isDirectory: () => false, isFile: () => true }) as any,
+              statSync: () => ({ isDirectory: () => false, isFile: () => true }),
               realpathSync: (p: string) => p,
               mkdirSync: () => {},
               writeFileSync: (p: string, d: string) => {
-                  const fs = require('node:fs');
+                  const fs = require('node:fs') as typeof import('node:fs');
                   fs.writeFileSync(p, d);
               },
               deleteSync: () => {},
               moveSync: () => {},
               copySync: () => {},
               isCaseSensitive: () => true,
-          } as any)
+          } as unknown)
         : undefined;
 
     const activeProject =
@@ -111,7 +111,7 @@ export function generateFromConfigSync(
                 strict: true,
                 ...config.compilerOptions,
             },
-            fileSystem: fsPolyfill,
+            fileSystem: fsPolyfill as unknown as import('ts-morph').FileSystemHost,
         });
 
     console.log('==> TRACE: new Project() finished');
@@ -162,7 +162,7 @@ export function generateFromConfigSync(
                 const schemas = swaggerParser.schemas;
 
                 if (schemas && schemas.length > 0) {
-                    const path = require('node:path');
+                    const path = require('node:path') as typeof import('node:path');
                     const entitiesDir = path.join(config.output, 'entities');
                     for (const schema of schemas) {
                         if (

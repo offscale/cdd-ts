@@ -220,17 +220,17 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
         }
 
         return 'Success';
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('runGeneration error:', error);
-        if (error && error.stack) console.error(error.stack);
+        if (error instanceof Error && error.stack) console.error(error.stack);
         throw error;
     } finally {
         const duration = (Date.now() - startTime) / 1000;
         console.log(`\n⏱️  Duration: ${duration.toFixed(2)} seconds`);
 
         // Print the fs dump here before Javy potentially traps
-        if (typeof globalThis !== 'undefined' && (globalThis as any).__FsData) {
-            console.log('JAVY_FS_DUMP:' + JSON.stringify((globalThis as any).__FsData));
+        if (typeof globalThis !== 'undefined' && (globalThis as { __FsData?: unknown }).__FsData) {
+            console.log('JAVY_FS_DUMP:' + JSON.stringify((globalThis as { __FsData?: unknown }).__FsData));
         }
     }
 }
@@ -482,9 +482,9 @@ addSdkOptions(addCommonOptions(fromOpenApi.command('to_sdk_cli')))
         console.log('OPTIONS IS:', JSON.stringify(options));
         try {
             await runGeneration(options, 'to_sdk_cli');
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
-            if (err.stack) console.error(err.stack);
+            if (err instanceof Error && err.stack) console.error(err.stack);
             process.exit(1);
         }
     });
@@ -494,9 +494,9 @@ addSdkOptions(addCommonOptions(fromOpenApi.command('to_sdk')))
     .action(async (options: CliOptions) => {
         try {
             await runGeneration(options, 'to_sdk');
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
-            if (err.stack) console.error(err.stack);
+            if (err instanceof Error && err.stack) console.error(err.stack);
             process.exit(1);
         }
     });
@@ -506,9 +506,9 @@ addServerOptions(addCommonOptions(fromOpenApi.command('to_server')))
     .action(async (options: CliOptions) => {
         try {
             await runGeneration(options, 'to_server');
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
-            if (err.stack) console.error(err.stack);
+            if (err instanceof Error && err.stack) console.error(err.stack);
             process.exit(1);
         }
     });
@@ -522,9 +522,9 @@ addOrmOptions(addCommonOptions(fromOpenApi.command('to_orm')))
         }
         try {
             await runGeneration(options, 'to_orm');
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
-            if (err.stack) console.error(err.stack);
+            if (err instanceof Error && err.stack) console.error(err.stack);
             process.exit(1);
         }
     });
@@ -697,8 +697,8 @@ if (isMain) {
         console.error(err);
         process.exit(1);
     });
-} else if (typeof globalThis !== 'undefined' && (globalThis as any).__FsData) {
-    const Javy = (globalThis as any).Javy;
+} else if (typeof globalThis !== 'undefined' && (globalThis as { __FsData?: unknown }).__FsData) {
+    const Javy = (globalThis as { Javy?: { IO?: { readSync: (fd: number, buffer: Uint8Array) => number } } }).Javy;
     if (Javy && Javy.IO) {
         const buffer = new Uint8Array(10 * 1024 * 1024);
         const bytesRead = Javy.IO.readSync(0, buffer);
@@ -706,23 +706,26 @@ if (isMain) {
 
         if (stdinContent) {
             try {
-                const parsed = JSON.parse(stdinContent);
+                const parsed = JSON.parse(stdinContent) as { input?: unknown; args?: string[] };
                 if (parsed.input) {
-                    (globalThis as any).__SPEC_JSON = parsed.input;
+                    (globalThis as { __SPEC_JSON?: unknown }).__SPEC_JSON = parsed.input;
                 }
                 if (parsed.args) {
-                    const runArgs = ['node', 'cdd-ts', ...parsed.args];
+                    const actualArgs = parsed.args[0] === 'cdd-ts' ? parsed.args.slice(1) : parsed.args;
+                    const runArgs = ['node', 'cdd-ts', ...actualArgs];
                     if (typeof process !== 'undefined') process.argv = runArgs;
                     console.log('RUNNING WITH ARGS:', JSON.stringify(runArgs));
                     run(runArgs)
                         .then(() => {
-                            console.log('JAVY_FS_DUMP:' + JSON.stringify((globalThis as any).__FsData));
+                            console.log(
+                                'JAVY_FS_DUMP:' + JSON.stringify((globalThis as { __FsData?: unknown }).__FsData),
+                            );
                         })
-                        .catch(err => {
+                        .catch((err: unknown) => {
                             console.error(err);
                         });
                 }
-            } catch (e) {
+            } catch (e: unknown) {
                 console.error('Failed to parse stdin:', e);
             }
         }

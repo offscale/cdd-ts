@@ -35,7 +35,7 @@ export class FormComponentGenerator {
 ${properties
     .map(prop => {
         let inputType = 'text';
-        const schemaType = (prop.schema as any)?.type;
+        const schemaType = (prop.schema as { type?: string })?.type;
         if (schemaType === 'number' || schemaType === 'integer') inputType = 'number';
         if (schemaType === 'boolean') inputType = 'checkbox';
 
@@ -91,7 +91,7 @@ const itemId = computed(() => route.params.id as string);
 const formData = ref<Record<string, any>>({
 ${properties
     .map(prop => {
-        const schemaType = (prop.schema as any)?.type;
+        const schemaType = (prop.schema as { type?: string })?.type;
         if (schemaType === 'boolean') return `    ${prop.name}: false,`;
         if (schemaType === 'number' || schemaType === 'integer') return `    ${prop.name}: 0,`;
         return `    ${prop.name}: '',`;

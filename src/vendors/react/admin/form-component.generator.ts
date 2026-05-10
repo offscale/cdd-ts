@@ -88,7 +88,7 @@ export class FormComponentGenerator {
         const render = `
             <h2>{isEdit ? t('edit', 'Edit') : t('create', 'Create')} {t('resource.${resource.name}', '${pascalCase(resource.name)}')}</h2>
             <form onSubmit={onSubmit} aria-label={t('form_aria_label', '${pascalCase(resource.name)} Form')}>
-                ${fields.length ? fields.map(p => ReactElementBuilder.buildInput(p.name, (p.schema as any)?.type === 'number' ? 'number' : 'text', true)).join('\n') : ReactElementBuilder.buildInput('name', 'text', true)}
+                ${fields.length ? fields.map(p => ReactElementBuilder.buildInput(p.name, (p.schema as { type?: string })?.type === 'number' ? 'number' : 'text', true)).join('\n') : ReactElementBuilder.buildInput('name', 'text', true)}
                 <div className="form-actions">
                     <button type="submit" className="btn-primary" aria-label={t('save_aria', 'Save ${pascalCase(resource.name)}')} disabled={isPending}>
                         {isPending ? t('saving', 'Saving...') : t('save', 'Save')}
