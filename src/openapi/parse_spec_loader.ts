@@ -10,6 +10,113 @@ import { validateSpec } from './parse_validator.js';
 import { ReferenceResolver } from './parse_reference_resolver.js';
 
 export class SpecLoader {
+    public static loadSync(inputPath: string): {
+        entrySpec: SwaggerSpec;
+        cache: Map<string, SwaggerSpec>;
+        documentUri: string;
+    } {
+        let documentUri = inputPath;
+        try {
+            documentUri = isUrl(inputPath) ? inputPath : 'file://' + path.resolve(process.cwd(), inputPath);
+        } catch {
+            /* ignore */
+        }
+
+        const cache = new Map<string, SwaggerSpec>();
+        this.loadAndCacheSpecRecursiveSync(documentUri, cache, new Set<string>());
+
+        const entrySpec = cache.get(documentUri);
+        if (!entrySpec) {
+            throw new Error(`Failed to load entry spec from ${documentUri}`);
+        }
+
+        const validated = new Set<SwaggerSpec>();
+        for (const doc of cache.values()) {
+            if (!doc || typeof doc !== 'object') continue;
+            if (!this.isOpenApiOrSwaggerDoc(doc)) continue;
+            if (validated.has(doc)) continue;
+            validateSpec(doc);
+            validated.add(doc);
+        }
+        this.validateOperationIdsAcrossDocuments(cache);
+        return { entrySpec, cache, documentUri };
+    }
+
+    private static loadAndCacheSpecRecursiveSync(
+        uri: string,
+        cache: Map<string, SwaggerSpec>,
+        visited: Set<string>,
+    ): void {
+        if (visited.has(uri) || cache.has(uri)) return;
+        visited.add(uri);
+
+        const content = this.loadContentSync(uri);
+        const spec = this.parseSpecContent(content, uri);
+        cache.set(uri, spec);
+
+        let baseUri = uri;
+        try {
+            baseUri = spec.$self ? new URL(spec.$self, uri).href : uri;
+        } catch {
+            /* ignore */
+        }
+
+        if (baseUri !== uri) {
+            cache.set(baseUri, spec);
+        }
+
+        ReferenceResolver.indexSchemaIds(spec, baseUri, cache, uri);
+        const refs = ReferenceResolver.findRefs(spec);
+        const operationRefs = this.findOperationRefs(spec);
+        const fileRefs = new Set<string>();
+
+        refs.forEach(ref => {
+            const [filePath] = ref.split('#', 2);
+            if (filePath) fileRefs.add(filePath);
+        });
+        operationRefs.forEach(ref => {
+            const [filePath] = ref.split('#', 2);
+            if (filePath) fileRefs.add(filePath);
+        });
+
+        for (const filePath of fileRefs) {
+            try {
+                let nextUri = filePath;
+                try {
+                    nextUri = new URL(filePath, baseUri).href;
+                } catch {
+                    /* ignore */
+                }
+                this.loadAndCacheSpecRecursiveSync(nextUri, cache, visited);
+            } catch (_e) {
+                console.warn(`[SpecLoader] Failed to resolve referenced URI: ${filePath}. Skipping.`);
+            }
+        }
+    }
+
+    private static loadContentSync(pathOrUrl: string): string {
+        try {
+            if (isUrl(pathOrUrl) && !pathOrUrl.startsWith('file:')) {
+                throw new Error('Synchronous fetch is not supported');
+            } else {
+                let filePath = pathOrUrl;
+                try {
+                    filePath = pathOrUrl.startsWith('file:') ? new URL(pathOrUrl).pathname : pathOrUrl;
+                } catch {
+                    if (pathOrUrl.startsWith('file://')) filePath = pathOrUrl.substring(7);
+                }
+                if (!fs.existsSync(filePath)) throw new Error(`Input file not found at ${filePath}`);
+                console.log('TRACE: ReadFileSync');
+                const ret = fs.readFileSync(filePath, 'utf8');
+                console.log('TRACE: ReadFileSync DONE');
+                return ret;
+            }
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            throw new Error(`Failed to read content from "${pathOrUrl}": ${message}`);
+        }
+    }
+
     public static async load(inputPath: string): Promise<{
         entrySpec: SwaggerSpec;
         cache: Map<string, SwaggerSpec>;
@@ -55,7 +162,9 @@ export class SpecLoader {
 
         visited.add(uri);
 
+        console.log('TRACE: Before loadContent');
         const content = await this.loadContent(uri);
+        console.log('TRACE: After loadContent');
 
         const spec = this.parseSpecContent(content, uri);
 
@@ -133,7 +242,10 @@ export class SpecLoader {
 
                 if (!fs.existsSync(filePath)) throw new Error(`Input file not found at ${filePath}`);
 
-                return fs.readFileSync(filePath, 'utf8');
+                console.log('TRACE: ReadFileSync');
+                const ret = fs.readFileSync(filePath, 'utf8');
+                console.log('TRACE: ReadFileSync DONE');
+                return ret;
             }
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);

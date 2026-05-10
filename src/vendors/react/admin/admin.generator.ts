@@ -34,7 +34,7 @@ export class ReactAdminGenerator {
      * Executes the admin generation process for React.
      * @param outputRoot The root directory path for generation.
      */
-    public async generate(outputRoot: string): Promise<void> {
+    public generate(outputRoot: string): void {
         console.log('🚀 Generating React Admin UI...');
 
         this.allResources = discoverAdminResources(this.parser);

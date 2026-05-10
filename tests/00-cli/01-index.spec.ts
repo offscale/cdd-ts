@@ -84,7 +84,7 @@ describe('index.ts', () => {
             (SwaggerParser.create as import('vitest').Mock).mockRejectedValueOnce(new Error('Stop'));
 
             try {
-                await generateFromConfig(config, project);
+                generateFromConfigSync(config, project);
             } catch (e) {
                 // Ignore failure
             }
@@ -104,7 +104,7 @@ describe('index.ts', () => {
             const mkdirSpy = vi.spyOn(fs, 'mkdirSync');
 
             try {
-                await generateFromConfig(config, project);
+                generateFromConfigSync(config, project);
             } catch (e) {
                 console.error(e);
             }
@@ -118,7 +118,7 @@ describe('index.ts', () => {
             (SwaggerParser.create as import('vitest').Mock).mockRejectedValueOnce(new Error('Stop'));
 
             try {
-                await generateFromConfig(config, project);
+                generateFromConfigSync(config, project);
             } catch (e) {
                 // Ignore failure
             }
@@ -137,7 +137,7 @@ describe('index.ts', () => {
             const activeProjectSaveSpy = vi.spyOn(project, 'save').mockResolvedValue(undefined);
             const generateSpy = vi.spyOn(AngularClientGenerator.prototype, 'generate').mockResolvedValue(undefined);
 
-            await generateFromConfig(config, project, testConfig);
+            generateFromConfigSync(config, project, testConfig);
 
             // Should not save if isTestEnv
             expect(activeProjectSaveSpy).not.toHaveBeenCalled();
@@ -155,7 +155,7 @@ describe('index.ts', () => {
             // Mock generator
             vi.spyOn(AngularClientGenerator.prototype, 'generate').mockResolvedValue(undefined);
 
-            await generateFromConfig(config, project, undefined, 'to_sdk_cli');
+            generateFromConfigSync(config, project, undefined, 'to_sdk_cli');
 
             expect(activeProjectSaveSpy).toHaveBeenCalled();
         });
@@ -164,7 +164,7 @@ describe('index.ts', () => {
             const generateSpy = vi.spyOn(AngularClientGenerator.prototype, 'generate').mockResolvedValue(undefined);
 
             // Should pass without project argument
-            await generateFromConfig(config, undefined, {
+            generateFromConfigSync(config, undefined, {
                 spec: {
                     openapi: '3.0.0',
                     info: { title: 'Test', version: '1' },
@@ -181,7 +181,7 @@ describe('index.ts', () => {
             (SwaggerParser.create as import('vitest').Mock).mockRejectedValueOnce(error);
 
             try {
-                await generateFromConfig(config, project);
+                generateFromConfigSync(config, project);
                 expect.unreachable('Should have thrown');
             } catch (e) {
                 expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Generation failed:', 'Parse Error');
@@ -194,7 +194,7 @@ describe('index.ts', () => {
             (SwaggerParser.create as import('vitest').Mock).mockRejectedValueOnce(error);
 
             try {
-                await generateFromConfig(config, project);
+                generateFromConfigSync(config, project);
                 expect.unreachable('Should have thrown');
             } catch (e) {
                 expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Generation failed:', 'String Error');
@@ -207,7 +207,7 @@ describe('index.ts', () => {
 
             try {
                 // Pass testConfig to simulate isTestEnv = true
-                await generateFromConfig(config, project, {} as unknown as SwaggerParser);
+                generateFromConfigSync(config, project, {} as unknown as SwaggerParser);
                 expect.unreachable('Should have thrown');
             } catch (e) {
                 expect(consoleErrorSpy).not.toHaveBeenCalled();

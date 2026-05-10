@@ -18,12 +18,7 @@ export class TypeOrmGenerator implements IOrmGenerator {
      * @param outputDir The directory where the ORM models should be saved.
      * @returns A promise that resolves when the generation is complete.
      */
-    public async generate(
-        project: Project,
-        parser: SwaggerParser,
-        _config: GeneratorConfig,
-        outputDir: string,
-    ): Promise<void> {
+    public generate(project: Project, parser: SwaggerParser, _config: GeneratorConfig, outputDir: string): void {
         const schemas = parser.schemas;
         if (!schemas || schemas.length === 0) {
             return;

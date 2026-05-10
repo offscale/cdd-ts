@@ -40,19 +40,14 @@ export class ReactClientGenerator extends AbstractClientGenerator {
      * @param outputRoot The target output directory.
      * @returns A promise that resolves when generation finishes.
      */
-    public async generate(
-        project: Project,
-        parser: SwaggerParser,
-        config: GeneratorConfig,
-        outputRoot: string,
-    ): Promise<void> {
+    public generate(project: Project, parser: SwaggerParser, config: GeneratorConfig, outputRoot: string): void {
         // React utilizes the Fetch client primitives
         const baseGenerator = new FetchClientGenerator();
-        await baseGenerator.generate(project, parser, config, outputRoot);
+        baseGenerator.generate(project, parser, config, outputRoot);
 
         if (config.options?.admin) {
             const adminGenerator = new ReactAdminGenerator(parser, project);
-            await adminGenerator.generate(outputRoot);
+            adminGenerator.generate(outputRoot);
         }
 
         project.createSourceFile(

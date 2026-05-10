@@ -14,7 +14,7 @@ export interface IClientGenerator {
      * @param config The generation configuration.
      * @param outputDir The root directory for the output.
      */
-    generate(project: Project, parser: SwaggerParser, config: GeneratorConfig, outputDir: string): Promise<void>;
+    generate(project: Project, parser: SwaggerParser, config: GeneratorConfig, outputDir: string): void;
 }
 
 /**
@@ -22,10 +22,5 @@ export interface IClientGenerator {
  * Can be extended to share common logic (e.g. Model generation) across frameworks in the future.
  */
 export abstract class AbstractClientGenerator implements IClientGenerator {
-    abstract generate(
-        project: Project,
-        parser: SwaggerParser,
-        config: GeneratorConfig,
-        outputDir: string,
-    ): Promise<void>;
+    abstract generate(project: Project, parser: SwaggerParser, config: GeneratorConfig, outputDir: string): void;
 }

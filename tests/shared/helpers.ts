@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { IndentationText, ModuleKind, Project, ScriptTarget } from 'ts-morph';
-import { generateFromConfig } from '@src/index.js';
+import { generateFromConfigSync } from '@src/index.js';
 import { GeneratorConfig } from '@src/core/types/index.js';
 
 /**
@@ -51,7 +51,7 @@ export async function runGeneratorWithConfig(
             ...config,
         },
     };
-    await generateFromConfig(fullConfig, project, { spec });
+    generateFromConfigSync(fullConfig, project, { spec });
     return project;
 }
 
@@ -77,7 +77,7 @@ export async function runGenerator(spec: object, genConfig?: Partial<GeneratorCo
         ...genConfig,
     };
 
-    await generateFromConfig(config, project, { spec });
+    generateFromConfigSync(config, project, { spec });
 
     return project;
 }

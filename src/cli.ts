@@ -1,8 +1,10 @@
 import { Command, Option } from 'commander';
+import { Project, ScriptTarget, ModuleKind } from 'ts-morph';
+import { CliGenerator } from './vendors/cli/emit.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import yaml from 'js-yaml';
-import { generateFromConfig } from './index.js';
+import { generateFromConfigSync } from './index.js';
 import { SwaggerParser } from './openapi/parse.js';
 import { generateDocsJson } from './functions/docs_generator.js';
 import { GeneratorConfig, GeneratorConfigOptions, OpenApiValue } from './core/types/index.js';
@@ -19,8 +21,16 @@ import {
 } from './functions/utils.js';
 import * as http from 'node:http';
 
-const packageJsonPath = new URL('../package.json', import.meta.url);
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8')) as { version: string };
+let packageJson = { version: '1.0.0' };
+try {
+    const packageJsonPath =
+        typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'test'
+            ? new URL('../package.json', import.meta.url)
+            : '../package.json';
+    packageJson = JSON.parse(fs.readFileSync(packageJsonPath as any, 'utf-8')) as { version: string };
+} catch (e) {
+    // Ignore, fallback to default
+}
 
 /** Defines the shape of the options object from the 'from_openapi' command. */
 interface CliOptions {
@@ -80,7 +90,16 @@ async function loadConfigFile(configPath: string): Promise<Partial<GeneratorConf
 
 async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_sdk_cli' | 'to_server' | 'to_orm') {
     const startTime = Date.now();
+    const extractArg = (flag: string) => {
+        const argv = typeof process !== 'undefined' ? process.argv : [];
+        for (let i = 0; i < argv.length; i++) {
+            if (argv[i] === flag && i + 1 < argv.length) return argv[i + 1];
+            if (argv[i].startsWith(flag + '=')) return argv[i].substring(flag.length + 1);
+        }
+        return undefined;
+    };
     try {
+        console.log('PARSED OPTIONS:', JSON.stringify(options));
         let baseConfig: Partial<GeneratorConfig> = {};
         if (options.config) {
             console.log(`📜 Loading configuration from: ${options.config}`);
@@ -131,12 +150,13 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
             },
         };
 
-        const input = options.input ?? options.inputDir ?? baseConfig.input;
+        const input =
+            options.input ?? options.inputDir ?? baseConfig.input ?? extractArg('-i') ?? extractArg('--input');
         if (input) {
             finalConfigInProgress.input = input;
         }
 
-        const output = options.output ?? baseConfig.output;
+        const output = options.output ?? baseConfig.output ?? extractArg('-o') ?? extractArg('--output');
         if (output) {
             finalConfigInProgress.output = output;
         }
@@ -169,8 +189,47 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
             ),
         );
 
-        await generateFromConfig(finalConfigInProgress as GeneratorConfig, undefined, undefined, targetScope);
-
+        if (targetScope === 'to_sdk_cli') {
+            const activeProject = new Project({
+                compilerOptions: {
+                    declaration: true,
+                    target: ScriptTarget.ES2022,
+                    module: ModuleKind.ESNext,
+                    strict: true,
+                },
+                fileSystem:
+                    typeof globalThis !== 'undefined' && (globalThis as any).__FsData
+                        ? ({
+                              getCurrentDirectory: () => '/',
+                              directoryExistsSync: () => true,
+                              fileExistsSync: (p: string) => fs.existsSync(p),
+                              readFileSync: (p: string) => fs.readFileSync(p, 'utf8'),
+                              readdirSync: () => [],
+                              statSync: () => ({ isDirectory: () => false, isFile: () => true }) as any,
+                              realpathSync: (p: string) => p,
+                              mkdirSync: () => {},
+                              writeFileSync: (p: string, d: string) => fs.writeFileSync(p, d),
+                              deleteSync: () => {},
+                              moveSync: () => {},
+                              copySync: () => {},
+                              isCaseSensitive: () => true,
+                          } as any)
+                        : undefined,
+            });
+            const swaggerParser = SwaggerParser.createSync(
+                finalConfigInProgress.input,
+                finalConfigInProgress as GeneratorConfig,
+            );
+            new CliGenerator().generate(
+                activeProject,
+                swaggerParser,
+                finalConfigInProgress as GeneratorConfig,
+                finalConfigInProgress.output,
+            );
+            activeProject.saveSync();
+        } else {
+            generateFromConfigSync(finalConfigInProgress as GeneratorConfig, undefined, undefined, targetScope);
+        }
         // Handling specific scopes
         if (targetScope === 'to_sdk_cli') {
             console.log('Target scope SDK CLI executed.');
@@ -203,11 +262,18 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
         }
 
         return 'Success';
-    } catch (error) {
+    } catch (error: any) {
+        console.error('runGeneration error:', error);
+        if (error && error.stack) console.error(error.stack);
         throw error;
     } finally {
         const duration = (Date.now() - startTime) / 1000;
         console.log(`\n⏱️  Duration: ${duration.toFixed(2)} seconds`);
+
+        // Print the fs dump here before Javy potentially traps
+        if (typeof globalThis !== 'undefined' && (globalThis as any).__FsData) {
+            console.log('JAVY_FS_DUMP:' + JSON.stringify((globalThis as any).__FsData));
+        }
     }
 }
 
@@ -363,7 +429,7 @@ const fromOpenApi = program.command('from_openapi').description('Generate code f
 const addCommonOptions = (cmd: Command) => {
     return cmd
         .addOption(new Option('-c, --config <path>', 'Path to a configuration file').env('CDD_CONFIG'))
-        .addOption(new Option('-i, --input <path>', 'Path or URL to the OpenAPI spec').env('CDD_INPUT'))
+        .addOption(new Option('-i, --input <path>', 'Path or URL to the OpenAPI spec'))
         .addOption(new Option('--input-dir <path>', 'Path to directory of OpenAPI specs').env('CDD_INPUT_DIR'))
         .addOption(new Option('-o, --output <path>', 'Output directory for generated files').env('CDD_OUTPUT'))
         .addOption(new Option('--dateType <type>', 'Date type to use').choices(['string', 'Date']).env('CDD_DATE_TYPE'))
@@ -451,11 +517,16 @@ const addOrmOptions = (cmd: Command) => {
 
 addSdkOptions(addCommonOptions(fromOpenApi.command('to_sdk_cli')))
     .description('Generate Client SDK CLI from an OpenAPI specification')
-    .action(async (options: CliOptions) => {
+    .action(async (options: CliOptions, cmd: Command) => {
+        console.log('CMD.OPTS() IS:', JSON.stringify(cmd.opts()));
+        console.log('PARENT OPTS() IS:', JSON.stringify(cmd.parent?.opts()));
+        console.log('PROGRAM OPTS() IS:', JSON.stringify(cmd.parent?.parent?.opts()));
+        console.log('OPTIONS IS:', JSON.stringify(options));
         try {
             await runGeneration(options, 'to_sdk_cli');
-        } catch (err) {
+        } catch (err: any) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
+            if (err.stack) console.error(err.stack);
             process.exit(1);
         }
     });
@@ -465,8 +536,9 @@ addSdkOptions(addCommonOptions(fromOpenApi.command('to_sdk')))
     .action(async (options: CliOptions) => {
         try {
             await runGeneration(options, 'to_sdk');
-        } catch (err) {
+        } catch (err: any) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
+            if (err.stack) console.error(err.stack);
             process.exit(1);
         }
     });
@@ -476,8 +548,9 @@ addServerOptions(addCommonOptions(fromOpenApi.command('to_server')))
     .action(async (options: CliOptions) => {
         try {
             await runGeneration(options, 'to_server');
-        } catch (err) {
+        } catch (err: any) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
+            if (err.stack) console.error(err.stack);
             process.exit(1);
         }
     });
@@ -491,8 +564,9 @@ addOrmOptions(addCommonOptions(fromOpenApi.command('to_orm')))
         }
         try {
             await runGeneration(options, 'to_orm');
-        } catch (err) {
+        } catch (err: any) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
+            if (err.stack) console.error(err.stack);
             process.exit(1);
         }
     });
@@ -650,14 +724,49 @@ export async function run(argv: string[]) {
 
 // Check if run directly
 import { fileURLToPath } from 'node:url';
-export function checkIsMain(argv1: string, metaUrl: string): boolean {
-    return argv1 === fileURLToPath(metaUrl);
+export function checkIsMain(argv1: string, metaUrl?: string): boolean {
+    if (!metaUrl) return false;
+    try {
+        return argv1 === fileURLToPath(metaUrl);
+    } catch {
+        return false;
+    }
 }
 
-const isMain = checkIsMain(process.argv[1], import.meta.url);
+const isMain = typeof process !== 'undefined' && process.argv ? checkIsMain(process.argv[1], import.meta.url) : false;
 if (isMain) {
     run(process.argv).catch((err: unknown) => {
         console.error(err);
         process.exit(1);
     });
+} else if (typeof globalThis !== 'undefined' && (globalThis as any).__FsData) {
+    const Javy = (globalThis as any).Javy;
+    if (Javy && Javy.IO) {
+        const buffer = new Uint8Array(10 * 1024 * 1024);
+        const bytesRead = Javy.IO.readSync(0, buffer);
+        const stdinContent = new TextDecoder().decode(buffer.subarray(0, bytesRead));
+
+        if (stdinContent) {
+            try {
+                const parsed = JSON.parse(stdinContent);
+                if (parsed.input) {
+                    (globalThis as any).__SPEC_JSON = parsed.input;
+                }
+                if (parsed.args) {
+                    const runArgs = ['node', 'cdd-ts', ...parsed.args];
+                    if (typeof process !== 'undefined') process.argv = runArgs;
+                    console.log('RUNNING WITH ARGS:', JSON.stringify(runArgs));
+                    run(runArgs)
+                        .then(() => {
+                            console.log('JAVY_FS_DUMP:' + JSON.stringify((globalThis as any).__FsData));
+                        })
+                        .catch(err => {
+                            console.error(err);
+                        });
+                }
+            } catch (e) {
+                console.error('Failed to parse stdin:', e);
+            }
+        }
+    }
 }

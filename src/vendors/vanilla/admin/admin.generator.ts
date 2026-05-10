@@ -18,7 +18,7 @@ export class VanillaAdminGenerator {
         private project: Project,
     ) {}
 
-    public async generate(outputRoot: string): Promise<void> {
+    public generate(outputRoot: string): void {
         console.log('🚀 Generating Vanilla Web Components Admin UI...');
 
         this.allResources = discoverAdminResources(this.parser);
@@ -31,7 +31,7 @@ export class VanillaAdminGenerator {
 
         const adminDir = path.join(outputRoot, 'admin');
 
-        if (!this.project.getFileSystem().directoryExists(adminDir)) {
+        if (!this.project.getFileSystem().directoryExistsSync(adminDir)) {
             this.project.getFileSystem().mkdirSync(adminDir);
         }
 

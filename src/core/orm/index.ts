@@ -30,5 +30,5 @@ export interface IOrmGenerator {
      * @param outputDir The directory where the ORM models should be saved.
      * @returns A promise that resolves when the generation is complete.
      */
-    generate(project: Project, parser: SwaggerParser, config: GeneratorConfig, outputDir: string): Promise<void>;
+    generate(project: Project, parser: SwaggerParser, config: GeneratorConfig, outputDir: string): void;
 }

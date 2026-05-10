@@ -130,6 +130,12 @@ export class SwaggerParser {
         return new SwaggerParser(entrySpec, config, cache, documentUri);
     }
 
+    static createSync(inputPath: string, config: GeneratorConfig): SwaggerParser {
+        const { entrySpec, cache, documentUri } = SpecLoader.loadSync(inputPath);
+
+        return new SwaggerParser(entrySpec, config, cache, documentUri);
+    }
+
     private resolveServers(servers?: ServerObject[]): ServerObject[] {
         if (this.spec.swagger) {
             return this.resolveSwagger2Servers(servers);

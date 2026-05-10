@@ -16,7 +16,7 @@ export class FormComponentGenerator {
 
         const dirPath = `${outDir}/${resource.name}/${resource.name}-form`;
 
-        if (!this.project.getFileSystem().directoryExists(dirPath)) {
+        if (!this.project.getFileSystem().directoryExistsSync(dirPath)) {
             this.project.getFileSystem().mkdirSync(dirPath);
         }
 

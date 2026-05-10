@@ -11,7 +11,7 @@ import * as path from 'node:path';
  */
 export class RoutingGenerator {
     private static ensureDir(project: Project, dirPath: string): void {
-        if (!project.getFileSystem().directoryExists(dirPath)) {
+        if (!project.getFileSystem().directoryExistsSync(dirPath)) {
             project.getFileSystem().mkdirSync(dirPath);
         }
     }

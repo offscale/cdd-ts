@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { describe, expect, it } from 'vitest';
-import { generateFromConfig } from '@src/index.js';
+import { generateFromConfigSync } from '@src/index.js';
 import { GeneratorConfig } from '@src/core/types/index.js';
 import { Project } from 'ts-morph';
 import { FetchServiceMethodGenerator } from '@src/vendors/fetch/service/service-method.generator.js';
@@ -89,7 +89,7 @@ describe('Fetch Implementation Edge Cases', () => {
         };
 
         const project = new Project();
-        await generateFromConfig(config, project, { spec });
+        generateFromConfigSync(config, project, { spec });
 
         const serviceFile = project.getSourceFile('/tmp/test-multi-resp/services/multi.service.ts');
         const serviceClass = serviceFile!.getClass('MultiService');
@@ -126,7 +126,7 @@ describe('Fetch Implementation Edge Cases', () => {
         };
 
         const project = new Project();
-        await generateFromConfig(config, project, { spec });
+        generateFromConfigSync(config, project, { spec });
 
         const serviceFile =
             project.getSourceFile('/tmp/test-json/services/json-only.service.ts') ||
@@ -180,7 +180,7 @@ it('should assign root paths to Default controller', async () => {
         },
     };
     const project = new Project();
-    await generateFromConfig(config, project, { spec });
+    generateFromConfigSync(config, project, { spec });
     const serviceFile = project.getSourceFile('/tmp/test-default/services/default.service.ts');
     expect(serviceFile).toBeDefined();
     expect(serviceFile!.getClass('DefaultService')).toBeDefined();
@@ -197,14 +197,14 @@ it('should respect generateServiceTests config option', async () => {
         info: { title: 'A', version: '1' },
         paths: { '/a': { get: { responses: { '200': { description: 'OK' } } } } },
     };
-    await generateFromConfig(config, new Project(), { spec });
+    generateFromConfigSync(config, new Project(), { spec });
 
     const config2: GeneratorConfig = {
         input: 'dummy',
         output: '/tmp/test-yestests',
         options: { implementation: 'fetch', generateServiceTests: true },
     };
-    await generateFromConfig(config2, new Project(), { spec });
+    generateFromConfigSync(config2, new Project(), { spec });
 });
 
 it('should handle operation-level servers', async () => {
@@ -227,7 +227,7 @@ it('should handle operation-level servers', async () => {
         },
     };
     const project = new Project();
-    await generateFromConfig(config, project, { spec });
+    generateFromConfigSync(config, project, { spec });
     const sf = project
         .getSourceFiles()
         .find(f => f.getFilePath().includes('op-server') || f.getFilePath().includes('OpServer'));
@@ -261,7 +261,7 @@ it('should handle path params with explicit style and multipart/form-data body',
         },
     };
     const project = new Project();
-    await generateFromConfig(config, project, { spec });
+    generateFromConfigSync(config, project, { spec });
     const sf = project.getSourceFiles().find(f => f.getFilePath().includes('test.service.ts'));
     const m = sf!.getClasses()[0]!.getMethod('postMultipart');
     expect(m!.getText()).toContain("'matrix'");
@@ -289,7 +289,7 @@ it('should handle responses and request bodies without schemas or that are plain
         },
     };
     const project = new Project();
-    await generateFromConfig(config, project, { spec });
+    generateFromConfigSync(config, project, { spec });
     const sf = project.getSourceFiles().find(f => f.getFilePath().includes('oSchema'));
     expect(sf).toBeDefined();
 });
@@ -306,7 +306,7 @@ it('should ignore non-exported service classes in index', async () => {
         paths: { '/a': { get: { responses: { '200': { description: 'A' } } } } },
     };
     const project = new Project();
-    await generateFromConfig(config, project, { spec });
+    generateFromConfigSync(config, project, { spec });
 
     // Manually break the exported class before index generation runs?
     // Actually this branch is hit if there is NO exported serviceClass.
@@ -347,5 +347,5 @@ it('should hit branch for non-interface application/json body in FetchServiceGen
     };
 
     const project = new Project();
-    await generateFromConfig(config, project, { spec });
+    generateFromConfigSync(config, project, { spec });
 });

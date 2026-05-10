@@ -39,18 +39,13 @@ export class VueClientGenerator extends AbstractClientGenerator {
      * @param outputRoot The target output directory.
      * @returns A promise that resolves when generation finishes.
      */
-    public async generate(
-        project: Project,
-        parser: SwaggerParser,
-        config: GeneratorConfig,
-        outputRoot: string,
-    ): Promise<void> {
+    public generate(project: Project, parser: SwaggerParser, config: GeneratorConfig, outputRoot: string): void {
         // Vue utilizes the Fetch client primitives
         const baseGenerator = new FetchClientGenerator();
-        await baseGenerator.generate(project, parser, config, outputRoot);
+        baseGenerator.generate(project, parser, config, outputRoot);
 
         if (config.options?.admin) {
-            await new VueAdminGenerator(parser, project).generate(outputRoot);
+            new VueAdminGenerator(parser, project).generate(outputRoot);
         }
 
         const composablesDir = path.join(outputRoot, 'composables');

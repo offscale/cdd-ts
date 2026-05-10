@@ -94,12 +94,7 @@ function groupPathsByCanonicalController(parser: SwaggerParser): Record<string, 
 }
 
 export class AngularClientGenerator extends AbstractClientGenerator {
-    public async generate(
-        project: Project,
-        parser: SwaggerParser,
-        config: GeneratorConfig,
-        outputRoot: string,
-    ): Promise<void> {
+    public generate(project: Project, parser: SwaggerParser, config: GeneratorConfig, outputRoot: string): void {
         // 1. Models
 
         new TypeGenerator(parser, project, config).generate(outputRoot);
@@ -246,7 +241,7 @@ export class AngularClientGenerator extends AbstractClientGenerator {
             }
 
             if (config.options.admin) {
-                await new AdminGenerator(parser, project).generate(outputRoot);
+                new AdminGenerator(parser, project).generate(outputRoot);
 
                 if (config.options.generateAdminTests ?? true) {
                     console.log('📝 Generating tests for admin UI...');

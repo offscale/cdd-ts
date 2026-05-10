@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { generateFromConfig } from '@src/index.js';
+import { generateFromConfigSync } from '@src/index.js';
 import { GeneratorConfig } from '@src/core/types/index.js';
 import { Project } from 'ts-morph';
 import { ServiceMethodAnalyzer } from '@src/functions/parse_analyzer.js';
@@ -51,7 +51,7 @@ describe('Node Implementation Edge Cases', () => {
         };
 
         const project = new Project();
-        await generateFromConfig(config, project, { spec });
+        generateFromConfigSync(config, project, { spec });
 
         // Root path defaults to 'Default' controller
         const serviceFile = project.getSourceFile('/tmp/test-output-node-edge/services/default.service.ts');
@@ -101,7 +101,7 @@ describe('Node Implementation Edge Cases', () => {
         };
 
         const project = new Project();
-        await generateFromConfig(config, project, { spec });
+        generateFromConfigSync(config, project, { spec });
         const serviceFile = project.getSourceFile('/tmp/test-output-node-invalid/services/invalid.service.ts');
         expect(serviceFile).toBeDefined();
     });
@@ -125,7 +125,7 @@ describe('Node Implementation Edge Cases', () => {
             },
         };
         const project = new Project();
-        await generateFromConfig(config, project, { spec });
+        generateFromConfigSync(config, project, { spec });
 
         const serviceFile = project.getSourceFile('/tmp/test-output-node-unexported/services/test.service.ts');
         const serviceClass = serviceFile!.getClass('TestService');
@@ -184,7 +184,7 @@ describe('Node Implementation Edge Cases', () => {
         });
 
         const project = new Project();
-        await generateFromConfig(config, project, { spec });
+        generateFromConfigSync(config, project, { spec });
 
         const serviceFile = project.getSourceFile('/tmp/test-output-node-arraybuffer/services/buffer.service.ts');
         const serviceClass = serviceFile!.getClass('BufferService');
@@ -229,7 +229,7 @@ describe('Node Implementation Edge Cases', () => {
         };
 
         const project = new Project();
-        await generateFromConfig(config, project, { spec });
+        generateFromConfigSync(config, project, { spec });
 
         const serviceFile = project.getSourceFile('/tmp/test-output-node-multipart/services/multipart.service.ts');
         const serviceClass = serviceFile!.getClass('MultipartService');
@@ -280,7 +280,7 @@ describe('Node Implementation Edge Cases', () => {
         };
 
         const project = new Project();
-        await generateFromConfig(config, project, { spec });
+        generateFromConfigSync(config, project, { spec });
         const serviceFile = project.getSourceFile('/tmp/test-output-node-style/services/style.service.ts');
         const serviceClass = serviceFile!.getClass('StyleService');
         const method = serviceClass!.getMethod('getStyle');
@@ -320,7 +320,7 @@ describe('Node Implementation Edge Cases', () => {
         });
 
         const project = new Project();
-        await generateFromConfig(config, project, { spec });
+        generateFromConfigSync(config, project, { spec });
         const serviceFile = project.getSourceFile('/tmp/test-output-node-mocked-null/services/mocked.service.ts');
         expect(serviceFile).toBeDefined();
 
@@ -363,7 +363,7 @@ it('should handle multiple distinct response types', async () => {
     };
 
     const project = new Project();
-    await generateFromConfig(config, project, { spec });
+    generateFromConfigSync(config, project, { spec });
 
     const serviceFile = project.getSourceFile('/tmp/test-output-node-distinct/services/distinct.service.ts');
     const serviceClass = serviceFile!.getClass('DistinctService');

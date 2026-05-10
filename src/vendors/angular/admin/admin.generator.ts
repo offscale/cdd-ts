@@ -30,7 +30,7 @@ export class AdminGenerator {
      * Executes the admin generation process.
      * @param outputRoot The root directory path for generation.
      */
-    public async generate(outputRoot: string): Promise<void> {
+    public generate(outputRoot: string): void {
         console.log('🚀 Generating Admin UI...');
 
         this.allResources = discoverAdminResources(this.parser);
@@ -48,7 +48,7 @@ export class AdminGenerator {
 
         // Ensure directory creation in the project filesystem
 
-        if (!this.project.getFileSystem().directoryExists(adminDir)) {
+        if (!this.project.getFileSystem().directoryExistsSync(adminDir)) {
             this.project.getFileSystem().mkdirSync(adminDir);
         }
 

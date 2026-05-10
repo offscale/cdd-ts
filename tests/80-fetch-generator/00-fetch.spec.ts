@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { describe, expect, it } from 'vitest';
-import { generateFromConfig, TestGeneratorConfig } from '@src/index.js';
+import { generateFromConfigSync, TestGeneratorConfig } from '@src/index.js';
 import { GeneratorConfig } from '@src/core/types/index.js';
 import { Project } from 'ts-morph';
 import { SwaggerParser } from '@src/openapi/parse.js';
@@ -18,11 +18,11 @@ describe('Fetch Implementation', () => {
                 },
             };
 
-            await expect(
-                generateFromConfig(config, new Project(), {
+            expect(() =>
+                generateFromConfigSync(config, new Project(), {
                     spec: { openapi: '3.0.0', info: { title: 'Test API', version: '1.0' }, paths: {} },
                 }),
-            ).resolves.toBeUndefined();
+            ).not.toThrow();
         });
 
         it('should execute FetchClientGenerator successfully when admin is false', async () => {
@@ -59,7 +59,7 @@ describe('Fetch Implementation', () => {
             };
 
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
 
             const sourceFiles = project.getSourceFiles();
             expect(sourceFiles.length).toBeGreaterThan(0);
@@ -105,7 +105,7 @@ describe('Fetch Implementation', () => {
             };
 
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
             const mainIndex = project.getSourceFile('/tmp/test-output/index.ts');
             expect(mainIndex).toBeDefined();
             expect(mainIndex!.getText()).toContain('./services');
@@ -186,7 +186,7 @@ describe('Fetch Implementation', () => {
             };
 
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
 
             const serviceFile = project.getSourceFile('/tmp/test-output/services/complex.service.ts');
             const serviceClass = serviceFile!.getClass('ComplexService');
@@ -264,7 +264,7 @@ describe('Fetch Implementation', () => {
             };
 
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
 
             const serviceFile = project.getSourceFile('/tmp/test-output-types/services/api.service.ts');
             const serviceClass = serviceFile!.getClass('ApiService');
@@ -301,7 +301,7 @@ describe('Fetch Implementation', () => {
 
             const spec = { openapi: '3.0.0', info: { title: 'API', version: '1' }, paths: {} };
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
 
             expect(project.getSourceFile('/tmp/test-output-noservices/services/index.ts')).toBeUndefined();
         });
@@ -315,7 +315,7 @@ describe('Fetch Implementation', () => {
 
             const spec = { openapi: '3.0.0', info: { title: 'API', version: '1' }, paths: {} };
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
 
             expect(project.getSourceFile('/tmp/test-output-emptyops/services/index.ts')).toBeUndefined();
         });

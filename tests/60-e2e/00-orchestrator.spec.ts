@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { generateFromConfig } from '@src/index.js';
+import { generateFromConfigSync } from '@src/index.js';
 import { GeneratorConfig } from '@src/core/types/index.js';
 
 import { coverageSpec, securitySpec } from '../shared/specs.js';
@@ -24,7 +24,7 @@ describe('E2E: Full Generation Orchestrator', () => {
             output: '/generated',
             options: { generateServices: true } as string | number | boolean | object | undefined | null,
         };
-        await generateFromConfig(config, project, { spec: coverageSpec });
+        generateFromConfigSync(config, project, { spec: coverageSpec });
 
         const filePaths = project.getSourceFiles().map(f => f.getFilePath());
         expect(filePaths).toContain('/generated/models/index.ts');
@@ -44,7 +44,7 @@ describe('E2E: Full Generation Orchestrator', () => {
             output: '/generated',
             options: { generateServices: true } as string | number | boolean | object | undefined | null,
         };
-        await generateFromConfig(config, project, { spec: securitySpec });
+        generateFromConfigSync(config, project, { spec: securitySpec });
 
         const filePaths = project.getSourceFiles().map(f => f.getFilePath());
         expect(filePaths).toContain('/generated/auth/auth.interceptor.ts');
@@ -70,7 +70,7 @@ describe('E2E: Full Generation Orchestrator', () => {
             },
         };
 
-        await generateFromConfig(config, project, { spec: cookieSecuritySpec });
+        generateFromConfigSync(config, project, { spec: cookieSecuritySpec });
 
         const filePaths = project.getSourceFiles().map(f => f.getFilePath());
         // The tokens file is always generated if string | number | boolean | object | undefined | null security schemes exist.

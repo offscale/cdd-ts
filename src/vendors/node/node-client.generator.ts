@@ -87,12 +87,7 @@ export class NodeClientGenerator extends AbstractClientGenerator {
      * @param outputRoot The target output directory.
      * @returns A promise that resolves when generation finishes.
      */
-    public async generate(
-        project: Project,
-        parser: SwaggerParser,
-        config: GeneratorConfig,
-        outputRoot: string,
-    ): Promise<void> {
+    public generate(project: Project, parser: SwaggerParser, config: GeneratorConfig, outputRoot: string): void {
         // 1. Models
 
         new TypeGenerator(parser, project, config).generate(outputRoot);
@@ -171,7 +166,7 @@ export class NodeClientGenerator extends AbstractClientGenerator {
             }
 
             if (config.options.admin) {
-                await new VanillaAdminGenerator(parser, project).generate(outputRoot);
+                new VanillaAdminGenerator(parser, project).generate(outputRoot);
             }
         }
 

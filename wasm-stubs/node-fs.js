@@ -1,10 +1,14 @@
 const fsData = {};
 if (typeof globalThis !== 'undefined') globalThis.__FsData = fsData;
 
-export const existsSync = (path) => false;
+export const existsSync = (path) => {
+    const p = path.toString();
+    if (p.includes('package.json') || p.includes('spec.json') || p.includes('spec.yaml')) return true;
+    return !!fsData[p];
+};
 export const readFileSync = (path) => {
     if (path.toString().includes('package.json')) return '{"version": "1.0.0"}';
-    if (path.toString().includes('spec.json')) {
+    if (path.toString().includes('spec.json') || path.toString().includes('spec.yaml')) {
         if (typeof globalThis !== 'undefined' && globalThis.__SPEC_JSON) return globalThis.__SPEC_JSON;
     }
     return fsData[path] || '';

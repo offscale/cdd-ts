@@ -9,7 +9,7 @@ export class ParameterSerializerGenerator {
         const utilsDir = path.join(outputDir, 'utils');
         // Ensure directory exists
 
-        if (!this.project.getFileSystem().directoryExists(utilsDir)) {
+        if (!this.project.getFileSystem().directoryExistsSync(utilsDir)) {
             this.project.getFileSystem().mkdirSync(utilsDir);
         }
 

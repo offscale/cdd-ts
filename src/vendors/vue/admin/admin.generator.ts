@@ -33,7 +33,7 @@ export class VueAdminGenerator {
      * Executes the admin generation process for Vue.
      * @param outputRoot The root directory path for generation.
      */
-    public async generate(outputRoot: string): Promise<void> {
+    public generate(outputRoot: string): void {
         console.log('🚀 Generating Vue Admin UI...');
 
         this.allResources = discoverAdminResources(this.parser);

@@ -14,6 +14,8 @@ import { IClientGenerator } from './core/generator.js';
 
 import { ReactClientGenerator } from './vendors/react/react-client.generator.js';
 import { VueClientGenerator } from './vendors/vue/vue-client.generator.js';
+import { TypeOrmGenerator } from './vendors/typeorm/emit.js';
+import { ExpressServerGenerator } from './vendors/express/express-server.generator.js';
 
 /**
  * For test environments, allows passing a pre-parsed OpenAPI specification object.
@@ -63,13 +65,41 @@ import { CliGenerator } from './vendors/cli/emit.js';
  * @param testConfig Optional configuration for test environments to inject a pre-parsed spec.
  * @returns A promise that resolves when generation is complete.
  */
-export async function generateFromConfig(
+export function generateFromConfigSync(
     config: GeneratorConfig,
     project?: Project,
     testConfig?: TestGeneratorConfig,
     targetScope?: 'to_sdk' | 'to_sdk_cli' | 'to_server' | 'to_orm',
-): Promise<void> {
+): void {
     const isTestEnv = !!testConfig;
+
+    const isJavy = typeof globalThis !== 'undefined' && (globalThis as any).__FsData;
+    const fsPolyfill = isJavy
+        ? ({
+              getCurrentDirectory: () => '/',
+              directoryExistsSync: () => true,
+              fileExistsSync: (p: string) => {
+                  const fs = require('node:fs');
+                  return fs.existsSync(p);
+              },
+              readFileSync: (p: string) => {
+                  const fs = require('node:fs');
+                  return fs.readFileSync(p, 'utf8');
+              },
+              readdirSync: () => [],
+              statSync: () => ({ isDirectory: () => false, isFile: () => true }) as any,
+              realpathSync: (p: string) => p,
+              mkdirSync: () => {},
+              writeFileSync: (p: string, d: string) => {
+                  const fs = require('node:fs');
+                  fs.writeFileSync(p, d);
+              },
+              deleteSync: () => {},
+              moveSync: () => {},
+              copySync: () => {},
+              isCaseSensitive: () => true,
+          } as any)
+        : undefined;
 
     const activeProject =
         project ||
@@ -81,7 +111,10 @@ export async function generateFromConfig(
                 strict: true,
                 ...config.compilerOptions,
             },
+            fileSystem: fsPolyfill,
         });
+
+    console.log('==> TRACE: new Project() finished');
 
     if (!isTestEnv) {
         const fs = activeProject.getFileSystem();
@@ -107,25 +140,29 @@ export async function generateFromConfig(
             const cache = new Map<string, SwaggerSpec>([[docUri, spec]]);
             swaggerParser = new SwaggerParser(spec, config, cache, docUri);
         } else {
-            swaggerParser = await SwaggerParser.create(config.input, config);
+            console.log('==> TRACE: Before SwaggerParser.create');
+            console.log('==> TRACE: Before SwaggerParser.create');
+            console.log('TRACE AWAIT 1');
+            swaggerParser = SwaggerParser.createSync(config.input, config);
+            console.log('TRACE AWAIT 2');
+            console.log('==> TRACE: After SwaggerParser.create');
+            console.log('==> TRACE: After SwaggerParser.create');
         }
 
         if (targetScope === 'to_orm' || (targetScope === 'to_server' && config.options.orm)) {
             if (config.options.orm === 'typeorm') {
-                const { TypeOrmGenerator } = await import('./vendors/typeorm/emit.js');
-                await new TypeOrmGenerator().generate(activeProject, swaggerParser, config, config.output);
+                new TypeOrmGenerator().generate(activeProject, swaggerParser, config, config.output);
             }
         }
 
         if (targetScope === 'to_server') {
             const serverFramework = config.options.serverFramework || 'express';
             if (serverFramework === 'express') {
-                const { ExpressServerGenerator } = await import('./vendors/express/express-server.generator.js');
                 const serverGenerator = new ExpressServerGenerator();
                 const schemas = swaggerParser.schemas;
 
                 if (schemas && schemas.length > 0) {
-                    const path = await import('path');
+                    const path = require('node:path');
                     const entitiesDir = path.join(config.output, 'entities');
                     for (const schema of schemas) {
                         if (
@@ -147,7 +184,13 @@ export async function generateFromConfig(
 
         if (targetScope !== 'to_orm' && targetScope !== 'to_server') {
             const generator = getGeneratorFactory(framework, implementation);
-            await generator.generate(activeProject, swaggerParser, config, config.output);
+            console.log('==> TRACE: Before generator');
+            console.log('==> TRACE: Before generator');
+            console.log('TRACE AWAIT 3');
+            generator.generate(activeProject, swaggerParser, config, config.output);
+            console.log('TRACE AWAIT 4');
+            console.log('==> TRACE: After generator');
+            console.log('==> TRACE: After generator');
         }
 
         if (targetScope === 'to_sdk_cli') {
@@ -157,7 +200,9 @@ export async function generateFromConfig(
         // This block is now reachable in our test.
 
         if (!isTestEnv) {
-            await activeProject.save();
+            console.log('==> TRACE: Before saveSync');
+            activeProject.saveSync();
+            console.log('==> TRACE: After saveSync');
         }
     } catch (error) {
         if (!isTestEnv) {

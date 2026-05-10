@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { describe, expect, it } from 'vitest';
-import { generateFromConfig, TestGeneratorConfig } from '@src/index.js';
+import { generateFromConfigSync, TestGeneratorConfig } from '@src/index.js';
 import { GeneratorConfig } from '@src/core/types/index.js';
 import { Project } from 'ts-morph';
 import { SwaggerParser } from '@src/openapi/parse.js';
@@ -42,7 +42,7 @@ describe('Node Implementation', () => {
             };
 
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
 
             const sourceFiles = project.getSourceFiles();
             expect(sourceFiles.length).toBeGreaterThan(0);
@@ -87,7 +87,7 @@ describe('Node Implementation', () => {
             };
 
             const project = new Project();
-            await expect(generateFromConfig(config, project, { spec })).resolves.not.toThrow();
+            await expect(generateFromConfigSync(config, project, { spec })).resolves.not.toThrow();
         });
     });
 
@@ -116,7 +116,7 @@ describe('Node Implementation', () => {
             };
 
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
             const mainIndex = project.getSourceFile('/tmp/test-output/index.ts');
             expect(mainIndex).toBeDefined();
             expect(mainIndex!.getText()).toContain('./services');
@@ -197,7 +197,7 @@ describe('Node Implementation', () => {
             };
 
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
 
             const serviceFile = project.getSourceFile('/tmp/test-output/services/complex.service.ts');
             const serviceClass = serviceFile!.getClass('ComplexService');
@@ -275,7 +275,7 @@ describe('Node Implementation', () => {
             };
 
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
 
             const serviceFile = project.getSourceFile('/tmp/test-output-types/services/api.service.ts');
             const serviceClass = serviceFile!.getClass('ApiService');
@@ -314,7 +314,7 @@ describe('Node Implementation', () => {
 
             const spec = { openapi: '3.0.0', info: { title: 'API', version: '1' }, paths: {} };
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
 
             expect(project.getSourceFile('/tmp/test-output-noservices/services/index.ts')).toBeUndefined();
         });
@@ -328,7 +328,7 @@ describe('Node Implementation', () => {
 
             const spec = { openapi: '3.0.0', info: { title: 'API', version: '1' }, paths: {} };
             const project = new Project();
-            await generateFromConfig(config, project, { spec });
+            generateFromConfigSync(config, project, { spec });
 
             expect(project.getSourceFile('/tmp/test-output-emptyops/services/index.ts')).toBeUndefined();
         });

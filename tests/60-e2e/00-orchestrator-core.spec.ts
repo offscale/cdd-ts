@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { generateFromConfig } from '@src/index.js';
+import { generateFromConfigSync } from '@src/index.js';
 import { SwaggerParser } from '@src/openapi/parse.js';
 import { GeneratorConfig } from '@src/core/types/index.js';
 import { coverageSpec, emptySpec } from '../shared/specs.js';
@@ -37,7 +37,7 @@ describe('E2E: Core Orchestrator Flow', () => {
             new SwaggerParser(emptySpec as string | number | boolean | object | undefined | null, config),
         );
 
-        await expect(generateFromConfig(config, project)).rejects.toThrow(errorMessage);
+        expect(() => generateFromConfigSync(config, project)).rejects.toThrow(errorMessage);
         expect(saveSpy).toHaveBeenCalled();
     });
 
@@ -49,7 +49,7 @@ describe('E2E: Core Orchestrator Flow', () => {
             options: { framework: 'react' },
         };
         const testConfig = { spec: emptySpec };
-        await expect(generateFromConfig(config, project, testConfig)).resolves.toBeUndefined();
+        expect(() => { generateFromConfigSync(config, project, testConfig) }).not.toThrow();
     });
 
     it('should generate vue client when framework is vue', async () => {
@@ -60,7 +60,7 @@ describe('E2E: Core Orchestrator Flow', () => {
             options: { framework: 'vue' },
         };
         const testConfig = { spec: emptySpec };
-        await expect(generateFromConfig(config, project, testConfig)).resolves.toBeUndefined();
+        expect(() => generateFromConfigSync(config, project, testConfig)).not.toThrow();
     });
 
     it('should call CliGenerator when targetScope is to_sdk_cli', async () => {
@@ -71,6 +71,6 @@ describe('E2E: Core Orchestrator Flow', () => {
             options: { framework: 'angular' },
         };
         const testConfig = { spec: emptySpec };
-        await expect(generateFromConfig(config, project, testConfig, 'to_sdk_cli')).resolves.toBeUndefined();
+        expect(() => generateFromConfigSync(config, project, testConfig, 'to_sdk_cli')).not.toThrow();
     });
 });

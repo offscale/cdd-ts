@@ -16,7 +16,7 @@ export class ListComponentGenerator {
 
         const dirPath = `${outDir}/${resource.name}/${resource.name}-list`;
 
-        if (!this.project.getFileSystem().directoryExists(dirPath)) {
+        if (!this.project.getFileSystem().directoryExistsSync(dirPath)) {
             this.project.getFileSystem().mkdirSync(dirPath);
         }
 
