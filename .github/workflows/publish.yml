@@ -44,6 +44,18 @@ jobs:
             - name: Build
               run: npm run build
 
+            - name: Setup Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version: '>=1.22.0'
+                  cache: true
+
+            - name: Build WASM
+              run: |
+                  make build_wasm
+                  make build_with_ts_go
+                  make build_with_ts_go_assemblyscript
+
             - name: Publish to npmjs
               run: npm publish --provenance --access public
               env:
