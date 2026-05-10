@@ -1,0 +1,1 @@
+export const spawn = () => ({ on: () => {}, stdout: { on: () => {} }, stderr: { on: () => {} } }); export const execSync = () => Buffer.from(''); export const spawnSync = () => ({ stdout: Buffer.from('') }); export default { spawn, execSync, spawnSync };
