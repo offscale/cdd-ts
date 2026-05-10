@@ -5,12 +5,15 @@ import * as http from 'node:http';
 import { run } from '../../src/cli.js';
 
 vi.mock('../../src/index.js', () => ({
-    generateFromConfig: vi.fn(),
+    generateFromConfigSync: vi.fn(),
 }));
 
 vi.mock('../../src/openapi/parse.js', () => ({
     SwaggerParser: {
         create: vi.fn().mockResolvedValue({}),
+        createSync: vi
+            .fn()
+            .mockReturnValue({ spec: { openapi: '3.0.0', info: { title: 'Test', version: '1' } }, operations: [] }),
     },
 }));
 
@@ -132,8 +135,8 @@ describe('cli.ts', () => {
             ]);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
-            expect(indexModule.generateFromConfig).toHaveBeenCalled();
-            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as unknown as Record<
+            expect(indexModule.generateFromConfigSync).toHaveBeenCalled();
+            const config = vi.mocked(indexModule.generateFromConfigSync).mock.calls[0]![0] as unknown as Record<
                 string,
                 unknown
             >;
@@ -144,7 +147,7 @@ describe('cli.ts', () => {
             await run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--input-dir', 'dir']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
-            expect(indexModule.generateFromConfig).toHaveBeenCalled();
+            expect(indexModule.generateFromConfigSync).toHaveBeenCalled();
         });
 
         it('to_server without input should fail', async () => {
@@ -167,8 +170,8 @@ describe('cli.ts', () => {
             await run(['node', 'cli.js', 'from_openapi', 'to_sdk', '--config', dummyConfigPath1]);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
-            expect(indexModule.generateFromConfig).toHaveBeenCalled();
-            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as unknown as Record<
+            expect(indexModule.generateFromConfigSync).toHaveBeenCalled();
+            const config = vi.mocked(indexModule.generateFromConfigSync).mock.calls[0]![0] as unknown as Record<
                 string,
                 unknown
             >;
@@ -194,7 +197,7 @@ describe('cli.ts', () => {
             await run(['node', 'cli.js', 'from_openapi', 'to_sdk', '-i', 'spec.json', '-o', 'outdir']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
-            const config = vi.mocked(indexModule.generateFromConfig).mock.calls[0]![0] as unknown as Record<
+            const config = vi.mocked(indexModule.generateFromConfigSync).mock.calls[0]![0] as unknown as Record<
                 string,
                 unknown
             >;
@@ -465,7 +468,9 @@ describe('cli.ts', () => {
             await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
-            vi.mocked(indexModule.generateFromConfig).mockRejectedValueOnce(new Error('Gen Error'));
+            vi.mocked(indexModule.generateFromConfigSync).mockImplementationOnce(() => {
+                throw new Error('Gen Error');
+            });
             const { req, res } = createMockReqRes(
                 'POST',
                 JSON.stringify({ method: 'from_openapi_to_sdk', params: { input: 'test.json' }, id: 1 }),
@@ -480,7 +485,9 @@ describe('cli.ts', () => {
             await run(['node', 'cli.js', 'serve_json_rpc']);
             await new Promise(resolve => setTimeout(resolve, 100));
             const indexModule = await import('../../src/index.js');
-            vi.mocked(indexModule.generateFromConfig).mockRejectedValueOnce('String Error');
+            vi.mocked(indexModule.generateFromConfigSync).mockImplementationOnce(() => {
+                throw 'String Error';
+            });
             const { req, res } = createMockReqRes(
                 'POST',
                 JSON.stringify({ method: 'from_openapi_to_sdk', params: { input: 'test.json' }, id: 1 }),

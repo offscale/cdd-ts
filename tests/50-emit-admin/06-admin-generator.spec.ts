@@ -100,7 +100,7 @@ describe('Admin: AdminGenerator (Orchestrator)', () => {
         const project = createTestProject();
         const fsHost = project.getFileSystem();
         const dirSpy = vi
-            .spyOn(fsHost, 'directoryExists')
+            .spyOn(fsHost, 'directoryExistsSync')
             .mockReturnValue(false as string | number | boolean | object | undefined | null as Promise<boolean>);
         const mkdirSpy = vi.spyOn(fsHost, 'mkdirSync');
 

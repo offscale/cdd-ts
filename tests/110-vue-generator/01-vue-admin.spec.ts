@@ -6,6 +6,35 @@ import { VueAdminGenerator } from '../../src/vendors/vue/admin/admin.generator.j
 import { SwaggerParser } from '../../src/openapi/parse.js';
 
 describe('Vue Admin Generation', () => {
+    it('should create admin directory when missing', () => {
+        const { Project } = require('ts-morph');
+        const project = new Project({ useInMemoryFileSystem: true });
+        const dirSpy = vi.spyOn(project.getFileSystem(), 'directoryExistsSync').mockReturnValue(false);
+        const mkdirSpy = vi.spyOn(project.getFileSystem(), 'mkdirSync').mockImplementation(() => {});
+
+        const parser = new SwaggerParser(
+            {
+                openapi: '3.0.0',
+                info: { title: 'Test API', version: '1.0.0' },
+                paths: {
+                    '/test': {
+                        get: {
+                            tags: ['TestResource'],
+                            responses: { '200': { description: 'ok' } },
+                        },
+                    },
+                },
+            } as any,
+            {} as any,
+        );
+
+        const adminGen = new VueAdminGenerator(parser, project);
+        adminGen.generate('/out');
+
+        expect(dirSpy).toHaveBeenCalled();
+        expect(mkdirSpy).toHaveBeenCalledWith('/out/admin');
+    });
+
     it('should generate a full admin UI from coverageSpec and handle existing directories', async () => {
         const project = await runGeneratorWithConfig(coverageSpec, {
             framework: 'vue',

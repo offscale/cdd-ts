@@ -87,7 +87,9 @@ describe('Node Implementation', () => {
             };
 
             const project = new Project();
-            await expect(generateFromConfigSync(config, project, { spec })).resolves.not.toThrow();
+            expect(() => {
+                generateFromConfigSync(config, project, { spec });
+            }).not.toThrow();
         });
     });
 

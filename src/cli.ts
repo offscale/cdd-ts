@@ -1,6 +1,4 @@
 import { Command, Option } from 'commander';
-import { Project, ScriptTarget, ModuleKind } from 'ts-morph';
-import { CliGenerator } from './vendors/cli/emit.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import yaml from 'js-yaml';
@@ -189,47 +187,7 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
             ),
         );
 
-        if (targetScope === 'to_sdk_cli') {
-            const activeProject = new Project({
-                compilerOptions: {
-                    declaration: true,
-                    target: ScriptTarget.ES2022,
-                    module: ModuleKind.ESNext,
-                    strict: true,
-                },
-                fileSystem:
-                    typeof globalThis !== 'undefined' && (globalThis as any).__FsData
-                        ? ({
-                              getCurrentDirectory: () => '/',
-                              directoryExistsSync: () => true,
-                              fileExistsSync: (p: string) => fs.existsSync(p),
-                              readFileSync: (p: string) => fs.readFileSync(p, 'utf8'),
-                              readdirSync: () => [],
-                              statSync: () => ({ isDirectory: () => false, isFile: () => true }) as any,
-                              realpathSync: (p: string) => p,
-                              mkdirSync: () => {},
-                              writeFileSync: (p: string, d: string) => fs.writeFileSync(p, d),
-                              deleteSync: () => {},
-                              moveSync: () => {},
-                              copySync: () => {},
-                              isCaseSensitive: () => true,
-                          } as any)
-                        : undefined,
-            });
-            const swaggerParser = SwaggerParser.createSync(
-                finalConfigInProgress.input,
-                finalConfigInProgress as GeneratorConfig,
-            );
-            new CliGenerator().generate(
-                activeProject,
-                swaggerParser,
-                finalConfigInProgress as GeneratorConfig,
-                finalConfigInProgress.output,
-            );
-            activeProject.saveSync();
-        } else {
-            generateFromConfigSync(finalConfigInProgress as GeneratorConfig, undefined, undefined, targetScope);
-        }
+        generateFromConfigSync(finalConfigInProgress as GeneratorConfig, undefined, undefined, targetScope);
         // Handling specific scopes
         if (targetScope === 'to_sdk_cli') {
             console.log('Target scope SDK CLI executed.');

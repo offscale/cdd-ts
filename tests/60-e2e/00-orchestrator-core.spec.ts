@@ -24,20 +24,22 @@ describe('E2E: Core Orchestrator Flow', () => {
         expect(filePaths).toContain('/generated/services/users.service.ts');
     });
 
-    it('should propagate async errors from the file system save operation', async () => {
+    it('should propagate errors from the file system save operation', async () => {
         const errorMessage = 'Disk is full';
         const project = createTestProject();
-        const saveSpy = vi.spyOn(project, 'save').mockRejectedValue(new Error(errorMessage));
+        const saveSpy = vi.spyOn(project, 'saveSync').mockImplementation(() => {
+            throw new Error(errorMessage);
+        });
         const config: GeneratorConfig = {
             input: '',
             output: '/generated',
             options: { generateServices: true } as string | number | boolean | object | undefined | null,
         };
-        vi.spyOn(SwaggerParser, 'create').mockResolvedValue(
+        vi.spyOn(SwaggerParser, 'createSync').mockReturnValue(
             new SwaggerParser(emptySpec as string | number | boolean | object | undefined | null, config),
         );
 
-        expect(() => generateFromConfigSync(config, project)).rejects.toThrow(errorMessage);
+        expect(() => generateFromConfigSync(config, project)).toThrow(errorMessage);
         expect(saveSpy).toHaveBeenCalled();
     });
 
@@ -49,7 +51,9 @@ describe('E2E: Core Orchestrator Flow', () => {
             options: { framework: 'react' },
         };
         const testConfig = { spec: emptySpec };
-        expect(() => { generateFromConfigSync(config, project, testConfig) }).not.toThrow();
+        expect(() => {
+            generateFromConfigSync(config, project, testConfig);
+        }).not.toThrow();
     });
 
     it('should generate vue client when framework is vue', async () => {

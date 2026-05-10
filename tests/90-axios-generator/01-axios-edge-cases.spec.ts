@@ -445,5 +445,5 @@ it('should hit branch conditions for test mock string evaluation and parameter s
         options: { implementation: 'axios' as const },
     };
 
-    // We can just use generateFromConfig which invokes all generators!
+    // We can just use generateFromConfigSync which invokes all generators!
 });

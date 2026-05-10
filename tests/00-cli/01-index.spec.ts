@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getGeneratorFactory, generateFromConfig } from '../../src/index.js';
+import { getGeneratorFactory, generateFromConfigSync } from '../../src/index.js';
 import { AngularClientGenerator } from '../../src/vendors/angular/angular-client.generator.js';
 import { ReactClientGenerator } from '../../src/vendors/react/react-client.generator.js';
 import { VueClientGenerator } from '../../src/vendors/vue/vue-client.generator.js';
@@ -13,6 +13,10 @@ import { SwaggerParser } from '../../src/openapi/parse.js';
 
 vi.mock('../../src/openapi/parse.js', () => {
     const MockSwaggerParser = vi.fn();
+    (MockSwaggerParser as unknown as Record<string, unknown>).createSync = vi.fn().mockReturnValue({
+        spec: { openapi: '3.0.0', info: { title: 'Test', version: '1' }, paths: {} },
+        getSpec: vi.fn().mockReturnValue({}),
+    });
     (MockSwaggerParser as unknown as Record<string, unknown>).create = vi.fn().mockResolvedValue({
         spec: { openapi: '3.0.0', info: { title: 'Test', version: '1' }, paths: {} },
         getSpec: vi.fn().mockReturnValue({}),
@@ -50,7 +54,7 @@ describe('index.ts', () => {
         });
     });
 
-    describe('generateFromConfig', () => {
+    describe('generateFromConfigSync', () => {
         let project: Project;
         let config: GeneratorConfig;
         let consoleLogSpy: import('vitest').MockInstance;
@@ -134,7 +138,7 @@ describe('index.ts', () => {
                     paths: {},
                 } as unknown as SwaggerParser,
             };
-            const activeProjectSaveSpy = vi.spyOn(project, 'save').mockResolvedValue(undefined);
+            const activeProjectSaveSpy = vi.spyOn(project, 'saveSync').mockResolvedValue(undefined);
             const generateSpy = vi.spyOn(AngularClientGenerator.prototype, 'generate').mockResolvedValue(undefined);
 
             generateFromConfigSync(config, project, testConfig);
@@ -145,7 +149,7 @@ describe('index.ts', () => {
         });
 
         it('should save project if not test env and target cli', async () => {
-            const activeProjectSaveSpy = vi.spyOn(project, 'save').mockResolvedValue(undefined);
+            const activeProjectSaveSpy = vi.spyOn(project, 'saveSync').mockResolvedValue(undefined);
 
             // Ensure SwaggerParser.create resolves
             (SwaggerParser.create as import('vitest').Mock).mockResolvedValueOnce({
@@ -178,7 +182,9 @@ describe('index.ts', () => {
         it('should throw and log error if generation fails and not test env', async () => {
             config.input = 'invalid-input';
             const error = new Error('Parse Error');
-            (SwaggerParser.create as import('vitest').Mock).mockRejectedValueOnce(error);
+            (SwaggerParser.createSync as import('vitest').Mock).mockImplementationOnce(() => {
+                throw error;
+            });
 
             try {
                 generateFromConfigSync(config, project);
@@ -191,7 +197,9 @@ describe('index.ts', () => {
         it('should throw and log unknown error if generation fails and not test env', async () => {
             config.input = 'invalid-input';
             const error = 'String Error';
-            (SwaggerParser.create as import('vitest').Mock).mockRejectedValueOnce(error);
+            (SwaggerParser.createSync as import('vitest').Mock).mockImplementationOnce(() => {
+                throw error;
+            });
 
             try {
                 generateFromConfigSync(config, project);
@@ -203,7 +211,9 @@ describe('index.ts', () => {
 
         it('should throw WITHOUT logging if generation fails IN test env', async () => {
             const error = new Error('Parse Error');
-            (SwaggerParser.create as import('vitest').Mock).mockRejectedValueOnce(error);
+            (SwaggerParser.createSync as import('vitest').Mock).mockImplementationOnce(() => {
+                throw error;
+            });
 
             try {
                 // Pass testConfig to simulate isTestEnv = true
