@@ -216,3 +216,18 @@ coverage.lcov
 test_*.ts
 print_*.cjs
 run_*.cjs
+
+# Additional Aggressive Wildcards for generated/test outputs
+out_*/
+out_*_dir/
+*test_input*.json
+*test_input*.yaml
+*.yaml
+petstore.*.yaml
+petstore.*.json
+spec.json
+spec.yaml
+
+# Ignore all testing yaml/json specs explicitly used or created locally
+petstore.yaml
+coverage-report.json

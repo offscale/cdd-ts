@@ -9,7 +9,9 @@ export const existsSync = (path) => {
 export const readFileSync = (path) => {
     if (path.toString().includes('package.json')) return '{"version": "1.0.0"}';
     if (path.toString().includes('spec.json') || path.toString().includes('spec.yaml')) {
-        if (typeof globalThis !== 'undefined' && globalThis.__SPEC_JSON) return globalThis.__SPEC_JSON;
+        if (typeof globalThis !== 'undefined' && globalThis.__SPEC_JSON) {
+             return typeof globalThis.__SPEC_JSON === 'string' ? globalThis.__SPEC_JSON : JSON.stringify(globalThis.__SPEC_JSON);
+        }
     }
     return fsData[path] || '';
 };
