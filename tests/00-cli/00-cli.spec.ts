@@ -201,7 +201,7 @@ describe('cli.ts', () => {
                 string,
                 unknown
             >;
-            expect(config.output).toBe(path.resolve(process.cwd(), 'outdir'));
+            expect(config.output).toBe(path.resolve(process.cwd(), 'outdir', 'src'));
         });
 
         it('fails if config file not found', async () => {

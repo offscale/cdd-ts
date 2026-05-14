@@ -21,6 +21,7 @@ export class NodeServiceTestGenerator {
         const filePath = path.join(servicesDir, fileName);
 
         const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+        const isComposable = this.config.options?.composableTests === true || this.config.options?.tests === true;
 
         sourceFile.addImportDeclarations([
             {
@@ -42,31 +43,49 @@ export class NodeServiceTestGenerator {
         ]);
 
         const testLines: string[] = [];
-        testLines.push(`describe('${serviceName}', () => {`);
+
+        if (isComposable) {
+            for (const op of operations) {
+                const methodName =
+                    op.methodName ||
+                    camelCase(op.operationId || `${op.method}_${op.path.replace(/[^a-zA-Z0-9]/g, '_')}`);
+                const testName = pascalCase(methodName);
+                testLines.push(`export const mock${testName}Response = () => Buffer.from('{}');`);
+            }
+            testLines.push('');
+            testLines.push(`export const test${serviceName} = () => describe('${serviceName}', () => {`);
+        } else {
+            testLines.push(`describe('${serviceName}', () => {`);
+        }
+
         testLines.push(`    let service: ${serviceName};`);
         testLines.push(``);
         testLines.push(`    beforeEach(() => {`);
         testLines.push(`        service = new ${serviceName}();`);
-        testLines.push(`        vi.spyOn(https, 'request').mockImplementation((...args: any[]) => {`);
-        testLines.push(`            const req = {`);
-        testLines.push(`                on: vi.fn(),`);
-        testLines.push(`                write: vi.fn(),`);
-        testLines.push(`                end: vi.fn((cb?: () => void) => {`);
-        testLines.push(`                    const res = {`);
-        testLines.push(`                        statusCode: 200,`);
-        testLines.push(`                        headers: {},`);
-        testLines.push(`                        on: (event: string, handler: any) => {`);
-        testLines.push(`                            if (event === 'data') handler(Buffer.from('{}'));`);
-        testLines.push(`                            if (event === 'end') handler();`);
-        testLines.push(`                        }`);
-        testLines.push(`                    };`);
-        testLines.push(`                    const callback = args.find(arg => typeof arg === 'function');`);
-        testLines.push(`                    if (callback) callback(res);`);
-        testLines.push(`                    if (cb) cb();`);
-        testLines.push(`                })`);
-        testLines.push(`            };`);
-        testLines.push(`            return req as any;`);
-        testLines.push(`        });`);
+
+        if (!isComposable) {
+            testLines.push(`        vi.spyOn(https, 'request').mockImplementation((...args: any[]) => {`);
+            testLines.push(`            const req = {`);
+            testLines.push(`                on: vi.fn(),`);
+            testLines.push(`                write: vi.fn(),`);
+            testLines.push(`                end: vi.fn((cb?: () => void) => {`);
+            testLines.push(`                    const res = {`);
+            testLines.push(`                        statusCode: 200,`);
+            testLines.push(`                        headers: {},`);
+            testLines.push(`                        on: (event: string, handler: any) => {`);
+            testLines.push(`                            if (event === 'data') handler(Buffer.from('{}'));`);
+            testLines.push(`                            if (event === 'end') handler();`);
+            testLines.push(`                        }`);
+            testLines.push(`                    };`);
+            testLines.push(`                    const callback = args.find(arg => typeof arg === 'function');`);
+            testLines.push(`                    if (callback) callback(res);`);
+            testLines.push(`                    if (cb) cb();`);
+            testLines.push(`                })`);
+            testLines.push(`            };`);
+            testLines.push(`            return req as any;`);
+            testLines.push(`        });`);
+        }
+
         testLines.push(`    });`);
         testLines.push(``);
         testLines.push(`    afterEach(() => {`);
@@ -81,6 +100,32 @@ export class NodeServiceTestGenerator {
             testLines.push(
                 `        it('should make a ${op.method.toUpperCase()} request to ${op.path}', async () => {`,
             );
+
+            if (isComposable) {
+                testLines.push(`            vi.spyOn(https, 'request').mockImplementation((...args: any[]) => {`);
+                testLines.push(`                const req = {`);
+                testLines.push(`                    on: vi.fn(),`);
+                testLines.push(`                    write: vi.fn(),`);
+                testLines.push(`                    end: vi.fn((cb?: () => void) => {`);
+                testLines.push(`                        const res = {`);
+                testLines.push(`                            statusCode: 200,`);
+                testLines.push(`                            headers: {},`);
+                testLines.push(`                            on: (event: string, handler: any) => {`);
+                testLines.push(
+                    `                                if (event === 'data') handler(mock${pascalCase(methodName)}Response());`,
+                );
+                testLines.push(`                                if (event === 'end') handler();`);
+                testLines.push(`                            }`);
+                testLines.push(`                        };`);
+                testLines.push(`                        const callback = args.find(arg => typeof arg === 'function');`);
+                testLines.push(`                        if (callback) callback(res);`);
+                testLines.push(`                        if (cb) cb();`);
+                testLines.push(`                    })`);
+                testLines.push(`                };`);
+                testLines.push(`                return req as any;`);
+                testLines.push(`            });`);
+            }
+
             testLines.push(``);
 
             // Build simple params
@@ -107,6 +152,11 @@ export class NodeServiceTestGenerator {
         }
 
         testLines.push(`});`);
+
+        if (isComposable) {
+            testLines.push('');
+            testLines.push(`test${serviceName}();`);
+        }
 
         sourceFile.addStatements(testLines.join('\n'));
         sourceFile.formatText();

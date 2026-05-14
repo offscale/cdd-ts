@@ -16,14 +16,30 @@ globalThis.setImmediate = (cb) => { cb(); return 3; };
 globalThis.clearImmediate = () => {};
 class MockURL {
     constructor(url, base) {
+        if (base && !url.includes('://') && !url.startsWith('file:')) {
+            url = new MockURL(base).href.replace(/\/[^/]*$/, '') + '/' + url;
+        }
         if (!url.includes('://') && !url.startsWith('file:')) {
             throw new Error('Invalid URL');
         }
         this.href = url;
-        if (base && !url.includes('://') && !url.startsWith('file:')) {
-            this.href = base + '/' + url;
+        const protoEnd = url.indexOf('://');
+        if (protoEnd !== -1) {
+            this.protocol = url.substring(0, protoEnd) + ':';
+            const rest = url.substring(protoEnd + 3);
+            const pathStart = rest.indexOf('/');
+            if (pathStart !== -1) {
+                this.hostname = rest.substring(0, pathStart);
+                this.pathname = rest.substring(pathStart);
+            } else {
+                this.hostname = rest;
+                this.pathname = '/';
+            }
+        } else {
+            this.protocol = '';
+            this.hostname = '';
+            this.pathname = url.replace('file://', '');
         }
-        this.pathname = this.href.replace('file://', '');
     }
 }
 globalThis.URL = MockURL;

@@ -447,3 +447,68 @@ it('should hit branch conditions for test mock string evaluation and parameter s
 
     // We can just use generateFromConfigSync which invokes all generators!
 });
+
+it('should generate composable tests when config.options.composableTests is true', async () => {
+    const config = {
+        input: 'dummy',
+        output: '/tmp/test-output-composable-axios',
+        options: { implementation: 'axios', tests: true, composableTests: true },
+    };
+
+    const spec = {
+        openapi: '3.0.0',
+        info: { title: 'Test API', version: '1.0' },
+        paths: {
+            '/composable': {
+                get: {
+                    operationId: 'getComposable',
+                    responses: { '200': { description: 'OK' } },
+                },
+            },
+        },
+    };
+
+    const project = new Project();
+    generateFromConfigSync(config as any, project, { spec });
+
+    const testFile = project.getSourceFile('/tmp/test-output-composable-axios/services/composable.service.spec.ts');
+    expect(testFile).toBeDefined();
+    const text = testFile!.getText();
+    expect(text).toContain("vi.spyOn(axios, 'request');");
+    expect(text).toContain('mockGetComposableResponse()');
+    expect(text).toContain('testComposableService();');
+});
+
+it('should cover missing branches in AxiosServiceTestGenerator when isComposable is true', () => {
+    const config = {
+        input: 'dummy',
+        output: '/tmp/test-output-mocked-composable',
+        options: { implementation: 'axios', tests: true, composableTests: true },
+    };
+
+    const spec = {
+        openapi: '3.0.0',
+        info: { title: 'Test API', version: '1.0' },
+        paths: {
+            '/mocked': {
+                get: {
+                    // no operationId or methodName
+                    responses: { '200': { description: 'OK' } },
+                },
+            },
+        },
+    };
+
+    const parser = new SwaggerParser(spec as any, config as any);
+    const project = new Project({ useInMemoryFileSystem: true });
+    const testGen = new AxiosServiceTestGenerator(parser, project, config as any);
+
+    const ops = parser.operations;
+
+    testGen.generateServiceTestFile('mocked', ops as any, '/tmp/test-output-mocked-composable/services');
+
+    const testFile = project.getSourceFile('/tmp/test-output-mocked-composable/services/mocked.service.spec.ts');
+    expect(testFile).toBeDefined();
+    const text = testFile!.getText();
+    expect(text).toContain('mockGetMockedResponse');
+});

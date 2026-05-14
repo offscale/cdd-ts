@@ -60,6 +60,7 @@
         "@ts-morph/common": "file:../ts-morph/packages/common",
         "@typescript/native-preview": "^7.0.0-dev.20260505.1",
         "as-wasi": "^0.6.0",
+        "code-block-writer": "^13.0.3",
         "commander": "^14",
         "js-yaml": "^4.1.1",
         "path-browserify": "^1.0.1",

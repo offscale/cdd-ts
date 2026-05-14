@@ -779,10 +779,22 @@ function validateHttpsUrl(value: OpenApiValue, location: string, fieldName: stri
         throw new SpecValidationError(`${fieldName} must be a valid URL at ${location}. Value: "${value}"`);
     }
 
-    const parsed = new URL(value);
-
-    if (parsed.protocol !== 'https:') {
-        throw new SpecValidationError(`${fieldName} must use https (TLS required) at ${location}. Value: "${value}"`);
+    try {
+        const parsed = new URL(value);
+        const proto = (parsed.protocol || '').replace(/:$/, '').toLowerCase();
+        if (proto !== 'https') {
+            throw new SpecValidationError(
+                `${fieldName} must use https (TLS required) at ${location}. Value: "${value}"`,
+            );
+        }
+    } catch (e) {
+        if (e instanceof SpecValidationError) throw e;
+        // URL parsing failed in this runtime; fall back to string check
+        if (!value.toLowerCase().startsWith('https://')) {
+            throw new SpecValidationError(
+                `${fieldName} must use https (TLS required) at ${location}. Value: "${value}"`,
+            );
+        }
     }
 }
 

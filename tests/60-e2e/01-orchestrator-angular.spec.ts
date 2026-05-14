@@ -33,6 +33,7 @@ describe('E2E: Angular Generator Output', () => {
         const project = await runGeneratorWithConfig(coverageSpec, {
             framework: 'angular',
             admin: true,
+            tests: true,
         });
 
         // Accept string | number | boolean | object | undefined | null path ending in the file—across slashes intentionally
@@ -50,6 +51,14 @@ describe('E2E: Angular Generator Output', () => {
                 '/test': {
                     get: {
                         operationId: 'getTest',
+                        parameters: [
+                            {
+                                name: 'optionalParam',
+                                in: 'query',
+                                required: false,
+                                schema: { type: 'string' },
+                            },
+                        ],
                         responses: { '200': { description: 'OK' } },
                     },
                 },
@@ -58,6 +67,7 @@ describe('E2E: Angular Generator Output', () => {
 
         const project = await runGeneratorWithConfig(noSecuritySpec, {
             framework: 'angular',
+            tests: true,
         });
 
         expect(hasFile(project, 'auth.interceptor.ts')).toBe(false);

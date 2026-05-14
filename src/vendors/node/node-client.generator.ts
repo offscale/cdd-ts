@@ -37,6 +37,7 @@ import { NodeServiceIndexGenerator, NodeMainIndexGenerator } from './utils/index
 import { VanillaAdminGenerator } from '../vanilla/admin/admin.generator.js';
 
 import { NodeServiceTestGenerator } from './test/service-test.generator.js';
+import { NodeIntegrationTestGenerator } from './test/integration-test.generator.js';
 
 import { PathInfo } from '@src/core/types/analysis.js';
 /**
@@ -155,12 +156,16 @@ export class NodeClientGenerator extends AbstractClientGenerator {
 
             new NodeServiceIndexGenerator(project).generateIndex(outputRoot);
 
-            if (config.options.generateServiceTests ?? true) {
+            const shouldGenerateTests = config.options.tests ?? config.options.generateServiceTests ?? false;
+            if (shouldGenerateTests) {
                 const testGenerator = new NodeServiceTestGenerator(parser, project, config);
+                const integrationTestGen = new NodeIntegrationTestGenerator(parser, project);
 
                 for (const [controllerName, operations] of Object.entries(controllerGroups)) {
                     testGenerator.generateServiceTestFile(controllerName, operations, servicesDir);
                 }
+
+                integrationTestGen.generate(controllerGroups, outputRoot);
 
                 console.log('✅ Node Service tests generated.');
             }

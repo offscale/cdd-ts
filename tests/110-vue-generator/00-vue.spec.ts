@@ -90,4 +90,36 @@ describe('Vue Implementation', () => {
 
         expect(FetchClientGenerator.prototype.generate).toHaveBeenCalled();
     });
+
+    it('should respect config.options.tests being false in composable generation', async () => {
+        const project = new Project({ useInMemoryFileSystem: true });
+        const config: GeneratorConfig = {
+            input: 'spec.yaml',
+            output: '/out',
+            options: { tests: false, framework: 'vue' },
+        };
+
+        const spec: any = {
+            openapi: '3.0.0',
+            info: { title: 'Test API', version: '1.0.0' },
+            paths: {
+                '/users': {
+                    get: {
+                        tags: ['Users'],
+                        operationId: 'getUsers',
+                        responses: {
+                            '200': { description: 'Success' },
+                        },
+                    },
+                },
+            },
+        };
+        const parser = new SwaggerParser(spec, {} as any);
+
+        const generator = new VueClientGenerator();
+        await generator.generate(project, parser, config, '/out');
+
+        expect(project.getSourceFile('/out/composables/users.composable.ts')).toBeDefined();
+        expect(project.getSourceFile('/out/composables/users.composable.spec.ts')).toBeUndefined();
+    });
 });

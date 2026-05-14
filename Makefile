@@ -24,11 +24,11 @@ install_deps:
 	npm install
 
 DOCS_DIR ?= docs
-build_docs:
+build_docs: install_deps
 	npm run docs
 
 BIN_DIR ?= dist
-build:
+build: install_deps
 	npm run build
 	@if [ "$(BIN_DIR)" != "dist" ]; then \
 		mkdir -p $(BIN_DIR); \

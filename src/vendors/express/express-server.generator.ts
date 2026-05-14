@@ -2,6 +2,8 @@ import { Project } from 'ts-morph';
 import path from 'node:path';
 import { IServerFrameworkGenerator } from '../../core/server/index.js';
 
+import { GeneratorConfig } from '../../core/types/config.js';
+
 /**
  * Express framework generator implementation.
  * Generates Express.js routers and tests.
@@ -13,11 +15,22 @@ export class ExpressServerGenerator implements IServerFrameworkGenerator {
      * @param schemaName The name of the schema/entity.
      * @param outputDir The directory to save the route in.
      * @param orm The ORM being used, if any.
+     * @param config The generator configuration options.
      */
-    public generateEntityRoutes(project: Project, schemaName: string, outputDir: string, orm?: string): void {
+    public generateEntityRoutes(
+        project: Project,
+        schemaName: string,
+        outputDir: string,
+        orm?: string,
+        config?: GeneratorConfig,
+    ): void {
         this.generateEntityRoute(project, schemaName, outputDir, orm);
-        this.generateRouteTest(project, schemaName, outputDir, orm);
-        this.generateE2ETest(project, schemaName, outputDir, orm);
+
+        const shouldGenerateTests = config?.options?.tests ?? false;
+        if (shouldGenerateTests) {
+            this.generateRouteTest(project, schemaName, outputDir, orm);
+            this.generateE2ETest(project, schemaName, outputDir, orm);
+        }
     }
 
     private generateEntityRoute(project: Project, schemaName: string, outputDir: string, orm?: string): void {

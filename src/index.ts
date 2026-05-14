@@ -1,3 +1,5 @@
+import * as path from 'node:path';
+
 // src/index.ts
 
 import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
@@ -149,9 +151,15 @@ export function generateFromConfigSync(
             console.log('==> TRACE: After SwaggerParser.create');
         }
 
+        const codeOutputRoot = config.output;
+
+        if (!isTestEnv && !activeProject.getFileSystem().directoryExistsSync(codeOutputRoot)) {
+            activeProject.getFileSystem().mkdirSync(codeOutputRoot);
+        }
+
         if (targetScope === 'to_orm' || (targetScope === 'to_server' && config.options.orm)) {
             if (config.options.orm === 'typeorm') {
-                new TypeOrmGenerator().generate(activeProject, swaggerParser, config, config.output);
+                new TypeOrmGenerator().generate(activeProject, swaggerParser, config, codeOutputRoot);
             }
         }
 
@@ -162,8 +170,7 @@ export function generateFromConfigSync(
                 const schemas = swaggerParser.schemas;
 
                 if (schemas && schemas.length > 0) {
-                    const path = require('node:path') as typeof import('node:path');
-                    const entitiesDir = path.join(config.output, 'entities');
+                    const entitiesDir = path.join(codeOutputRoot, 'entities');
                     for (const schema of schemas) {
                         if (
                             schema.definition &&
@@ -175,6 +182,7 @@ export function generateFromConfigSync(
                                 schema.name,
                                 entitiesDir,
                                 config.options.orm,
+                                config,
                             );
                         }
                     }
@@ -187,17 +195,17 @@ export function generateFromConfigSync(
             console.log('==> TRACE: Before generator');
             console.log('==> TRACE: Before generator');
             console.log('TRACE AWAIT 3');
-            generator.generate(activeProject, swaggerParser, config, config.output);
+            generator.generate(activeProject, swaggerParser, config, codeOutputRoot);
             console.log('TRACE AWAIT 4');
             console.log('==> TRACE: After generator');
             console.log('==> TRACE: After generator');
         }
 
         if (targetScope === 'to_sdk_cli') {
-            new CliGenerator().generate(activeProject, swaggerParser, config, config.output);
+            new CliGenerator().generate(activeProject, swaggerParser, config, codeOutputRoot);
         }
 
-        // This block is now reachable in our test.
+        // ... This block is reachable when isTestEnv is true ...
 
         if (!isTestEnv) {
             console.log('==> TRACE: Before saveSync');

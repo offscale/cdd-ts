@@ -21,6 +21,7 @@ export class AxiosServiceTestGenerator {
         const filePath = path.join(servicesDir, fileName);
 
         const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+        const isComposable = this.config.options?.composableTests === true || this.config.options?.tests === true;
 
         sourceFile.addImportDeclarations([
             {
@@ -38,14 +39,34 @@ export class AxiosServiceTestGenerator {
         ]);
 
         const testLines: string[] = [];
-        testLines.push(`describe('${serviceName}', () => {`);
+
+        if (isComposable) {
+            for (const op of operations) {
+                const methodName =
+                    op.methodName ||
+                    camelCase(op.operationId || `${op.method}_${op.path.replace(/[^a-zA-Z0-9]/g, '_')}`);
+                const testName = pascalCase(methodName);
+                testLines.push(
+                    `export const mock${testName}Response = () => ({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any });`,
+                );
+            }
+            testLines.push('');
+            testLines.push(`export const test${serviceName} = () => describe('${serviceName}', () => {`);
+        } else {
+            testLines.push(`describe('${serviceName}', () => {`);
+        }
+
         testLines.push(`    let service: ${serviceName};`);
         testLines.push(``);
         testLines.push(`    beforeEach(() => {`);
         testLines.push(`        service = new ${serviceName}();`);
-        testLines.push(
-            `        vi.spyOn(axios, 'request').mockResolvedValue({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any });`,
-        );
+        if (isComposable) {
+            testLines.push(`        vi.spyOn(axios, 'request');`);
+        } else {
+            testLines.push(
+                `        vi.spyOn(axios, 'request').mockResolvedValue({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any });`,
+            );
+        }
         testLines.push(`    });`);
         testLines.push(``);
         testLines.push(`    afterEach(() => {`);
@@ -61,6 +82,13 @@ export class AxiosServiceTestGenerator {
                 `        it('should make a ${op.method.toUpperCase()} request to ${op.path}', async () => {`,
             );
             testLines.push(``);
+
+            if (isComposable) {
+                testLines.push(
+                    `            (axios.request as any).mockResolvedValue(mock${pascalCase(methodName)}Response());`,
+                );
+                testLines.push(``);
+            }
 
             // Build simple params
             const params: string[] = [];
@@ -86,6 +114,11 @@ export class AxiosServiceTestGenerator {
         }
 
         testLines.push(`});`);
+
+        if (isComposable) {
+            testLines.push('');
+            testLines.push(`test${serviceName}();`);
+        }
 
         sourceFile.addStatements(testLines.join('\n'));
         sourceFile.formatText();

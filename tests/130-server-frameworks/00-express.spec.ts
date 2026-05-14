@@ -7,7 +7,9 @@ describe('ExpressServerGenerator', () => {
         const project = new Project({ useInMemoryFileSystem: true });
         const generator = new ExpressServerGenerator();
 
-        generator.generateEntityRoutes(project, 'User', '/out/entities', 'typeorm');
+        generator.generateEntityRoutes(project, 'User', '/out/entities', 'typeorm', {
+            options: { tests: true },
+        } as any);
 
         // Check router file generation
         const routeFile = project.getSourceFileOrThrow('/out/entities/user.routes.ts');
@@ -33,7 +35,9 @@ describe('ExpressServerGenerator', () => {
         const project = new Project({ useInMemoryFileSystem: true });
         const generator = new ExpressServerGenerator();
 
-        generator.generateEntityRoutes(project, 'User', '/out/entities');
+        generator.generateEntityRoutes(project, 'User', '/out/entities', undefined, {
+            options: { tests: true },
+        } as any);
 
         // Check router file generation
         const routeFile = project.getSourceFileOrThrow('/out/entities/user.routes.ts');
@@ -51,6 +55,35 @@ describe('ExpressServerGenerator', () => {
         const e2eTestFile = project.getSourceFileOrThrow('/out/entities/user.e2e.spec.ts');
         const e2eTestText = e2eTestFile.getFullText();
         expect(e2eTestText).toContain("describe('User E2E (Routes)', () => {");
-        expect(e2eTestText).not.toContain('sqlite');
+        expect(e2eTestText).not.toContain('DataSource');
+    });
+
+    it('should respect config.options.tests being false', () => {
+        const project = new Project({ useInMemoryFileSystem: true });
+        const generator = new ExpressServerGenerator();
+        const config: any = { options: { tests: false } };
+
+        generator.generateEntityRoutes(project, 'User', '/out/entities', undefined, config);
+
+        // route file generated
+        expect(project.getSourceFile('/out/entities/user.routes.ts')).toBeDefined();
+
+        // test files omitted
+        expect(project.getSourceFile('/out/entities/user.routes.spec.ts')).toBeUndefined();
+        expect(project.getSourceFile('/out/entities/user.e2e.spec.ts')).toBeUndefined();
+    });
+
+    it('should default to no tests if config is omitted', () => {
+        const project = new Project({ useInMemoryFileSystem: true });
+        const generator = new ExpressServerGenerator();
+
+        generator.generateEntityRoutes(project, 'User', '/out/entities', undefined);
+
+        // route file generated
+        expect(project.getSourceFile('/out/entities/user.routes.ts')).toBeDefined();
+
+        // test files omitted
+        expect(project.getSourceFile('/out/entities/user.routes.spec.ts')).toBeUndefined();
+        expect(project.getSourceFile('/out/entities/user.e2e.spec.ts')).toBeUndefined();
     });
 });

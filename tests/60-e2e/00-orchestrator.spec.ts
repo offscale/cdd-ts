@@ -86,15 +86,22 @@ describe('E2E: Full Generation Orchestrator', () => {
         expect(providerContent).not.toContain('apiKey?: string');
     });
 
-    it('should default to generating services and tests when options are absent', async () => {
-        const project = await runGeneratorWithConfig(coverageSpec, {});
+    it('should default to generating services but NOT tests when options are absent', async () => {
+        const project = createTestProject();
+        const config: GeneratorConfig = {
+            input: '',
+            output: '/generated',
+            options: {} as any,
+        };
+        generateFromConfigSync(config, project, { spec: coverageSpec });
+
         const filePaths = project.getSourceFiles().map(f => f.getFilePath());
 
         expect(filePaths).toContain('/generated/services/users.service.ts');
-        expect(filePaths).toContain('/generated/services/users.service.spec.ts');
+        expect(filePaths).not.toContain('/generated/services/users.service.spec.ts');
     });
 
-    it('should default to generating admin tests when admin option is present but test option is absent', async () => {
+    it('should NOT default to generating admin tests when admin option is present but test option is absent', async () => {
         const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
         await runGeneratorWithConfig(coverageSpec, { admin: true });
@@ -102,7 +109,9 @@ describe('E2E: Full Generation Orchestrator', () => {
         const logCalls = consoleSpy.mock.calls.flat();
 
         expect(logCalls).toEqual(expect.arrayContaining(['🚀 Generating Admin UI...']));
-        expect(logCalls).toEqual(expect.arrayContaining([expect.stringContaining('Generating tests for admin UI...')]));
+        expect(logCalls).not.toEqual(
+            expect.arrayContaining([expect.stringContaining('Generating tests for admin UI...')]),
+        );
 
         consoleSpy.mockRestore();
     });

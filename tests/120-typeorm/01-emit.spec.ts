@@ -32,7 +32,7 @@ describe('TypeOrmGenerator', () => {
             ],
         } as unknown as SwaggerParser;
 
-        await generator.generate(project, mockParser, { options: {} } as any, '/out');
+        await generator.generate(project, mockParser, { options: { tests: true } } as any, '/out');
 
         const file = project.getSourceFileOrThrow('/out/entities/user.entity.ts');
         const text = file.getFullText();
@@ -152,5 +152,31 @@ describe('TypeOrmGenerator', () => {
 
         expect(text).toContain('id!: number;'); // id still gets exclamation mark due to hasExclamationToken: isRequired || propName === 'id'
         expect(text).toContain('name?: string;');
+    });
+
+    it('should respect config.options.tests being false', () => {
+        const project = new Project({ useInMemoryFileSystem: true });
+        const generator = new TypeOrmGenerator();
+
+        const config: any = { options: { tests: false } };
+
+        const testParser = {
+            schemas: [
+                {
+                    name: 'User',
+                    definition: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'number' },
+                        },
+                    },
+                },
+            ],
+        } as any;
+
+        generator.generate(project, testParser, config, '/out');
+
+        expect(project.getSourceFile('/out/entities/user.entity.ts')).toBeDefined();
+        expect(project.getSourceFile('/out/entities/user.entity.spec.ts')).toBeUndefined();
     });
 });

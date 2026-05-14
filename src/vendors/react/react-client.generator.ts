@@ -7,6 +7,7 @@ import { FetchClientGenerator } from '../fetch/fetch-client.generator.js';
 import { camelCase, pascalCase } from '@src/functions/utils.js';
 import { ServiceMethodAnalyzer } from '@src/functions/parse_analyzer.js';
 import { ReactAdminGenerator } from './admin/admin.generator.js';
+import { ReactHookTestGenerator } from './test/hook-test.generator.js';
 
 function getControllerCanonicalName(op: PathInfo): string {
     if (Array.isArray(op.tags) && op.tags[0]) {
@@ -46,7 +47,7 @@ export class ReactClientGenerator extends AbstractClientGenerator {
         baseGenerator.generate(project, parser, config, outputRoot);
 
         if (config.options?.admin) {
-            const adminGenerator = new ReactAdminGenerator(parser, project);
+            const adminGenerator = new ReactAdminGenerator(parser, project, config);
             adminGenerator.generate(outputRoot);
         }
 
@@ -204,5 +205,13 @@ export const useApiContext = () => useContext(ApiContext);
             });
         }
         hooksIndex.formatText();
+
+        const shouldGenerateTests = config.options.tests ?? config.options.generateServiceTests ?? false;
+        if (shouldGenerateTests) {
+            const testGenerator = new ReactHookTestGenerator(parser, project, config);
+            for (const controllerName of Object.keys(operationsByController)) {
+                testGenerator.generateHookTestFile(controllerName, hooksDir);
+            }
+        }
     }
 }

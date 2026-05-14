@@ -46,7 +46,7 @@ describe('ReactAdminGenerator', () => {
     });
 
     it('generates admin UI files successfully', async () => {
-        const generator = new ReactAdminGenerator(parser, project);
+        const generator = new ReactAdminGenerator(parser, project, { options: { tests: true } } as any);
         await generator.generate('/out');
 
         expect(project.getSourceFile('/out/admin/users/users-list.spec.tsx')).toBeDefined();
@@ -60,7 +60,7 @@ describe('ReactAdminGenerator', () => {
 
     it('handles existing admin directory', async () => {
         project.getFileSystem().mkdirSync('/out/admin');
-        const generator = new ReactAdminGenerator(parser, project);
+        const generator = new ReactAdminGenerator(parser, project, { options: { tests: true } } as any);
         await generator.generate('/out');
         expect(project.getSourceFile('/out/admin/app.tsx')).toBeDefined();
     });
@@ -103,6 +103,15 @@ describe('ReactAdminGenerator', () => {
         expect(project.getSourceFile('/out/admin/reports/reports-form.tsx')).toBeUndefined();
         // Should not generate validators if no resource is editable
         expect(project.getSourceFile('/out/admin/shared/validators.ts')).toBeUndefined();
+    });
+
+    it('should respect config.options.tests being false', () => {
+        const config: any = { options: { tests: false } };
+        const generator = new ReactAdminGenerator(parser, project, config);
+        generator.generate('/out');
+
+        expect(project.getSourceFile('/out/admin/users/users-list.tsx')).toBeDefined();
+        expect(project.getSourceFile('/out/admin/users/users-list.spec.tsx')).toBeUndefined();
     });
 });
 

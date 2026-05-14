@@ -112,7 +112,7 @@ describe('Generators: AngularClientGenerator (Orchestrator)', () => {
             input: '',
             output: testOutputDir,
             clientName: 'TestClient',
-            options: { dateType: 'string', enumStyle: 'enum', generateServices: true },
+            options: { dateType: 'string', enumStyle: 'enum', generateServices: true, tests: true },
         } as string | number | boolean | object | undefined | null;
 
         // We must ensure project writes to disk since fs read calls happen later

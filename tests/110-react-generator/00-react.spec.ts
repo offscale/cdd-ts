@@ -16,7 +16,7 @@ describe('React Implementation', () => {
 
     it('should generate React hooks for services', async () => {
         const project = new Project();
-        const config = { options: { admin: false } } as GeneratorConfig;
+        const config = { options: { admin: false, tests: true } } as GeneratorConfig;
 
         const spec = {
             openapi: '3.1.0',
@@ -164,5 +164,33 @@ describe('React Implementation', () => {
 
         // Check that an admin generator was run (app.tsx is created by Admin Generator's Master Routing)
         expect(project.getSourceFile('/out/admin/app.tsx')).toBeDefined();
+    });
+
+    it('should respect config.options.tests being false in hook generation', async () => {
+        const project = new Project({ useInMemoryFileSystem: true });
+        const config = { options: { tests: false } } as unknown as GeneratorConfig;
+
+        const spec = {
+            openapi: '3.1.0',
+            info: { title: 'Test API', version: '1.0.0' },
+            paths: {
+                '/users': {
+                    get: {
+                        tags: ['Users'],
+                        operationId: 'getUsers',
+                        responses: {
+                            '200': { description: 'Success' },
+                        },
+                    },
+                },
+            },
+        };
+        const parser = new SwaggerParser(spec, {} as any);
+
+        const generator = new ReactClientGenerator();
+        await generator.generate(project, parser, config, '/out');
+
+        expect(project.getSourceFile('/out/hooks/users.hook.ts')).toBeDefined();
+        expect(project.getSourceFile('/out/hooks/users.hook.spec.ts')).toBeUndefined();
     });
 });

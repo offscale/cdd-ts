@@ -146,7 +146,8 @@ export class FetchClientGenerator extends AbstractClientGenerator {
 
             new FetchServiceIndexGenerator(project).generateIndex(outputRoot);
 
-            if (config.options.generateServiceTests ?? true) {
+            const shouldGenerateTests = config.options.tests ?? config.options.generateServiceTests ?? false;
+            if (shouldGenerateTests) {
                 const testGenerator = new FetchServiceTestGenerator(parser, project, config);
 
                 for (const [controllerName, operations] of Object.entries(controllerGroups)) {

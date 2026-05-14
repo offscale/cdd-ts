@@ -12,6 +12,7 @@ import { CustomValidatorsGenerator } from './custom-validators.generator.js';
 import { ElementsGenerator } from './elements.generator.js';
 import { I18nGenerator } from './i18n.generator.js';
 import { AdminTestGenerator } from './admin-test.generator.js';
+import { GeneratorConfig } from '@src/core/types/config.js';
 
 /**
  * Main coordinator for generating the Angular Admin Interface.
@@ -24,6 +25,8 @@ export class AdminGenerator {
         private parser: SwaggerParser,
 
         private project: Project,
+
+        private config?: GeneratorConfig,
     ) {}
 
     /**
@@ -68,6 +71,8 @@ export class AdminGenerator {
 
         let needsCustomValidators = false;
 
+        const shouldGenerateTests = this.config?.options?.tests ?? this.config?.options?.generateAdminTests ?? false;
+
         for (const resource of this.allResources) {
             console.log(`  -> Generating for resource: ${resource.name}`);
 
@@ -86,7 +91,10 @@ export class AdminGenerator {
             }
 
             routeGen.generate(resource, adminDir);
-            testGen.generate(resource, resourceDir);
+
+            if (shouldGenerateTests) {
+                testGen.generate(resource, resourceDir);
+            }
         }
 
         routeGen.generateMaster(this.allResources, adminDir);

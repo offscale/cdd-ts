@@ -37,6 +37,10 @@ export interface GeneratorConfigOptions {
     generateServiceTests?: boolean;
     /** If true, generates tests for the admin UI. Defaults to true. */
     generateAdminTests?: boolean;
+    /** If true, generates composable tests and mocks, useful for e2e and edge case bugs. Defaults to false. */
+    composableTests?: boolean;
+    /** If true, generates tests based on the selected framework or implementation. Maps to the Tests checkbox in the UI. */
+    tests?: boolean;
     /** A record of static headers to be added to every generated service request. */
     customHeaders?: Record<string, string>;
     /**
@@ -60,6 +64,10 @@ export interface GeneratorConfigOptions {
      * - 'deno': Generates Deno.serve() handlers.
      */
     serverFramework?: 'express' | 'node' | 'bun' | 'deno';
+    /** If true, disables generation of GitHub Actions scaffolding. */
+    noGithubActions?: boolean;
+    /** If true, disables generation of package scaffolding. */
+    noInstallablePackage?: boolean;
 }
 
 /** The main configuration object for the entire generation process. */

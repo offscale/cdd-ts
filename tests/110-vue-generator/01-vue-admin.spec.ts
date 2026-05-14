@@ -28,7 +28,7 @@ describe('Vue Admin Generation', () => {
             {} as any,
         );
 
-        const adminGen = new VueAdminGenerator(parser, project);
+        const adminGen = new VueAdminGenerator(parser, project, { options: { tests: true } } as any);
         adminGen.generate('/out');
 
         expect(dirSpy).toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('Vue Admin Generation', () => {
 
         // Call a second time to cover directoryExistsSync(dir) branch
         const parser = new SwaggerParser(coverageSpec as any, {} as any);
-        const adminGen = new VueAdminGenerator(parser, project);
+        const adminGen = new VueAdminGenerator(parser, project, { options: { tests: true } } as any);
         await adminGen.generate('/generated');
 
         // 1. Check generated main admin files
@@ -107,6 +107,18 @@ describe('Vue Admin Generation', () => {
         expect(project.getSourceFile('/generated/admin/router.ts')).toBeUndefined();
 
         warnSpy.mockRestore();
+    });
+
+    it('should respect config.options.tests being false', async () => {
+        const project = await runGeneratorWithConfig(coverageSpec, {
+            framework: 'vue',
+            admin: true,
+            generateServices: true,
+            tests: false,
+        });
+
+        expect(project.getSourceFile('/generated/admin/users/UsersList.vue')).toBeDefined();
+        expect(project.getSourceFile('/generated/admin/users/users-list.component.spec.ts')).toBeUndefined();
     });
 
     it('should generate a form that gracefully handles unresolvable allOf refs', async () => {

@@ -16,6 +16,7 @@ import { AdminGenerator } from './admin/admin.generator.js';
 import { AdminTestGenerator } from './admin/admin-test.generator.js';
 import { discoverAdminResources } from './admin/resource-discovery.js';
 import { ServiceGenerator } from './service/service.generator.js';
+import { IntegrationTestGenerator } from './test/integration-test.generator.js';
 import { ServiceTestGenerator } from './test/service-test-generator.js';
 
 // Angular Utilities
@@ -220,10 +221,12 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 
             console.log('✅ Utilities and providers generated.');
 
-            if (config.options.generateServiceTests ?? true) {
+            const shouldGenerateTests = config.options.tests ?? config.options.generateServiceTests ?? false;
+            if (shouldGenerateTests) {
                 console.log('📝 Generating tests for services...');
 
                 const testGenerator = new ServiceTestGenerator(parser, project, config);
+                const integrationTestGen = new IntegrationTestGenerator(parser, project);
 
                 const controllerGroupsForTest = groupPathsByCanonicalController(parser);
 
@@ -237,13 +240,17 @@ export class AngularClientGenerator extends AbstractClientGenerator {
                     testGenerator.generateServiceTestFile(controllerName, operations, servicesDir);
                 }
 
+                integrationTestGen.generate(controllerGroupsForTest, outputRoot, config.clientName);
+
                 console.log('✅ Service tests generated.');
             }
 
             if (config.options.admin) {
-                new AdminGenerator(parser, project).generate(outputRoot);
+                new AdminGenerator(parser, project, config).generate(outputRoot);
 
-                if (config.options.generateAdminTests ?? true) {
+                const shouldGenerateTests = config.options.tests ?? config.options.generateAdminTests ?? false;
+
+                if (shouldGenerateTests) {
                     console.log('📝 Generating tests for admin UI...');
 
                     const adminTestGen = new AdminTestGenerator(project);

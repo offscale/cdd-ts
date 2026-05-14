@@ -26,10 +26,14 @@ export class TypeOrmGenerator implements IOrmGenerator {
 
         const entitiesDir = path.join(outputDir, 'entities');
 
+        const shouldGenerateTests = _config.options?.tests ?? false;
+
         for (const schema of schemas) {
             if (schema.definition && typeof schema.definition === 'object' && schema.definition.type === 'object') {
                 this.generateEntity(project, schema.name, schema.definition, entitiesDir);
-                this.generateEntityTest(project, schema.name, entitiesDir);
+                if (shouldGenerateTests) {
+                    this.generateEntityTest(project, schema.name, entitiesDir);
+                }
             }
         }
     }

@@ -54,7 +54,7 @@ function extractTestBlock(callExpr: CallExpression, processedNodes: Set<any>): P
             const nestedCalls = bodyFn.getDescendantsOfKind(SyntaxKind.CallExpression);
             for (const nestedCall of nestedCalls) {
                 if (!processedNodes.has(nestedCall)) {
-                    const nestedBlock = extractTestBlock(nestedCall, processedNodes);
+                    const nestedBlock = extractTestBlock(nestedCall as any, processedNodes);
                     if (nestedBlock) {
                         children.push(nestedBlock);
                     }

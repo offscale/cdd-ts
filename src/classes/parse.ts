@@ -599,14 +599,19 @@ function schemaFromTupleType(tupleNode: import('ts-morph').TupleTypeNode): Swagg
             }
 
             typeNode = element.getTypeNode();
-        } else if (Node.isRestTypeNode(element)) {
-            restSchema = schemaFromTypeNode(element.getTypeNode());
+        } else if (Node.isRestTypeNode(element as any)) {
+            restSchema = schemaFromTypeNode((element as any).getTypeNode());
 
             continue;
-        } else if (Node.isOptionalTypeNode(element)) {
+        } else if (element.getKind() === SyntaxKind.OptionalType) {
             isOptional = true;
 
-            typeNode = element.getTypeNode();
+            const elementNode = element.compilerNode as any;
+            if (elementNode.type) {
+                typeNode = (element as any)._getNodeFromCompilerNode(elementNode.type) as TypeNode;
+            } else {
+                typeNode = element as TypeNode;
+            }
         } else {
             typeNode = element as TypeNode;
         }

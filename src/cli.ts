@@ -45,6 +45,7 @@ interface CliOptions {
     generateServices?: boolean;
     testsForService?: boolean;
     testsForAdmin?: boolean;
+    tests?: boolean;
     noTestGen?: boolean;
     noGithubActions?: boolean;
     noInstallablePackage?: boolean;
@@ -113,6 +114,7 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
         if (options.admin !== undefined) cliOptions.admin = options.admin;
         if (options.testsForService !== undefined) cliOptions.generateServiceTests = options.testsForService;
         if (options.testsForAdmin !== undefined) cliOptions.generateAdminTests = options.testsForAdmin;
+        if (options.tests !== undefined) cliOptions.composableTests = options.tests;
         if (options.orm) cliOptions.orm = options.orm;
         if (options.serverFramework) cliOptions.serverFramework = options.serverFramework;
         if (options.int64Type) cliOptions.int64Type = options.int64Type;
@@ -187,6 +189,11 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
             ),
         );
 
+        const targetOutputRoot = finalConfigInProgress.output;
+        if (!options.noInstallablePackage && (targetScope === 'to_sdk' || targetScope === 'to_server')) {
+            finalConfigInProgress.output = path.join(targetOutputRoot, 'src');
+        }
+
         generateFromConfigSync(finalConfigInProgress as GeneratorConfig, undefined, undefined, targetScope);
         // Handling specific scopes
         if (targetScope === 'to_sdk_cli') {
@@ -200,22 +207,44 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
         if (!options.noInstallablePackage) {
             console.log('Generating package scaffolding...');
             fs.writeFileSync(
-                path.join(finalConfigInProgress.output, 'package.json'),
-                JSON.stringify({ name: 'generated-client', version: '1.0.0', main: 'index.js' }, null, 2),
+                path.join(targetOutputRoot, 'package.json'),
+                JSON.stringify(
+                    {
+                        name: 'generated-client',
+                        version: '1.0.0',
+                        main: 'dist/index.js',
+                        types: 'dist/index.d.ts',
+                        scripts: { build: 'tsc' },
+                    },
+                    null,
+                    2,
+                ),
             );
             fs.writeFileSync(
-                path.join(finalConfigInProgress.output, 'tsconfig.json'),
-                JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'CommonJS' } }, null, 2),
+                path.join(targetOutputRoot, 'tsconfig.json'),
+                JSON.stringify(
+                    {
+                        compilerOptions: {
+                            target: 'ES2022',
+                            module: 'CommonJS',
+                            outDir: 'dist',
+                            rootDir: 'src',
+                            declaration: true,
+                        },
+                    },
+                    null,
+                    2,
+                ),
             );
         }
 
         if (!options.noGithubActions) {
             console.log('Generating GitHub actions...');
-            const ghDir = path.join(finalConfigInProgress.output, '.github', 'workflows');
+            const ghDir = path.join(targetOutputRoot, '.github', 'workflows');
             fs.mkdirSync(ghDir, { recursive: true });
             fs.writeFileSync(
                 path.join(ghDir, 'ci.yml'),
-                'name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - run: npm install\n      - run: npm test\n',
+                'name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n      - run: npm install\n      - run: npm run build\n      - run: npm test\n',
             );
         }
 
@@ -400,6 +429,7 @@ const addCommonOptions = (cmd: Command) => {
                 .env('CDD_INT64_TYPE'),
         )
         .addOption(new Option('--no-test-gen', 'Disable all test generation').env('CDD_NO_TEST_GEN'))
+        .addOption(new Option('--tests', 'Create composable tests & mocks').env('CDD_CREATE_COMPOSABLE_TESTS'))
         .addOption(
             new Option('--no-github-actions', 'Disable generation of github actions scaffolding').env(
                 'CDD_NO_GITHUB_ACTIONS',
@@ -700,9 +730,20 @@ if (isMain) {
 } else if (typeof globalThis !== 'undefined' && (globalThis as { __FsData?: unknown }).__FsData) {
     const Javy = (globalThis as { Javy?: { IO?: { readSync: (fd: number, buffer: Uint8Array) => number } } }).Javy;
     if (Javy && Javy.IO) {
-        const buffer = new Uint8Array(10 * 1024 * 1024);
-        const bytesRead = Javy.IO.readSync(0, buffer);
-        const stdinContent = new TextDecoder().decode(buffer.subarray(0, bytesRead));
+        const buffer = new Uint8Array(20 * 1024 * 1024); // 20MB buffer
+        let offset = 0;
+        try {
+            while (offset < buffer.length) {
+                const chunk = buffer.subarray(offset);
+                const bytesRead = Javy.IO.readSync(0, chunk);
+                if (!bytesRead || bytesRead === 0) break;
+                offset += bytesRead;
+            }
+        } catch (e) {
+            // Ignore EOF errors
+        }
+
+        const stdinContent = new TextDecoder().decode(buffer.subarray(0, offset));
 
         if (stdinContent) {
             try {
@@ -718,7 +759,9 @@ if (isMain) {
                     run(runArgs)
                         .then(() => {
                             console.log(
-                                'JAVY_FS_DUMP:' + JSON.stringify((globalThis as { __FsData?: unknown }).__FsData),
+                                'JAVY_FS_DUMP:' +
+                                    JSON.stringify((globalThis as { __FsData?: unknown }).__FsData) +
+                                    '\n',
                             );
                         })
                         .catch((err: unknown) => {

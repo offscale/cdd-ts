@@ -6,6 +6,7 @@ import { AbstractClientGenerator } from '../../core/generator.js';
 import { FetchClientGenerator } from '../fetch/fetch-client.generator.js';
 import { camelCase, pascalCase } from '@src/functions/utils.js';
 import { VueAdminGenerator } from './admin/admin.generator.js';
+import { VueComposableTestGenerator } from './test/composable-test.generator.js';
 
 function getControllerCanonicalName(op: PathInfo): string {
     if (Array.isArray(op.tags) && op.tags[0]) {
@@ -44,8 +45,8 @@ export class VueClientGenerator extends AbstractClientGenerator {
         const baseGenerator = new FetchClientGenerator();
         baseGenerator.generate(project, parser, config, outputRoot);
 
-        if (config.options?.admin) {
-            new VueAdminGenerator(parser, project).generate(outputRoot);
+        if (config.options.admin) {
+            new VueAdminGenerator(parser, project, config).generate(outputRoot);
         }
 
         const composablesDir = path.join(outputRoot, 'composables');
@@ -117,6 +118,14 @@ export class VueClientGenerator extends AbstractClientGenerator {
             });
         }
         composablesIndex.formatText();
+
+        const shouldGenerateTests = config.options.tests ?? config.options.generateServiceTests ?? false;
+        if (shouldGenerateTests) {
+            const testGenerator = new VueComposableTestGenerator(parser, project, config);
+            for (const controllerName of Object.keys(operationsByController)) {
+                testGenerator.generateComposableTestFile(controllerName, composablesDir);
+            }
+        }
 
         pluginFile.addStatements(`
 ${serviceImports.join('\n')}

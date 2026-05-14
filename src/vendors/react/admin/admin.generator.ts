@@ -12,6 +12,7 @@ import { CustomValidatorsGenerator } from './custom-validators.generator.js';
 import { StylingBuilder } from './styling.builder.js';
 import { AdminTestGenerator } from './admin-test.generator.js';
 import { I18nGenerator } from './i18n.generator.js';
+import { GeneratorConfig } from '@src/core/types/config.js';
 
 /**
  * Main coordinator for generating the React Admin Interface.
@@ -24,10 +25,12 @@ export class ReactAdminGenerator {
      * Initializes a new ReactAdminGenerator.
      * @param parser The parsed OpenAPI specification.
      * @param project The ts-morph project for writing source files.
+     * @param config The generator configuration options.
      */
     constructor(
         private parser: SwaggerParser,
         private project: Project,
+        private config?: GeneratorConfig,
     ) {}
 
     /**
@@ -60,6 +63,8 @@ export class ReactAdminGenerator {
 
         let needsValidators = false;
 
+        const shouldGenerateTests = this.config?.options?.tests ?? this.config?.options?.generateAdminTests ?? false;
+
         for (const resource of this.allResources) {
             console.log(`  -> Generating for resource: ${resource.name}`);
 
@@ -67,13 +72,17 @@ export class ReactAdminGenerator {
 
             if (resource.operations.some(op => op.action === 'list')) {
                 listGen.generate(resource, adminDir);
-                testGen.generate(`${resource.name}-list`, resourceDir);
+                if (shouldGenerateTests) {
+                    testGen.generate(`${resource.name}-list`, resourceDir);
+                }
                 styleGen.generateCss(`${resource.name}-list`, resourceDir);
             }
 
             if (resource.isEditable) {
                 formGen.generate(resource, adminDir);
-                testGen.generate(`${resource.name}-form`, resourceDir);
+                if (shouldGenerateTests) {
+                    testGen.generate(`${resource.name}-form`, resourceDir);
+                }
                 styleGen.generateCss(`${resource.name}-form`, resourceDir);
                 needsValidators = true;
             }

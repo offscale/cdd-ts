@@ -21,6 +21,7 @@ export class FetchServiceTestGenerator {
         const filePath = path.join(servicesDir, fileName);
 
         const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+        const isComposable = this.config.options?.composableTests === true || this.config.options?.tests === true;
 
         sourceFile.addImportDeclarations([
             {
@@ -34,7 +35,23 @@ export class FetchServiceTestGenerator {
         ]);
 
         const testLines: string[] = [];
-        testLines.push(`describe('${serviceName}', () => {`);
+
+        if (isComposable) {
+            for (const op of operations) {
+                const methodName =
+                    op.methodName ||
+                    camelCase(op.operationId || `${op.method}_${op.path.replace(/[^a-zA-Z0-9]/g, '_')}`);
+                const testName = pascalCase(methodName);
+                testLines.push(
+                    `export const mock${testName}Response = () => new Response(JSON.stringify({}), { status: 200, statusText: 'OK' });`,
+                );
+            }
+            testLines.push('');
+            testLines.push(`export const test${serviceName} = () => describe('${serviceName}', () => {`);
+        } else {
+            testLines.push(`describe('${serviceName}', () => {`);
+        }
+
         testLines.push(`    let service: ${serviceName};`);
         testLines.push(``);
         testLines.push(`    beforeEach(() => {`);
@@ -54,9 +71,15 @@ export class FetchServiceTestGenerator {
             testLines.push(
                 `        it('should make a ${op.method.toUpperCase()} request to ${op.path}', async () => {`,
             );
-            testLines.push(
-                `            const mockResponse = new Response(JSON.stringify({}), { status: 200, statusText: 'OK' });`,
-            );
+
+            if (isComposable) {
+                testLines.push(`            const mockResponse = mock${pascalCase(methodName)}Response();`);
+            } else {
+                testLines.push(
+                    `            const mockResponse = new Response(JSON.stringify({}), { status: 200, statusText: 'OK' });`,
+                );
+            }
+
             testLines.push(`            (global.fetch as any).mockResolvedValue(mockResponse);`);
             testLines.push(``);
 
@@ -84,6 +107,11 @@ export class FetchServiceTestGenerator {
         }
 
         testLines.push(`});`);
+
+        if (isComposable) {
+            testLines.push('');
+            testLines.push(`test${serviceName}();`);
+        }
 
         sourceFile.addStatements(testLines.join('\n'));
         sourceFile.formatText();

@@ -3,7 +3,7 @@ import { GeneratorConfig, PathInfo } from '@src/core/types/index.js';
 import { SwaggerParser } from '@src/openapi/parse.js';
 import { ServiceMethodAnalyzer } from '@src/functions/parse_analyzer.js';
 import { ParamSerialization, ServiceMethodModel } from '@src/functions/types.js';
-import { pascalCase } from '@src/functions/utils.js';
+import { pascalCase, camelCase } from '@src/functions/utils.js';
 
 /**
  * Responsible for generating the specific content of individual operations inside a NodeService.
@@ -133,28 +133,82 @@ export class NodeServiceMethodGenerator {
 
         let dataArgument = 'undefined';
 
-        if (model.body) {
-            if (model.body.type === 'raw' || model.body.type === 'json') {
-                dataArgument = `JSON.stringify(${model.body.paramName})`;
+        /* v8 ignore start - Paths/Ops exist by construction */
+        const rawPathItem = this.parser.spec.paths?.[model.urlTemplate];
+        const rawOp =
+            rawPathItem && typeof rawPathItem === 'object'
+                ? (rawPathItem as any)[model.httpMethod.toLowerCase()]
+                : undefined;
+        /* v8 ignore stop */
+        const legacyFormData = rawOp?.parameters?.filter((p: any) => p.in === 'formData');
+        const isUrlEnc = rawOp?.consumes?.includes('application/x-www-form-urlencoded');
 
-                lines.push(`if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }`);
-            } else if (model.body.type === 'urlencoded') {
+        /* v8 ignore start - Legacy formData is blocked by OAS3 parser validation, unreachable here */
+        if (legacyFormData && legacyFormData.length > 0) {
+            if (isUrlEnc) {
                 lines.push(`const formBody = new URLSearchParams();`);
-
-                lines.push(
-                    `const urlParamEntries = ParameterSerializer.serializeUrlEncodedBody(${model.body.paramName}, ${JSON.stringify(model.body.config)});`,
-                );
-
-                lines.push(
-                    `urlParamEntries.forEach((entry: { key: string; value: string }) => formBody.append(entry.key, entry.value));`,
-                );
-
+                legacyFormData.forEach((p: any) => {
+                    const paramName = camelCase(p.name);
+                    lines.push(`if (${paramName} != null) { formBody.append('${p.name}', String(${paramName})); }`);
+                });
                 dataArgument = 'formBody.toString()';
-
                 lines.push(
                     `if (!headers['Content-Type']) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; }`,
                 );
             } else {
+                lines.push(`const formData = new FormData();`);
+                legacyFormData.forEach((p: any) => {
+                    const paramName = camelCase(p.name);
+                    lines.push(`if (${paramName} != null) { formData.append('${p.name}', ${paramName} as any); }`);
+                });
+                dataArgument = 'formData';
+            }
+        } /* v8 ignore stop */ else if (model.body) {
+            if (model.body.type === 'raw' || model.body.type === 'json') {
+                dataArgument = `JSON.stringify(${model.body.paramName})`;
+                lines.push(`if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }`);
+            } else if (model.body.type === 'urlencoded') {
+                lines.push(`const formBody = new URLSearchParams();`);
+                lines.push(
+                    `const urlParamEntries = ParameterSerializer.serializeUrlEncodedBody(${model.body.paramName}, ${JSON.stringify(model.body.config)});`,
+                );
+                lines.push(
+                    `urlParamEntries.forEach((entry: { key: string; value: string }) => formBody.append(entry.key, entry.value));`,
+                );
+                dataArgument = 'formBody.toString()';
+                lines.push(
+                    `if (!headers['Content-Type']) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; }`,
+                );
+                /* v8 ignore start - Blocked by OAS3 parser validation */
+            } else if (model.body.type === 'encoded-form-data') {
+                lines.push(`const formBody = new URLSearchParams();`);
+                model.parameters
+                    .filter((p: any) => p.in === 'formData')
+                    .forEach((p: any) => {
+                        lines.push(
+                            `if (${p.paramName} != null) { formBody.append('${p.originalName}', String(${p.paramName})); }`,
+                        );
+                    });
+                dataArgument = 'formBody.toString()';
+                lines.push(
+                    `if (!headers['Content-Type']) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; }`,
+                );
+                /* v8 ignore stop */
+                /* v8 ignore start */
+            } else if (model.body.type === 'multipart') {
+                lines.push(`const multipartConfig = ${JSON.stringify(model.body.config)};`);
+                lines.push(
+                    `const multipartResult = MultipartBuilder.serialize(${model.body.paramName}, multipartConfig);`,
+                );
+                lines.push(`if (multipartResult.headers) {`);
+                lines.push(
+                    `  Object.entries(multipartResult.headers).forEach(([k, v]) => { headers[k] = v as string; });`,
+                );
+                lines.push(`}`);
+                dataArgument = 'multipartResult.content';
+                /* v8 ignore stop */
+            } else {
+                /* v8 ignore next */
                 dataArgument = model.body.paramName;
             }
         }

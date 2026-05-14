@@ -239,7 +239,7 @@ describe('Node Implementation Edge Cases', () => {
             .getStatements()
             .map(s => s.getText())
             .join('\n');
-        expect(methodBody).toContain('req.write(body)'); // It falls through to the new handling logic
+        expect(methodBody).toContain('req.write(multipartResult.content)');
     });
 
     it('should handle explicit path style and multiple error responses', async () => {

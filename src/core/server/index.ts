@@ -1,4 +1,5 @@
 import { Project } from 'ts-morph';
+import { GeneratorConfig } from '../types/config.js';
 
 /**
  * Interface representing a Server Framework Generator.
@@ -11,6 +12,13 @@ export interface IServerFrameworkGenerator {
      * @param schemaName The name of the schema/entity.
      * @param outputDir The directory where the server code should be saved.
      * @param orm The ORM being used, if any.
+     * @param config The generator configuration options.
      */
-    generateEntityRoutes(project: Project, schemaName: string, outputDir: string, orm?: string): void;
+    generateEntityRoutes(
+        project: Project,
+        schemaName: string,
+        outputDir: string,
+        orm?: string,
+        config?: GeneratorConfig,
+    ): void;
 }

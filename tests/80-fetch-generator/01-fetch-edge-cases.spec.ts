@@ -349,3 +349,67 @@ it('should hit branch for non-interface application/json body in FetchServiceGen
     const project = new Project();
     generateFromConfigSync(config, project, { spec });
 });
+
+it('should generate composable tests when config.options.composableTests is true', async () => {
+    const config = {
+        input: 'dummy',
+        output: '/tmp/test-output-composable-fetch',
+        options: { implementation: 'fetch', tests: true, composableTests: true },
+    };
+
+    const spec = {
+        openapi: '3.0.0',
+        info: { title: 'Test API', version: '1.0' },
+        paths: {
+            '/composable': {
+                get: {
+                    operationId: 'getComposable',
+                    responses: { '200': { description: 'OK' } },
+                },
+            },
+        },
+    };
+
+    const project = new Project();
+    generateFromConfigSync(config as any, project, { spec });
+
+    const testFile = project.getSourceFile('/tmp/test-output-composable-fetch/services/composable.service.spec.ts');
+    expect(testFile).toBeDefined();
+    const text = testFile!.getText();
+    expect(text).toContain('mockGetComposableResponse()');
+    expect(text).toContain('testComposableService();');
+});
+
+it('should cover missing branches in FetchServiceTestGenerator when isComposable is true', () => {
+    const config = {
+        input: 'dummy',
+        output: '/tmp/test-output-mocked-composable',
+        options: { implementation: 'fetch', tests: true, composableTests: true },
+    };
+
+    const spec = {
+        openapi: '3.0.0',
+        info: { title: 'Test API', version: '1.0' },
+        paths: {
+            '/mocked': {
+                get: {
+                    // no operationId or methodName
+                    responses: { '200': { description: 'OK' } },
+                },
+            },
+        },
+    };
+
+    const parser = new SwaggerParser(spec as any, config as any);
+    const project = new Project({ useInMemoryFileSystem: true });
+    const testGen = new FetchServiceTestGenerator(parser, project, config as any);
+
+    const ops = parser.operations;
+
+    testGen.generateServiceTestFile('mocked', ops as any, '/tmp/test-output-mocked-composable/services');
+
+    const testFile = project.getSourceFile('/tmp/test-output-mocked-composable/services/mocked.service.spec.ts');
+    expect(testFile).toBeDefined();
+    const text = testFile!.getText();
+    expect(text).toContain('mockGetMockedResponse');
+});

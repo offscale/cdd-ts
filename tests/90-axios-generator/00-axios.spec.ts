@@ -121,7 +121,7 @@ describe('Axios Implementation', () => {
             const config: GeneratorConfig = {
                 input: 'dummy',
                 output: '/tmp/test-output',
-                options: { implementation: 'axios' },
+                options: { implementation: 'axios', tests: true },
             };
 
             const spec = {

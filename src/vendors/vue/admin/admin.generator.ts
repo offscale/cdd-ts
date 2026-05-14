@@ -11,6 +11,7 @@ import { RoutingGenerator } from './routing.generator.js';
 import { I18nGenerator } from './i18n.generator.js';
 import { CustomValidatorsGenerator } from './custom-validators.generator.js';
 import { AdminTestGenerator } from './admin-test.generator.js';
+import { GeneratorConfig } from '@src/core/types/config.js';
 
 /**
  * Main coordinator for generating the Vue Admin Interface.
@@ -23,10 +24,12 @@ export class VueAdminGenerator {
      * Initializes a new VueAdminGenerator.
      * @param parser The parsed OpenAPI specification.
      * @param project The ts-morph project for writing source files.
+     * @param config The generator configuration options.
      */
     constructor(
         private parser: SwaggerParser,
         private project: Project,
+        private config?: GeneratorConfig,
     ) {}
 
     /**
@@ -60,6 +63,8 @@ export class VueAdminGenerator {
         validatorGen.generate(adminDir);
         routingGen.generateMaster(this.allResources, adminDir);
 
+        const shouldGenerateTests = this.config?.options?.tests ?? this.config?.options?.generateAdminTests ?? false;
+
         for (const resource of this.allResources) {
             console.log(`  -> Generating for resource: ${resource.name}`);
 
@@ -73,12 +78,16 @@ export class VueAdminGenerator {
 
             if (resource.operations.some(op => op.action === 'list')) {
                 listGen.generate(resource, adminDir);
-                testGen.generate(`${resource.name}-list.component`, resourceDir);
+                if (shouldGenerateTests) {
+                    testGen.generate(`${resource.name}-list.component`, resourceDir);
+                }
             }
 
             if (resource.isEditable) {
                 formGen.generate(resource, adminDir);
-                testGen.generate(`${resource.name}-form.component`, resourceDir);
+                if (shouldGenerateTests) {
+                    testGen.generate(`${resource.name}-form.component`, resourceDir);
+                }
             }
         }
 

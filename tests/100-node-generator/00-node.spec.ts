@@ -134,9 +134,8 @@ describe('Node Implementation', () => {
             const config: GeneratorConfig = {
                 input: 'dummy',
                 output: '/tmp/test-output',
-                options: { implementation: 'node' },
+                options: { implementation: 'node', tests: true },
             };
-
             const spec = {
                 openapi: '3.0.0',
                 info: { title: 'Test API', version: '1.0' },
