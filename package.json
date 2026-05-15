@@ -57,14 +57,14 @@
         "eslint": "eslint 'src/**/*.ts' 'tests/**/*.ts'"
     },
     "dependencies": {
-        "@ts-morph/common": "file:../ts-morph/packages/common",
+        "@ts-morph/common": "^0.22.0",
         "@typescript/native-preview": "^7.0.0-dev.20260505.1",
         "as-wasi": "^0.6.0",
         "code-block-writer": "^13.0.3",
         "commander": "^14",
         "js-yaml": "^4.1.1",
         "path-browserify": "^1.0.1",
-        "ts-morph": "file:../ts-morph/packages/ts-morph"
+        "ts-morph": "^21.0.1"
     },
     "devDependencies": {
         "@angular/common": "^21.2.11",
