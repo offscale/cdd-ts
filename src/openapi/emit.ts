@@ -1422,13 +1422,21 @@ export function applyReverseMetadata(spec: SwaggerSpec, metadata: ReverseMetadat
     const out = { ...spec };
 
     if (metadata.documentMeta) {
-        if (metadata.documentMeta.openapi) out.openapi = metadata.documentMeta.openapi;
+        if (metadata.documentMeta.openapi) {
+            out.openapi = metadata.documentMeta.openapi;
+            delete out.swagger;
+        }
 
-        if (metadata.documentMeta.swagger) out.swagger = metadata.documentMeta.swagger;
+        if (metadata.documentMeta.swagger) {
+            out.swagger = metadata.documentMeta.swagger;
+            delete out.openapi;
+            delete out.jsonSchemaDialect;
+        }
 
         if (metadata.documentMeta.$self) out.$self = metadata.documentMeta.$self;
 
-        if (metadata.documentMeta.jsonSchemaDialect) out.jsonSchemaDialect = metadata.documentMeta.jsonSchemaDialect;
+        if (metadata.documentMeta.jsonSchemaDialect && !metadata.documentMeta.swagger)
+            out.jsonSchemaDialect = metadata.documentMeta.jsonSchemaDialect;
 
         if (metadata.documentMeta.extensions) Object.assign(out, metadata.documentMeta.extensions);
     } else if (metadata.inferredSelf) {
@@ -1636,6 +1644,118 @@ export function applyReverseMetadata(spec: SwaggerSpec, metadata: ReverseMetadat
 
         if (metadata.headers) {
             out.components.headers = { ...out.components.headers, ...metadata.headers };
+        }
+    }
+
+    if (out.swagger) {
+        // Convert servers to host, basePath, schemes
+        if (out.servers && out.servers.length > 0) {
+            const serverUrl = out.servers[0].url;
+            try {
+                let parsedUrl: URL;
+                if (serverUrl.startsWith('/')) {
+                    out.basePath = serverUrl;
+                } else {
+                    parsedUrl = new URL(serverUrl);
+                    out.host = parsedUrl.host;
+                    out.basePath = parsedUrl.pathname !== '/' ? parsedUrl.pathname : '/';
+                    out.schemes = [parsedUrl.protocol.replace(':', '')];
+                }
+            } catch (e) {
+                // Ignore if not a full URL
+            }
+            delete out.servers;
+        }
+
+        // Convert components to definitions, parameters, responses, securityDefinitions
+        if (out.components) {
+            if (out.components.schemas) {
+                out.definitions = out.components.schemas;
+            }
+            if (out.components.parameters) {
+                out.parameters = out.components.parameters;
+            }
+            if (out.components.responses) {
+                out.responses = out.components.responses;
+            }
+            if (out.components.securitySchemes) {
+                out.securityDefinitions = out.components.securitySchemes as Record<string, SecurityScheme>;
+            }
+            delete out.components;
+        }
+
+        // Convert paths
+        if (out.paths) {
+            for (const pathKey of Object.keys(out.paths)) {
+                const pathObj = out.paths[pathKey] as Record<string, any>;
+                for (const method of ['get', 'post', 'put', 'delete', 'options', 'head', 'patch']) {
+                    if (pathObj[method]) {
+                        const op = pathObj[method] as Record<string, any>;
+
+                        // Handle Request Body -> consumes + in: 'body'
+                        if (op.requestBody && op.requestBody.content) {
+                            const mediaTypes = Object.keys(op.requestBody.content);
+                            if (mediaTypes.length > 0) {
+                                op.consumes = op.consumes || [];
+                                for (const mt of mediaTypes) {
+                                    if (!op.consumes.includes(mt)) op.consumes.push(mt);
+                                }
+
+                                const schema = op.requestBody.content[mediaTypes[0]].schema;
+                                op.parameters = op.parameters || [];
+
+                                if (
+                                    mediaTypes[0] === 'application/x-www-form-urlencoded' ||
+                                    mediaTypes[0] === 'multipart/form-data'
+                                ) {
+                                    if (schema.properties) {
+                                        for (const propName of Object.keys(schema.properties)) {
+                                            const isFile =
+                                                schema.properties[propName].type === 'string' &&
+                                                (schema.properties[propName].format === 'binary' ||
+                                                    schema.properties[propName].format === 'base64');
+                                            op.parameters.push({
+                                                in: 'formData',
+                                                name: propName,
+                                                type: isFile ? 'file' : schema.properties[propName].type || 'string',
+                                                description: schema.properties[propName].description,
+                                                required: schema.required && schema.required.includes(propName),
+                                            });
+                                        }
+                                    }
+                                } else {
+                                    op.parameters.push({
+                                        in: 'body',
+                                        name: 'body',
+                                        description: op.requestBody.description,
+                                        required: op.requestBody.required,
+                                        schema: schema,
+                                    });
+                                }
+                            }
+                            delete op.requestBody;
+                        }
+
+                        // Handle Responses -> produces
+                        if (op.responses) {
+                            for (const status of Object.keys(op.responses)) {
+                                const resp = op.responses[status] as Record<string, any>;
+                                if (resp.content) {
+                                    const mediaTypes = Object.keys(resp.content);
+                                    if (mediaTypes.length > 0) {
+                                        op.produces = op.produces || [];
+                                        for (const mt of mediaTypes) {
+                                            if (!op.produces.includes(mt)) op.produces.push(mt);
+                                        }
+                                        resp.schema = resp.content[mediaTypes[0]].schema;
+                                    }
+                                    delete resp.content;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

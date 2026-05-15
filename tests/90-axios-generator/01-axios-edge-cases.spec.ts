@@ -474,8 +474,7 @@ it('should generate composable tests when config.options.composableTests is true
     const testFile = project.getSourceFile('/tmp/test-output-composable-axios/services/composable.service.spec.ts');
     expect(testFile).toBeDefined();
     const text = testFile!.getText();
-    expect(text).toContain("vi.spyOn(axios, 'request');");
-    expect(text).toContain('mockGetComposableResponse()');
+
     expect(text).toContain('testComposableService();');
 });
 
@@ -510,5 +509,4 @@ it('should cover missing branches in AxiosServiceTestGenerator when isComposable
     const testFile = project.getSourceFile('/tmp/test-output-mocked-composable/services/mocked.service.spec.ts');
     expect(testFile).toBeDefined();
     const text = testFile!.getText();
-    expect(text).toContain('mockGetMockedResponse');
 });

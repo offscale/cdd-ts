@@ -1,10 +1,13 @@
 import { Project } from 'ts-morph';
 import * as path from 'node:path';
 import { SwaggerParser } from '@src/openapi/parse.js';
-import { GeneratorConfig, PathInfo } from '@src/core/types/index.js';
+import { GeneratorConfig, PathInfo, SwaggerDefinition } from '@src/core/types/index.js';
 import { camelCase, pascalCase } from '@src/functions/utils.js';
+import { MockDataGenerator } from '../../angular/test/mock-data.generator.js';
 
 export class NodeServiceTestGenerator {
+    private mockDataGenerator: MockDataGenerator;
+
     constructor(
         private readonly parser: SwaggerParser,
         private readonly project: Project,
@@ -13,6 +16,7 @@ export class NodeServiceTestGenerator {
         // Prevent unused warnings
         this.parser;
         this.config;
+        this.mockDataGenerator = new MockDataGenerator(parser);
     }
 
     public generateServiceTestFile(controllerName: string, operations: PathInfo[], servicesDir: string): void {
@@ -45,14 +49,6 @@ export class NodeServiceTestGenerator {
         const testLines: string[] = [];
 
         if (isComposable) {
-            for (const op of operations) {
-                const methodName =
-                    op.methodName ||
-                    camelCase(op.operationId || `${op.method}_${op.path.replace(/[^a-zA-Z0-9]/g, '_')}`);
-                const testName = pascalCase(methodName);
-                testLines.push(`export const mock${testName}Response = () => Buffer.from('{}');`);
-            }
-            testLines.push('');
             testLines.push(`export const test${serviceName} = () => describe('${serviceName}', () => {`);
         } else {
             testLines.push(`describe('${serviceName}', () => {`);
@@ -61,31 +57,7 @@ export class NodeServiceTestGenerator {
         testLines.push(`    let service: ${serviceName};`);
         testLines.push(``);
         testLines.push(`    beforeEach(() => {`);
-        testLines.push(`        service = new ${serviceName}();`);
-
-        if (!isComposable) {
-            testLines.push(`        vi.spyOn(https, 'request').mockImplementation((...args: any[]) => {`);
-            testLines.push(`            const req = {`);
-            testLines.push(`                on: vi.fn(),`);
-            testLines.push(`                write: vi.fn(),`);
-            testLines.push(`                end: vi.fn((cb?: () => void) => {`);
-            testLines.push(`                    const res = {`);
-            testLines.push(`                        statusCode: 200,`);
-            testLines.push(`                        headers: {},`);
-            testLines.push(`                        on: (event: string, handler: any) => {`);
-            testLines.push(`                            if (event === 'data') handler(Buffer.from('{}'));`);
-            testLines.push(`                            if (event === 'end') handler();`);
-            testLines.push(`                        }`);
-            testLines.push(`                    };`);
-            testLines.push(`                    const callback = args.find(arg => typeof arg === 'function');`);
-            testLines.push(`                    if (callback) callback(res);`);
-            testLines.push(`                    if (cb) cb();`);
-            testLines.push(`                })`);
-            testLines.push(`            };`);
-            testLines.push(`            return req as any;`);
-            testLines.push(`        });`);
-        }
-
+        testLines.push(`        service = new ${serviceName}('http://localhost:8080/v2');`);
         testLines.push(`    });`);
         testLines.push(``);
         testLines.push(`    afterEach(() => {`);
@@ -101,31 +73,6 @@ export class NodeServiceTestGenerator {
                 `        it('should make a ${op.method.toUpperCase()} request to ${op.path}', async () => {`,
             );
 
-            if (isComposable) {
-                testLines.push(`            vi.spyOn(https, 'request').mockImplementation((...args: any[]) => {`);
-                testLines.push(`                const req = {`);
-                testLines.push(`                    on: vi.fn(),`);
-                testLines.push(`                    write: vi.fn(),`);
-                testLines.push(`                    end: vi.fn((cb?: () => void) => {`);
-                testLines.push(`                        const res = {`);
-                testLines.push(`                            statusCode: 200,`);
-                testLines.push(`                            headers: {},`);
-                testLines.push(`                            on: (event: string, handler: any) => {`);
-                testLines.push(
-                    `                                if (event === 'data') handler(mock${pascalCase(methodName)}Response());`,
-                );
-                testLines.push(`                                if (event === 'end') handler();`);
-                testLines.push(`                            }`);
-                testLines.push(`                        };`);
-                testLines.push(`                        const callback = args.find(arg => typeof arg === 'function');`);
-                testLines.push(`                        if (callback) callback(res);`);
-                testLines.push(`                        if (cb) cb();`);
-                testLines.push(`                    })`);
-                testLines.push(`                };`);
-                testLines.push(`                return req as any;`);
-                testLines.push(`            });`);
-            }
-
             testLines.push(``);
 
             // Build simple params
@@ -134,17 +81,50 @@ export class NodeServiceTestGenerator {
             if (op.parameters && op.parameters.length > 0) {
                 const requiredParams = op.parameters.filter(p => !('in' in p) || p.required);
                 for (const p of requiredParams) {
-                    params.push(`'test_${p.name}'`);
+                    let val = this.mockDataGenerator.generate(
+                        ((p.schema as SwaggerDefinition)?.name as string) || p.name,
+                    );
+                    if (
+                        typeof val === 'string' &&
+                        !val.startsWith("'") &&
+                        !val.startsWith('"') &&
+                        !val.startsWith('{') &&
+                        !val.startsWith('[')
+                    ) {
+                        val = `'${val}'`;
+                    }
+                    params.push(String(val));
                 }
             }
             if (op.requestBody) {
-                params.push(`{}`);
+                if (op.requestBody.content) {
+                    const contentTypes = Object.keys(op.requestBody.content);
+                    if (contentTypes.length > 0) {
+                        const schema = op.requestBody.content[contentTypes[0]].schema;
+                        let val = this.mockDataGenerator.generate(
+                            ((schema as SwaggerDefinition)?.name as string) || 'Unknown',
+                        );
+                        if (
+                            typeof val === 'string' &&
+                            !val.startsWith("'") &&
+                            !val.startsWith('"') &&
+                            !val.startsWith('{') &&
+                            !val.startsWith('[')
+                        ) {
+                            val = `'${val}'`;
+                        }
+                        params.push(String(val));
+                    } else {
+                        params.push(`{}`);
+                    }
+                } else {
+                    params.push(`{}`);
+                }
             }
 
             const paramString = params.join(', ');
 
             testLines.push(`            const result = await service.${methodName}(${paramString});`);
-            testLines.push(`            expect(https.request).toHaveBeenCalled();`);
             testLines.push(`            expect(result).toBeDefined();`);
             testLines.push(`        });`);
             testLines.push(`    });`);

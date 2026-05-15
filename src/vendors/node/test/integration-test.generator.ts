@@ -45,7 +45,7 @@ export class NodeIntegrationTestGenerator {
 
             sourceFile.addStatements(`
                 describe('${serviceName}', () => {
-                    const service = new ${serviceName}('http://localhost:8080/api/v3');
+                    const service = new ${serviceName}('http://localhost:8080/v2');
             `);
 
             for (const op of operations) {
@@ -87,15 +87,10 @@ export class NodeIntegrationTestGenerator {
                 sourceFile.addStatements(`
                     it('should call ${methodName} successfully', async () => {
                         try {
-                            await service.${methodName}(${argsString});
-                            expect(true).toBe(true);
+                            const result = await service.${methodName}(${argsString});
+                            expect(result).toBeDefined();
                         } catch (error: any) {
-                            // Ignore API level HTTP errors (e.g. 400, 404, 500)
-                            // Fail only if it's a local crash or network connection error
-                            if (error && error.status !== undefined && error.status !== 0) {
-                                expect(true).toBe(true);
-                            } else if (error && (error.code === 'ECONNREFUSED' || String(error).includes('ECONNREFUSED') || String(error).includes('FormData') || String(error).includes('URLSearchParams'))) {
-                                // Accept connection refused as test success, to account for missing proxy in docker tests
+                            if (error && (error.code === 'ECONNREFUSED' || String(error).includes('ECONNREFUSED') || String(error).includes('FormData') || String(error).includes('URLSearchParams'))) {
                                 expect(true).toBe(true);
                             } else {
                                 throw error;

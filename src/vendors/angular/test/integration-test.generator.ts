@@ -49,7 +49,7 @@ export class IntegrationTestGenerator {
                         imports: [HttpClientModule],
                         providers: [
                             ${serviceNames.join(',\n                            ')},
-                            { provide: ${basePathTokenName}, useValue: 'http://localhost:8080/api/v3' }
+                            { provide: ${basePathTokenName}, useValue: 'http://localhost:8080/v2' }
                         ]
                     });
                 });
@@ -99,14 +99,10 @@ export class IntegrationTestGenerator {
                     it('should call ${methodName} successfully', async () => {
                         const service = TestBed.inject(${serviceName});
                         try {
-                            await firstValueFrom(service.${methodName}(${argsString}));
-                            expect(true).toBe(true);
+                            const result = await firstValueFrom(service.${methodName}(${argsString}));
+                            expect(result).toBeDefined();
                         } catch (error: any) {
-                            // Ignore API level HTTP errors (e.g. 400, 404, 500)
-                            // Fail only if it's a local crash or network connection error
-                            if (error && error.status !== undefined && error.status !== 0) {
-                                expect(true).toBe(true);
-                            } else if (error && error.status === 0) {
+                            if (error && error.status === 0) {
                                 expect(true).toBe(true);
                             } else {
                                 throw error;
