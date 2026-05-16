@@ -27,13 +27,6 @@ function updateBadge(readmeContent: string, badgeName: string, text: string, per
 }
 
 async function main() {
-    try {
-        console.log('Running tests for coverage...');
-        execSync('npm run test:coverage', { stdio: 'ignore' });
-    } catch (e) {
-        console.error('Test coverage failed');
-    }
-
     // Parse coverage
     let testCoveragePercent = 0;
     if (existsSync('coverage/coverage-summary.json')) {

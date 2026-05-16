@@ -2,8 +2,12 @@
 
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/offscale/cdd-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/offscale/cdd-ts/actions)
-[![Test Coverage](https://img.shields.io/badge/test_coverage-100%25-brightgreen.svg)](#)
-[![Doc Coverage](https://img.shields.io/badge/doc_coverage-100%25-brightgreen.svg)](#)
+<!-- TEST_COVERAGE_START -->
+![TEST_COVERAGE](https://img.shields.io/badge/Test%20Coverage-100%25-brightgreen)
+<!-- TEST_COVERAGE_END -->
+<!-- DOC_COVERAGE_START -->
+![DOC_COVERAGE](https://img.shields.io/badge/Doc%20Coverage-100%25-brightgreen)
+<!-- DOC_COVERAGE_END -->
 
 ---
 
