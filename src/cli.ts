@@ -21,11 +21,8 @@ import * as http from 'node:http';
 
 let packageJson = { version: '1.0.0' };
 try {
-    const packageJsonPath =
-        typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'test'
-            ? new URL('../package.json', import.meta.url)
-            : '../package.json';
-    packageJson = JSON.parse(fs.readFileSync(packageJsonPath as any, 'utf-8')) as { version: string };
+    const packageJsonPath = new URL('../package.json', import.meta.url);
+    packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8')) as { version: string };
 } catch (e) {
     // Ignore, fallback to default
 }

@@ -20,9 +20,11 @@ export class UserService {
         const basePath = (options?.server !== undefined || options?.serverVariables !== undefined) ? getServerUrl(options?.server ?? 0, options?.serverVariables ?? {}) : this.basePath;
         const url = new URL(`${basePath}/user/createWithList`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
+        const requestData = JSON.stringify(user);
         if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }
+        if (!headers['Content-Length']) { headers['Content-Length'] = Buffer.byteLength(requestData).toString(); }
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'POST', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -40,7 +42,7 @@ export class UserService {
                 });
             });
             req.on('error', reject);
-            req.write(JSON.stringify(user));
+            req.write(requestData);
             req.end();
         });
     }
@@ -50,7 +52,7 @@ export class UserService {
         const url = new URL(`${basePath}/user/${ParameterSerializer.serializePathParam('username', username, 'simple', false, false)}`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'GET', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -76,9 +78,11 @@ export class UserService {
         const basePath = (options?.server !== undefined || options?.serverVariables !== undefined) ? getServerUrl(options?.server ?? 0, options?.serverVariables ?? {}) : this.basePath;
         const url = new URL(`${basePath}/user/${ParameterSerializer.serializePathParam('username', username, 'simple', false, false)}`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
+        const requestData = JSON.stringify(user);
         if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }
+        if (!headers['Content-Length']) { headers['Content-Length'] = Buffer.byteLength(requestData).toString(); }
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'PUT', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -96,7 +100,7 @@ export class UserService {
                 });
             });
             req.on('error', reject);
-            req.write(JSON.stringify(user));
+            req.write(requestData);
             req.end();
         });
     }
@@ -106,7 +110,7 @@ export class UserService {
         const url = new URL(`${basePath}/user/${ParameterSerializer.serializePathParam('username', username, 'simple', false, false)}`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'DELETE', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -137,7 +141,7 @@ export class UserService {
         serialized_password.forEach((entry: { key: string; value: string }) => url.searchParams.append(entry.key, entry.value));
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'GET', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -164,7 +168,7 @@ export class UserService {
         const url = new URL(`${basePath}/user/logout`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'GET', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -190,9 +194,11 @@ export class UserService {
         const basePath = (options?.server !== undefined || options?.serverVariables !== undefined) ? getServerUrl(options?.server ?? 0, options?.serverVariables ?? {}) : this.basePath;
         const url = new URL(`${basePath}/user/createWithArray`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
+        const requestData = JSON.stringify(user);
         if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }
+        if (!headers['Content-Length']) { headers['Content-Length'] = Buffer.byteLength(requestData).toString(); }
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'POST', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -210,7 +216,7 @@ export class UserService {
                 });
             });
             req.on('error', reject);
-            req.write(JSON.stringify(user));
+            req.write(requestData);
             req.end();
         });
     }
@@ -219,9 +225,11 @@ export class UserService {
         const basePath = (options?.server !== undefined || options?.serverVariables !== undefined) ? getServerUrl(options?.server ?? 0, options?.serverVariables ?? {}) : this.basePath;
         const url = new URL(`${basePath}/user`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
+        const requestData = JSON.stringify(user);
         if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }
+        if (!headers['Content-Length']) { headers['Content-Length'] = Buffer.byteLength(requestData).toString(); }
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'POST', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -239,7 +247,7 @@ export class UserService {
                 });
             });
             req.on('error', reject);
-            req.write(JSON.stringify(user));
+            req.write(requestData);
             req.end();
         });
     }

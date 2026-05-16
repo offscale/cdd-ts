@@ -231,3 +231,5 @@ spec.yaml
 # Ignore all testing yaml/json specs explicitly used or created locally
 petstore.yaml
 coverage-report.json
+test_*.py
+test_*.txt

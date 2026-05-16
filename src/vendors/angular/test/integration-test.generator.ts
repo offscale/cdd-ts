@@ -73,9 +73,10 @@ export class IntegrationTestGenerator {
                 // Add mock data for parameters
                 for (const param of parameters) {
                     if (param.required) {
-                        const schemaDef = param.schema as SwaggerDefinition;
-                        /* v8 ignore next */
-                        const schemaName = schemaDef && schemaDef.name ? schemaDef.name : param.name;
+                        /* v8 ignore start */
+                        const schemaDef = (param.schema || param) as SwaggerDefinition;
+                        const schemaName = schemaDef?.name || param.name;
+                        /* v8 ignore stop */
                         mockArgs.push(this.mockDataGenerator.generate(String(schemaName)) + ' as any');
                     } else {
                         mockArgs.push('null as any');

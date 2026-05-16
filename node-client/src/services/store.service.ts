@@ -21,7 +21,7 @@ export class StoreService {
         const url = new URL(`${basePath}/store/inventory`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'GET', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -47,9 +47,11 @@ export class StoreService {
         const basePath = (options?.server !== undefined || options?.serverVariables !== undefined) ? getServerUrl(options?.server ?? 0, options?.serverVariables ?? {}) : this.basePath;
         const url = new URL(`${basePath}/store/order`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
+        const requestData = JSON.stringify(order);
         if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }
+        if (!headers['Content-Length']) { headers['Content-Length'] = Buffer.byteLength(requestData).toString(); }
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'POST', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -67,7 +69,7 @@ export class StoreService {
                 });
             });
             req.on('error', reject);
-            req.write(JSON.stringify(order));
+            req.write(requestData);
             req.end();
         });
     }
@@ -77,7 +79,7 @@ export class StoreService {
         const url = new URL(`${basePath}/store/order/${ParameterSerializer.serializePathParam('orderId', orderId, 'simple', false, false)}`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'GET', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -104,7 +106,7 @@ export class StoreService {
         const url = new URL(`${basePath}/store/order/${ParameterSerializer.serializePathParam('orderId', orderId, 'simple', false, false)}`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'DELETE', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];

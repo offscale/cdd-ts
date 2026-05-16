@@ -8,6 +8,7 @@ import { URL } from "node:url";
 import { ParameterSerializer } from "../utils/parameter-serializer";
 import { getServerUrl, resolveServerUrl } from "../utils/server-url";
 import { ApiResponse, Pet } from "../models";
+import { MultipartBuilder } from "../utils/multipart-builder";
 
 export class PetService {
     private basePath = "";
@@ -20,11 +21,17 @@ export class PetService {
         const basePath = (options?.server !== undefined || options?.serverVariables !== undefined) ? getServerUrl(options?.server ?? 0, options?.serverVariables ?? {}) : this.basePath;
         const url = new URL(`${basePath}/pet/${ParameterSerializer.serializePathParam('petId', petId, 'simple', false, false)}/uploadImage`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
-        const formData = new FormData();
-        if (additionalMetadata != null) { formData.append('additionalMetadata', additionalMetadata as any); }
-        if (file != null) { formData.append('file', file as any); }
+        const bodyObj: Record<string, any> = {};
+        if (additionalMetadata != null) { bodyObj['additionalMetadata'] = additionalMetadata; }
+        if (file != null) { bodyObj['file'] = file; }
+        const multipartResult = MultipartBuilder.serialize(bodyObj, { mediaType: 'multipart/form-data' });
+        if (multipartResult.headers) {
+            Object.entries(multipartResult.headers).forEach(([k, v]) => { headers[k] = v as string; });
+        }
+        const requestData = Buffer.from(await (multipartResult.content as Blob).arrayBuffer());
+        if (!headers['Content-Length']) { headers['Content-Length'] = requestData.length.toString(); }
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'POST', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -42,7 +49,7 @@ export class PetService {
                 });
             });
             req.on('error', reject);
-            req.write(formData);
+            req.write(requestData);
             req.end();
         });
     }
@@ -51,9 +58,11 @@ export class PetService {
         const basePath = (options?.server !== undefined || options?.serverVariables !== undefined) ? getServerUrl(options?.server ?? 0, options?.serverVariables ?? {}) : this.basePath;
         const url = new URL(`${basePath}/pet`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
+        const requestData = JSON.stringify(pet);
         if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }
+        if (!headers['Content-Length']) { headers['Content-Length'] = Buffer.byteLength(requestData).toString(); }
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'POST', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -71,7 +80,7 @@ export class PetService {
                 });
             });
             req.on('error', reject);
-            req.write(JSON.stringify(pet));
+            req.write(requestData);
             req.end();
         });
     }
@@ -80,9 +89,11 @@ export class PetService {
         const basePath = (options?.server !== undefined || options?.serverVariables !== undefined) ? getServerUrl(options?.server ?? 0, options?.serverVariables ?? {}) : this.basePath;
         const url = new URL(`${basePath}/pet`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
+        const requestData = JSON.stringify(pet);
         if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }
+        if (!headers['Content-Length']) { headers['Content-Length'] = Buffer.byteLength(requestData).toString(); }
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'PUT', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -100,7 +111,7 @@ export class PetService {
                 });
             });
             req.on('error', reject);
-            req.write(JSON.stringify(pet));
+            req.write(requestData);
             req.end();
         });
     }
@@ -112,7 +123,7 @@ export class PetService {
         serialized_status.forEach((entry: { key: string; value: string }) => url.searchParams.append(entry.key, entry.value));
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'GET', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -141,7 +152,7 @@ export class PetService {
         serialized_tags.forEach((entry: { key: string; value: string }) => url.searchParams.append(entry.key, entry.value));
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'GET', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -168,7 +179,7 @@ export class PetService {
         const url = new URL(`${basePath}/pet/${ParameterSerializer.serializePathParam('petId', petId, 'simple', false, false)}`);
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'GET', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -197,9 +208,11 @@ export class PetService {
         const formBody = new URLSearchParams();
         if (name != null) { formBody.append('name', String(name)); }
         if (status != null) { formBody.append('status', String(status)); }
+        const requestData = formBody.toString();
         if (!headers['Content-Type']) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; }
+        if (!headers['Content-Length']) { headers['Content-Length'] = Buffer.byteLength(requestData).toString(); }
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'POST', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
@@ -217,7 +230,7 @@ export class PetService {
                 });
             });
             req.on('error', reject);
-            req.write(formBody.toString());
+            req.write(requestData);
             req.end();
         });
     }
@@ -228,7 +241,7 @@ export class PetService {
         const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
         if (apiKey != null) { headers['api_key'] = ParameterSerializer.serializeHeaderParam(apiKey, false); }
         const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: 'DELETE', headers };
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const client = url.protocol === 'https:' ? https : http;
             const req = client.request(url, requestOptions, (res) => {
                 const chunks: Buffer[] = [];
