@@ -46,6 +46,15 @@ jobs:
             - name: Install requirements
               run: npm ci
 
+            - name: Check Code Formatting
+              run: npx prettier --check 'src/**/*.ts' 'tests/**/*.ts'
+
+            - name: Run Lint
+              run: npm run lint
+
+            - name: Run Type Check
+              run: npm run check:types
+
             - name: Generate docs (also checks types)
               run: npm run-script docs
 
@@ -64,6 +73,19 @@ jobs:
             - name: Build WASM
               run: |
                   make build_wasm
+
+            - name: Run Swagger 2.0 Petstore test
+              run: |
+                  node dist/cli.js from_openapi to_sdk -i ../petstore.json -o .test_out_swagger || { echo "Swagger 2.0 Petstore test failed"; exit 1; }
+                  rm -rf .test_out_swagger
+
+            - name: Run OpenAPI 3.2.0 Petstore test
+              run: |
+                  node dist/cli.js from_openapi to_sdk -i ../petstore_oas3.json -o .test_out_openapi || { echo "OpenAPI 3.2.0 Petstore test failed"; exit 1; }
+                  rm -rf .test_out_openapi
+
+            - name: Build with local forks
+              run: |
                   make build_with_ts_go
                   make build_with_ts_go_assemblyscript
 
