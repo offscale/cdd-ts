@@ -7,9 +7,9 @@ stands for Angular… but this repo could be split up into base/`abstract` `clas
 specific tech… or even rename this repo and this package handles all Angular and non-Angular solutions (in the
 TypeScript web-frontend framework space).
 
-## Full OpenAPI 3.2.0 + Swagger 2 compatibility
+## Full Swagger 2.0 and OpenAPI 3.2.0 + Swagger 2 compatibility
 
-- [ ] Full OpenAPI 3.2.0 + Swagger 2 compatibility
+- [ ] Full Swagger 2.0 and OpenAPI 3.2.0 + Swagger 2 compatibility
 
 ## HTTP client interoperability
 

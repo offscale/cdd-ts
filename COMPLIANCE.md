@@ -6,6 +6,6 @@
 
 - **OpenAPI 3.0.x**: Fully supported (Parsing and Emitting).
 - **OpenAPI 3.1.0**: Fully supported.
-- **OpenAPI 3.2.0**: Fully supported (100% compliance achieved for parsing and emitting the latest draft structures).
+- **Swagger 2.0 and OpenAPI 3.2.0**: Fully supported (100% compliance achieved for parsing and emitting the latest draft structures).
 
 If you find discrepancies with the OpenAPI specification, please file an issue or submit a pull request with an AST-based parser adjustment.
