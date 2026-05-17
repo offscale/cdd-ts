@@ -230,7 +230,11 @@ spec.yaml
 
 # Ignore all testing yaml/json specs explicitly used or created locally
 petstore.yaml
+petstore.json
+petstore_oas3.json
 coverage-report.json
 test_*.py
 test_*.txt
 .test_out_*
+.test_out_swagger
+.test_out_openapi

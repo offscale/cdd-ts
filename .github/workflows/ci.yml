@@ -74,6 +74,11 @@ jobs:
               run: |
                   make build_wasm
 
+            - name: Fetch Petstore JSONs
+              run: |
+                  curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore.json -o ../petstore.json
+                  curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore_oas3.json -o ../petstore_oas3.json
+
             - name: Run Swagger 2.0 Petstore test
               run: |
                   node dist/cli.js from_openapi to_sdk -i ../petstore.json -o .test_out_swagger || { echo "Swagger 2.0 Petstore test failed"; exit 1; }
