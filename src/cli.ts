@@ -34,7 +34,7 @@ interface CliOptions {
     inputDir?: string;
     output?: string;
     clientName?: string;
-    framework?: 'angular' | 'react' | 'vue';
+    framework?: 'angular' | 'react' | 'vue' | 'vanilla' | 'Vanilla JS';
     implementation?: 'angular' | 'fetch' | 'axios' | 'node';
     dateType?: 'string' | 'Date';
     enumStyle?: 'enum' | 'union';
@@ -107,11 +107,18 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
         if (options.implementation) cliOptions.implementation = options.implementation;
         if (options.dateType) cliOptions.dateType = options.dateType;
         if (options.enumStyle) cliOptions.enumStyle = options.enumStyle;
-        if (options.generateServices !== undefined) cliOptions.generateServices = options.generateServices;
+        if (options.generateServices === false) cliOptions.generateServices = false;
         if (options.admin !== undefined) cliOptions.admin = options.admin;
-        if (options.testsForService !== undefined) cliOptions.generateServiceTests = options.testsForService;
-        if (options.testsForAdmin !== undefined) cliOptions.generateAdminTests = options.testsForAdmin;
-        if (options.tests !== undefined) cliOptions.composableTests = options.tests;
+
+        // Commander sets boolean flags derived from --no-* to true by default.
+        // Only override if explicitly set to false, or if it was provided via config.
+        if (options.testsForService === false) cliOptions.generateServiceTests = false;
+        if (options.testsForAdmin === false) cliOptions.generateAdminTests = false;
+
+        if (options.tests !== undefined) {
+            cliOptions.composableTests = options.tests;
+            cliOptions.tests = options.tests;
+        }
         if (options.orm) cliOptions.orm = options.orm;
         if (options.serverFramework) cliOptions.serverFramework = options.serverFramework;
         if (options.int64Type) cliOptions.int64Type = options.int64Type;
@@ -444,14 +451,12 @@ const addSdkOptions = (cmd: Command) => {
         .addOption(new Option('--clientName <name>', 'Name for the generated client').env('CDD_CLIENT_NAME'))
         .addOption(
             new Option('--framework <framework>', 'Target framework')
-                .choices(['angular', 'react', 'vue'])
-                .default('angular')
+                .choices(['angular', 'react', 'vue', 'vanilla', 'Vanilla JS'])
                 .env('CDD_FRAMEWORK'),
         )
         .addOption(
             new Option('--implementation <implementation>', 'HTTP implementation')
                 .choices(['angular', 'fetch', 'axios', 'node'])
-                .default('angular')
                 .env('CDD_IMPLEMENTATION'),
         )
         .addOption(
@@ -486,7 +491,6 @@ const addServerOptions = (cmd: Command) => {
         .addOption(
             new Option('--serverFramework <type>', 'Target server framework')
                 .choices(['express', 'node', 'bun', 'deno'])
-                .default('express')
                 .env('CDD_SERVER_FRAMEWORK'),
         )
         .addOption(

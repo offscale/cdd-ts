@@ -1686,11 +1686,24 @@ export function applyReverseMetadata(spec: SwaggerSpec, metadata: ReverseMetadat
 
         // Convert paths
         if (out.paths) {
-            for (const pathKey of Object.keys(out.paths)) {
-                const pathObj = out.paths[pathKey] as Record<string, any>;
+            for (const pathKey of Object.keys(out.paths as Record<string, unknown>)) {
+                const pathObj = (out.paths as Record<string, unknown>)[pathKey] as Record<string, unknown>;
                 for (const method of ['get', 'post', 'put', 'delete', 'options', 'head', 'patch']) {
                     if (pathObj[method]) {
-                        const op = pathObj[method] as Record<string, any>;
+                        const op = pathObj[method] as {
+                            requestBody?: {
+                                content?: Record<string, { schema: unknown }>;
+                                description?: string;
+                                required?: boolean;
+                            };
+                            consumes?: string[];
+                            parameters?: any[];
+                            responses?: Record<
+                                string,
+                                { content?: Record<string, { schema: unknown }>; schema?: unknown }
+                            >;
+                            produces?: string[];
+                        };
 
                         // Handle Request Body -> consumes + in: 'body'
                         if (op.requestBody && op.requestBody.content) {
@@ -1701,7 +1714,13 @@ export function applyReverseMetadata(spec: SwaggerSpec, metadata: ReverseMetadat
                                     if (!op.consumes.includes(mt)) op.consumes.push(mt);
                                 }
 
-                                const schema = op.requestBody.content[mediaTypes[0]].schema;
+                                const schema = op.requestBody.content[mediaTypes[0]].schema as {
+                                    properties?: Record<
+                                        string,
+                                        { type?: string; format?: string; description?: string }
+                                    >;
+                                    required?: string[];
+                                };
                                 op.parameters = op.parameters || [];
 
                                 if (
@@ -1710,15 +1729,15 @@ export function applyReverseMetadata(spec: SwaggerSpec, metadata: ReverseMetadat
                                 ) {
                                     if (schema.properties) {
                                         for (const propName of Object.keys(schema.properties)) {
+                                            const prop = schema.properties[propName];
                                             const isFile =
-                                                schema.properties[propName].type === 'string' &&
-                                                (schema.properties[propName].format === 'binary' ||
-                                                    schema.properties[propName].format === 'base64');
+                                                prop.type === 'string' &&
+                                                (prop.format === 'binary' || prop.format === 'base64');
                                             op.parameters.push({
                                                 in: 'formData',
                                                 name: propName,
-                                                type: isFile ? 'file' : schema.properties[propName].type || 'string',
-                                                description: schema.properties[propName].description,
+                                                type: isFile ? 'file' : prop.type || 'string',
+                                                description: prop.description,
                                                 required: schema.required && schema.required.includes(propName),
                                             });
                                         }
@@ -1739,7 +1758,10 @@ export function applyReverseMetadata(spec: SwaggerSpec, metadata: ReverseMetadat
                         // Handle Responses -> produces
                         if (op.responses) {
                             for (const status of Object.keys(op.responses)) {
-                                const resp = op.responses[status] as Record<string, any>;
+                                const resp = op.responses[status] as {
+                                    content?: Record<string, { schema: unknown }>;
+                                    schema?: unknown;
+                                };
                                 if (resp.content) {
                                     const mediaTypes = Object.keys(resp.content);
                                     if (mediaTypes.length > 0) {

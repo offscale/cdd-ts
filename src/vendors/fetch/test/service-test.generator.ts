@@ -20,8 +20,16 @@ export class FetchServiceTestGenerator {
     }
 
     public generateServiceTestFile(controllerName: string, operations: PathInfo[], servicesDir: string): void {
-        const serviceName = `${pascalCase(controllerName)}Service`;
-        const fileName = `${camelCase(controllerName)}.service.spec.ts`;
+        const fw = this.config.options.framework;
+        const isVanilla = fw === 'Vanilla JS' || fw === 'vanilla';
+
+        const serviceName = isVanilla ? `${pascalCase(controllerName)}Client` : `${pascalCase(controllerName)}Service`;
+        const fileName = isVanilla
+            ? `${camelCase(controllerName)}.client.spec.ts`
+            : `${camelCase(controllerName)}.service.spec.ts`;
+        const importPath = isVanilla
+            ? `./${camelCase(controllerName)}.client.js`
+            : `./${camelCase(controllerName)}.service.js`;
         const filePath = path.join(servicesDir, fileName);
 
         const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
@@ -33,7 +41,7 @@ export class FetchServiceTestGenerator {
                 namedImports: ['describe', 'it', 'expect', 'vi', 'beforeEach', 'afterEach'],
             },
             {
-                moduleSpecifier: `./${camelCase(controllerName)}.service.js`,
+                moduleSpecifier: importPath,
                 namedImports: [serviceName],
             },
         ]);

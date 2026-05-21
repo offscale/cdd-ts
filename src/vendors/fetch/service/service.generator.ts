@@ -30,6 +30,10 @@ export class FetchServiceGenerator extends AbstractServiceGenerator {
      * @returns The generated TypeScript file name.
      */
     protected getFileName(controllerName: string): string {
+        const fw = this.config.options.framework;
+        if (fw === 'Vanilla JS' || fw === 'vanilla') {
+            return `${controllerName}.client.ts`;
+        }
         return `${controllerName}.service.ts`;
     }
 
@@ -117,7 +121,11 @@ export class FetchServiceGenerator extends AbstractServiceGenerator {
      * @param operations The group of paths/operations the service will implement.
      */
     protected generateServiceContent(sourceFile: SourceFile, controllerName: string, operations: PathInfo[]): void {
-        const className = `${pascalCase(controllerName)}Service`;
+        const fw = this.config.options.framework;
+        const className =
+            fw === 'Vanilla JS' || fw === 'vanilla'
+                ? `${pascalCase(controllerName)}Client`
+                : `${pascalCase(controllerName)}Service`;
 
         const serviceClass = sourceFile.addClass({
             name: className,

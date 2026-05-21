@@ -1,3 +1,5 @@
+import * as os from 'node:os';
+import * as path from 'node:path';
 // @ts-nocheck
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { generateFromConfigSync } from '@src/index.js';
@@ -16,7 +18,7 @@ describe('Axios Implementation Edge Cases', () => {
     it('should cover missing branches in AxiosServiceTestGenerator', () => {
         const config: GeneratorConfig = {
             input: 'dummy',
-            output: '/tmp/test-output-mocked',
+            output: path.join(os.tmpdir(), 'test-output-mocked'),
             options: { implementation: 'axios' },
         };
 
@@ -48,9 +50,11 @@ describe('Axios Implementation Edge Cases', () => {
         const ops = parser.operations;
         ops[2].methodName = 'customPutMocked'; // cover op.methodName
 
-        testGen.generateServiceTestFile('mocked', ops as any, '/tmp/test-output-mocked/services');
+        testGen.generateServiceTestFile('mocked', ops as any, path.join(os.tmpdir(), 'test-output-mocked/services'));
 
-        const testFile = project.getSourceFile('/tmp/test-output-mocked/services/mocked.service.spec.ts');
+        const testFile = project.getSourceFile(
+            path.join(os.tmpdir(), 'test-output-mocked/services/mocked.service.spec.ts'),
+        );
         expect(testFile).toBeDefined();
 
         const text = testFile!.getText();
@@ -62,7 +66,7 @@ describe('Axios Implementation Edge Cases', () => {
     it('should assign root paths to Default controller and handle no generated tests', async () => {
         const config: GeneratorConfig = {
             input: 'dummy',
-            output: '/tmp/test-output-edge',
+            output: path.join(os.tmpdir(), 'test-output-edge'),
             options: {
                 implementation: 'axios',
                 generateServices: true,
@@ -103,17 +107,19 @@ describe('Axios Implementation Edge Cases', () => {
         generateFromConfigSync(config, project, { spec });
 
         // Root path defaults to 'Default' controller
-        const serviceFile = project.getSourceFile('/tmp/test-output-edge/services/default.service.ts');
+        const serviceFile = project.getSourceFile(
+            path.join(os.tmpdir(), 'test-output-edge/services/default.service.ts'),
+        );
         expect(serviceFile).toBeDefined();
 
-        const notagsFile = project.getSourceFile('/tmp/test-output-edge/services/notags.service.ts');
+        const notagsFile = project.getSourceFile(path.join(os.tmpdir(), 'test-output-edge/services/notags.service.ts'));
         expect(notagsFile).toBeDefined();
     });
 
     it('should handle operation with invalid analyzer state (returns null) and no schema requestBody', async () => {
         const config: GeneratorConfig = {
             input: 'dummy',
-            output: '/tmp/test-output-invalid',
+            output: path.join(os.tmpdir(), 'test-output-invalid'),
             options: { implementation: 'axios' },
         };
 
@@ -151,14 +157,16 @@ describe('Axios Implementation Edge Cases', () => {
 
         const project = new Project();
         generateFromConfigSync(config, project, { spec });
-        const serviceFile = project.getSourceFile('/tmp/test-output-invalid/services/invalid.service.ts');
+        const serviceFile = project.getSourceFile(
+            path.join(os.tmpdir(), 'test-output-invalid/services/invalid.service.ts'),
+        );
         expect(serviceFile).toBeDefined();
     });
 
     it('should handle unexported service classes and null class names in index generator', async () => {
         const config: GeneratorConfig = {
             input: 'dummy',
-            output: '/tmp/test-output-unexported',
+            output: path.join(os.tmpdir(), 'test-output-unexported'),
             options: { implementation: 'axios' },
         };
         const spec = {
@@ -176,22 +184,24 @@ describe('Axios Implementation Edge Cases', () => {
         const project = new Project();
         generateFromConfigSync(config, project, { spec });
 
-        const serviceFile = project.getSourceFile('/tmp/test-output-unexported/services/test.service.ts');
+        const serviceFile = project.getSourceFile(
+            path.join(os.tmpdir(), 'test-output-unexported/services/test.service.ts'),
+        );
         const serviceClass = serviceFile!.getClass('TestService');
         serviceClass!.setIsExported(false);
 
         const { AxiosServiceIndexGenerator } = await import('@src/vendors/axios/utils/index.generator.js');
         const indexGen = new AxiosServiceIndexGenerator(project);
-        indexGen.generateIndex('/tmp/test-output-unexported');
+        indexGen.generateIndex(path.join(os.tmpdir(), 'test-output-unexported'));
 
-        const indexFile = project.getSourceFile('/tmp/test-output-unexported/services/index.ts');
+        const indexFile = project.getSourceFile(path.join(os.tmpdir(), 'test-output-unexported/services/index.ts'));
         expect(indexFile!.getText()).not.toContain('export { TestService }');
     });
 
     it('should handle arraybuffer response type', async () => {
         const config: GeneratorConfig = {
             input: 'dummy',
-            output: '/tmp/test-output-arraybuffer',
+            output: path.join(os.tmpdir(), 'test-output-arraybuffer'),
             options: { implementation: 'axios' },
         };
 
@@ -230,7 +240,9 @@ describe('Axios Implementation Edge Cases', () => {
         const project = new Project();
         generateFromConfigSync(config, project, { spec });
 
-        const serviceFile = project.getSourceFile('/tmp/test-output-arraybuffer/services/buffer.service.ts');
+        const serviceFile = project.getSourceFile(
+            path.join(os.tmpdir(), 'test-output-arraybuffer/services/buffer.service.ts'),
+        );
         const serviceClass = serviceFile!.getClass('BufferService');
         const getBufferMethod = serviceClass!.getMethod('getBuffer');
 
@@ -241,7 +253,7 @@ describe('Axios Implementation Edge Cases', () => {
 it('should handle multiple distinct response types and raw body type', async () => {
     const config: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-output-distinct',
+        output: path.join(os.tmpdir(), 'test-output-distinct'),
         options: { implementation: 'axios' },
     };
 
@@ -279,7 +291,9 @@ it('should handle multiple distinct response types and raw body type', async () 
     const project = new Project();
     generateFromConfigSync(config, project, { spec });
 
-    const serviceFile = project.getSourceFile('/tmp/test-output-distinct/services/distinct.service.ts');
+    const serviceFile = project.getSourceFile(
+        path.join(os.tmpdir(), 'test-output-distinct/services/distinct.service.ts'),
+    );
     const serviceClass = serviceFile!.getClass('DistinctService');
     const postDistinctMethod = serviceClass!.getMethod('postDistinct');
 
@@ -295,7 +309,7 @@ it('should handle multiple distinct response types and raw body type', async () 
 it('should handle multipart body type', async () => {
     const config: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-output-multipart',
+        output: path.join(os.tmpdir(), 'test-output-multipart'),
         options: { implementation: 'axios' },
     };
 
@@ -324,7 +338,9 @@ it('should handle multipart body type', async () => {
     const project = new Project();
     generateFromConfigSync(config, project, { spec });
 
-    const serviceFile = project.getSourceFile('/tmp/test-output-multipart/services/multipart.service.ts');
+    const serviceFile = project.getSourceFile(
+        path.join(os.tmpdir(), 'test-output-multipart/services/multipart.service.ts'),
+    );
     const serviceClass = serviceFile!.getClass('MultipartService');
     const postMultipartMethod = serviceClass!.getMethod('postMultipart');
 
@@ -338,7 +354,7 @@ it('should handle multipart body type', async () => {
 it('should handle explicit path style and multiple error responses', async () => {
     const config: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-output-style',
+        output: path.join(os.tmpdir(), 'test-output-style'),
         options: { implementation: 'axios' },
     };
 
@@ -374,7 +390,7 @@ it('should handle explicit path style and multiple error responses', async () =>
 
     const project = new Project();
     generateFromConfigSync(config, project, { spec });
-    const serviceFile = project.getSourceFile('/tmp/test-output-style/services/style.service.ts');
+    const serviceFile = project.getSourceFile(path.join(os.tmpdir(), 'test-output-style/services/style.service.ts'));
     const serviceClass = serviceFile!.getClass('StyleService');
     const method = serviceClass!.getMethod('getStyle');
 
@@ -388,7 +404,7 @@ it('should handle explicit path style and multiple error responses', async () =>
 it('should handle operation with invalid analyzer state explicitly mocked (returns null)', async () => {
     const config: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-output-mocked-null',
+        output: path.join(os.tmpdir(), 'test-output-mocked-null'),
         options: { implementation: 'axios' },
     };
 
@@ -415,7 +431,9 @@ it('should handle operation with invalid analyzer state explicitly mocked (retur
 
     const project = new Project();
     generateFromConfigSync(config, project, { spec });
-    const serviceFile = project.getSourceFile('/tmp/test-output-mocked-null/services/mocked.service.ts');
+    const serviceFile = project.getSourceFile(
+        path.join(os.tmpdir(), 'test-output-mocked-null/services/mocked.service.ts'),
+    );
     expect(serviceFile).toBeDefined();
 
     const serviceClass = serviceFile!.getClass('MockedService');
@@ -441,7 +459,7 @@ it('should hit branch conditions for test mock string evaluation and parameter s
     };
     const config = {
         input: 'dummy',
-        output: '/tmp/test-output-mocked',
+        output: path.join(os.tmpdir(), 'test-output-mocked'),
         options: { implementation: 'axios' as const },
     };
 
@@ -451,7 +469,7 @@ it('should hit branch conditions for test mock string evaluation and parameter s
 it('should generate composable tests when config.options.composableTests is true', async () => {
     const config = {
         input: 'dummy',
-        output: '/tmp/test-output-composable-axios',
+        output: path.join(os.tmpdir(), 'test-output-composable-axios'),
         options: { implementation: 'axios', tests: true, composableTests: true },
     };
 
@@ -471,7 +489,9 @@ it('should generate composable tests when config.options.composableTests is true
     const project = new Project();
     generateFromConfigSync(config as any, project, { spec });
 
-    const testFile = project.getSourceFile('/tmp/test-output-composable-axios/services/composable.service.spec.ts');
+    const testFile = project.getSourceFile(
+        path.join(os.tmpdir(), 'test-output-composable-axios/services/composable.service.spec.ts'),
+    );
     expect(testFile).toBeDefined();
     const text = testFile!.getText();
 
@@ -481,7 +501,7 @@ it('should generate composable tests when config.options.composableTests is true
 it('should cover missing branches in AxiosServiceTestGenerator when isComposable is true', () => {
     const config = {
         input: 'dummy',
-        output: '/tmp/test-output-mocked-composable',
+        output: path.join(os.tmpdir(), 'test-output-mocked-composable'),
         options: { implementation: 'axios', tests: true, composableTests: true },
     };
 
@@ -504,9 +524,15 @@ it('should cover missing branches in AxiosServiceTestGenerator when isComposable
 
     const ops = parser.operations;
 
-    testGen.generateServiceTestFile('mocked', ops as any, '/tmp/test-output-mocked-composable/services');
+    testGen.generateServiceTestFile(
+        'mocked',
+        ops as any,
+        path.join(os.tmpdir(), 'test-output-mocked-composable/services'),
+    );
 
-    const testFile = project.getSourceFile('/tmp/test-output-mocked-composable/services/mocked.service.spec.ts');
+    const testFile = project.getSourceFile(
+        path.join(os.tmpdir(), 'test-output-mocked-composable/services/mocked.service.spec.ts'),
+    );
     expect(testFile).toBeDefined();
     const text = testFile!.getText();
 });

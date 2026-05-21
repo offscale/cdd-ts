@@ -8,9 +8,10 @@ export interface GeneratorConfigOptions {
      * - 'angular': Generates Angular services, interceptors, and modules.
      * - 'react': (Future) Generates React hooks and functional components.
      * - 'vue': (Future) Generates Vue composables.
+     * - 'vanilla': Generates vanilla JS / Fetch clients.
      * @default 'angular'
      */
-    framework?: 'angular' | 'react' | 'vue';
+    framework?: 'angular' | 'react' | 'vue' | 'vanilla' | 'Vanilla JS';
     /**
      * The underlying HTTP implementation to use.
      * - 'angular': Generates Angular HttpClient based services.

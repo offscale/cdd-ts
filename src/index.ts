@@ -52,6 +52,11 @@ export function getGeneratorFactory(framework: string, implementation?: string):
 
         case 'vue':
             return new VueClientGenerator();
+
+        case 'Vanilla JS':
+        case 'vanilla':
+            return new FetchClientGenerator();
+
         default:
             // Default to Angular for backward compatibility if undefined, though config defaults handle this
             return new AngularClientGenerator();

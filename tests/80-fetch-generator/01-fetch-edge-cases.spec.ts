@@ -1,3 +1,5 @@
+import * as os from 'node:os';
+import * as path from 'node:path';
 // @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { generateFromConfigSync } from '@src/index.js';
@@ -9,10 +11,43 @@ import { FetchServiceTestGenerator } from '@src/vendors/fetch/test/service-test.
 import { SwaggerParser } from '@src/openapi/parse.js';
 
 describe('Fetch Implementation Edge Cases', () => {
+    it('should generate .client.ts files when framework is vanilla', () => {
+        const config: GeneratorConfig = {
+            input: 'dummy',
+            output: path.join(os.tmpdir(), 'test-output-vanilla'),
+            options: { framework: 'vanilla', implementation: 'fetch', generateServiceTests: true },
+        };
+
+        const spec = {
+            openapi: '3.0.0',
+            info: { title: 'Test API', version: '1.0' },
+            paths: {
+                '/test': {
+                    get: {
+                        responses: { '200': { description: 'OK' } },
+                    },
+                },
+            },
+        };
+
+        const project = new Project({ useInMemoryFileSystem: true });
+        generateFromConfigSync(config, project, { spec });
+
+        const serviceFile = project.getSourceFile(
+            path.join(os.tmpdir(), 'test-output-vanilla/services/test.client.ts'),
+        );
+        expect(serviceFile).toBeDefined();
+
+        const testFile = project.getSourceFile(
+            path.join(os.tmpdir(), 'test-output-vanilla/services/test.client.spec.ts'),
+        );
+        expect(testFile).toBeDefined();
+    });
+
     it('should cover missing branches in FetchServiceTestGenerator', () => {
         const config: GeneratorConfig = {
             input: 'dummy',
-            output: '/tmp/test-output-mocked',
+            output: path.join(os.tmpdir(), 'test-output-mocked'),
             options: { implementation: 'fetch' },
         };
 
@@ -44,9 +79,11 @@ describe('Fetch Implementation Edge Cases', () => {
         const ops = parser.operations;
         ops[2].methodName = 'customPutMocked'; // cover op.methodName
 
-        testGen.generateServiceTestFile('mocked', ops as any, '/tmp/test-output-mocked/services');
+        testGen.generateServiceTestFile('mocked', ops as any, path.join(os.tmpdir(), 'test-output-mocked/services'));
 
-        const testFile = project.getSourceFile('/tmp/test-output-mocked/services/mocked.service.spec.ts');
+        const testFile = project.getSourceFile(
+            path.join(os.tmpdir(), 'test-output-mocked/services/mocked.service.spec.ts'),
+        );
         expect(testFile).toBeDefined();
 
         const text = testFile!.getText();
@@ -58,7 +95,7 @@ describe('Fetch Implementation Edge Cases', () => {
     it('should handle operations returning multiple distinct response types', async () => {
         const config: GeneratorConfig = {
             input: 'dummy',
-            output: '/tmp/test-multi-resp',
+            output: path.join(os.tmpdir(), 'test-multi-resp'),
             options: { implementation: 'fetch' },
         };
 
@@ -91,7 +128,7 @@ describe('Fetch Implementation Edge Cases', () => {
         const project = new Project();
         generateFromConfigSync(config, project, { spec });
 
-        const serviceFile = project.getSourceFile('/tmp/test-multi-resp/services/multi.service.ts');
+        const serviceFile = project.getSourceFile(path.join(os.tmpdir(), 'test-multi-resp/services/multi.service.ts'));
         const serviceClass = serviceFile!.getClass('MultiService');
         const method = serviceClass!.getMethod('getMulti');
 
@@ -101,7 +138,7 @@ describe('Fetch Implementation Edge Cases', () => {
     it('should handle operations with an explicitly json responseSerialization', async () => {
         const config: GeneratorConfig = {
             input: 'dummy',
-            output: '/tmp/test-json',
+            output: path.join(os.tmpdir(), 'test-json'),
             options: { implementation: 'fetch' },
         };
 
@@ -129,8 +166,8 @@ describe('Fetch Implementation Edge Cases', () => {
         generateFromConfigSync(config, project, { spec });
 
         const serviceFile =
-            project.getSourceFile('/tmp/test-json/services/json-only.service.ts') ||
-            project.getSourceFile('/tmp/test-json/services/jsonOnly.service.ts') ||
+            project.getSourceFile(path.join(os.tmpdir(), 'test-json/services/json-only.service.ts')) ||
+            project.getSourceFile(path.join(os.tmpdir(), 'test-json/services/jsonOnly.service.ts')) ||
             project
                 .getSourceFiles()
                 .find(f => f.getFilePath().includes('json-only') || f.getFilePath().includes('service.ts'))!;
@@ -169,7 +206,7 @@ describe('Fetch Implementation Edge Cases', () => {
 it('should assign root paths to Default controller', async () => {
     const config: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-default',
+        output: path.join(os.tmpdir(), 'test-default'),
         options: { implementation: 'fetch' },
     };
     const spec = {
@@ -181,7 +218,7 @@ it('should assign root paths to Default controller', async () => {
     };
     const project = new Project();
     generateFromConfigSync(config, project, { spec });
-    const serviceFile = project.getSourceFile('/tmp/test-default/services/default.service.ts');
+    const serviceFile = project.getSourceFile(path.join(os.tmpdir(), 'test-default/services/default.service.ts'));
     expect(serviceFile).toBeDefined();
     expect(serviceFile!.getClass('DefaultService')).toBeDefined();
 });
@@ -189,7 +226,7 @@ it('should assign root paths to Default controller', async () => {
 it('should respect generateServiceTests config option', async () => {
     const config: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-notests',
+        output: path.join(os.tmpdir(), 'test-notests'),
         options: { implementation: 'fetch', generateServiceTests: false },
     };
     const spec = {
@@ -201,7 +238,7 @@ it('should respect generateServiceTests config option', async () => {
 
     const config2: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-yestests',
+        output: path.join(os.tmpdir(), 'test-yestests'),
         options: { implementation: 'fetch', generateServiceTests: true },
     };
     generateFromConfigSync(config2, new Project(), { spec });
@@ -210,7 +247,7 @@ it('should respect generateServiceTests config option', async () => {
 it('should handle operation-level servers', async () => {
     const config: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-op-servers',
+        output: path.join(os.tmpdir(), 'test-op-servers'),
         options: { implementation: 'fetch' },
     };
     const spec = {
@@ -231,7 +268,7 @@ it('should handle operation-level servers', async () => {
     const sf = project
         .getSourceFiles()
         .find(f => f.getFilePath().includes('op-server') || f.getFilePath().includes('OpServer'));
-    const sf2 = project.getSourceFile('/tmp/test-op-servers/services/opServer.service.ts');
+    const sf2 = project.getSourceFile(path.join(os.tmpdir(), 'test-op-servers/services/opServer.service.ts'));
     const m = sf2!.getClasses()[0]!.getMethod('getOpServer');
     expect(m!.getText()).toContain('const operationServers = [');
 });
@@ -239,7 +276,7 @@ it('should handle operation-level servers', async () => {
 it('should handle path params with explicit style and multipart/form-data body', async () => {
     const config: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-params-multipart',
+        output: path.join(os.tmpdir(), 'test-params-multipart'),
         options: { implementation: 'fetch' },
     };
     const spec = {
@@ -270,7 +307,7 @@ it('should handle path params with explicit style and multipart/form-data body',
 it('should handle responses and request bodies without schemas or that are plain objects', async () => {
     const config: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-no-schemas',
+        output: path.join(os.tmpdir(), 'test-no-schemas'),
         options: { implementation: 'fetch' },
     };
     const spec = {
@@ -297,7 +334,7 @@ it('should handle responses and request bodies without schemas or that are plain
 it('should ignore non-exported service classes in index', async () => {
     const config: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-index-ignore',
+        output: path.join(os.tmpdir(), 'test-index-ignore'),
         options: { implementation: 'fetch' },
     };
     const spec = {
@@ -315,16 +352,16 @@ it('should ignore non-exported service classes in index', async () => {
     sf!.getClasses()[0]!.setIsExported(false);
 
     const { FetchServiceIndexGenerator } = await import('@src/vendors/fetch/utils/index.generator.js');
-    new FetchServiceIndexGenerator(project).generateIndex('/tmp/test-index-ignore');
+    new FetchServiceIndexGenerator(project).generateIndex(path.join(os.tmpdir(), 'test-index-ignore'));
 
-    const indexFile = project.getSourceFile('/tmp/test-index-ignore/services/index.ts');
+    const indexFile = project.getSourceFile(path.join(os.tmpdir(), 'test-index-ignore/services/index.ts'));
     expect(indexFile!.getText()).not.toContain('AService');
 });
 
 it('should hit branch for non-interface application/json body in FetchServiceGenerator', async () => {
     const config: GeneratorConfig = {
         input: 'dummy',
-        output: '/tmp/test-output-json-primitive',
+        output: path.join(os.tmpdir(), 'test-output-json-primitive'),
         options: { implementation: 'fetch' as const },
     };
 
@@ -353,7 +390,7 @@ it('should hit branch for non-interface application/json body in FetchServiceGen
 it('should generate composable tests when config.options.composableTests is true', async () => {
     const config = {
         input: 'dummy',
-        output: '/tmp/test-output-composable-fetch',
+        output: path.join(os.tmpdir(), 'test-output-composable-fetch'),
         options: { implementation: 'fetch', tests: true, composableTests: true },
     };
 
@@ -373,7 +410,9 @@ it('should generate composable tests when config.options.composableTests is true
     const project = new Project();
     generateFromConfigSync(config as any, project, { spec });
 
-    const testFile = project.getSourceFile('/tmp/test-output-composable-fetch/services/composable.service.spec.ts');
+    const testFile = project.getSourceFile(
+        path.join(os.tmpdir(), 'test-output-composable-fetch/services/composable.service.spec.ts'),
+    );
     expect(testFile).toBeDefined();
     const text = testFile!.getText();
 
@@ -383,7 +422,7 @@ it('should generate composable tests when config.options.composableTests is true
 it('should cover missing branches in FetchServiceTestGenerator when isComposable is true', () => {
     const config = {
         input: 'dummy',
-        output: '/tmp/test-output-mocked-composable',
+        output: path.join(os.tmpdir(), 'test-output-mocked-composable'),
         options: { implementation: 'fetch', tests: true, composableTests: true },
     };
 
@@ -406,9 +445,15 @@ it('should cover missing branches in FetchServiceTestGenerator when isComposable
 
     const ops = parser.operations;
 
-    testGen.generateServiceTestFile('mocked', ops as any, '/tmp/test-output-mocked-composable/services');
+    testGen.generateServiceTestFile(
+        'mocked',
+        ops as any,
+        path.join(os.tmpdir(), 'test-output-mocked-composable/services'),
+    );
 
-    const testFile = project.getSourceFile('/tmp/test-output-mocked-composable/services/mocked.service.spec.ts');
+    const testFile = project.getSourceFile(
+        path.join(os.tmpdir(), 'test-output-mocked-composable/services/mocked.service.spec.ts'),
+    );
     expect(testFile).toBeDefined();
     const text = testFile!.getText();
 });

@@ -137,18 +137,23 @@ export class NodeServiceMethodGenerator {
         const rawPathItem = this.parser.spec.paths?.[model.urlTemplate];
         const rawOp =
             rawPathItem && typeof rawPathItem === 'object'
-                ? (rawPathItem as any)[model.httpMethod.toLowerCase()]
+                ? (
+                      rawPathItem as Record<
+                          string,
+                          { parameters?: { in?: string; name?: string }[]; consumes?: string[] }
+                      >
+                  )[model.httpMethod.toLowerCase()]
                 : undefined;
         /* v8 ignore stop */
-        const legacyFormData = rawOp?.parameters?.filter((p: any) => p.in === 'formData');
+        const legacyFormData = rawOp?.parameters?.filter(p => p.in === 'formData');
         const isUrlEnc = rawOp?.consumes?.includes('application/x-www-form-urlencoded');
 
         /* v8 ignore start - Legacy formData is blocked by OAS3 parser validation, unreachable here */
         if (legacyFormData && legacyFormData.length > 0) {
             if (isUrlEnc) {
                 lines.push(`const formBody = new URLSearchParams();`);
-                legacyFormData.forEach((p: any) => {
-                    const paramName = camelCase(p.name);
+                legacyFormData.forEach(p => {
+                    const paramName = camelCase(p.name || '');
                     lines.push(`if (${paramName} != null) { formBody.append('${p.name}', String(${paramName})); }`);
                 });
                 dataArgument = 'formBody.toString()';
@@ -157,9 +162,11 @@ export class NodeServiceMethodGenerator {
                 );
             } else {
                 lines.push(`const formData = new FormData();`);
-                legacyFormData.forEach((p: any) => {
-                    const paramName = camelCase(p.name);
-                    lines.push(`if (${paramName} != null) { formData.append('${p.name}', ${paramName} as any); }`);
+                legacyFormData.forEach(p => {
+                    const paramName = camelCase(p.name || '');
+                    lines.push(
+                        `if (${paramName} != null) { formData.append('${p.name}', ${paramName} as unknown as string | Blob); }`,
+                    );
                 });
                 dataArgument = 'formData';
             }
@@ -183,10 +190,11 @@ export class NodeServiceMethodGenerator {
             } else if (model.body.type === 'encoded-form-data') {
                 lines.push(`const formBody = new URLSearchParams();`);
                 model.parameters
-                    .filter((p: any) => p.in === 'formData')
-                    .forEach((p: any) => {
+                    .filter(p => (p as unknown as { in?: string }).in === 'formData')
+                    .forEach(p => {
+                        const param = p as unknown as { paramName: string; originalName: string };
                         lines.push(
-                            `if (${p.paramName} != null) { formBody.append('${p.originalName}', String(${p.paramName})); }`,
+                            `if (${param.paramName} != null) { formBody.append('${param.originalName}', String(${param.paramName})); }`,
                         );
                     });
                 dataArgument = 'formBody.toString()';

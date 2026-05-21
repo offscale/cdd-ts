@@ -1,3 +1,5 @@
+import * as os from 'node:os';
+import * as path from 'node:path';
 // @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { generateFromConfigSync, TestGeneratorConfig } from '@src/index.js';
@@ -28,7 +30,7 @@ describe('Fetch Implementation', () => {
         it('should execute FetchClientGenerator successfully when admin is false', async () => {
             const config: GeneratorConfig = {
                 input: 'dummy',
-                output: '/tmp/test-output',
+                output: path.join(os.tmpdir(), 'test-output'),
                 options: {
                     implementation: 'fetch',
                     admin: false,
@@ -84,7 +86,7 @@ describe('Fetch Implementation', () => {
         it('should export services properly from index', async () => {
             const config: GeneratorConfig = {
                 input: 'dummy',
-                output: '/tmp/test-output',
+                output: path.join(os.tmpdir(), 'test-output'),
                 options: {
                     implementation: 'fetch',
                     generateServices: true,
@@ -106,11 +108,11 @@ describe('Fetch Implementation', () => {
 
             const project = new Project();
             generateFromConfigSync(config, project, { spec });
-            const mainIndex = project.getSourceFile('/tmp/test-output/index.ts');
+            const mainIndex = project.getSourceFile(path.join(os.tmpdir(), 'test-output/index.ts'));
             expect(mainIndex).toBeDefined();
             expect(mainIndex!.getText()).toContain('./services');
 
-            const servicesIndex = project.getSourceFile('/tmp/test-output/services/index.ts');
+            const servicesIndex = project.getSourceFile(path.join(os.tmpdir(), 'test-output/services/index.ts'));
             expect(servicesIndex).toBeDefined();
             expect(servicesIndex!.getText()).toContain('export { TestService } from "./test.service";');
         });
@@ -120,7 +122,7 @@ describe('Fetch Implementation', () => {
         it('should handle URL params, query params, headers, and body correctly', async () => {
             const config: GeneratorConfig = {
                 input: 'dummy',
-                output: '/tmp/test-output',
+                output: path.join(os.tmpdir(), 'test-output'),
                 options: { implementation: 'fetch' },
             };
 
@@ -188,7 +190,9 @@ describe('Fetch Implementation', () => {
             const project = new Project();
             generateFromConfigSync(config, project, { spec });
 
-            const serviceFile = project.getSourceFile('/tmp/test-output/services/complex.service.ts');
+            const serviceFile = project.getSourceFile(
+                path.join(os.tmpdir(), 'test-output/services/complex.service.ts'),
+            );
             const serviceClass = serviceFile!.getClass('ComplexService');
 
             const postMethod = serviceClass!.getMethod('createComplex');
@@ -215,7 +219,7 @@ describe('Fetch Implementation', () => {
         it('should handle blob, arraybuffer, and text response types', async () => {
             const config: GeneratorConfig = {
                 input: 'dummy',
-                output: '/tmp/test-output-types',
+                output: path.join(os.tmpdir(), 'test-output-types'),
                 options: { implementation: 'fetch' },
             };
 
@@ -266,7 +270,9 @@ describe('Fetch Implementation', () => {
             const project = new Project();
             generateFromConfigSync(config, project, { spec });
 
-            const serviceFile = project.getSourceFile('/tmp/test-output-types/services/api.service.ts');
+            const serviceFile = project.getSourceFile(
+                path.join(os.tmpdir(), 'test-output-types/services/api.service.ts'),
+            );
             const serviceClass = serviceFile!.getClass('ApiService');
 
             expect(
@@ -295,7 +301,7 @@ describe('Fetch Implementation', () => {
         it('should generate properly without services when generateServices is false', async () => {
             const config: GeneratorConfig = {
                 input: 'dummy',
-                output: '/tmp/test-output-noservices',
+                output: path.join(os.tmpdir(), 'test-output-noservices'),
                 options: { implementation: 'fetch', generateServices: false },
             };
 
@@ -303,13 +309,15 @@ describe('Fetch Implementation', () => {
             const project = new Project();
             generateFromConfigSync(config, project, { spec });
 
-            expect(project.getSourceFile('/tmp/test-output-noservices/services/index.ts')).toBeUndefined();
+            expect(
+                project.getSourceFile(path.join(os.tmpdir(), 'test-output-noservices/services/index.ts')),
+            ).toBeUndefined();
         });
 
         it('should generate properly with empty services index when no operations exist', async () => {
             const config: GeneratorConfig = {
                 input: 'dummy',
-                output: '/tmp/test-output-emptyops',
+                output: path.join(os.tmpdir(), 'test-output-emptyops'),
                 options: { implementation: 'fetch' },
             };
 
@@ -317,7 +325,9 @@ describe('Fetch Implementation', () => {
             const project = new Project();
             generateFromConfigSync(config, project, { spec });
 
-            expect(project.getSourceFile('/tmp/test-output-emptyops/services/index.ts')).toBeUndefined();
+            expect(
+                project.getSourceFile(path.join(os.tmpdir(), 'test-output-emptyops/services/index.ts')),
+            ).toBeUndefined();
         });
     });
 });

@@ -41,14 +41,14 @@ async function main() {
     let docCoveragePercent = 0;
     try {
         console.log('Running type coverage...');
-        const out = execSync('npx type-coverage', { encoding: 'utf8' });
+        const out = execSync('npm run check:types', { encoding: 'utf8' });
         const match = out.match(/([0-9.]+)%/);
         if (match) {
             docCoveragePercent = parseFloat(match[1]);
         } else {
             docCoveragePercent = 100; // fallback
         }
-    } catch (e: string | number | boolean | object | undefined | null) {
+    } catch (e: any) {
         const match = e.stdout?.match(/([0-9.]+)%/);
         if (match) docCoveragePercent = parseFloat(match[1]);
     }

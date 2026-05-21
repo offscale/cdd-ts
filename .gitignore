@@ -238,3 +238,18 @@ test_*.txt
 .test_out_*
 .test_out_swagger
 .test_out_openapi
+!.pre-commit-config.yaml
+
+# Absolute careless catch-alls for test directories and arbitrary scripts
+test-output*/
+.test-output*/
+test_out*/
+.test_out*/
+out-*/
+.tmp/
+tmp/
+temp/
+*.pyc
+__pycache__/
+*.cjs
+*.mjs

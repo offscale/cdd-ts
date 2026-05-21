@@ -478,7 +478,7 @@ app.get('/headers', headerHandler);
                         operationId: 'copyThing',
                         method: 'COPY',
                         path: '/things/{id}',
-                        filePath: '/tmp/copy.ts',
+                        filePath: path.join(os.tmpdir(), 'copy.ts'),
                         params: [{ name: 'id', in: 'path', required: true }],
                         requestBody: { required: false, contentTypes: [] },
                         responses: [],
@@ -487,7 +487,7 @@ app.get('/headers', headerHandler);
                         operationId: 'uploadBinary',
                         method: 'POST',
                         path: '/upload',
-                        filePath: '/tmp/upload.ts',
+                        filePath: path.join(os.tmpdir(), 'upload.ts'),
                         params: [],
                         requestBody: {
                             required: true,
@@ -519,7 +519,9 @@ app.get('/headers', headerHandler);
         const dir = makeTempDir();
         fs.writeFileSync(path.join(dir, 'empty.ts'), 'export const x = 1;');
         expect(() => scanTypeScriptProject(dir, fs)).toThrow(/No route handlers found/);
-        expect(() => scanTypeScriptSource('export const x = 1;', '/tmp/empty.ts')).toThrow(/No route handlers found/);
+        expect(() => scanTypeScriptSource('export const x = 1;', path.join(os.tmpdir(), 'empty.ts'))).toThrow(
+            /No route handlers found/,
+        );
 
         const emptyDir = makeTempDir();
         const ignoredDir = path.join(emptyDir, 'node_modules');

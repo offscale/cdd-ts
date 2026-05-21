@@ -1,3 +1,6 @@
+import * as url from 'node:url';
+import * as path from 'node:path';
+import * as os from 'node:os';
 // @ts-nocheck
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
@@ -120,7 +123,7 @@ describe('Core Utils: SpecLoader', () => {
     it('should support file:// URLs when loading from disk', async () => {
         (fs.existsSync as Mock).mockReturnValue(true);
         (fs.readFileSync as Mock).mockReturnValue('{"openapi":"3.0.0"}');
-        const result = await SpecLoader.load('file:///tmp/spec.json');
+        const result = await SpecLoader.load(url.pathToFileURL(path.join(os.tmpdir(), 'spec.json')).href);
         expect(result.entrySpec).toBeDefined();
     });
 
