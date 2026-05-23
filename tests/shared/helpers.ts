@@ -43,6 +43,7 @@ export async function runGeneratorWithConfig(
         input: '/spec.json',
         output: '/generated',
         options: {
+            framework: 'angular',
             dateType: 'string',
             enumStyle: 'enum',
             generateServices: true,
@@ -65,16 +66,18 @@ export async function runGenerator(spec: object, genConfig?: Partial<GeneratorCo
     const project = createTestProject();
 
     const config: GeneratorConfig = {
-        input: '/spec.json',
-        output: '/generated',
+        ...genConfig,
+        input: genConfig?.input ?? '/spec.json',
+        output: genConfig?.output ?? '/generated',
         options: {
+            framework: 'angular',
             dateType: 'string',
             enumStyle: 'enum',
             generateServices: true,
             admin: false,
             generateServiceTests: true,
+            ...genConfig?.options,
         },
-        ...genConfig,
     };
 
     generateFromConfigSync(config, project, { spec });

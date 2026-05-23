@@ -9,7 +9,7 @@ export interface GeneratorConfigOptions {
      * - 'react': (Future) Generates React hooks and functional components.
      * - 'vue': (Future) Generates Vue composables.
      * - 'vanilla': Generates vanilla JS / Fetch clients.
-     * @default 'angular'
+     * @default 'vanilla'
      */
     framework?: 'angular' | 'react' | 'vue' | 'vanilla' | 'Vanilla JS';
     /**
@@ -18,7 +18,7 @@ export interface GeneratorConfigOptions {
      * - 'fetch': Generates native fetch API based services.
      * - 'axios': Generates axios based services.
      * - 'node': Generates Node.js builtin http/https based services.
-     * @default 'angular'
+     * @default 'fetch'
      */
     implementation?: 'angular' | 'fetch' | 'axios' | 'node';
     /** The TypeScript type to use for properties with `format: "date"` or `"date-time"`. */
@@ -34,9 +34,9 @@ export interface GeneratorConfigOptions {
     generateServices?: boolean;
     /** If true, generates a complete admin UI module. */
     admin?: boolean;
-    /** If true, generates tests for the Angular services. Defaults to true. */
+    /** If true, generates tests for the Angular services. Defaults to false. */
     generateServiceTests?: boolean;
-    /** If true, generates tests for the admin UI. Defaults to true. */
+    /** If true, generates tests for the admin UI. Defaults to false. */
     generateAdminTests?: boolean;
     /** If true, generates composable tests and mocks, useful for e2e and edge case bugs. Defaults to false. */
     composableTests?: boolean;

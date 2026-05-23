@@ -129,7 +129,7 @@ describe('index.ts', () => {
             expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('URL'));
         });
 
-        it('should default framework to angular if not provided', async () => {
+        it('should default framework to vanilla if not provided', async () => {
             delete config.options.framework;
             const testConfig = {
                 spec: {
@@ -139,7 +139,7 @@ describe('index.ts', () => {
                 } as unknown as SwaggerParser,
             };
             const activeProjectSaveSpy = vi.spyOn(project, 'saveSync').mockResolvedValue(undefined);
-            const generateSpy = vi.spyOn(AngularClientGenerator.prototype, 'generate').mockResolvedValue(undefined);
+            const generateSpy = vi.spyOn(FetchClientGenerator.prototype, 'generate').mockResolvedValue(undefined);
 
             generateFromConfigSync(config, project, testConfig);
 

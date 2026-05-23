@@ -35,11 +35,6 @@ echo "Running OpenAPI 3.2.0 Petstore test..."
 node dist/cli.js from_openapi to_sdk -i ../petstore_oas3.json -o .test_out_openapi || { echo "OpenAPI 3.2.0 Petstore test failed"; exit 1; }
 rm -rf .test_out_openapi
 
-echo "Building cdd-ts utilizing the local ts-morph wasm fork..."
-make build_with_ts_go
-
-echo "Building cdd-ts utilizing the new AOT Go+AS architecture..."
-make build_with_ts_go_assemblyscript
 
 echo "Updating Badges in README.md..."
 npx esbuild scripts/update-badges.ts --bundle --platform=node --outfile=scripts/update-badges.cjs

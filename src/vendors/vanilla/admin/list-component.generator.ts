@@ -12,7 +12,7 @@ export class ListComponentGenerator {
             .replace(/([A-Z])/g, '-$1')
             .toLowerCase()}-list`;
 
-        const serviceName = `${pascalCase(resource.name)}Service`;
+        const serviceName = `${pascalCase(resource.name)}Client`;
 
         const dirPath = `${outDir}/${resource.name}/${resource.name}-list`;
 
@@ -24,16 +24,16 @@ export class ListComponentGenerator {
 
         const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
 
-        const listOp = resource.operations.find(op => op.action === 'list');
+        const getListOp = resource.operations.find(op => op.action === 'getAll');
 
         const deleteOp = resource.operations.find(op => op.action === 'delete');
 
-        const methodCall = listOp?.methodName || 'list';
+        const methodCall = getListOp?.methodName || 'getAll';
 
         const deleteMethodCall = deleteOp?.methodName || 'delete';
 
         sourceFile.addImportDeclaration({
-            moduleSpecifier: `../../../services/${resource.name}.service.js`,
+            moduleSpecifier: `../../../services/${resource.name}.client.js`,
             namedImports: [serviceName],
         });
 

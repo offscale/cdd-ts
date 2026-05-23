@@ -43,9 +43,9 @@ interface CliOptions {
     testsForService?: boolean;
     testsForAdmin?: boolean;
     tests?: boolean;
-    noTestGen?: boolean;
-    noGithubActions?: boolean;
-    noInstallablePackage?: boolean;
+    testGen?: boolean;
+    githubActions?: boolean;
+    installablePackage?: boolean;
     orm?: 'typeorm';
     serverFramework?: 'express' | 'node' | 'bun' | 'deno';
     int64Type?: 'number' | 'string' | 'bigint';
@@ -114,10 +114,21 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
         // Only override if explicitly set to false, or if it was provided via config.
         if (options.testsForService === false) cliOptions.generateServiceTests = false;
         if (options.testsForAdmin === false) cliOptions.generateAdminTests = false;
+        if (options.installablePackage === false) cliOptions.noInstallablePackage = true;
+        if (options.githubActions === false) cliOptions.noGithubActions = true;
+        if (options.testGen === false) {
+            cliOptions.generateServiceTests = false;
+            cliOptions.generateAdminTests = false;
+            cliOptions.composableTests = false;
+        }
 
         if (options.tests !== undefined) {
-            cliOptions.composableTests = options.tests;
-            cliOptions.tests = options.tests;
+            const isTestsEnabled =
+                typeof options.tests === 'string'
+                    ? options.tests !== 'false' && options.tests !== '0'
+                    : !!options.tests;
+            cliOptions.composableTests = isTestsEnabled;
+            cliOptions.tests = isTestsEnabled;
         }
         if (options.orm) cliOptions.orm = options.orm;
         if (options.serverFramework) cliOptions.serverFramework = options.serverFramework;
@@ -134,13 +145,13 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
         }
 
         const defaults: GeneratorConfigOptions = {
-            framework: 'angular',
+            framework: 'vanilla',
             dateType: 'Date',
             enumStyle: 'enum',
             generateServices: true,
             admin: false,
-            generateServiceTests: true,
-            generateAdminTests: true,
+            generateServiceTests: false,
+            generateAdminTests: false,
         };
 
         const finalConfigInProgress: Partial<GeneratorConfig> = {
@@ -194,7 +205,10 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
         );
 
         const targetOutputRoot = finalConfigInProgress.output;
-        if (!options.noInstallablePackage && (targetScope === 'to_sdk' || targetScope === 'to_server')) {
+        if (
+            !finalConfigInProgress.options?.noInstallablePackage &&
+            (targetScope === 'to_sdk' || targetScope === 'to_server')
+        ) {
             finalConfigInProgress.output = path.join(targetOutputRoot, 'src');
         }
 
@@ -208,7 +222,7 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
             console.log('Target scope SDK executed.');
         }
 
-        if (!options.noInstallablePackage) {
+        if (!finalConfigInProgress.options?.noInstallablePackage) {
             console.log('Generating package scaffolding...');
             fs.writeFileSync(
                 path.join(targetOutputRoot, 'package.json'),
@@ -242,7 +256,7 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
             );
         }
 
-        if (!options.noGithubActions) {
+        if (!finalConfigInProgress.options?.noGithubActions) {
             console.log('Generating GitHub actions...');
             const ghDir = path.join(targetOutputRoot, '.github', 'workflows');
             fs.mkdirSync(ghDir, { recursive: true });
@@ -378,7 +392,7 @@ interface DocsJsonOptions {
     output?: string;
     imports: boolean;
     wrapping: boolean;
-    framework?: 'angular' | 'react' | 'vue';
+    framework?: 'angular' | 'react' | 'vue' | 'vanilla' | 'Vanilla JS';
 }
 
 async function runToDocsJson(options: DocsJsonOptions, returnObject = false): Promise<void | OpenApiValue> {
@@ -386,7 +400,7 @@ async function runToDocsJson(options: DocsJsonOptions, returnObject = false): Pr
         input: options.input,
         output: './generated',
         options: {
-            framework: options.framework || 'angular',
+            framework: options.framework || 'vanilla',
             dateType: 'Date',
             enumStyle: 'enum',
         },
@@ -601,8 +615,8 @@ program
     .addOption(new Option('-o, --output <path>', 'Path to write the JSON to').env('CDD_OUTPUT'))
     .addOption(
         new Option('--framework <framework>', 'Target framework')
-            .choices(['angular', 'react', 'vue'])
-            .default('angular')
+            .choices(['angular', 'react', 'vue', 'vanilla', 'Vanilla JS'])
+            .default('vanilla')
             .env('CDD_FRAMEWORK'),
     )
     .addOption(

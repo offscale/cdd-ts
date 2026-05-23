@@ -43,7 +43,8 @@ export function getGeneratorFactory(framework: string, implementation?: string):
     if (implementation === 'node') {
         return new NodeClientGenerator();
     }
-    switch (framework) {
+    const fwLower = (framework || '').toLowerCase();
+    switch (fwLower) {
         case 'angular':
             return new AngularClientGenerator();
 
@@ -53,7 +54,8 @@ export function getGeneratorFactory(framework: string, implementation?: string):
         case 'vue':
             return new VueClientGenerator();
 
-        case 'Vanilla JS':
+        case 'vanilla js':
+        case 'vanillajs':
         case 'vanilla':
             return new FetchClientGenerator();
 
@@ -137,7 +139,7 @@ export function generateFromConfigSync(
     }
 
     try {
-        const framework = config.options.framework || 'angular';
+        const framework = config.options.framework || 'vanilla';
         const implementation = config.options.implementation;
 
         let swaggerParser: SwaggerParser;

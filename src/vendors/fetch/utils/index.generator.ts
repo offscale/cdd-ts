@@ -26,7 +26,10 @@ export class FetchServiceIndexGenerator {
         const serviceFiles = this.project.getSourceFiles().filter(sf => {
             const absFileDir = path.resolve(path.dirname(sf.getFilePath()));
 
-            return absFileDir === absServicesDir && sf.getFilePath().endsWith('.service.ts');
+            return (
+                absFileDir === absServicesDir &&
+                (sf.getFilePath().endsWith('.service.ts') || sf.getFilePath().endsWith('.client.ts'))
+            );
         });
 
         if (serviceFiles.length === 0) return;

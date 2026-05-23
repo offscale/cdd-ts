@@ -1,6 +1,7 @@
 # cdd-ts
 
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![interactive WASM web demo](https://img.shields.io/badge/interactive-WASM_web_demo-blue.svg)](https://offscale.io/wasm_web_demo)
 [![CI](https://github.com/offscale/cdd-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/offscale/cdd-ts/actions)
 <!-- TEST_COVERAGE_START -->
 ![TEST_COVERAGE](https://img.shields.io/badge/Test%20Coverage-100%25-brightgreen)

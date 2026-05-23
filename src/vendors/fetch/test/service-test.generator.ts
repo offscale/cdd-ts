@@ -20,8 +20,8 @@ export class FetchServiceTestGenerator {
     }
 
     public generateServiceTestFile(controllerName: string, operations: PathInfo[], servicesDir: string): void {
-        const fw = this.config.options.framework;
-        const isVanilla = fw === 'Vanilla JS' || fw === 'vanilla';
+        const fw = (this.config.options.framework || '').toLowerCase();
+        const isVanilla = fw === 'vanilla js' || fw === 'vanilla' || fw === 'vanillajs';
 
         const serviceName = isVanilla ? `${pascalCase(controllerName)}Client` : `${pascalCase(controllerName)}Service`;
         const fileName = isVanilla

@@ -22,7 +22,13 @@ describe('E2E: Full Generation Orchestrator', () => {
         const config: GeneratorConfig = {
             input: '',
             output: '/generated',
-            options: { generateServices: true } as string | number | boolean | object | undefined | null,
+            options: { generateServices: true, framework: 'angular' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
         };
         generateFromConfigSync(config, project, { spec: coverageSpec });
 
@@ -42,7 +48,13 @@ describe('E2E: Full Generation Orchestrator', () => {
         const config: GeneratorConfig = {
             input: '',
             output: '/generated',
-            options: { generateServices: true } as string | number | boolean | object | undefined | null,
+            options: { generateServices: true, framework: 'angular' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
         };
         generateFromConfigSync(config, project, { spec: securitySpec });
 
@@ -57,7 +69,13 @@ describe('E2E: Full Generation Orchestrator', () => {
         const config: GeneratorConfig = {
             input: '',
             output: '/generated',
-            options: { generateServices: true } as string | number | boolean | object | undefined | null,
+            options: { generateServices: true, framework: 'angular' } as
+                | string
+                | number
+                | boolean
+                | object
+                | undefined
+                | null,
         };
         const cookieSecuritySpec = {
             openapi: '3.0.0',

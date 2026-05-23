@@ -12,7 +12,7 @@ export class FormComponentGenerator {
             .replace(/([A-Z])/g, '-$1')
             .toLowerCase()}-form`;
 
-        const serviceName = `${pascalCase(resource.name)}Service`;
+        const serviceName = `${pascalCase(resource.name)}Client`;
 
         const dirPath = `${outDir}/${resource.name}/${resource.name}-form`;
 
@@ -37,7 +37,7 @@ export class FormComponentGenerator {
         const getMethodCall = getOp?.methodName || 'getById';
 
         sourceFile.addImportDeclaration({
-            moduleSpecifier: `../../../services/${resource.name}.service.js`,
+            moduleSpecifier: `../../../services/${resource.name}.client.js`,
             namedImports: [serviceName],
         });
 

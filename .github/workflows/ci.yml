@@ -9,10 +9,10 @@ jobs:
     ci:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Checkout ts-morph fork
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   repository: SamuelMarks/ts-morph
                   ref: wasm-typescript-go
@@ -20,7 +20,7 @@ jobs:
                   path: ts-morph-tmp
 
             - name: Checkout typescript-go fork
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   repository: SamuelMarks/typescript-go
                   ref: wasm
@@ -39,7 +39,7 @@ jobs:
             - name: Build ts-morph
               run: cd ../ts-morph && npm install && npm run build:node -w @ts-morph/common && npm run build:node -w ts-morph
 
-            - uses: actions/setup-node@v4
+            - uses: actions/setup-node@v6
               with:
                   node-version: 'lts/*'
 
@@ -65,7 +65,7 @@ jobs:
               run: npm run-script build
 
             - name: Setup Go
-              uses: actions/setup-go@v5
+              uses: actions/setup-go@v6
               with:
                   go-version: '>=1.22.0'
                   cache: true
@@ -95,13 +95,13 @@ jobs:
                   make build_with_ts_go_assemblyscript
 
             - name: Upload coverage report artifact
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: coverage-report
                   path: ./coverage
 
             - name: Upload coverage reports to Codecov with GitHub Action
-              uses: codecov/codecov-action@v5
+              uses: codecov/codecov-action@v6
               with:
                   files: ./coverage/lcov.info
               env:

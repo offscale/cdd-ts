@@ -22,9 +22,9 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
             - name: Checkout ts-morph fork
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   repository: SamuelMarks/ts-morph
                   ref: wasm-typescript-go
@@ -32,7 +32,7 @@ jobs:
                   path: ts-morph-tmp
 
             - name: Checkout typescript-go fork
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   repository: SamuelMarks/typescript-go
                   ref: wasm
@@ -51,7 +51,7 @@ jobs:
               run: cd ../ts-morph && npm install && npm run build:node -w @ts-morph/common && npm run build:node -w ts-morph
 
             - name: Setup Node
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
                   node-version: 'lts/*'
             - name: Install requirements
@@ -59,14 +59,14 @@ jobs:
             - name: Build docs
               run: npm run docs
             - name: Setup Pages
-              uses: actions/configure-pages@v5
+              uses: actions/configure-pages@v6
               continue-on-error: true
             - name: Upload artifact
-              uses: actions/upload-pages-artifact@v3
+              uses: actions/upload-pages-artifact@v5
               continue-on-error: true
               with:
                   path: './docs'
             - name: Deploy to GitHub Pages
               id: deployment
-              uses: actions/deploy-pages@v4
+              uses: actions/deploy-pages@v5
               continue-on-error: true
