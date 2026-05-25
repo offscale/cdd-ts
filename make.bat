@@ -4,6 +4,7 @@ if "%1"=="" goto help
 if "%1"=="help" goto help
 if "%1"=="install_base" goto install_base
 if "%1"=="install_deps" goto install_deps
+if "%1"=="docs" goto docs
 if "%1"=="build_docs" goto build_docs
 if "%1"=="build" goto build
 if "%1"=="test" goto test
@@ -18,6 +19,7 @@ if "%1"=="build_with_ts_go_assemblyscript" goto build_with_ts_go_assemblyscript
 echo Available commands:
 echo   make.bat install_base  - Install Node.js
 echo   make.bat install_deps  - Install dependencies (npm install)
+echo   make.bat docs          - Build API docs and create html symlink
 echo   make.bat build_docs    - Build API docs
 echo   make.bat build         - Build the CLI binary
 echo   make.bat test          - Run tests locally

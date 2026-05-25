@@ -1,4 +1,4 @@
-.PHONY: all help install_base install_deps build_docs build test run build_wasm build_docker run_docker
+.PHONY: all help install_base install_deps docs build_docs build test run build_wasm build_docker run_docker
 
 all: help
 
@@ -6,6 +6,7 @@ help:
 	@echo "Available commands:"
 	@echo "  make install_base  - Install Node.js"
 	@echo "  make install_deps  - Install dependencies (npm install)"
+	@echo "  make docs          - Build API docs and create html symlink"
 	@echo "  make build_docs    - Build API docs and put them in 'docs' directory (or dir given in DOCS_DIR)"
 	@echo "  make build         - Build the CLI binary (or to dir given in BIN_DIR)"
 	@echo "  make test          - Run tests locally"
@@ -26,6 +27,9 @@ install_deps:
 DOCS_DIR ?= docs
 build_docs: install_deps
 	npm run docs
+
+docs: build_docs
+	@cd $(DOCS_DIR) && ln -sfn . html
 
 BIN_DIR ?= dist
 build: install_deps
