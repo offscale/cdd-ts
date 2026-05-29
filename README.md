@@ -102,7 +102,6 @@ Options:
 Commands:
   from_openapi              Generate code from OpenAPI
   to_openapi [options]      Generate an OpenAPI specification from TypeScript
-                            code (snapshot-based with AST fallback)
   to_docs_json [options]    Generate JSON containing how to call operations in
                             the target language
   serve_json_rpc [options]  Expose CLI interface as JSON-RPC server
@@ -133,8 +132,6 @@ Commands:
 $ dist/cli.js to_openapi --help
 Usage: cdd-ts to_openapi [options]
 
-Generate an OpenAPI specification from TypeScript code (snapshot-based with AST
-fallback)
 
 Options:
   -i, --input <path>   Path to a snapshot file or a generated output directory

@@ -3,6 +3,7 @@ import { SwaggerParser } from '../../openapi/parse.js';
 import { GeneratorConfig, PathInfo } from '../../core/types/index.js';
 import { posix as path } from 'node:path';
 import { Parameter, SecurityScheme } from '../../core/types/openapi.js';
+import { snakeCase } from '../../functions/utils_string.js';
 
 export class CliGenerator {
     /**
@@ -125,9 +126,10 @@ program.name('${title}').description('${description}').version('${version}');
                 // Operation Object properties (tags, summary, description, externalDocs, operationId, parameters, requestBody, responses, callbacks, deprecated, security, servers)
 
                 const methodName = op.operationId || op.path.replace(/\//g, '_').replace(/^_/, '');
+                const commandName = snakeCase(methodName);
                 const opDesc = (op.summary || op.description || '').replace(/'/g, "\\'");
 
-                statements += `${group.toLowerCase()}Command.command('${methodName}')\n    .description('${opDesc}')`;
+                statements += `${group.toLowerCase()}Command.command('${commandName}')\n    .description('${opDesc}')`;
 
                 // External Documentation Object
                 if (op.externalDocs) {

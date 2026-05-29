@@ -46,6 +46,15 @@ export function camelCase(str: string): string {
 }
 
 /**
+ * Converts a string to snake_case.
+ */
+export function snakeCase(str: string): string {
+    const normalized = normalizeString(str);
+    if (!normalized) return '';
+    return normalized.replace(/\s+/g, '_');
+}
+
+/**
  * Converts a string to PascalCase (UpperCamelCase).
  */
 export function pascalCase(str: string): string {

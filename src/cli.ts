@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import yaml from 'js-yaml';
 import { generateFromConfigSync } from './index.js';
 import { SwaggerParser } from './openapi/parse.js';
-import { generateDocsJson } from './functions/docs_generator.js';
+import { generateDocsJson as generateDocsJsonImpl } from './functions/docs_generator.js';
 import { GeneratorConfig, GeneratorConfigOptions, OpenApiValue } from './core/types/index.js';
 import {
     applyReverseMetadata,
@@ -84,7 +84,13 @@ async function loadConfigFile(configPath: string): Promise<Partial<GeneratorConf
     }
 }
 
-async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_sdk_cli' | 'to_server' | 'to_orm') {
+/**
+ * Generate code from an OpenAPI specification.
+ */
+export async function generateFromOpenApi(
+    options: CliOptions,
+    targetScope?: 'to_sdk' | 'to_sdk_cli' | 'to_server' | 'to_orm',
+) {
     const startTime = Date.now();
     const extractArg = (flag: string) => {
         const argv = typeof process !== 'undefined' ? process.argv : [];
@@ -282,7 +288,10 @@ async function runGeneration(options: CliOptions, targetScope?: 'to_sdk' | 'to_s
     }
 }
 
-async function runToOpenApi(options: ToActionOptions, returnObject = false): Promise<void | OpenApiValue> {
+/**
+ * Generate an OpenAPI specification from source code.
+ */
+export async function generateToOpenApi(options: ToActionOptions, returnObject = false): Promise<void | OpenApiValue> {
     let spec: OpenApiValue;
     try {
         ({ spec } = readOpenApiSnapshot(
@@ -395,7 +404,10 @@ interface DocsJsonOptions {
     framework?: 'angular' | 'react' | 'vue' | 'vanilla' | 'Vanilla JS';
 }
 
-async function runToDocsJson(options: DocsJsonOptions, returnObject = false): Promise<void | OpenApiValue> {
+/**
+ * Generate JSON documentation with code snippets for an OpenAPI specification.
+ */
+export async function generateDocsJson(options: DocsJsonOptions, returnObject = false): Promise<void | OpenApiValue> {
     const config = {
         input: options.input,
         output: './generated',
@@ -411,7 +423,7 @@ async function runToDocsJson(options: DocsJsonOptions, returnObject = false): Pr
         imports: options.imports !== false,
         wrapping: options.wrapping !== false,
     };
-    const docs = generateDocsJson(parser, config, docsOptions);
+    const docs = generateDocsJsonImpl(parser, config, docsOptions);
 
     if (returnObject) {
         return docs;
@@ -429,12 +441,12 @@ async function runToDocsJson(options: DocsJsonOptions, returnObject = false): Pr
 const program = new Command();
 program.name('cdd-ts').description('OpenAPI ↔ TypeScript').version(packageJson.version);
 
-const fromOpenApi = program.command('from_openapi').description('Generate code from OpenAPI');
+const fromOpenApi = program.command('from_openapi').description('Generate code from an OpenAPI specification.');
 
 const addCommonOptions = (cmd: Command) => {
     return cmd
         .addOption(new Option('-c, --config <path>', 'Path to a configuration file').env('CDD_CONFIG'))
-        .addOption(new Option('-i, --input <path>', 'Path or URL to the OpenAPI spec'))
+        .addOption(new Option('-i, --input <path>', 'Path or URL to the OpenAPI specification.'))
         .addOption(new Option('--input-dir <path>', 'Path to directory of OpenAPI specs').env('CDD_INPUT_DIR'))
         .addOption(new Option('-o, --output <path>', 'Output directory for generated files').env('CDD_OUTPUT'))
         .addOption(new Option('--dateType <type>', 'Date type to use').choices(['string', 'Date']).env('CDD_DATE_TYPE'))
@@ -447,14 +459,14 @@ const addCommonOptions = (cmd: Command) => {
                 .env('CDD_INT64_TYPE'),
         )
         .addOption(new Option('--no-test-gen', 'Disable all test generation').env('CDD_NO_TEST_GEN'))
-        .addOption(new Option('--tests', 'Create composable tests & mocks').env('CDD_CREATE_COMPOSABLE_TESTS'))
+        .addOption(new Option('--tests', 'Generate integration tests and mocks.').env('CDD_TESTS'))
         .addOption(
-            new Option('--no-github-actions', 'Disable generation of github actions scaffolding').env(
+            new Option('--no-github-actions', 'Do not generate GitHub Actions scaffolding.').env(
                 'CDD_NO_GITHUB_ACTIONS',
             ),
         )
         .addOption(
-            new Option('--no-installable-package', 'Disable generation of package scaffolding').env(
+            new Option('--no-installable-package', 'Do not generate installable package scaffolding.').env(
                 'CDD_NO_INSTALLABLE_PACKAGE',
             ),
         );
@@ -526,7 +538,7 @@ addSdkOptions(addCommonOptions(fromOpenApi.command('to_sdk_cli')))
         console.log('PROGRAM OPTS() IS:', JSON.stringify(cmd.parent?.parent?.opts()));
         console.log('OPTIONS IS:', JSON.stringify(options));
         try {
-            await runGeneration(options, 'to_sdk_cli');
+            await generateFromOpenApi(options, 'to_sdk_cli');
         } catch (err: unknown) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
             if (err instanceof Error && err.stack) console.error(err.stack);
@@ -538,7 +550,7 @@ addSdkOptions(addCommonOptions(fromOpenApi.command('to_sdk')))
     .description('Generate Client SDK from an OpenAPI specification')
     .action(async (options: CliOptions) => {
         try {
-            await runGeneration(options, 'to_sdk');
+            await generateFromOpenApi(options, 'to_sdk');
         } catch (err: unknown) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
             if (err instanceof Error && err.stack) console.error(err.stack);
@@ -550,7 +562,7 @@ addServerOptions(addCommonOptions(fromOpenApi.command('to_server')))
     .description('Generate Server from an OpenAPI specification')
     .action(async (options: CliOptions) => {
         try {
-            await runGeneration(options, 'to_server');
+            await generateFromOpenApi(options, 'to_server');
         } catch (err: unknown) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
             if (err instanceof Error && err.stack) console.error(err.stack);
@@ -566,7 +578,7 @@ addOrmOptions(addCommonOptions(fromOpenApi.command('to_orm')))
             process.exit(1);
         }
         try {
-            await runGeneration(options, 'to_orm');
+            await generateFromOpenApi(options, 'to_orm');
         } catch (err: unknown) {
             console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
             if (err instanceof Error && err.stack) console.error(err.stack);
@@ -576,7 +588,7 @@ addOrmOptions(addCommonOptions(fromOpenApi.command('to_orm')))
 
 program
     .command('to_openapi')
-    .description('Generate an OpenAPI specification from TypeScript code (snapshot-based with AST fallback)')
+    .description('Generate an OpenAPI specification from source code.')
     .addOption(
         new Option('-i, --input <path>', 'Path to a snapshot file or a generated output directory')
             .env('CDD_INPUT')
@@ -596,7 +608,7 @@ program
     )
     .action(async (options: ToActionOptions) => {
         try {
-            await runToOpenApi(options);
+            await generateToOpenApi(options);
         } catch (error) {
             console.error(
                 '❌ to_openapi failed:',
@@ -608,9 +620,11 @@ program
 
 program
     .command('to_docs_json')
-    .description('Generate JSON containing how to call operations in the target language')
+    .description('Generate JSON documentation with code snippets for an OpenAPI specification.')
     .addOption(
-        new Option('-i, --input <path>', 'Path or URL to the OpenAPI spec').env('CDD_INPUT').makeOptionMandatory(),
+        new Option('-i, --input <path>', 'Path or URL to the OpenAPI specification.')
+            .env('CDD_INPUT')
+            .makeOptionMandatory(),
     )
     .addOption(new Option('-o, --output <path>', 'Path to write the JSON to').env('CDD_OUTPUT'))
     .addOption(
@@ -619,15 +633,11 @@ program
             .default('vanilla')
             .env('CDD_FRAMEWORK'),
     )
-    .addOption(
-        new Option('--no-imports', 'Do not include import statements in the generated code').env('CDD_NO_IMPORTS'),
-    )
-    .addOption(
-        new Option('--no-wrapping', 'Do not wrap the generated code in a function or block').env('CDD_NO_WRAPPING'),
-    )
+    .addOption(new Option('--no-imports', 'Omit the imports field.').env('CDD_NO_IMPORTS'))
+    .addOption(new Option('--no-wrapping', 'Omit the wrapper fields.').env('CDD_NO_WRAPPING'))
     .action(async (options: DocsJsonOptions) => {
         try {
-            await runToDocsJson(options);
+            await generateDocsJson(options);
         } catch (error) {
             console.error(
                 '❌ to_docs_json failed:',
@@ -639,87 +649,97 @@ program
 
 program
     .command('serve_json_rpc')
-    .description('Expose CLI interface as JSON-RPC server')
-    .addOption(new Option('--port <port>', 'Port to listen on').default('8080').env('CDD_PORT'))
-    .addOption(new Option('--listen <address>', 'Address to listen on').default('127.0.0.1').env('CDD_LISTEN'))
-    .action((options: { port: string; listen: string }) => {
-        const port = parseInt(options.port, 10);
-        const host = options.listen;
-        const server = http.createServer(async (req, res) => {
-            if (req.method === 'POST') {
-                let body = '';
-                req.on('data', (chunk: Buffer) => {
-                    body += chunk.toString();
-                });
-                req.on('end', async () => {
-                    let parsed: { method?: string; params?: Record<string, OpenApiValue>; id?: string | number | null };
-                    try {
-                        parsed = JSON.parse(body);
-                    } catch (err) {
-                        res.writeHead(400, { 'Content-Type': 'application/json' });
-                        res.end(
-                            JSON.stringify({
-                                jsonrpc: '2.0',
-                                error: { code: -32700, message: 'Parse error' },
-                                id: null,
-                            }),
-                        );
-                        return;
+    .description('Expose CLI interface as a JSON-RPC server.')
+    .addOption(new Option('-p, --port <port>', 'Port to listen on').default('8080').env('CDD_PORT'))
+    .addOption(new Option('-l, --listen <address>', 'Address to listen on').default('127.0.0.1').env('CDD_LISTEN'))
+    .action(serveJsonRpc);
+/**
+ * Expose CLI interface as a JSON-RPC server.
+ */
+export async function serveJsonRpc(options: { port: string; listen: string }) {
+    const port = parseInt(options.port, 10);
+    const host = options.listen;
+    const server = http.createServer(async (req, res) => {
+        if (req.method === 'POST') {
+            let body = '';
+            req.on('data', (chunk: Buffer) => {
+                body += chunk.toString();
+            });
+            req.on('end', async () => {
+                let parsed: { method?: string; params?: Record<string, OpenApiValue>; id?: string | number | null };
+                try {
+                    parsed = JSON.parse(body);
+                } catch (err) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(
+                        JSON.stringify({
+                            jsonrpc: '2.0',
+                            error: { code: -32700, message: 'Parse error' },
+                            id: null,
+                        }),
+                    );
+                    return;
+                }
+                try {
+                    let result: OpenApiValue;
+                    switch (parsed.method) {
+                        case 'from_openapi_to_sdk_cli':
+                            result = await generateFromOpenApi(
+                                parsed.params as OpenApiValue as CliOptions,
+                                'to_sdk_cli',
+                            );
+                            break;
+                        case 'from_openapi_to_sdk':
+                            result = await generateFromOpenApi(parsed.params as OpenApiValue as CliOptions, 'to_sdk');
+                            break;
+                        case 'from_openapi_to_server':
+                            result = await generateFromOpenApi(
+                                parsed.params as OpenApiValue as CliOptions,
+                                'to_server',
+                            );
+                            break;
+                        case 'to_openapi':
+                            result = (await generateToOpenApi(
+                                parsed.params as OpenApiValue as ToActionOptions,
+                                true,
+                            )) as OpenApiValue;
+                            break;
+                        case 'to_docs_json':
+                            result = (await generateDocsJson(
+                                parsed.params as OpenApiValue as DocsJsonOptions,
+                                true,
+                            )) as OpenApiValue;
+                            break;
+                        case 'version':
+                            result = packageJson.version;
+                            break;
+                        default:
+                            throw { code: -32601, message: 'Method not found' };
                     }
-                    try {
-                        let result: OpenApiValue;
-                        switch (parsed.method) {
-                            case 'from_openapi_to_sdk_cli':
-                                result = await runGeneration(parsed.params as OpenApiValue as CliOptions, 'to_sdk_cli');
-                                break;
-                            case 'from_openapi_to_sdk':
-                                result = await runGeneration(parsed.params as OpenApiValue as CliOptions, 'to_sdk');
-                                break;
-                            case 'from_openapi_to_server':
-                                result = await runGeneration(parsed.params as OpenApiValue as CliOptions, 'to_server');
-                                break;
-                            case 'to_openapi':
-                                result = (await runToOpenApi(
-                                    parsed.params as OpenApiValue as ToActionOptions,
-                                    true,
-                                )) as OpenApiValue;
-                                break;
-                            case 'to_docs_json':
-                                result = (await runToDocsJson(
-                                    parsed.params as OpenApiValue as DocsJsonOptions,
-                                    true,
-                                )) as OpenApiValue;
-                                break;
-                            case 'version':
-                                result = packageJson.version;
-                                break;
-                            default:
-                                throw { code: -32601, message: 'Method not found' };
-                        }
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ jsonrpc: '2.0', result, id: parsed.id }));
-                    } catch (err) {
-                        res.writeHead(400, { 'Content-Type': 'application/json' });
-                        res.end(
-                            JSON.stringify({
-                                jsonrpc: '2.0',
-                                error: (err as { code?: number }).code
-                                    ? err
-                                    : { code: -32000, message: (err as { message?: string }).message || String(err) },
-                                id: parsed.id,
-                            }),
-                        );
-                    }
-                });
-            } else {
-                res.writeHead(405);
-                res.end();
-            }
-        });
-        server.listen(port, host, () => {
-            console.log(`JSON-RPC server running at http://${host}:${port}/`);
-        });
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ jsonrpc: '2.0', result, id: parsed.id }));
+                } catch (err) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(
+                        JSON.stringify({
+                            jsonrpc: '2.0',
+                            error: (err as { code?: number }).code
+                                ? err
+                                : { code: -32000, message: (err as { message?: string }).message || String(err) },
+                            id: parsed.id,
+                        }),
+                    );
+                }
+            });
+        } else {
+            res.writeHead(405);
+            res.end();
+        }
     });
+    server.listen(port, host, () => {
+        console.log(`JSON-RPC server running at http://${host}:${port}/`);
+    });
+}
 
 export async function run(argv: string[]) {
     await program.parseAsync(argv);

@@ -249,3 +249,5 @@ export {
 export { type IOrmParser, type IOrmGenerator } from './core/orm/index.js';
 export { TypeOrmParser } from './vendors/typeorm/parse.js';
 export { TypeOrmGenerator } from './vendors/typeorm/emit.js';
+
+export { generateFromOpenApi, generateToOpenApi, generateDocsJson as generateDocsJson, serveJsonRpc } from './cli.js';
