@@ -1,56 +1,71 @@
-import * as path from 'node:path';
-import { Project, Scope } from 'ts-morph';
-import { UTILITY_GENERATOR_HEADER_COMMENT } from '../core/constants.js';
+import * as path from "node:path";
+import { type Project, Scope } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 
 export class ContentEncoderGenerator {
-    constructor(private project: Project) {}
+	constructor(private project: Project) {}
 
-    public generate(outputDir: string): void {
-        const utilsDir = path.join(outputDir, 'utils');
+	public generate(outputDir: string): void {
+		const utilsDir = path.join(outputDir, "utils");
 
-        const filePath = path.join(utilsDir, 'content-encoder.ts');
+		const filePath = path.join(utilsDir, "content-encoder.ts");
 
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
+		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
-        sourceFile.addInterface({
-            name: 'ContentEncoderConfig',
-            isExported: true,
-            properties: [
-                { name: 'encode', type: 'boolean', hasQuestionToken: true, docs: ['If true, stringify the value.'] },
-                {
-                    name: 'contentMediaType',
-                    type: 'string',
-                    hasQuestionToken: true,
-                    docs: ['Original contentMediaType hint (preserved for round-trip generation).'],
-                },
-                {
-                    name: 'contentEncoding',
-                    type: "'base64' | 'base64url' | string",
-                    hasQuestionToken: true,
-                    docs: ['If set, encodes the value using base64 or base64url (OAS contentEncoding).'],
-                },
-                { name: 'properties', type: 'Record<string, ContentEncoderConfig>', hasQuestionToken: true },
-                { name: 'items', type: 'ContentEncoderConfig', hasQuestionToken: true },
-            ],
-        });
+		sourceFile.addInterface({
+			name: "ContentEncoderConfig",
+			isExported: true,
+			properties: [
+				{
+					name: "encode",
+					type: "boolean",
+					hasQuestionToken: true,
+					docs: ["If true, stringify the value."],
+				},
+				{
+					name: "contentMediaType",
+					type: "string",
+					hasQuestionToken: true,
+					docs: [
+						"Original contentMediaType hint (preserved for round-trip generation).",
+					],
+				},
+				{
+					name: "contentEncoding",
+					type: "'base64' | 'base64url' | string",
+					hasQuestionToken: true,
+					docs: [
+						"If set, encodes the value using base64 or base64url (OAS contentEncoding).",
+					],
+				},
+				{
+					name: "properties",
+					type: "Record<string, ContentEncoderConfig>",
+					hasQuestionToken: true,
+				},
+				{ name: "items", type: "ContentEncoderConfig", hasQuestionToken: true },
+			],
+		});
 
-        const classDeclaration = sourceFile.addClass({
-            name: 'ContentEncoder',
-            isExported: true,
-            docs: [
-                'Utility to auto-encode content into strings (e.g. JSON.stringify) based on OAS 3.1 contentMediaType.',
-            ],
-        });
+		const classDeclaration = sourceFile.addClass({
+			name: "ContentEncoder",
+			isExported: true,
+			docs: [
+				"Utility to auto-encode content into strings (e.g. JSON.stringify) based on OAS 3.1 contentMediaType.",
+			],
+		});
 
-        classDeclaration.addMethod({
-            name: 'stringToBytes',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [{ name: 'input', type: 'string' }],
-            returnType: 'Uint8Array',
-            statements: `
+		classDeclaration.addMethod({
+			name: "stringToBytes",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [{ name: "input", type: "string" }],
+			returnType: "Uint8Array",
+			statements: `
         if (typeof TextEncoder !== 'undefined') {
             return new TextEncoder().encode(input);
         }
@@ -62,15 +77,15 @@ export class ContentEncoderGenerator {
             out[i] = input.charCodeAt(i);
         }
         return out;`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'bytesToBase64',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [{ name: 'bytes', type: 'Uint8Array' }],
-            returnType: 'string',
-            statements: `
+		classDeclaration.addMethod({
+			name: "bytesToBase64",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [{ name: "bytes", type: "Uint8Array" }],
+			returnType: "string",
+			statements: `
         if (typeof (globalThis as string | number | boolean | object | undefined | null).Buffer !== 'undefined') {
             return (globalThis as string | number | boolean | object | undefined | null).Buffer.from(bytes).toString('base64');
         }
@@ -79,19 +94,22 @@ export class ContentEncoderGenerator {
             binary += String.fromCharCode(bytes[i]);
         }
         return btoa(binary);`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'applyContentEncoding',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [
-                { name: 'value', type: 'string | number | boolean | object | undefined | null' },
-                { name: 'encoding', type: 'string' },
-            ],
-            returnType: 'string | number | boolean | object | undefined | null',
-            docs: ['Applies base64/base64url encoding to string or binary values.'],
-            statements: `
+		classDeclaration.addMethod({
+			name: "applyContentEncoding",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [
+				{
+					name: "value",
+					type: "string | number | boolean | object | undefined | null",
+				},
+				{ name: "encoding", type: "string" },
+			],
+			returnType: "string | number | boolean | object | undefined | null",
+			docs: ["Applies base64/base64url encoding to string or binary values."],
+			statements: `
         if (value === null || value === undefined) return value;
 
         const normalized = String(encoding || '').toLowerCase();
@@ -114,18 +132,25 @@ export class ContentEncoderGenerator {
             encoded = encoded.replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/g, '');
         }
         return encoded;`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'encode',
-            isStatic: true,
-            scope: Scope.Public,
-            parameters: [
-                { name: 'data', type: 'string | number | boolean | object | undefined | null' },
-                { name: 'config', type: 'ContentEncoderConfig', hasQuestionToken: true },
-            ],
-            returnType: 'string | number | boolean | object | undefined | null',
-            statements: `
+		classDeclaration.addMethod({
+			name: "encode",
+			isStatic: true,
+			scope: Scope.Public,
+			parameters: [
+				{
+					name: "data",
+					type: "string | number | boolean | object | undefined | null",
+				},
+				{
+					name: "config",
+					type: "ContentEncoderConfig",
+					hasQuestionToken: true,
+				},
+			],
+			returnType: "string | number | boolean | object | undefined | null",
+			statements: `
         if (data === null || data === undefined || !config) { 
             return data; 
         } 
@@ -172,8 +197,8 @@ export class ContentEncoderGenerator {
         } 
 
         return current;`,
-        });
+		});
 
-        sourceFile.formatText();
-    }
+		sourceFile.formatText();
+	}
 }

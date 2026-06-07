@@ -1,38 +1,44 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-import { Project } from 'ts-morph';
+import { Project } from "ts-morph";
 
-import { BaseInterceptorGenerator } from '@src/vendors/angular/utils/base-interceptor.generator.js';
+import { BaseInterceptorGenerator } from "@src/vendors/angular/utils/base-interceptor.generator.js";
 
-describe('Emitter: BaseInterceptorGenerator', () => {
-    const runGenerator = (clientName?: string) => {
-        const project = new Project({ useInMemoryFileSystem: true });
-        new BaseInterceptorGenerator(project, clientName).generate('/out');
-        return project.getSourceFileOrThrow('/out/utils/base-interceptor.ts').getText();
-    };
+describe("Emitter: BaseInterceptorGenerator", () => {
+	const runGenerator = (clientName?: string) => {
+		const project = new Project({ useInMemoryFileSystem: true });
+		new BaseInterceptorGenerator(project, clientName).generate("/out");
+		return project
+			.getSourceFileOrThrow("/out/utils/base-interceptor.ts")
+			.getText();
+	};
 
-    it('should generate a default interceptor when no clientName is provided', () => {
-        const fileContent = runGenerator();
-        expect(fileContent).toContain('export function defaultBaseInterceptor');
-        expect(fileContent).toContain('inject(HTTP_INTERCEPTORS_DEFAULT');
-        expect(fileContent).toContain('if (!req.context.has(clientContext))');
-    });
+	it("should generate a default interceptor when no clientName is provided", () => {
+		const fileContent = runGenerator();
+		expect(fileContent).toContain("export function defaultBaseInterceptor");
+		expect(fileContent).toContain("inject(HTTP_INTERCEPTORS_DEFAULT");
+		expect(fileContent).toContain("if (!req.context.has(clientContext))");
+	});
 
-    it('should generate a named interceptor when a clientName is provided', () => {
-        const fileContent = runGenerator('MyApi');
-        expect(fileContent).toContain('export function myApiBaseInterceptor');
-        expect(fileContent).toContain('inject(HTTP_INTERCEPTORS_MYAPI');
-        expect(fileContent).toContain('const clientContext = inject(CLIENT_CONTEXT_TOKEN_MYAPI);');
-    });
+	it("should generate a named interceptor when a clientName is provided", () => {
+		const fileContent = runGenerator("MyApi");
+		expect(fileContent).toContain("export function myApiBaseInterceptor");
+		expect(fileContent).toContain("inject(HTTP_INTERCEPTORS_MYAPI");
+		expect(fileContent).toContain(
+			"const clientContext = inject(CLIENT_CONTEXT_TOKEN_MYAPI);",
+		);
+	});
 
-    it('should contain the correct intercept logic', () => {
-        const fileContent = runGenerator();
-        const logic = fileContent.substring(fileContent.indexOf('const executeInterceptors =')); // Get the method body for inspection
+	it("should contain the correct intercept logic", () => {
+		const fileContent = runGenerator();
+		const logic = fileContent.substring(
+			fileContent.indexOf("const executeInterceptors ="),
+		); // Get the method body for inspection
 
-        expect(logic).toContain('if (index >= customInterceptors.length)');
-        expect(logic).toContain('return next(request);');
-        expect(logic).toContain('const interceptor = customInterceptors[index];');
-        expect(logic).toContain('return interceptor.intercept(request, {');
-    });
+		expect(logic).toContain("if (index >= customInterceptors.length)");
+		expect(logic).toContain("return next(request);");
+		expect(logic).toContain("const interceptor = customInterceptors[index];");
+		expect(logic).toContain("return interceptor.intercept(request, {");
+	});
 });

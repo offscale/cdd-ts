@@ -1,784 +1,916 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-import * as utils from '@src/openapi/parse_spec_extractor.js';
-import { SwaggerDefinition } from '@src/core/types/index.js';
-import { ReferenceResolver } from '@src/openapi/parse_reference_resolver.js';
+import * as utils from "@src/openapi/parse_spec_extractor.js";
+import type { SwaggerDefinition } from "@src/core/types/index.js";
+import { ReferenceResolver } from "@src/openapi/parse_reference_resolver.js";
 
-describe('Core Utils: Spec Extractor', () => {
-    describe('extractPaths', () => {
-        it('should return empty array for an undefined or empty paths object', () => {
-            expect(utils.extractPaths(undefined)).toEqual([]);
-            expect(utils.extractPaths({})).toEqual([]);
-        });
+describe("Core Utils: Spec Extractor", () => {
+	describe("extractPaths", () => {
+		it("should return empty array for an undefined or empty paths object", () => {
+			expect(utils.extractPaths(undefined)).toEqual([]);
+			expect(utils.extractPaths({})).toEqual([]);
+		});
 
-        it('should extract Swagger 2.0 body parameters correctly', () => {
-            const swaggerPaths = {
-                '/test': {
-                    post: {
-                        responses: { '200': { description: 'ok' } },
-                        parameters: [{ name: 'body', in: 'body', schema: { type: 'string' } }],
-                    },
-                },
-            };
-            const paths = utils.extractPaths(swaggerPaths as string | number | boolean | object | undefined | null);
-            expect(paths.length).toBe(1);
-            expect(paths[0].requestBody).toBeDefined();
-            expect(paths[0].requestBody?.content?.['application/json'].schema).toEqual({ type: 'string' });
-        });
+		it("should extract Swagger 2.0 body parameters correctly", () => {
+			const swaggerPaths = {
+				"/test": {
+					post: {
+						responses: { "200": { description: "ok" } },
+						parameters: [
+							{ name: "body", in: "body", schema: { type: "string" } },
+						],
+					},
+				},
+			};
+			const paths = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(paths.length).toBe(1);
+			expect(paths[0].requestBody).toBeDefined();
+			expect(
+				paths[0].requestBody?.content?.["application/json"].schema,
+			).toEqual({ type: "string" });
+		});
 
-        it('should map Swagger 2.0 consumes to requestBody content types', () => {
-            const swaggerPaths = {
-                '/upload': {
-                    post: {
-                        consumes: ['application/xml', 'multipart/form-data'],
-                        responses: { '200': { description: 'ok' } },
-                        parameters: [{ name: 'body', in: 'body', schema: { type: 'object' } }],
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            const content = pathInfo.requestBody?.content || {};
-            expect(Object.keys(content)).toContain('application/xml');
-            expect(Object.keys(content)).toContain('multipart/form-data');
-        });
+		it("should map Swagger 2.0 consumes to requestBody content types", () => {
+			const swaggerPaths = {
+				"/upload": {
+					post: {
+						consumes: ["application/xml", "multipart/form-data"],
+						responses: { "200": { description: "ok" } },
+						parameters: [
+							{ name: "body", in: "body", schema: { type: "object" } },
+						],
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			const content = pathInfo.requestBody?.content || {};
+			expect(Object.keys(content)).toContain("application/xml");
+			expect(Object.keys(content)).toContain("multipart/form-data");
+		});
 
-        it('should map Swagger 2.0 produces to response content types', () => {
-            const swaggerPaths = {
-                '/data': {
-                    get: {
-                        produces: ['text/plain'],
-                        responses: { '200': { description: 'ok', schema: { type: 'string' } } },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.responses?.['200'].content?.['text/plain']?.schema).toEqual({ type: 'string' });
-        });
+		it("should map Swagger 2.0 produces to response content types", () => {
+			const swaggerPaths = {
+				"/data": {
+					get: {
+						produces: ["text/plain"],
+						responses: {
+							"200": { description: "ok", schema: { type: "string" } },
+						},
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(
+				pathInfo.responses?.["200"].content?.["text/plain"]?.schema,
+			).toEqual({ type: "string" });
+		});
 
-        it('should fall back to Swagger 2.0 default consumes/produces when operation omits them', () => {
-            const swaggerPaths = {
-                '/defaults': {
-                    post: {
-                        responses: { '200': { description: 'ok', schema: { type: 'string' } } },
-                        parameters: [{ name: 'body', in: 'body', schema: { type: 'string' } }],
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-                undefined,
-                undefined,
-                {
-                    isOpenApi3: false,
-                    defaultConsumes: ['application/xml'],
-                    defaultProduces: ['application/xml'],
-                },
-            );
-            expect(pathInfo.requestBody?.content?.['application/xml']?.schema).toEqual({ type: 'string' });
-            expect(pathInfo.responses?.['200'].content?.['application/xml']?.schema).toEqual({ type: 'string' });
-        });
+		it("should fall back to Swagger 2.0 default consumes/produces when operation omits them", () => {
+			const swaggerPaths = {
+				"/defaults": {
+					post: {
+						responses: {
+							"200": { description: "ok", schema: { type: "string" } },
+						},
+						parameters: [
+							{ name: "body", in: "body", schema: { type: "string" } },
+						],
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+				undefined,
+				undefined,
+				{
+					isOpenApi3: false,
+					defaultConsumes: ["application/xml"],
+					defaultProduces: ["application/xml"],
+				},
+			);
+			expect(
+				pathInfo.requestBody?.content?.["application/xml"]?.schema,
+			).toEqual({ type: "string" });
+			expect(
+				pathInfo.responses?.["200"].content?.["application/xml"]?.schema,
+			).toEqual({ type: "string" });
+		});
 
-        it('should prefer explicit requestBody over body parameter if both exist (OAS 3 priority)', () => {
-            const swaggerPaths = {
-                '/conflict': {
-                    post: {
-                        responses: { '200': { description: 'ok' } },
-                        requestBody: { content: { 'text/plain': { schema: { type: 'number' } } } },
-                        // Legacy body param should be ignored if requestBody is present in OAS 3
-                        parameters: [{ name: 'ignored', in: 'body', schema: { type: 'string' } }],
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            // Should use the requestBody definition
-            expect(pathInfo.requestBody?.content?.['text/plain'].schema).toEqual({ type: 'number' });
-        });
+		it("should prefer explicit requestBody over body parameter if both exist (OAS 3 priority)", () => {
+			const swaggerPaths = {
+				"/conflict": {
+					post: {
+						responses: { "200": { description: "ok" } },
+						requestBody: {
+							content: { "text/plain": { schema: { type: "number" } } },
+						},
+						// Legacy body param should be ignored if requestBody is present in OAS 3
+						parameters: [
+							{ name: "ignored", in: "body", schema: { type: "string" } },
+						],
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			// Should use the requestBody definition
+			expect(pathInfo.requestBody?.content?.["text/plain"].schema).toEqual({
+				type: "number",
+			});
+		});
 
-        it('should extract the QUERY method', () => {
-            const swaggerPaths = {
-                '/search': { query: { operationId: 'querySearch', responses: { '200': { description: 'ok' } } } },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.method).toBe('QUERY');
-        });
+		it("should extract the QUERY method", () => {
+			const swaggerPaths = {
+				"/search": {
+					query: {
+						operationId: "querySearch",
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(pathInfo.method).toBe("QUERY");
+		});
 
-        it('should extract the TRACE method', () => {
-            const swaggerPaths = {
-                '/trace': { trace: { operationId: 'traceOp', responses: { '200': { description: 'ok' } } } },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.method).toBe('TRACE');
-        });
+		it("should extract the TRACE method", () => {
+			const swaggerPaths = {
+				"/trace": {
+					trace: {
+						operationId: "traceOp",
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(pathInfo.method).toBe("TRACE");
+		});
 
-        it('should extract additionalOperations (OAS 3.2)', () => {
-            const swaggerPaths = {
-                '/res': {
-                    additionalOperations: {
-                        LOCK: { operationId: 'lock', responses: { '200': { description: 'ok' } } },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.method).toBe('LOCK');
-        });
+		it("should extract additionalOperations (OAS 3.2)", () => {
+			const swaggerPaths = {
+				"/res": {
+					additionalOperations: {
+						LOCK: {
+							operationId: "lock",
+							responses: { "200": { description: "ok" } },
+						},
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(pathInfo.method).toBe("LOCK");
+		});
 
-        it('should preserve security pointer URIs', () => {
-            const swaggerPaths = {
-                '/sec': {
-                    get: {
-                        operationId: 'getSec',
-                        security: [{ '#/components/securitySchemes/MyAuth': ['scope'] }],
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.security![0]).toHaveProperty('#/components/securitySchemes/MyAuth');
-        });
+		it("should preserve security pointer URIs", () => {
+			const swaggerPaths = {
+				"/sec": {
+					get: {
+						operationId: "getSec",
+						security: [{ "#/components/securitySchemes/MyAuth": ["scope"] }],
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(pathInfo.security?.[0]).toHaveProperty(
+				"#/components/securitySchemes/MyAuth",
+			);
+		});
 
-        it('should NOT normalize security pointers if key matches a component name (OAS 3.2 Precedence)', () => {
-            // Case: Security scheme named "http://auth.com" exists in components.
-            // The security requirement key matches this exact name.
-            // It should NOT be normalized (split by /), preserving the URI-like name as the key.
-            const swaggerPaths = {
-                '/secure': {
-                    get: {
-                        security: [{ 'http://auth.com': [] }],
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
-            const components = {
-                securitySchemes: {
-                    'http://auth.com': { type: 'http', scheme: 'basic' },
-                },
-            };
+		it("should NOT normalize security pointers if key matches a component name (OAS 3.2 Precedence)", () => {
+			// Case: Security scheme named "http://auth.com" exists in components.
+			// The security requirement key matches this exact name.
+			// It should NOT be normalized (split by /), preserving the URI-like name as the key.
+			const swaggerPaths = {
+				"/secure": {
+					get: {
+						security: [{ "http://auth.com": [] }],
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const components = {
+				securitySchemes: {
+					"http://auth.com": { type: "http", scheme: "basic" },
+				},
+			};
 
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-                undefined,
-                components as string | number | boolean | object | undefined | null,
-            );
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+				undefined,
+				components as string | number | boolean | object | undefined | null,
+			);
 
-            expect(pathInfo.security).toBeDefined();
-            // Should have preserved the key exactly
-            expect(pathInfo.security![0]).toHaveProperty('http://auth.com');
-            // Should NOT have normalized it to 'auth.com' or similar
-            expect(Object.keys(pathInfo.security![0])[0]).toBe('http://auth.com');
-        });
+			expect(pathInfo.security).toBeDefined();
+			// Should have preserved the key exactly
+			expect(pathInfo.security?.[0]).toHaveProperty("http://auth.com");
+			// Should NOT have normalized it to 'auth.com' or similar
+			expect(Object.keys(pathInfo.security?.[0])[0]).toBe("http://auth.com");
+		});
 
-        it('should preserve URI security keys that intentionally shadow component names', () => {
-            const swaggerPaths = {
-                '/secure': {
-                    get: {
-                        security: [{ './ApiKey': [] }],
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
-            const components = {
-                securitySchemes: {
-                    ApiKey: { type: 'apiKey', in: 'header', name: 'X-API-KEY' },
-                },
-            };
+		it("should preserve URI security keys that intentionally shadow component names", () => {
+			const swaggerPaths = {
+				"/secure": {
+					get: {
+						security: [{ "./ApiKey": [] }],
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const components = {
+				securitySchemes: {
+					ApiKey: { type: "apiKey", in: "header", name: "X-API-KEY" },
+				},
+			};
 
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-                undefined,
-                components as string | number | boolean | object | undefined | null,
-            );
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+				undefined,
+				components as string | number | boolean | object | undefined | null,
+			);
 
-            expect(pathInfo.security).toBeDefined();
-            expect(pathInfo.security![0]).toHaveProperty('./ApiKey');
-            expect(Object.keys(pathInfo.security![0])[0]).toBe('./ApiKey');
-        });
+			expect(pathInfo.security).toBeDefined();
+			expect(pathInfo.security?.[0]).toHaveProperty("./ApiKey");
+			expect(Object.keys(pathInfo.security?.[0])[0]).toBe("./ApiKey");
+		});
 
-        it('should merge Path Item $ref properties', () => {
-            const resolveRef = (ref: string) => {
-                if (ref === 'Target') return { summary: 'Base', get: { responses: { '200': { description: 'ok' } } } };
-                return undefined;
-            };
-            const swaggerPaths = {
-                '/p': { $ref: 'Target', summary: 'Override' },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-                resolveRef as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.summary).toBe('Override');
-        });
+		it("should merge Path Item $ref properties", () => {
+			const resolveRef = (ref: string) => {
+				if (ref === "Target")
+					return {
+						summary: "Base",
+						get: { responses: { "200": { description: "ok" } } },
+					};
+				return undefined;
+			};
+			const swaggerPaths = {
+				"/p": { $ref: "Target", summary: "Override" },
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+				resolveRef as string | number | boolean | object | undefined | null,
+			);
+			expect(pathInfo.summary).toBe("Override");
+		});
 
-        it('should resolve parameter $ref and apply description override', () => {
-            const resolveRef = (ref: string) => {
-                if (ref === '#/components/parameters/Limit') {
-                    return {
-                        name: 'limit',
-                        in: 'query',
-                        schema: { type: 'integer' },
-                        description: 'base description',
-                    };
-                }
-                return undefined;
-            };
+		it("should resolve parameter $ref and apply description override", () => {
+			const resolveRef = (ref: string) => {
+				if (ref === "#/components/parameters/Limit") {
+					return {
+						name: "limit",
+						in: "query",
+						schema: { type: "integer" },
+						description: "base description",
+					};
+				}
+				return undefined;
+			};
 
-            const swaggerPaths = {
-                '/items': {
-                    get: {
-                        parameters: [
-                            {
-                                $ref: '#/components/parameters/Limit',
-                                description: 'override description',
-                            },
-                        ],
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
+			const swaggerPaths = {
+				"/items": {
+					get: {
+						parameters: [
+							{
+								$ref: "#/components/parameters/Limit",
+								description: "override description",
+							},
+						],
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
 
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-                resolveRef as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.parameters?.[0].name).toBe('limit');
-            expect(pathInfo.parameters?.[0].description).toBe('override description');
-        });
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+				resolveRef as string | number | boolean | object | undefined | null,
+			);
+			expect(pathInfo.parameters?.[0].name).toBe("limit");
+			expect(pathInfo.parameters?.[0].description).toBe("override description");
+		});
 
-        it('should resolve response $ref to concrete content', () => {
-            const resolveRef = (ref: string) => {
-                if (ref === '#/components/responses/Ok') {
-                    return {
-                        description: 'ok',
-                        content: {
-                            'application/json': { schema: { type: 'string' } },
-                        },
-                    };
-                }
-                return undefined;
-            };
+		it("should resolve response $ref to concrete content", () => {
+			const resolveRef = (ref: string) => {
+				if (ref === "#/components/responses/Ok") {
+					return {
+						description: "ok",
+						content: {
+							"application/json": { schema: { type: "string" } },
+						},
+					};
+				}
+				return undefined;
+			};
 
-            const swaggerPaths = {
-                '/items': {
-                    get: {
-                        responses: {
-                            '200': { $ref: '#/components/responses/Ok' },
-                        },
-                    },
-                },
-            };
+			const swaggerPaths = {
+				"/items": {
+					get: {
+						responses: {
+							"200": { $ref: "#/components/responses/Ok" },
+						},
+					},
+				},
+			};
 
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-                resolveRef as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.responses?.['200'].content?.['application/json'].schema).toEqual({ type: 'string' });
-        });
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+				resolveRef as string | number | boolean | object | undefined | null,
+			);
+			expect(
+				pathInfo.responses?.["200"].content?.["application/json"].schema,
+			).toEqual({ type: "string" });
+		});
 
-        it('should resolve $ref relative to the defining document when using resolveObj', () => {
-            const entryUri = 'file:///entry.yaml';
-            const externalUri = 'file:///external.yaml';
+		it("should resolve $ref relative to the defining document when using resolveObj", () => {
+			const entryUri = "file:///entry.yaml";
+			const externalUri = "file:///external.yaml";
 
-            const entrySpec = {
-                openapi: '3.2.0',
-                info: { title: 'Entry', version: '1.0.0' },
-                paths: {
-                    '/items': { $ref: 'external.yaml#/paths/~1items' },
-                },
-                components: {
-                    parameters: {
-                        Limit: {
-                            name: 'limit',
-                            in: 'query',
-                            schema: { type: 'integer' },
-                            description: 'entry-limit',
-                        },
-                    },
-                },
-            };
+			const entrySpec = {
+				openapi: "3.2.0",
+				info: { title: "Entry", version: "1.0.0" },
+				paths: {
+					"/items": { $ref: "external.yaml#/paths/~1items" },
+				},
+				components: {
+					parameters: {
+						Limit: {
+							name: "limit",
+							in: "query",
+							schema: { type: "integer" },
+							description: "entry-limit",
+						},
+					},
+				},
+			};
 
-            const externalSpec = {
-                openapi: '3.2.0',
-                info: { title: 'External', version: '1.0.0' },
-                paths: {
-                    '/items': {
-                        get: {
-                            parameters: [{ $ref: '#/components/parameters/Limit' }],
-                            responses: { '200': { description: 'ok' } },
-                        },
-                    },
-                },
-                components: {
-                    parameters: {
-                        Limit: {
-                            name: 'limit',
-                            in: 'query',
-                            schema: { type: 'string' },
-                            description: 'external-limit',
-                        },
-                    },
-                },
-            };
+			const externalSpec = {
+				openapi: "3.2.0",
+				info: { title: "External", version: "1.0.0" },
+				paths: {
+					"/items": {
+						get: {
+							parameters: [{ $ref: "#/components/parameters/Limit" }],
+							responses: { "200": { description: "ok" } },
+						},
+					},
+				},
+				components: {
+					parameters: {
+						Limit: {
+							name: "limit",
+							in: "query",
+							schema: { type: "string" },
+							description: "external-limit",
+						},
+					},
+				},
+			};
 
-            const cache = new Map<string, SwaggerSpec>([
-                [entryUri, entrySpec],
-                [externalUri, externalSpec],
-            ]);
-            ReferenceResolver.indexSchemaIds(entrySpec, entryUri, cache, entryUri);
-            ReferenceResolver.indexSchemaIds(externalSpec, externalUri, cache, externalUri);
+			const cache = new Map<string, SwaggerSpec>([
+				[entryUri, entrySpec],
+				[externalUri, externalSpec],
+			]);
+			ReferenceResolver.indexSchemaIds(entrySpec, entryUri, cache, entryUri);
+			ReferenceResolver.indexSchemaIds(
+				externalSpec,
+				externalUri,
+				cache,
+				externalUri,
+			);
 
-            const resolver = new ReferenceResolver(cache, entryUri);
-            const resolveRef = (ref: string) => resolver.resolveReference(ref, entryUri);
-            const resolveObj = (obj: string | number | boolean | object | undefined | null) =>
-                resolver.resolve(obj as string | number | boolean | object | undefined | null);
+			const resolver = new ReferenceResolver(cache, entryUri);
+			const resolveRef = (ref: string) =>
+				resolver.resolveReference(ref, entryUri);
+			const resolveObj = (
+				obj: string | number | boolean | object | undefined | null,
+			) =>
+				resolver.resolve(
+					obj as string | number | boolean | object | undefined | null,
+				);
 
-            const [pathInfo] = utils.extractPaths(
-                entrySpec.paths as string | number | boolean | object | undefined | null,
-                resolveRef,
-                entrySpec.components as string | number | boolean | object | undefined | null,
-                { isOpenApi3: true },
-                resolveObj,
-            );
+			const [pathInfo] = utils.extractPaths(
+				entrySpec.paths as
+					| string
+					| number
+					| boolean
+					| object
+					| undefined
+					| null,
+				resolveRef,
+				entrySpec.components as
+					| string
+					| number
+					| boolean
+					| object
+					| undefined
+					| null,
+				{ isOpenApi3: true },
+				resolveObj,
+			);
 
-            expect(pathInfo.parameters?.[0].description).toBe('external-limit');
-            expect(pathInfo.parameters?.[0].schema).toEqual({ type: 'string' });
-        });
+			expect(pathInfo.parameters?.[0].description).toBe("external-limit");
+			expect(pathInfo.parameters?.[0].schema).toEqual({ type: "string" });
+		});
 
-        it('should ignore reserved header parameters in OpenAPI 3', () => {
-            const swaggerPaths = {
-                '/headers': {
-                    get: {
-                        operationId: 'getHeaders',
-                        parameters: [
-                            { name: 'Accept', in: 'header', schema: { type: 'string' } },
-                            { name: 'X-Trace', in: 'header', schema: { type: 'string' } },
-                            { name: 'authorization', in: 'header', schema: { type: 'string' } },
-                        ],
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
+		it("should ignore reserved header parameters in OpenAPI 3", () => {
+			const swaggerPaths = {
+				"/headers": {
+					get: {
+						operationId: "getHeaders",
+						parameters: [
+							{ name: "Accept", in: "header", schema: { type: "string" } },
+							{ name: "X-Trace", in: "header", schema: { type: "string" } },
+							{
+								name: "authorization",
+								in: "header",
+								schema: { type: "string" },
+							},
+						],
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
 
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-                undefined,
-                undefined,
-                { isOpenApi3: true },
-            );
-            const names = (pathInfo.parameters || []).map(p => p.name);
-            expect(names).toEqual(['X-Trace']);
-        });
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+				undefined,
+				undefined,
+				{ isOpenApi3: true },
+			);
+			const names = (pathInfo.parameters || []).map((p) => p.name);
+			expect(names).toEqual(["X-Trace"]);
+		});
 
-        it('should resolve requestBody $ref to concrete content', () => {
-            const resolveRef = (ref: string) => {
-                if (ref === '#/components/requestBodies/Payload') {
-                    return {
-                        description: 'payload',
-                        content: {
-                            'application/json': { schema: { type: 'string' } },
-                        },
-                    };
-                }
-                return undefined;
-            };
+		it("should resolve requestBody $ref to concrete content", () => {
+			const resolveRef = (ref: string) => {
+				if (ref === "#/components/requestBodies/Payload") {
+					return {
+						description: "payload",
+						content: {
+							"application/json": { schema: { type: "string" } },
+						},
+					};
+				}
+				return undefined;
+			};
 
-            const swaggerPaths = {
-                '/payload': {
-                    post: {
-                        requestBody: { $ref: '#/components/requestBodies/Payload' },
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
+			const swaggerPaths = {
+				"/payload": {
+					post: {
+						requestBody: { $ref: "#/components/requestBodies/Payload" },
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
 
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-                resolveRef as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.requestBody?.content?.['application/json'].schema).toEqual({ type: 'string' });
-        });
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+				resolveRef as string | number | boolean | object | undefined | null,
+			);
+			expect(
+				pathInfo.requestBody?.content?.["application/json"].schema,
+			).toEqual({ type: "string" });
+		});
 
-        it('should resolve MediaTypeObject $ref entries in content maps', () => {
-            const swaggerPaths = {
-                '/ref': {
-                    post: {
-                        requestBody: {
-                            content: {
-                                'application/json': { $ref: '#/components/mediaTypes/JsonPayload' },
-                            },
-                        },
-                        responses: {
-                            '200': {
-                                description: 'ok',
-                                content: {
-                                    'application/json': { $ref: '#/components/mediaTypes/JsonPayload' },
-                                },
-                            },
-                        },
-                    },
-                },
-            };
+		it("should resolve MediaTypeObject $ref entries in content maps", () => {
+			const swaggerPaths = {
+				"/ref": {
+					post: {
+						requestBody: {
+							content: {
+								"application/json": {
+									$ref: "#/components/mediaTypes/JsonPayload",
+								},
+							},
+						},
+						responses: {
+							"200": {
+								description: "ok",
+								content: {
+									"application/json": {
+										$ref: "#/components/mediaTypes/JsonPayload",
+									},
+								},
+							},
+						},
+					},
+				},
+			};
 
-            const resolveRef = (ref: string) => {
-                if (ref === '#/components/mediaTypes/JsonPayload') {
-                    return {
-                        schema: {
-                            type: 'object',
-                            properties: {
-                                id: { type: 'string' },
-                            },
-                        },
-                    };
-                }
-                return undefined;
-            };
+			const resolveRef = (ref: string) => {
+				if (ref === "#/components/mediaTypes/JsonPayload") {
+					return {
+						schema: {
+							type: "object",
+							properties: {
+								id: { type: "string" },
+							},
+						},
+					};
+				}
+				return undefined;
+			};
 
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-                resolveRef as string | number | boolean | object | undefined | null,
-            );
-            const requestSchema = pathInfo.requestBody?.content?.['application/json'].schema as SwaggerDefinition;
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+				resolveRef as string | number | boolean | object | undefined | null,
+			);
+			const requestSchema = pathInfo.requestBody?.content?.["application/json"]
+				.schema as SwaggerDefinition;
 
-            const responseSchema = (pathInfo.responses as string | number | boolean | object | undefined | null)['200']
-                ?.content?.['application/json'].schema as SwaggerDefinition;
+			const responseSchema = (
+				pathInfo.responses as
+					| string
+					| number
+					| boolean
+					| object
+					| undefined
+					| null
+			)["200"]?.content?.["application/json"].schema as SwaggerDefinition;
 
-            expect(requestSchema).toEqual({
-                type: 'object',
-                properties: { id: { type: 'string' } },
-            });
-            expect(responseSchema).toEqual({
-                type: 'object',
-                properties: { id: { type: 'string' } },
-            });
-        });
+			expect(requestSchema).toEqual({
+				type: "object",
+				properties: { id: { type: "string" } },
+			});
+			expect(responseSchema).toEqual({
+				type: "object",
+				properties: { id: { type: "string" } },
+			});
+		});
 
-        it('should normalize Swagger 2.0 collectionFormat variants', () => {
-            const swaggerPaths = {
-                '/coll': {
-                    get: {
-                        parameters: [
-                            { name: 'c', in: 'query', collectionFormat: 'csv' },
-                            { name: 's', in: 'query', collectionFormat: 'ssv' },
-                            { name: 't', in: 'query', collectionFormat: 'tsv' },
-                            { name: 'p', in: 'query', collectionFormat: 'pipes' },
-                            { name: 'm', in: 'query', collectionFormat: 'multi' },
-                        ],
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            const ps = pathInfo.parameters!;
+		it("should normalize Swagger 2.0 collectionFormat variants", () => {
+			const swaggerPaths = {
+				"/coll": {
+					get: {
+						parameters: [
+							{ name: "c", in: "query", collectionFormat: "csv" },
+							{ name: "s", in: "query", collectionFormat: "ssv" },
+							{ name: "t", in: "query", collectionFormat: "tsv" },
+							{ name: "p", in: "query", collectionFormat: "pipes" },
+							{ name: "m", in: "query", collectionFormat: "multi" },
+						],
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			const ps = pathInfo.parameters!;
 
-            expect(ps.find(p => p.name === 'c')?.style).toBe('form');
-            expect(ps.find(p => p.name === 'c')?.explode).toBe(false);
+			expect(ps.find((p) => p.name === "c")?.style).toBe("form");
+			expect(ps.find((p) => p.name === "c")?.explode).toBe(false);
 
-            expect(ps.find(p => p.name === 's')?.style).toBe('spaceDelimited');
+			expect(ps.find((p) => p.name === "s")?.style).toBe("spaceDelimited");
 
-            expect(ps.find(p => p.name === 't')?.style).toBe('tabDelimited');
+			expect(ps.find((p) => p.name === "t")?.style).toBe("tabDelimited");
 
-            expect(ps.find(p => p.name === 'p')?.style).toBe('pipeDelimited');
+			expect(ps.find((p) => p.name === "p")?.style).toBe("pipeDelimited");
 
-            expect(ps.find(p => p.name === 'm')?.style).toBe('form');
-            expect(ps.find(p => p.name === 'm')?.explode).toBe(true);
-        });
+			expect(ps.find((p) => p.name === "m")?.style).toBe("form");
+			expect(ps.find((p) => p.name === "m")?.explode).toBe(true);
+		});
 
-        it('should handle parameters with content instead of schema (OAS 3)', () => {
-            const swaggerPaths = {
-                '/deep': {
-                    get: {
-                        parameters: [
-                            {
-                                name: 'q',
-                                in: 'query',
-                                content: { 'application/json': { schema: { type: 'string' } } },
-                            },
-                            {
-                                name: 'q2',
-                                in: 'query',
-                                $ref: '#/components/parameters/DeepQuery',
-                            },
-                            {
-                                name: 'q3',
-                                in: 'query',
-                                content: { 'application/json': {} },
-                            },
-                            {
-                                name: 'q4',
-                                in: 'query',
-                                content: {},
-                            },
-                            {
-                                name: 'q5',
-                                in: 'query',
-                                content: { 'application/json': { schema: undefined } },
-                            },
-                            {
-                                name: 'q6',
-                                in: 'query',
-                                content: { '': { schema: undefined } },
-                            },
-                        ],
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
+		it("should handle parameters with content instead of schema (OAS 3)", () => {
+			const swaggerPaths = {
+				"/deep": {
+					get: {
+						parameters: [
+							{
+								name: "q",
+								in: "query",
+								content: { "application/json": { schema: { type: "string" } } },
+							},
+							{
+								name: "q2",
+								in: "query",
+								$ref: "#/components/parameters/DeepQuery",
+							},
+							{
+								name: "q3",
+								in: "query",
+								content: { "application/json": {} },
+							},
+							{
+								name: "q4",
+								in: "query",
+								content: {},
+							},
+							{
+								name: "q5",
+								in: "query",
+								content: { "application/json": { schema: undefined } },
+							},
+							{
+								name: "q6",
+								in: "query",
+								content: { "": { schema: undefined } },
+							},
+						],
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
 
-            const specWithComp = {
-                paths: swaggerPaths,
-                components: {
-                    parameters: {
-                        DeepQuery: {
-                            name: 'q2',
-                            in: 'query',
-                            content: { 'application/json': { schema: { type: 'number' } } },
-                        },
-                    },
-                },
-            };
-            const resolveRef = (ref: string) => {
-                if (ref === '#/components/parameters/DeepQuery') {
-                    return specWithComp.components.parameters.DeepQuery;
-                }
-                return undefined;
-            };
+			const specWithComp = {
+				paths: swaggerPaths,
+				components: {
+					parameters: {
+						DeepQuery: {
+							name: "q2",
+							in: "query",
+							content: { "application/json": { schema: { type: "number" } } },
+						},
+					},
+				},
+			};
+			const resolveRef = (ref: string) => {
+				if (ref === "#/components/parameters/DeepQuery") {
+					return specWithComp.components.parameters.DeepQuery;
+				}
+				return undefined;
+			};
 
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-                resolveRef as any,
-            );
-            const ps = pathInfo.parameters!;
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+				resolveRef as any,
+			);
+			const ps = pathInfo.parameters!;
 
-            expect(ps.find(p => p.name === 'q')?.schema).toEqual({ type: 'string' });
-            expect(ps.find(p => p.name === 'q2')?.schema).toEqual({ type: 'number' });
-            expect(ps.find(p => p.name === 'q3')?.schema).toEqual({});
-            expect(ps.find(p => p.name === 'q4')?.schema).toEqual({});
-            expect(ps.find(p => p.name === 'q5')?.schema).toEqual({});
-        });
+			expect(ps.find((p) => p.name === "q")?.schema).toEqual({
+				type: "string",
+			});
+			expect(ps.find((p) => p.name === "q2")?.schema).toEqual({
+				type: "number",
+			});
+			expect(ps.find((p) => p.name === "q3")?.schema).toEqual({});
+			expect(ps.find((p) => p.name === "q4")?.schema).toEqual({});
+			expect(ps.find((p) => p.name === "q5")?.schema).toEqual({});
+		});
 
-        it('should construct schema from flat parameter properties if schema is missing', () => {
-            const swaggerPaths = {
-                '/flat': {
-                    get: {
-                        parameters: [
-                            {
-                                name: 'q',
-                                in: 'query',
-                                type: 'array',
-                                items: { type: 'string' },
-                                format: 'uuid',
-                            },
-                        ],
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            const schema = pathInfo.parameters![0].schema;
-            expect(schema).toBeDefined();
-            const schema0: SwaggerDefinition = schema as SwaggerDefinition;
-            expect(schema0.type).toBe('array');
+		it("should construct schema from flat parameter properties if schema is missing", () => {
+			const swaggerPaths = {
+				"/flat": {
+					get: {
+						parameters: [
+							{
+								name: "q",
+								in: "query",
+								type: "array",
+								items: { type: "string" },
+								format: "uuid",
+							},
+						],
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			const schema = pathInfo.parameters?.[0].schema;
+			expect(schema).toBeDefined();
+			const schema0: SwaggerDefinition = schema as SwaggerDefinition;
+			expect(schema0.type).toBe("array");
 
-            expect((schema0!.items as string | number | boolean | object | undefined | null).type).toBe('string');
-            expect(schema0!.format).toBe('uuid');
-        });
+			expect(
+				(
+					schema0?.items as
+						| string
+						| number
+						| boolean
+						| object
+						| undefined
+						| null
+				).type,
+			).toBe("string");
+			expect(schema0?.format).toBe("uuid");
+		});
 
-        it('should handle Swagger 2.0 Response wrapper objects', () => {
-            const swaggerPaths = {
-                '/resp': {
-                    get: {
-                        responses: {
-                            '200': {
-                                description: 'OK',
-                                schema: { type: 'string' },
-                                headers: { X: { type: 'string' } },
-                            },
-                        },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo).toBeDefined();
-            const resp = pathInfo.responses!['200'];
-            // Swagger 2 response schema moves to content.application/json.schema
-            expect(resp.content?.['application/json'].schema).toEqual({ type: 'string' });
-            expect(resp.headers!['X']).toBeDefined();
-        });
+		it("should handle Swagger 2.0 Response wrapper objects", () => {
+			const swaggerPaths = {
+				"/resp": {
+					get: {
+						responses: {
+							"200": {
+								description: "OK",
+								schema: { type: "string" },
+								headers: { X: { type: "string" } },
+							},
+						},
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(pathInfo).toBeDefined();
+			const resp = pathInfo.responses?.["200"];
+			// Swagger 2 response schema moves to content.application/json.schema
+			expect(resp.content?.["application/json"].schema).toEqual({
+				type: "string",
+			});
+			expect(resp.headers?.X).toBeDefined();
+		});
 
-        it('should extract the QUERY method from paths (OAS 3.2)', () => {
-            // Redundant check kept for regression/completeness from prior files
-            const swaggerPaths = {
-                '/search': {
-                    query: {
-                        operationId: 'querySearch',
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo).toBeDefined();
-            expect(pathInfo.method).toBe('QUERY');
-            expect(pathInfo.operationId).toBe('querySearch');
-        });
+		it("should extract the QUERY method from paths (OAS 3.2)", () => {
+			// Redundant check kept for regression/completeness from prior files
+			const swaggerPaths = {
+				"/search": {
+					query: {
+						operationId: "querySearch",
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(pathInfo).toBeDefined();
+			expect(pathInfo.method).toBe("QUERY");
+			expect(pathInfo.operationId).toBe("querySearch");
+		});
 
-        it('should propagate x- properties on operations and parameters', () => {
-            const swaggerPaths = {
-                '/test': {
-                    get: {
-                        operationId: 'getTest',
-                        'x-custom-op': 'op-value',
-                        parameters: [
-                            {
-                                name: 'param',
-                                in: 'query',
-                                schema: { type: 'string' },
-                                'x-custom-param': 'param-value',
-                            },
-                        ],
-                        responses: { '200': { description: 'OK' } },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            expect((pathInfo as string | number | boolean | object | undefined | null)['x-custom-op']).toBe('op-value');
-            expect(
-                (pathInfo.parameters![0] as string | number | boolean | object | undefined | null)['x-custom-param'],
-            ).toBe('param-value');
-        });
+		it("should propagate x- properties on operations and parameters", () => {
+			const swaggerPaths = {
+				"/test": {
+					get: {
+						operationId: "getTest",
+						"x-custom-op": "op-value",
+						parameters: [
+							{
+								name: "param",
+								in: "query",
+								schema: { type: "string" },
+								"x-custom-param": "param-value",
+							},
+						],
+						responses: { "200": { description: "OK" } },
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(
+				(pathInfo as string | number | boolean | object | undefined | null)[
+					"x-custom-op"
+				],
+			).toBe("op-value");
+			expect(
+				(
+					pathInfo.parameters?.[0] as
+						| string
+						| number
+						| boolean
+						| object
+						| undefined
+						| null
+				)["x-custom-param"],
+			).toBe("param-value");
+		});
 
-        it('should merge path-level and operation-level parameters and preserve flags', () => {
-            const swaggerPaths = {
-                '/items/{id}': {
-                    parameters: [
-                        {
-                            name: 'id',
-                            in: 'path',
-                            required: true,
-                            schema: { type: 'string' },
-                            description: 'Path id',
-                        },
-                    ],
-                    get: {
-                        parameters: [
-                            {
-                                name: 'filter',
-                                in: 'query',
-                                schema: { type: 'string' },
-                                allowReserved: true,
-                                allowEmptyValue: true,
-                            },
-                        ],
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            const idParam = pathInfo.parameters!.find(p => p.name === 'id')!;
-            const filterParam = pathInfo.parameters!.find(p => p.name === 'filter')!;
+		it("should merge path-level and operation-level parameters and preserve flags", () => {
+			const swaggerPaths = {
+				"/items/{id}": {
+					parameters: [
+						{
+							name: "id",
+							in: "path",
+							required: true,
+							schema: { type: "string" },
+							description: "Path id",
+						},
+					],
+					get: {
+						parameters: [
+							{
+								name: "filter",
+								in: "query",
+								schema: { type: "string" },
+								allowReserved: true,
+								allowEmptyValue: true,
+							},
+						],
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			const idParam = pathInfo.parameters?.find((p) => p.name === "id")!;
+			const filterParam = pathInfo.parameters?.find(
+				(p) => p.name === "filter",
+			)!;
 
-            expect(idParam.description).toBe('Path id');
-            expect(filterParam.allowReserved).toBe(true);
-            expect(filterParam.allowEmptyValue).toBe(true);
-        });
+			expect(idParam.description).toBe("Path id");
+			expect(filterParam.allowReserved).toBe(true);
+			expect(filterParam.allowEmptyValue).toBe(true);
+		});
 
-        it('should tolerate non-array path parameters and use path-level description fallback', () => {
-            const swaggerPaths = {
-                '/desc': {
-                    parameters: null,
-                    description: 'Path description',
-                    get: { responses: { '200': { description: 'ok' } } },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.description).toBe('Path description');
-        });
+		it("should tolerate non-array path parameters and use path-level description fallback", () => {
+			const swaggerPaths = {
+				"/desc": {
+					parameters: null,
+					description: "Path description",
+					get: { responses: { "200": { description: "ok" } } },
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(pathInfo.description).toBe("Path description");
+		});
 
-        it('should include externalDocs when provided on operation', () => {
-            const swaggerPaths = {
-                '/docs': {
-                    get: {
-                        operationId: 'getDocs',
-                        externalDocs: { url: 'https://example.com', description: 'More docs' },
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.externalDocs?.url).toBe('https://example.com');
-        });
+		it("should include externalDocs when provided on operation", () => {
+			const swaggerPaths = {
+				"/docs": {
+					get: {
+						operationId: "getDocs",
+						externalDocs: {
+							url: "https://example.com",
+							description: "More docs",
+						},
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(pathInfo.externalDocs?.url).toBe("https://example.com");
+		});
 
-        it('should ignore undefined parameters and apply default explode rules', () => {
-            const swaggerPaths = {
-                '/mix': {
-                    parameters: [undefined, { name: 'shared', in: 'query', schema: { type: 'string' } }],
-                    get: {
-                        parameters: [
-                            null,
-                            { name: 'op', in: 'query', schema: { type: 'string' }, style: 'form' },
-                            { name: 'c', in: 'query', content: { 'application/json': { schema: { type: 'number' } } } },
-                        ],
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            const opParam = pathInfo.parameters!.find(p => p.name === 'op');
-            expect(opParam?.explode).toBe(true);
-            const cParam = pathInfo.parameters!.find(p => p.name === 'c');
-            expect(cParam?.schema).toEqual({ type: 'number' });
-        });
+		it("should ignore undefined parameters and apply default explode rules", () => {
+			const swaggerPaths = {
+				"/mix": {
+					parameters: [
+						undefined,
+						{ name: "shared", in: "query", schema: { type: "string" } },
+					],
+					get: {
+						parameters: [
+							null,
+							{
+								name: "op",
+								in: "query",
+								schema: { type: "string" },
+								style: "form",
+							},
+							{
+								name: "c",
+								in: "query",
+								content: { "application/json": { schema: { type: "number" } } },
+							},
+						],
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			const opParam = pathInfo.parameters?.find((p) => p.name === "op");
+			expect(opParam?.explode).toBe(true);
+			const cParam = pathInfo.parameters?.find((p) => p.name === "c");
+			expect(cParam?.schema).toEqual({ type: "number" });
+		});
 
-        it('should preserve explicit explode values when provided', () => {
-            const swaggerPaths = {
-                '/explode': {
-                    get: {
-                        parameters: [
-                            {
-                                name: 'q',
-                                in: 'query',
-                                explode: false,
-                                schema: { type: 'string' },
-                            },
-                        ],
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            };
-            const [pathInfo] = utils.extractPaths(
-                swaggerPaths as string | number | boolean | object | undefined | null,
-            );
-            expect(pathInfo.parameters![0].explode).toBe(false);
-        });
-    });
+		it("should preserve explicit explode values when provided", () => {
+			const swaggerPaths = {
+				"/explode": {
+					get: {
+						parameters: [
+							{
+								name: "q",
+								in: "query",
+								explode: false,
+								schema: { type: "string" },
+							},
+						],
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			};
+			const [pathInfo] = utils.extractPaths(
+				swaggerPaths as string | number | boolean | object | undefined | null,
+			);
+			expect(pathInfo.parameters?.[0].explode).toBe(false);
+		});
+	});
 });

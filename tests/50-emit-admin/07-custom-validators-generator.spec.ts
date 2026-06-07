@@ -1,50 +1,56 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-import { CustomValidatorsGenerator } from '@src/vendors/angular/admin/custom-validators.generator.js'; // Corrected Path
-import { createTestProject } from '../shared/helpers.js';
+import { CustomValidatorsGenerator } from "@src/vendors/angular/admin/custom-validators.generator.js"; // Corrected Path
+import { createTestProject } from "../shared/helpers.js";
 
-describe('Admin: CustomValidatorsGenerator', () => {
-    it('should generate a custom validators file with all expected methods', () => {
-        const project = createTestProject();
-        const generator = new CustomValidatorsGenerator(project);
-        generator.generate('/admin');
+describe("Admin: CustomValidatorsGenerator", () => {
+	it("should generate a custom validators file with all expected methods", () => {
+		const project = createTestProject();
+		const generator = new CustomValidatorsGenerator(project);
+		generator.generate("/admin");
 
-        const sourceFile = project.getSourceFileOrThrow('/admin/shared/custom-validators.ts');
-        const fileContent = sourceFile.getFullText();
+		const sourceFile = project.getSourceFileOrThrow(
+			"/admin/shared/custom-validators.ts",
+		);
+		const fileContent = sourceFile.getFullText();
 
-        expect(fileContent).toContain('export class CustomValidators');
-        const validatorClass = sourceFile.getClassOrThrow('CustomValidators');
+		expect(fileContent).toContain("export class CustomValidators");
+		const validatorClass = sourceFile.getClassOrThrow("CustomValidators");
 
-        const methods = validatorClass.getStaticMethods().map(m => m.getName());
-        expect(methods).toEqual(
-            expect.arrayContaining([
-                'exclusiveMinimum',
-                'exclusiveMaximum',
-                'multipleOf',
-                'uniqueItems',
-                'minProperties',
-                'maxProperties',
-                'contains',
-                'constValidator',
-                'notValidator',
-            ]),
-        );
+		const methods = validatorClass.getStaticMethods().map((m) => m.getName());
+		expect(methods).toEqual(
+			expect.arrayContaining([
+				"exclusiveMinimum",
+				"exclusiveMaximum",
+				"multipleOf",
+				"uniqueItems",
+				"minProperties",
+				"maxProperties",
+				"contains",
+				"constValidator",
+				"notValidator",
+			]),
+		);
 
-        // Check a method body for correctness
-        const constValidatorMethod = validatorClass.getStaticMethodOrThrow('constValidator');
-        const body = constValidatorMethod.getBodyText();
-        expect(body).toContain('if (control.value !== constant)');
-        expect(body).toContain('return { const: { required: constant, actual: control.value } };');
+		// Check a method body for correctness
+		const constValidatorMethod =
+			validatorClass.getStaticMethodOrThrow("constValidator");
+		const body = constValidatorMethod.getBodyText();
+		expect(body).toContain("if (control.value !== constant)");
+		expect(body).toContain(
+			"return { const: { required: constant, actual: control.value } };",
+		);
 
-        const notValidatorMethod = validatorClass.getStaticMethodOrThrow('notValidator');
-        const notBody = notValidatorMethod.getBodyText();
-        expect(notBody).toContain('if (errors !== null) return null;');
-        expect(notBody).toContain('return { not: true };');
+		const notValidatorMethod =
+			validatorClass.getStaticMethodOrThrow("notValidator");
+		const notBody = notValidatorMethod.getBodyText();
+		expect(notBody).toContain("if (errors !== null) return null;");
+		expect(notBody).toContain("return { not: true };");
 
-        const containsMethod = validatorClass.getStaticMethodOrThrow('contains');
-        const containsBody = containsMethod.getBodyText();
-        expect(containsBody).toContain('matchCount');
-        expect(containsBody).toContain('contains');
-    });
+		const containsMethod = validatorClass.getStaticMethodOrThrow("contains");
+		const containsBody = containsMethod.getBodyText();
+		expect(containsBody).toContain("matchCount");
+		expect(containsBody).toContain("contains");
+	});
 });

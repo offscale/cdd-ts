@@ -1,299 +1,391 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
-import { MultipartBuilderGenerator } from '@src/functions/emit_multipart.js';
-import { createTestProject } from '../shared/helpers.js';
-import ts from 'typescript';
+import { describe, expect, it } from "vitest";
+import { MultipartBuilderGenerator } from "@src/functions/emit_multipart.js";
+import { createTestProject } from "../shared/helpers.js";
+import ts from "typescript";
 
 function getMultipartBuilder() {
-    const project = createTestProject();
-    new MultipartBuilderGenerator(project).generate('/');
-    const sourceFile = project.getSourceFileOrThrow('/utils/multipart-builder.ts');
-    const startText = sourceFile.getText();
+	const project = createTestProject();
+	new MultipartBuilderGenerator(project).generate("/");
+	const sourceFile = project.getSourceFileOrThrow(
+		"/utils/multipart-builder.ts",
+	);
+	const startText = sourceFile.getText();
 
-    const codeWithoutExports = startText.replace(/export class/g, 'class').replace(/export interface/g, 'interface');
+	const codeWithoutExports = startText
+		.replace(/export class/g, "class")
+		.replace(/export interface/g, "interface");
 
-    const jsCode = ts.transpile(codeWithoutExports, {
-        target: ts.ScriptTarget.ESNext,
-        module: ts.ModuleKind.CommonJS,
-    });
+	const jsCode = ts.transpile(codeWithoutExports, {
+		target: ts.ScriptTarget.ESNext,
+		module: ts.ModuleKind.CommonJS,
+	});
 
-    const moduleScope = { exports: {} as string | number | boolean | object | undefined | null };
+	const moduleScope = {
+		exports: {} as string | number | boolean | object | undefined | null,
+	};
 
-    global.FormData = class FormData {
-        _entries: Record<string, string | number | boolean | object | undefined | null> = {};
+	global.FormData = class FormData {
+		_entries: Record<
+			string,
+			string | number | boolean | object | undefined | null
+		> = {};
 
-        append(k: string, v: string | number | boolean | object | undefined | null) {
-            this._entries[k] = v;
-        }
-    } as string | number | boolean | object | undefined | null;
+		append(
+			k: string,
+			v: string | number | boolean | object | undefined | null,
+		) {
+			this._entries[k] = v;
+		}
+	} as string | number | boolean | object | undefined | null;
 
-    global.Blob = class Blob {
-        parts: string | number | boolean | object | undefined | null[];
+	global.Blob = class Blob {
+		parts: string | number | boolean | object | undefined | null[];
 
-        options: string | number | boolean | object | undefined | null;
-        type: string;
+		options: string | number | boolean | object | undefined | null;
+		type: string;
 
-        constructor(
-            parts: string | number | boolean | object | undefined | null[],
-            options: string | number | boolean | object | undefined | null,
-        ) {
-            this.parts = parts;
+		constructor(
+			parts: string | number | boolean | object | undefined | null[],
+			options: string | number | boolean | object | undefined | null,
+		) {
+			this.parts = parts;
 
-            this.options = options;
+			this.options = options;
 
-            this.type = options?.type || '';
-        }
-    } as string | number | boolean | object | undefined | null;
+			this.type = options?.type || "";
+		}
+	} as string | number | boolean | object | undefined | null;
 
-    global.File = class File extends global.Blob {
-        name: string;
+	global.File = class File extends global.Blob {
+		name: string;
 
-        constructor(
-            parts: string | number | boolean | object | undefined | null[],
-            name: string,
-            options: string | number | boolean | object | undefined | null,
-        ) {
-            super(parts, options);
-            this.name = name;
-        }
-    } as string | number | boolean | object | undefined | null;
+		constructor(
+			parts: string | number | boolean | object | undefined | null[],
+			name: string,
+			options: string | number | boolean | object | undefined | null,
+		) {
+			super(parts, options);
+			this.name = name;
+		}
+	} as string | number | boolean | object | undefined | null;
 
-    const finalCode = `${jsCode}\nmoduleScope.exports.MultipartBuilder = MultipartBuilder;`;
+	const finalCode = `${jsCode}\nmoduleScope.exports.MultipartBuilder = MultipartBuilder;`;
 
-    new Function('moduleScope', finalCode)(moduleScope);
+	new Function("moduleScope", finalCode)(moduleScope);
 
-    return moduleScope.exports.MultipartBuilder;
+	return moduleScope.exports.MultipartBuilder;
 }
 
-describe('Utility: MultipartBuilder', () => {
-    const MultipartBuilder = getMultipartBuilder();
+describe("Utility: MultipartBuilder", () => {
+	const MultipartBuilder = getMultipartBuilder();
 
-    describe('Native FormData (No Custom Headers)', () => {
-        it('should return FormData when no custom headers are present', () => {
-            const body = { name: 'foo', age: 10 };
+	describe("Native FormData (No Custom Headers)", () => {
+		it("should return FormData when no custom headers are present", () => {
+			const body = { name: "foo", age: 10 };
 
-            const result = MultipartBuilder.serialize(body, {});
+			const result = MultipartBuilder.serialize(body, {});
 
-            expect(result.content).toBeInstanceOf(global.FormData);
+			expect(result.content).toBeInstanceOf(global.FormData);
 
-            expect(result.headers).toBeUndefined();
-        });
+			expect(result.headers).toBeUndefined();
+		});
 
-        it('should handle arrays by appending multiple times', () => {
-            const body = { tags: ['a', 'b'] };
+		it("should handle arrays by appending multiple times", () => {
+			const body = { tags: ["a", "b"] };
 
-            const result = MultipartBuilder.serialize(body, {});
+			const result = MultipartBuilder.serialize(body, {});
 
-            const formData = result.content as string | number | boolean | object | undefined | null;
+			const formData = result.content as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null;
 
-            expect(formData).toBeInstanceOf(global.FormData);
-        });
+			expect(formData).toBeInstanceOf(global.FormData);
+		});
 
-        it('should wrap objects in JSON/Blob by default', () => {
-            const body = { meta: { id: 1 } };
+		it("should wrap objects in JSON/Blob by default", () => {
+			const body = { meta: { id: 1 } };
 
-            const result = MultipartBuilder.serialize(body, {});
+			const result = MultipartBuilder.serialize(body, {});
 
-            const formData = result.content as string | number | boolean | object | undefined | null;
+			const formData = result.content as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null;
 
-            const appended = formData._entries['meta'];
+			const appended = formData._entries.meta;
 
-            expect(appended).toBeInstanceOf(global.Blob);
+			expect(appended).toBeInstanceOf(global.Blob);
 
-            expect(appended.options.type).toBe('application/json');
-        });
-    });
+			expect(appended.options.type).toBe("application/json");
+		});
+	});
 
-    describe('Manual Construction (Object/Map based)', () => {
-        // ... (previous test cases remain valid because I updated `serialize` to normalize input)
+	describe("Manual Construction (Object/Map based)", () => {
+		// ... (previous test cases remain valid because I updated `serialize` to normalize input)
 
-        it('should switch to manual Blob construction if custom headers exist', () => {
-            const body = { file: 'content' };
-            // Legacy input style: Record<string, Config>
-            const encoding = {
-                file: { headers: { 'X-Custom': '123' } },
-            };
+		it("should switch to manual Blob construction if custom headers exist", () => {
+			const body = { file: "content" };
+			// Legacy input style: Record<string, Config>
+			const encoding = {
+				file: { headers: { "X-Custom": "123" } },
+			};
 
-            const result = MultipartBuilder.serialize(body, encoding);
+			const result = MultipartBuilder.serialize(body, encoding);
 
-            expect(result.content).toBeInstanceOf(global.Blob);
+			expect(result.content).toBeInstanceOf(global.Blob);
 
-            expect(result.headers).toBeDefined();
+			expect(result.headers).toBeDefined();
 
-            expect(result.headers['Content-Type']).toContain('multipart/form-data; boundary=');
-        });
+			expect(result.headers["Content-Type"]).toContain(
+				"multipart/form-data; boundary=",
+			);
+		});
 
-        it('should handle File objects in manual mode', () => {
-            const file = new File(['data'], 'test.txt', { type: 'text/plain' });
-            const body = { doc: file };
-            const encoding = {
-                doc: { headers: { 'X-File': 'true' } },
-            };
+		it("should handle File objects in manual mode", () => {
+			const file = new File(["data"], "test.txt", { type: "text/plain" });
+			const body = { doc: file };
+			const encoding = {
+				doc: { headers: { "X-File": "true" } },
+			};
 
-            const result = MultipartBuilder.serialize(body, encoding);
+			const result = MultipartBuilder.serialize(body, encoding);
 
-            const blob = result.content as string | number | boolean | object | undefined | null;
+			const blob = result.content as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null;
 
-            // Blob parts can be objects (File) or strings.
-            // We check specifically for strings to validate headers.
+			// Blob parts can be objects (File) or strings.
+			// We check specifically for strings to validate headers.
 
-            const stringParts = blob.parts
-                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
-                .join('');
+			const stringParts = blob.parts
+				.filter(
+					(p: string | number | boolean | object | undefined | null) =>
+						typeof p === "string",
+				)
+				.join("");
 
-            expect(stringParts).toContain('filename="test.txt"');
+			expect(stringParts).toContain('filename="test.txt"');
 
-            expect(stringParts).toContain('X-File: true');
+			expect(stringParts).toContain("X-File: true");
+
+			expect(stringParts).toContain("Content-Type: text/plain");
+		});
+
+		it("should serialize arrays with explode=false as a single part", () => {
+			const body = { tags: ["red", "blue"] };
+			const encoding = {
+				tags: { style: "form", explode: false },
+			};
+
+			const result = MultipartBuilder.serialize(body, encoding);
+
+			const blob = result.content as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null;
+
+			const stringParts = blob.parts
+				.filter(
+					(p: string | number | boolean | object | undefined | null) =>
+						typeof p === "string",
+				)
+				.join("");
+
+			expect(stringParts).toContain('name="tags"');
+
+			expect(stringParts).toContain("red,blue");
+
+			const matches = stringParts.match(/name="tags"/g);
+
+			expect(matches?.length).toBe(1);
+		});
+
+		it("should serialize objects with explode=true as separate parts", () => {
+			const body = { meta: { a: 1, b: 2 } };
+			const encoding = {
+				meta: { style: "form", explode: true },
+			};
 
-            expect(stringParts).toContain('Content-Type: text/plain');
-        });
+			const result = MultipartBuilder.serialize(body, encoding);
 
-        it('should serialize arrays with explode=false as a single part', () => {
-            const body = { tags: ['red', 'blue'] };
-            const encoding = {
-                tags: { style: 'form', explode: false },
-            };
+			const blob = result.content as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null;
 
-            const result = MultipartBuilder.serialize(body, encoding);
+			const stringParts = blob.parts
+				.filter(
+					(p: string | number | boolean | object | undefined | null) =>
+						typeof p === "string",
+				)
+				.join("");
 
-            const blob = result.content as string | number | boolean | object | undefined | null;
+			expect(stringParts).toContain('name="a"');
 
-            const stringParts = blob.parts
-                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
-                .join('');
+			expect(stringParts).toContain('name="b"');
 
-            expect(stringParts).toContain('name="tags"');
+			expect(stringParts).not.toContain('name="meta"');
+		});
 
-            expect(stringParts).toContain('red,blue');
+		it("should serialize objects with explode=false as a single part", () => {
+			const body = { meta: { a: 1, b: 2 } };
+			const encoding = {
+				meta: { style: "form", explode: false },
+			};
 
-            const matches = stringParts.match(/name="tags"/g);
+			const result = MultipartBuilder.serialize(body, encoding);
 
-            expect(matches?.length).toBe(1);
-        });
+			const blob = result.content as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null;
 
-        it('should serialize objects with explode=true as separate parts', () => {
-            const body = { meta: { a: 1, b: 2 } };
-            const encoding = {
-                meta: { style: 'form', explode: true },
-            };
+			const stringParts = blob.parts
+				.filter(
+					(p: string | number | boolean | object | undefined | null) =>
+						typeof p === "string",
+				)
+				.join("");
 
-            const result = MultipartBuilder.serialize(body, encoding);
+			expect(stringParts).toContain('name="meta"');
 
-            const blob = result.content as string | number | boolean | object | undefined | null;
+			expect(stringParts).toContain("a,1,b,2");
+		});
+	});
 
-            const stringParts = blob.parts
-                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
-                .join('');
+	describe("Manual Construction (Array/OAS 3.2 based)", () => {
+		it("should serialize Array body as multipart/mixed", () => {
+			const body = ["item1", { id: 2 }];
+			const config = {
+				prefixEncoding: [
+					{ contentType: "text/plain" },
+					{ contentType: "application/json" },
+				],
+			};
 
-            expect(stringParts).toContain('name="a"');
+			const result = MultipartBuilder.serialize(body, config);
 
-            expect(stringParts).toContain('name="b"');
+			expect(result.content).toBeInstanceOf(global.Blob);
 
-            expect(stringParts).not.toContain('name="meta"');
-        });
+			expect(result.content.type).toBe("multipart/mixed");
 
-        it('should serialize objects with explode=false as a single part', () => {
-            const body = { meta: { a: 1, b: 2 } };
-            const encoding = {
-                meta: { style: 'form', explode: false },
-            };
+			expect(result.headers["Content-Type"]).toContain("multipart/mixed");
 
-            const result = MultipartBuilder.serialize(body, encoding);
+			// Verify parts
 
-            const blob = result.content as string | number | boolean | object | undefined | null;
+			const blob = result.content as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null;
 
-            const stringParts = blob.parts
-                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
-                .join('');
+			const stringParts = blob.parts
+				.filter(
+					(p: string | number | boolean | object | undefined | null) =>
+						typeof p === "string",
+				)
+				.join("");
 
-            expect(stringParts).toContain('name="meta"');
+			// Should have no Content-Disposition by default for mixed array items
 
-            expect(stringParts).toContain('a,1,b,2');
-        });
-    });
+			expect(stringParts).not.toContain("Content-Disposition");
 
-    describe('Manual Construction (Array/OAS 3.2 based)', () => {
-        it('should serialize Array body as multipart/mixed', () => {
-            const body = ['item1', { id: 2 }];
-            const config = {
-                prefixEncoding: [{ contentType: 'text/plain' }, { contentType: 'application/json' }],
-            };
+			// Verify Content-Types
 
-            const result = MultipartBuilder.serialize(body, config);
+			expect(stringParts).toContain("Content-Type: text/plain");
 
-            expect(result.content).toBeInstanceOf(global.Blob);
+			expect(stringParts).toContain("Content-Type: application/json");
 
-            expect(result.content.type).toBe('multipart/mixed');
+			// Verify Bodies
 
-            expect(result.headers['Content-Type']).toContain('multipart/mixed');
+			expect(blob.parts).toContain("item1");
 
-            // Verify parts
+			expect(stringParts).toContain('{"id":2}'); // JSON stringified
+		});
 
-            const blob = result.content as string | number | boolean | object | undefined | null;
+		it("should support itemEncoding basic fallback", () => {
+			const body = [1, 2, 3];
+			const config = {
+				itemEncoding: { contentType: "application/custom" },
+			};
 
-            const stringParts = blob.parts
-                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
-                .join('');
+			const result = MultipartBuilder.serialize(body, config);
 
-            // Should have no Content-Disposition by default for mixed array items
+			const blob = result.content as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null;
 
-            expect(stringParts).not.toContain('Content-Disposition');
+			const stringParts = blob.parts
+				.filter(
+					(p: string | number | boolean | object | undefined | null) =>
+						typeof p === "string",
+				)
+				.join("");
 
-            // Verify Content-Types
+			// Check that it applied to all
+			// We expect 3 occurrences of the content type
 
-            expect(stringParts).toContain('Content-Type: text/plain');
+			const matches = stringParts.match(/Content-Type: application\/custom/g);
 
-            expect(stringParts).toContain('Content-Type: application/json');
+			expect(matches?.length).toBe(3);
+		});
 
-            // Verify Bodies
+		it("should support prefixEncoding overriding itemEncoding", () => {
+			const body = ["prefix", "rest1", "rest2"];
+			const config = {
+				prefixEncoding: [{ contentType: "text/prefix" }],
+				itemEncoding: { contentType: "text/rest" },
+			};
 
-            expect(blob.parts).toContain('item1');
+			const result = MultipartBuilder.serialize(body, config);
 
-            expect(stringParts).toContain('{"id":2}'); // JSON stringified
-        });
+			const blob = result.content as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null;
 
-        it('should support itemEncoding basic fallback', () => {
-            const body = [1, 2, 3];
-            const config = {
-                itemEncoding: { contentType: 'application/custom' },
-            };
+			const stringParts = blob.parts
+				.filter(
+					(p: string | number | boolean | object | undefined | null) =>
+						typeof p === "string",
+				)
+				.join("");
 
-            const result = MultipartBuilder.serialize(body, config);
+			expect(stringParts).toContain("Content-Type: text/prefix");
 
-            const blob = result.content as string | number | boolean | object | undefined | null;
+			const restMatches = stringParts.match(/Content-Type: text\/rest/g);
 
-            const stringParts = blob.parts
-                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
-                .join('');
-
-            // Check that it applied to all
-            // We expect 3 occurrences of the content type
-
-            const matches = stringParts.match(/Content-Type: application\/custom/g);
-
-            expect(matches?.length).toBe(3);
-        });
-
-        it('should support prefixEncoding overriding itemEncoding', () => {
-            const body = ['prefix', 'rest1', 'rest2'];
-            const config = {
-                prefixEncoding: [{ contentType: 'text/prefix' }],
-                itemEncoding: { contentType: 'text/rest' },
-            };
-
-            const result = MultipartBuilder.serialize(body, config);
-
-            const blob = result.content as string | number | boolean | object | undefined | null;
-
-            const stringParts = blob.parts
-                .filter((p: string | number | boolean | object | undefined | null) => typeof p === 'string')
-                .join('');
-
-            expect(stringParts).toContain('Content-Type: text/prefix');
-
-            const restMatches = stringParts.match(/Content-Type: text\/rest/g);
-
-            expect(restMatches?.length).toBe(2); // rest1 and rest2
-        });
-    });
+			expect(restMatches?.length).toBe(2); // rest1 and rest2
+		});
+	});
 });

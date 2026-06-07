@@ -1,338 +1,396 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
-import { FormInitializerRenderer, ValidationRenderer } from '@src/vendors/angular/admin/form.renderer.js';
-import { ValidationRule } from '@src/vendors/angular/admin/analysis/validation-types.js';
-import { FormControlModel } from '@src/vendors/angular/admin/analysis/form-types.js';
+import { describe, expect, it } from "vitest";
+import {
+	FormInitializerRenderer,
+	ValidationRenderer,
+} from "@src/vendors/angular/admin/form.renderer.js";
+import type { ValidationRule } from "@src/vendors/angular/admin/analysis/validation-types.js";
+import type { FormControlModel } from "@src/vendors/angular/admin/analysis/form-types.js";
 
-describe('Admin: FormRenderer', () => {
-    describe('ValidationRenderer', () => {
-        it('should return an empty string for empty or null rules', () => {
-            expect(ValidationRenderer.render([])).toBe('');
-            expect(ValidationRenderer.render(null as string | number | boolean | object | undefined | null)).toBe('');
-        });
+describe("Admin: FormRenderer", () => {
+	describe("ValidationRenderer", () => {
+		it("should return an empty string for empty or null rules", () => {
+			expect(ValidationRenderer.render([])).toBe("");
+			expect(
+				ValidationRenderer.render(
+					null as string | number | boolean | object | undefined | null,
+				),
+			).toBe("");
+		});
 
-        it('should render all standard validation rules correctly', () => {
-            const rules: ValidationRule[] = [
-                { type: 'required' },
-                { type: 'email' },
-                { type: 'minLength', value: 5 },
-                { type: 'maxLength', value: 50 },
-                { type: 'min', value: 0 },
-                { type: 'max', value: 100 },
-                { type: 'pattern', value: '^\\d+$' },
-            ];
-            const result = ValidationRenderer.render(rules);
-            expect(result).toBe(
-                '[Validators.required, Validators.email, Validators.minLength(5), Validators.maxLength(50), Validators.min(0), Validators.max(100), Validators.pattern(/^\\d+$/)]',
-            );
-        });
+		it("should render all standard validation rules correctly", () => {
+			const rules: ValidationRule[] = [
+				{ type: "required" },
+				{ type: "email" },
+				{ type: "minLength", value: 5 },
+				{ type: "maxLength", value: 50 },
+				{ type: "min", value: 0 },
+				{ type: "max", value: 100 },
+				{ type: "pattern", value: "^\\d+$" },
+			];
+			const result = ValidationRenderer.render(rules);
+			expect(result).toBe(
+				"[Validators.required, Validators.email, Validators.minLength(5), Validators.maxLength(50), Validators.min(0), Validators.max(100), Validators.pattern(/^\\d+$/)]",
+			);
+		});
 
-        it('should render all custom validation rules correctly', () => {
-            const rules: ValidationRule[] = [
-                { type: 'multipleOf', value: 3 },
-                { type: 'exclusiveMinimum', value: 1 },
-                { type: 'exclusiveMaximum', value: 99 },
-                { type: 'uniqueItems' },
-                { type: 'minItems', value: 1 },
-                { type: 'maxItems', value: 10 },
-                { type: 'minProperties', value: 2 },
-                { type: 'maxProperties', value: 5 },
-                { type: 'contains', schema: { type: 'string' }, min: 1, max: 2 },
-                { type: 'contains' },
-                { type: 'contains', schema: { type: 'string' } },
-                { type: 'const', value: 'val' },
-                { type: 'const', value: 123 },
-            ];
-            const result = ValidationRenderer.render(rules);
-            // Ensure const renders correctly with quotes for string and none for number
-            expect(result).toContain("CustomValidators.constValidator('val')");
-            expect(result).toContain('CustomValidators.constValidator(123)');
-            expect(result).toContain('CustomValidators.minProperties(2)');
-            expect(result).toContain('CustomValidators.maxProperties(5)');
-            expect(result).toContain('CustomValidators.contains({\"type\":\"string\"}, 1, 2)');
-            expect(result).toContain('CustomValidators.contains({"type":"string"}, undefined, undefined)');
-            expect(result).toContain('CustomValidators.contains(true, undefined, undefined)');
-        });
-        it('should render nested `not` validator recursively', () => {
-            const rules: ValidationRule[] = [
-                {
-                    type: 'not',
-                    rules: [
-                        { type: 'pattern', value: '^foo' },
-                        { type: 'minLength', value: 5 },
-                    ],
-                },
-            ];
-            const result = ValidationRenderer.render(rules);
-            expect(result).toContain('CustomValidators.notValidator(Validators.compose(');
-            expect(result).toContain('Validators.pattern(/^foo/)');
-            expect(result).toContain('Validators.minLength(5)');
-        });
+		it("should render all custom validation rules correctly", () => {
+			const rules: ValidationRule[] = [
+				{ type: "multipleOf", value: 3 },
+				{ type: "exclusiveMinimum", value: 1 },
+				{ type: "exclusiveMaximum", value: 99 },
+				{ type: "uniqueItems" },
+				{ type: "minItems", value: 1 },
+				{ type: "maxItems", value: 10 },
+				{ type: "minProperties", value: 2 },
+				{ type: "maxProperties", value: 5 },
+				{ type: "contains", schema: { type: "string" }, min: 1, max: 2 },
+				{ type: "contains" },
+				{ type: "contains", schema: { type: "string" } },
+				{ type: "const", value: "val" },
+				{ type: "const", value: 123 },
+			];
+			const result = ValidationRenderer.render(rules);
+			// Ensure const renders correctly with quotes for string and none for number
+			expect(result).toContain("CustomValidators.constValidator('val')");
+			expect(result).toContain("CustomValidators.constValidator(123)");
+			expect(result).toContain("CustomValidators.minProperties(2)");
+			expect(result).toContain("CustomValidators.maxProperties(5)");
+			expect(result).toContain(
+				'CustomValidators.contains({"type":"string"}, 1, 2)',
+			);
+			expect(result).toContain(
+				'CustomValidators.contains({"type":"string"}, undefined, undefined)',
+			);
+			expect(result).toContain(
+				"CustomValidators.contains(true, undefined, undefined)",
+			);
+		});
+		it("should render nested `not` validator recursively", () => {
+			const rules: ValidationRule[] = [
+				{
+					type: "not",
+					rules: [
+						{ type: "pattern", value: "^foo" },
+						{ type: "minLength", value: 5 },
+					],
+				},
+			];
+			const result = ValidationRenderer.render(rules);
+			expect(result).toContain(
+				"CustomValidators.notValidator(Validators.compose(",
+			);
+			expect(result).toContain("Validators.pattern(/^foo/)");
+			expect(result).toContain("Validators.minLength(5)");
+		});
 
-        it('should throw an error on unhandled validation rule type', () => {
-            const badRule = { type: 'futureValidator' } as string | number | boolean | object | undefined | null;
-            expect(() => ValidationRenderer.render([badRule])).toThrow(
-                'Unhandled validation rule type: futureValidator',
-            );
-        });
-    });
+		it("should throw an error on unhandled validation rule type", () => {
+			const badRule = { type: "futureValidator" } as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null;
+			expect(() => ValidationRenderer.render([badRule])).toThrow(
+				"Unhandled validation rule type: futureValidator",
+			);
+		});
+	});
 
-    describe('FormInitializerRenderer', () => {
-        it('should render a primitive control with a default value and validator', () => {
-            const control: FormControlModel = {
-                name: 'name',
-                propertyName: 'name',
-                dataType: 'string | null',
-                defaultValue: 'Default Name',
-                validationRules: [{ type: 'required' }],
-                controlType: 'control',
-            };
+	describe("FormInitializerRenderer", () => {
+		it("should render a primitive control with a default value and validator", () => {
+			const control: FormControlModel = {
+				name: "name",
+				propertyName: "name",
+				dataType: "string | null",
+				defaultValue: "Default Name",
+				validationRules: [{ type: "required" }],
+				controlType: "control",
+			};
 
-            const result = FormInitializerRenderer.renderControlInitializer(control);
-            expect(result).toBe(`new FormControl<string | null>("Default Name", [Validators.required])`);
-        });
+			const result = FormInitializerRenderer.renderControlInitializer(control);
+			expect(result).toBe(
+				`new FormControl<string | null>("Default Name", [Validators.required])`,
+			);
+		});
 
-        it('should render a primitive control with a null default and no validators', () => {
-            const control: FormControlModel = {
-                name: 'name',
-                propertyName: 'name',
-                dataType: 'string | null',
-                defaultValue: null,
-                validationRules: [],
-                controlType: 'control',
-            };
+		it("should render a primitive control with a null default and no validators", () => {
+			const control: FormControlModel = {
+				name: "name",
+				propertyName: "name",
+				dataType: "string | null",
+				defaultValue: null,
+				validationRules: [],
+				controlType: "control",
+			};
 
-            const result = FormInitializerRenderer.renderControlInitializer(control);
-            expect(result).toBe(`new FormControl<string | null>(null)`);
-        });
+			const result = FormInitializerRenderer.renderControlInitializer(control);
+			expect(result).toBe(`new FormControl<string | null>(null)`);
+		});
 
-        it('should render a form group with nested controls and validators using FormBuilder (default)', () => {
-            const control: FormControlModel = {
-                name: 'address',
-                propertyName: 'address',
-                dataType: 'AddressForm',
-                defaultValue: null,
-                validationRules: [{ type: 'required' }],
-                controlType: 'group',
-                nestedControls: [
-                    {
-                        name: 'street',
-                        propertyName: 'street',
-                        dataType: 'string | null',
-                        defaultValue: null,
-                        validationRules: [{ type: 'required' }],
-                        controlType: 'control',
-                    },
-                ],
-            };
+		it("should render a form group with nested controls and validators using FormBuilder (default)", () => {
+			const control: FormControlModel = {
+				name: "address",
+				propertyName: "address",
+				dataType: "AddressForm",
+				defaultValue: null,
+				validationRules: [{ type: "required" }],
+				controlType: "group",
+				nestedControls: [
+					{
+						name: "street",
+						propertyName: "street",
+						dataType: "string | null",
+						defaultValue: null,
+						validationRules: [{ type: "required" }],
+						controlType: "control",
+					},
+				],
+			};
 
-            const result = FormInitializerRenderer.renderControlInitializer(control);
-            expect(result).toContain('this.fb.group({');
-            expect(result).toContain("'street': new FormControl<string | null>(null, [Validators.required])");
-            expect(result).toContain('}, { validators: [Validators.required] })');
-        });
+			const result = FormInitializerRenderer.renderControlInitializer(control);
+			expect(result).toContain("this.fb.group({");
+			expect(result).toContain(
+				"'street': new FormControl<string | null>(null, [Validators.required])",
+			);
+			expect(result).toContain("}, { validators: [Validators.required] })");
+		});
 
-        it('should render a customized `not` validator inside control init', () => {
-            const control: FormControlModel = {
-                name: 'restricted',
-                propertyName: 'restricted',
-                dataType: 'string',
-                defaultValue: null,
-                validationRules: [
-                    { type: 'not', rules: [{ type: 'pattern', value: 'foo' }] } as
-                        | string
-                        | number
-                        | boolean
-                        | object
-                        | undefined
-                        | null,
-                ],
-                controlType: 'control',
-            };
-            const result = FormInitializerRenderer.renderControlInitializer(control);
-            expect(result).toContain('CustomValidators.notValidator(Validators.compose([');
-            expect(result).toContain('Validators.pattern(/foo/)');
-        });
+		it("should render a customized `not` validator inside control init", () => {
+			const control: FormControlModel = {
+				name: "restricted",
+				propertyName: "restricted",
+				dataType: "string",
+				defaultValue: null,
+				validationRules: [
+					{ type: "not", rules: [{ type: "pattern", value: "foo" }] } as
+						| string
+						| number
+						| boolean
+						| object
+						| undefined
+						| null,
+				],
+				controlType: "control",
+			};
+			const result = FormInitializerRenderer.renderControlInitializer(control);
+			expect(result).toContain(
+				"CustomValidators.notValidator(Validators.compose([",
+			);
+			expect(result).toContain("Validators.pattern(/foo/)");
+		});
 
-        it('should render a form group using standard FormGroup constructor when useFormBuilder is false', () => {
-            const control: FormControlModel = {
-                name: 'address',
-                propertyName: 'address',
-                dataType: 'AddressForm',
-                defaultValue: null,
-                validationRules: [{ type: 'required' }],
-                controlType: 'group',
-                nestedControls: [
-                    {
-                        name: 'street',
-                        propertyName: 'street',
-                        dataType: 'string | null',
-                        defaultValue: null,
-                        validationRules: [{ type: 'required' }],
-                        controlType: 'control',
-                    },
-                ],
-            };
+		it("should render a form group using standard FormGroup constructor when useFormBuilder is false", () => {
+			const control: FormControlModel = {
+				name: "address",
+				propertyName: "address",
+				dataType: "AddressForm",
+				defaultValue: null,
+				validationRules: [{ type: "required" }],
+				controlType: "group",
+				nestedControls: [
+					{
+						name: "street",
+						propertyName: "street",
+						dataType: "string | null",
+						defaultValue: null,
+						validationRules: [{ type: "required" }],
+						controlType: "control",
+					},
+				],
+			};
 
-            const result = FormInitializerRenderer.renderControlInitializer(control, false);
-            expect(result).toContain('new FormGroup({');
-            // Using explicit check for the nested part format
-            expect(result).toContain("'street': new FormControl<string | null>(null, [Validators.required])");
-            expect(result).toContain('}, { validators: [Validators.required] })');
-        });
+			const result = FormInitializerRenderer.renderControlInitializer(
+				control,
+				false,
+			);
+			expect(result).toContain("new FormGroup({");
+			// Using explicit check for the nested part format
+			expect(result).toContain(
+				"'street': new FormControl<string | null>(null, [Validators.required])",
+			);
+			expect(result).toContain("}, { validators: [Validators.required] })");
+		});
 
-        it('should render an empty form group without validators when no nested controls exist', () => {
-            const control: FormControlModel = {
-                name: 'emptyGroup',
-                propertyName: 'emptyGroup',
-                dataType: 'EmptyGroupForm',
-                defaultValue: null,
-                validationRules: [],
-                controlType: 'group',
-            };
+		it("should render an empty form group without validators when no nested controls exist", () => {
+			const control: FormControlModel = {
+				name: "emptyGroup",
+				propertyName: "emptyGroup",
+				dataType: "EmptyGroupForm",
+				defaultValue: null,
+				validationRules: [],
+				controlType: "group",
+			};
 
-            const result = FormInitializerRenderer.renderControlInitializer(control, false);
-            expect(result).toBe('new FormGroup({})');
-        });
+			const result = FormInitializerRenderer.renderControlInitializer(
+				control,
+				false,
+			);
+			expect(result).toBe("new FormGroup({})");
+		});
 
-        it('should render a simple form array using FormBuilder', () => {
-            const control: FormControlModel = {
-                name: 'tags',
-                propertyName: 'tags',
-                dataType: '(string | null)[]',
-                defaultValue: null,
-                validationRules: [{ type: 'minItems', value: 1 }],
-                controlType: 'array',
-            };
+		it("should render a simple form array using FormBuilder", () => {
+			const control: FormControlModel = {
+				name: "tags",
+				propertyName: "tags",
+				dataType: "(string | null)[]",
+				defaultValue: null,
+				validationRules: [{ type: "minItems", value: 1 }],
+				controlType: "array",
+			};
 
-            const result = FormInitializerRenderer.renderControlInitializer(control);
-            expect(result).toBe('this.fb.array([], [Validators.minLength(1)])');
-        });
+			const result = FormInitializerRenderer.renderControlInitializer(control);
+			expect(result).toBe("this.fb.array([], [Validators.minLength(1)])");
+		});
 
-        it('should render a simple form array using standard FormArray constructor when useFormBuilder is false', () => {
-            const control: FormControlModel = {
-                name: 'tags',
-                propertyName: 'tags',
-                dataType: '(string | null)[]',
-                defaultValue: null,
-                validationRules: [{ type: 'minItems', value: 1 }],
-                controlType: 'array',
-            };
+		it("should render a simple form array using standard FormArray constructor when useFormBuilder is false", () => {
+			const control: FormControlModel = {
+				name: "tags",
+				propertyName: "tags",
+				dataType: "(string | null)[]",
+				defaultValue: null,
+				validationRules: [{ type: "minItems", value: 1 }],
+				controlType: "array",
+			};
 
-            const result = FormInitializerRenderer.renderControlInitializer(control, false);
-            expect(result).toBe('new FormArray([], [Validators.minLength(1)])');
-        });
+			const result = FormInitializerRenderer.renderControlInitializer(
+				control,
+				false,
+			);
+			expect(result).toBe("new FormArray([], [Validators.minLength(1)])");
+		});
 
-        it('should render a map control using standard FormArray when useFormBuilder is false', () => {
-            const control: FormControlModel = {
-                name: 'meta',
-                propertyName: 'meta',
-                dataType: 'Record<string, string>',
-                defaultValue: null,
-                validationRules: [],
-                controlType: 'map',
-            };
+		it("should render a map control using standard FormArray when useFormBuilder is false", () => {
+			const control: FormControlModel = {
+				name: "meta",
+				propertyName: "meta",
+				dataType: "Record<string, string>",
+				defaultValue: null,
+				validationRules: [],
+				controlType: "map",
+			};
 
-            const result = FormInitializerRenderer.renderControlInitializer(control, false);
-            expect(result).toBe('new FormArray([])');
-        });
+			const result = FormInitializerRenderer.renderControlInitializer(
+				control,
+				false,
+			);
+			expect(result).toBe("new FormArray([])");
+		});
 
-        it('should render a form array item initializer using default values', () => {
-            const controls: FormControlModel[] = [
-                {
-                    name: 'name',
-                    propertyName: 'name',
-                    dataType: 'string | null',
-                    defaultValue: 'Default Item',
-                    validationRules: [],
-                    controlType: 'control',
-                },
-            ];
+		it("should render a form array item initializer using default values", () => {
+			const controls: FormControlModel[] = [
+				{
+					name: "name",
+					propertyName: "name",
+					dataType: "string | null",
+					defaultValue: "Default Item",
+					validationRules: [],
+					controlType: "control",
+				},
+			];
 
-            const result = FormInitializerRenderer.renderFormArrayItemInitializer(controls);
-            expect(result).toContain(`new FormControl<string | null>(item?.name ?? "Default Item")`);
-        });
+			const result =
+				FormInitializerRenderer.renderFormArrayItemInitializer(controls);
+			expect(result).toContain(
+				`new FormControl<string | null>(item?.name ?? "Default Item")`,
+			);
+		});
 
-        it('should render a form array item initializer falling back to null', () => {
-            const controls: FormControlModel[] = [
-                {
-                    name: 'name',
-                    propertyName: 'name',
-                    dataType: 'string | null',
-                    defaultValue: null,
-                    validationRules: [],
-                    controlType: 'control',
-                },
-            ];
+		it("should render a form array item initializer falling back to null", () => {
+			const controls: FormControlModel[] = [
+				{
+					name: "name",
+					propertyName: "name",
+					dataType: "string | null",
+					defaultValue: null,
+					validationRules: [],
+					controlType: "control",
+				},
+			];
 
-            const result = FormInitializerRenderer.renderFormArrayItemInitializer(controls);
-            expect(result).toContain(`new FormControl<string | null>(item?.name ?? null)`);
-        });
+			const result =
+				FormInitializerRenderer.renderFormArrayItemInitializer(controls);
+			expect(result).toContain(
+				`new FormControl<string | null>(item?.name ?? null)`,
+			);
+		});
 
-        it('should include validators in form array item initializers', () => {
-            const controls: FormControlModel[] = [
-                {
-                    name: 'name',
-                    propertyName: 'name',
-                    dataType: 'string | null',
-                    defaultValue: null,
-                    validationRules: [{ type: 'required' }],
-                    controlType: 'control',
-                },
-            ];
+		it("should include validators in form array item initializers", () => {
+			const controls: FormControlModel[] = [
+				{
+					name: "name",
+					propertyName: "name",
+					dataType: "string | null",
+					defaultValue: null,
+					validationRules: [{ type: "required" }],
+					controlType: "control",
+				},
+			];
 
-            const result = FormInitializerRenderer.renderFormArrayItemInitializer(controls);
-            expect(result).toContain(`new FormControl<string | null>(item?.name ?? null, [Validators.required])`);
-        });
+			const result =
+				FormInitializerRenderer.renderFormArrayItemInitializer(controls);
+			expect(result).toContain(
+				`new FormControl<string | null>(item?.name ?? null, [Validators.required])`,
+			);
+		});
 
-        it('should render map item initializer with key pattern and length validators', () => {
-            const valueControl: FormControlModel = {
-                name: 'val',
-                propertyName: 'val',
-                dataType: 'string',
-                defaultValue: null,
-                validationRules: [],
-                controlType: 'control',
-            };
-            const result = FormInitializerRenderer.renderMapItemInitializer(valueControl, '^[a-z]+$', 2, 8);
+		it("should render map item initializer with key pattern and length validators", () => {
+			const valueControl: FormControlModel = {
+				name: "val",
+				propertyName: "val",
+				dataType: "string",
+				defaultValue: null,
+				validationRules: [],
+				controlType: "control",
+			};
+			const result = FormInitializerRenderer.renderMapItemInitializer(
+				valueControl,
+				"^[a-z]+$",
+				2,
+				8,
+			);
 
-            expect(result).toContain(
-                "new FormGroup({ 'key': new FormControl<string>(item?.key ?? '', [Validators.required, Validators.pattern(/^[a-z]+$/), Validators.minLength(2), Validators.maxLength(8)])",
-            );
-        });
+			expect(result).toContain(
+				"new FormGroup({ 'key': new FormControl<string>(item?.key ?? '', [Validators.required, Validators.pattern(/^[a-z]+$/), Validators.minLength(2), Validators.maxLength(8)])",
+			);
+		});
 
-        it('should include validators for map value control', () => {
-            const valueControl: FormControlModel = {
-                name: 'val',
-                propertyName: 'val',
-                dataType: 'string',
-                defaultValue: null,
-                validationRules: [{ type: 'required' }],
-                controlType: 'control',
-            };
-            const result = FormInitializerRenderer.renderMapItemInitializer(valueControl);
-            expect(result).toContain(`new FormControl<string>(item?.value ?? null, [Validators.required])`);
-        });
+		it("should include validators for map value control", () => {
+			const valueControl: FormControlModel = {
+				name: "val",
+				propertyName: "val",
+				dataType: "string",
+				defaultValue: null,
+				validationRules: [{ type: "required" }],
+				controlType: "control",
+			};
+			const result =
+				FormInitializerRenderer.renderMapItemInitializer(valueControl);
+			expect(result).toContain(
+				`new FormControl<string>(item?.value ?? null, [Validators.required])`,
+			);
+		});
 
-        it('should render a map control with validators using FormBuilder', () => {
-            const control: FormControlModel = {
-                name: 'meta',
-                propertyName: 'meta',
-                dataType: 'Record<string, string>',
-                defaultValue: null,
-                validationRules: [{ type: 'required' }],
-                controlType: 'map',
-            };
+		it("should render a map control with validators using FormBuilder", () => {
+			const control: FormControlModel = {
+				name: "meta",
+				propertyName: "meta",
+				dataType: "Record<string, string>",
+				defaultValue: null,
+				validationRules: [{ type: "required" }],
+				controlType: "map",
+			};
 
-            const result = FormInitializerRenderer.renderControlInitializer(control);
-            expect(result).toBe('this.fb.array([], [Validators.required])');
-        });
+			const result = FormInitializerRenderer.renderControlInitializer(control);
+			expect(result).toBe("this.fb.array([], [Validators.required])");
+		});
 
-        it('should render empty form array item initializer when controls are undefined', () => {
-            const result = FormInitializerRenderer.renderFormArrayItemInitializer(
-                undefined as string | number | boolean | object | undefined | null,
-            );
-            expect(result).toMatch(/new FormGroup\(\{\s*\}\)/);
-        });
-    });
+		it("should render empty form array item initializer when controls are undefined", () => {
+			const result = FormInitializerRenderer.renderFormArrayItemInitializer(
+				undefined as string | number | boolean | object | undefined | null,
+			);
+			expect(result).toMatch(/new FormGroup\(\{\s*\}\)/);
+		});
+	});
 });

@@ -1,12 +1,14 @@
-import { MethodDeclaration } from 'ts-morph';
+import type { MethodDeclaration } from "ts-morph";
 
 /**
  * Checks for duplicate method names in an array of ts-morph MethodDeclaration objects.
  */
-export function hasDuplicateFunctionNames(methods: MethodDeclaration[]): boolean {
-    const names = methods.map(m => m.getName());
+export function hasDuplicateFunctionNames(
+	methods: MethodDeclaration[],
+): boolean {
+	const names = methods.map((m) => m.getName());
 
-    return new Set(names).size !== names.length;
+	return new Set(names).size !== names.length;
 }
 
 /**
@@ -14,37 +16,37 @@ export function hasDuplicateFunctionNames(methods: MethodDeclaration[]): boolean
  * If the key is a JSON pointer/URI, it extracts the simple name. Otherwise returns the key as is.
  */
 export function normalizeSecurityKey(key: string): string {
-    const withoutQuery = key.split('?')[0];
+	const withoutQuery = key.split("?")[0];
 
-    const [, fragment] = withoutQuery.split('#');
+	const [, fragment] = withoutQuery.split("#");
 
-    const target = fragment ?? withoutQuery;
+	const target = fragment ?? withoutQuery;
 
-    const parts = target.split('/').filter(Boolean);
+	const parts = target.split("/").filter(Boolean);
 
-    return parts.length > 0 ? parts[parts.length - 1] : key;
+	return parts.length > 0 ? parts[parts.length - 1] : key;
 }
 
-export function getBasePathTokenName(clientName = 'default'): string {
-    const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+export function getBasePathTokenName(clientName = "default"): string {
+	const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9_]/g, "_");
 
-    return `BASE_PATH_${clientSuffix}`;
+	return `BASE_PATH_${clientSuffix}`;
 }
 
-export function getClientContextTokenName(clientName = 'default'): string {
-    const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+export function getClientContextTokenName(clientName = "default"): string {
+	const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9_]/g, "_");
 
-    return `CLIENT_CONTEXT_TOKEN_${clientSuffix}`;
+	return `CLIENT_CONTEXT_TOKEN_${clientSuffix}`;
 }
 
-export function getServerVariablesTokenName(clientName = 'default'): string {
-    const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+export function getServerVariablesTokenName(clientName = "default"): string {
+	const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9_]/g, "_");
 
-    return `SERVER_VARIABLES_${clientSuffix}`;
+	return `SERVER_VARIABLES_${clientSuffix}`;
 }
 
-export function getInterceptorsTokenName(clientName = 'default'): string {
-    const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+export function getInterceptorsTokenName(clientName = "default"): string {
+	const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9_]/g, "_");
 
-    return `HTTP_INTERCEPTORS_${clientSuffix}`;
+	return `HTTP_INTERCEPTORS_${clientSuffix}`;
 }

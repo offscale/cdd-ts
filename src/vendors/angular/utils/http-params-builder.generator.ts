@@ -1,91 +1,100 @@
-import * as path from 'node:path';
-import { Project, Scope } from 'ts-morph';
-import { UTILITY_GENERATOR_HEADER_COMMENT } from '@src/core/constants.js';
+import * as path from "node:path";
+import { type Project, Scope } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 
 export class HttpParamsBuilderGenerator {
-    constructor(private project: Project) {}
+	constructor(private project: Project) {}
 
-    public generate(outputDir: string): void {
-        const utilsDir = path.join(outputDir, 'utils');
+	public generate(outputDir: string): void {
+		const utilsDir = path.join(outputDir, "utils");
 
-        const filePath = path.join(utilsDir, 'http-params-builder.ts');
+		const filePath = path.join(utilsDir, "http-params-builder.ts");
 
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
+		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
-        sourceFile.addImportDeclaration({
-            moduleSpecifier: '@angular/common/http',
-            namedImports: ['HttpParams', 'HttpParameterCodec'],
-        });
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "@angular/common/http",
+			namedImports: ["HttpParams", "HttpParameterCodec"],
+		});
 
-        sourceFile.addImportDeclaration({
-            moduleSpecifier: './content-encoder',
-            namedImports: ['ContentEncoder', 'ContentEncoderConfig'],
-        });
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "./content-encoder",
+			namedImports: ["ContentEncoder", "ContentEncoderConfig"],
+		});
 
-        sourceFile.addImportDeclaration({
-            moduleSpecifier: './parameter-serializer',
-            namedImports: ['SerializeQueryParamConfig'],
-        });
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "./parameter-serializer",
+			namedImports: ["SerializeQueryParamConfig"],
+		});
 
-        sourceFile.addClass({
-            name: 'ApiParameterCodec',
-            isExported: true,
-            implements: ['HttpParameterCodec'],
-            docs: [
-                "A custom parameter codec that disables Angular's default encoding, delegating control to the HttpParamsBuilder.",
-            ],
-            methods: [
-                {
-                    name: 'encodeKey',
-                    parameters: [{ name: 'key', type: 'string' }],
-                    returnType: 'string',
-                    statements: 'return key;',
-                },
-                {
-                    name: 'encodeValue',
-                    parameters: [{ name: 'value', type: 'string' }],
-                    returnType: 'string',
-                    statements: 'return value;',
-                },
-                {
-                    name: 'decodeKey',
-                    parameters: [{ name: 'key', type: 'string' }],
-                    returnType: 'string',
-                    statements: 'return decodeURIComponent(key);',
-                },
-                {
-                    name: 'decodeValue',
-                    parameters: [{ name: 'value', type: 'string' }],
-                    returnType: 'string',
-                    statements: 'return decodeURIComponent(value);',
-                },
-            ],
-        });
+		sourceFile.addClass({
+			name: "ApiParameterCodec",
+			isExported: true,
+			implements: ["HttpParameterCodec"],
+			docs: [
+				"A custom parameter codec that disables Angular's default encoding, delegating control to the HttpParamsBuilder.",
+			],
+			methods: [
+				{
+					name: "encodeKey",
+					parameters: [{ name: "key", type: "string" }],
+					returnType: "string",
+					statements: "return key;",
+				},
+				{
+					name: "encodeValue",
+					parameters: [{ name: "value", type: "string" }],
+					returnType: "string",
+					statements: "return value;",
+				},
+				{
+					name: "decodeKey",
+					parameters: [{ name: "key", type: "string" }],
+					returnType: "string",
+					statements: "return decodeURIComponent(key);",
+				},
+				{
+					name: "decodeValue",
+					parameters: [{ name: "value", type: "string" }],
+					returnType: "string",
+					statements: "return decodeURIComponent(value);",
+				},
+			],
+		});
 
-        const classDeclaration = sourceFile.addClass({
-            name: 'HttpParamsBuilder',
-            isExported: true,
-            docs: [
-                'Utility to serialize parameters (Path, Query, Header, Cookie) according to OpenAPI style/explode rules.',
-            ],
-        });
+		const classDeclaration = sourceFile.addClass({
+			name: "HttpParamsBuilder",
+			isExported: true,
+			docs: [
+				"Utility to serialize parameters (Path, Query, Header, Cookie) according to OpenAPI style/explode rules.",
+			],
+		});
 
-        classDeclaration.addMethod({
-            name: 'serializePathParam',
-            isStatic: true,
-            scope: Scope.Public,
-            parameters: [
-                { name: 'key', type: 'string' },
-                { name: 'value', type: 'string | number | boolean | object | undefined | null' },
-                { name: 'style', type: 'string', initializer: "'simple'" },
-                { name: 'explode', type: 'boolean', initializer: 'false' },
-                { name: 'allowReserved', type: 'boolean', initializer: 'false' },
-                { name: 'serialization', type: "'json' | undefined", hasQuestionToken: true },
-            ],
-            returnType: 'string',
-            statements: `
+		classDeclaration.addMethod({
+			name: "serializePathParam",
+			isStatic: true,
+			scope: Scope.Public,
+			parameters: [
+				{ name: "key", type: "string" },
+				{
+					name: "value",
+					type: "string | number | boolean | object | undefined | null",
+				},
+				{ name: "style", type: "string", initializer: "'simple'" },
+				{ name: "explode", type: "boolean", initializer: "false" },
+				{ name: "allowReserved", type: "boolean", initializer: "false" },
+				{
+					name: "serialization",
+					type: "'json' | undefined",
+					hasQuestionToken: true,
+				},
+			],
+			returnType: "string",
+			statements: `
         if (value === null || value === undefined) return '';
 
         if (serialization === 'json' && typeof value !== 'string') {
@@ -157,19 +166,22 @@ export class HttpParamsBuilderGenerator {
         
 
         return encode(String(value));`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'serializeQueryParam',
-            isStatic: true,
-            scope: Scope.Public,
-            parameters: [
-                { name: 'params', type: 'HttpParams' },
-                { name: 'config', type: 'SerializeQueryParamConfig' },
-                { name: 'value', type: 'string | number | boolean | object | undefined | null' },
-            ],
-            returnType: 'HttpParams',
-            statements: `
+		classDeclaration.addMethod({
+			name: "serializeQueryParam",
+			isStatic: true,
+			scope: Scope.Public,
+			parameters: [
+				{ name: "params", type: "HttpParams" },
+				{ name: "config", type: "SerializeQueryParamConfig" },
+				{
+					name: "value",
+					type: "string | number | boolean | object | undefined | null",
+				},
+			],
+			returnType: "HttpParams",
+			statements: `
         
         const name = config.name;
         
@@ -305,18 +317,25 @@ export class HttpParamsBuilderGenerator {
         
 
         return params.append(encode(name), encode(String(value)));`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'serializeUrlEncodedBodyInternal',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [
-                { name: 'body', type: 'string | number | boolean | object | undefined | null' },
-                { name: 'encodings', type: 'Record<string, SerializeQueryParamConfig>', initializer: '{}' },
-            ],
-            returnType: 'Array<{ key: string; value: string }>',
-            statements: `
+		classDeclaration.addMethod({
+			name: "serializeUrlEncodedBodyInternal",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [
+				{
+					name: "body",
+					type: "string | number | boolean | object | undefined | null",
+				},
+				{
+					name: "encodings",
+					type: "Record<string, SerializeQueryParamConfig>",
+					initializer: "{}",
+				},
+			],
+			returnType: "Array<{ key: string; value: string }>",
+			statements: `
         const result: Array<{ key: string; value: string }> = [];
         if (!body || typeof body !== 'object') return result;
         const normalizeForm = (v: string) => v.replace(/%20/g, '+');
@@ -366,20 +385,27 @@ export class HttpParamsBuilderGenerator {
             });
         });
         return result;`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'serializeHeaderParam',
-            isStatic: true,
-            scope: Scope.Public,
-            parameters: [
-                { name: 'key', type: 'string' },
-                { name: 'value', type: 'string | number | boolean | object | undefined | null' },
-                { name: 'explode', type: 'boolean', initializer: 'false' },
-                { name: 'serialization', type: "'json' | undefined", hasQuestionToken: true },
-            ],
-            returnType: 'string',
-            statements: `
+		classDeclaration.addMethod({
+			name: "serializeHeaderParam",
+			isStatic: true,
+			scope: Scope.Public,
+			parameters: [
+				{ name: "key", type: "string" },
+				{
+					name: "value",
+					type: "string | number | boolean | object | undefined | null",
+				},
+				{ name: "explode", type: "boolean", initializer: "false" },
+				{
+					name: "serialization",
+					type: "'json' | undefined",
+					hasQuestionToken: true,
+				},
+			],
+			returnType: "string",
+			statements: `
         if (value === null || value === undefined) return ''; 
         if (serialization === 'json') return JSON.stringify(value); 
 
@@ -394,23 +420,32 @@ export class HttpParamsBuilderGenerator {
             return Object.entries(value).map(([k, v]) => \`\${k},\${v}\`).join(','); 
         } 
         return String(value);`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'serializeCookieParam',
-            isStatic: true,
-            scope: Scope.Public,
-            parameters: [
-                { name: 'key', type: 'string' },
-                { name: 'value', type: 'string | number | boolean | object | undefined | null' },
-                { name: 'style', type: 'string', initializer: "'form'" },
-                { name: 'explode', type: 'boolean', initializer: 'true' },
-                { name: 'allowReserved', type: 'boolean', initializer: 'false' },
-                { name: 'serialization', type: "'json' | undefined", hasQuestionToken: true },
-            ],
-            returnType: 'string',
-            docs: ['Serializes a cookie parameter according to OAS rules (RFC 6265).'],
-            statements: `
+		classDeclaration.addMethod({
+			name: "serializeCookieParam",
+			isStatic: true,
+			scope: Scope.Public,
+			parameters: [
+				{ name: "key", type: "string" },
+				{
+					name: "value",
+					type: "string | number | boolean | object | undefined | null",
+				},
+				{ name: "style", type: "string", initializer: "'form'" },
+				{ name: "explode", type: "boolean", initializer: "true" },
+				{ name: "allowReserved", type: "boolean", initializer: "false" },
+				{
+					name: "serialization",
+					type: "'json' | undefined",
+					hasQuestionToken: true,
+				},
+			],
+			returnType: "string",
+			docs: [
+				"Serializes a cookie parameter according to OAS rules (RFC 6265).",
+			],
+			statements: `
         if (value === null || value === undefined) return ''; 
         
         if (serialization === 'json') return \`\${key}=\${encodeURIComponent(JSON.stringify(value))}\`; 
@@ -461,18 +496,25 @@ export class HttpParamsBuilderGenerator {
         const valStr = String(value); 
         
         return \`\${key}=\${encode(valStr)}\`;`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'serializeRawQuerystring',
-            isStatic: true,
-            scope: Scope.Public,
-            parameters: [
-                { name: 'value', type: 'string | number | boolean | object | undefined | null' },
-                { name: 'serialization', type: "'json' | undefined", hasQuestionToken: true },
-            ],
-            returnType: 'string',
-            statements: `
+		classDeclaration.addMethod({
+			name: "serializeRawQuerystring",
+			isStatic: true,
+			scope: Scope.Public,
+			parameters: [
+				{
+					name: "value",
+					type: "string | number | boolean | object | undefined | null",
+				},
+				{
+					name: "serialization",
+					type: "'json' | undefined",
+					hasQuestionToken: true,
+				},
+			],
+			returnType: "string",
+			statements: `
         if (value === null || value === undefined) return ''; 
         
         if (serialization === 'json') return encodeURIComponent(JSON.stringify(value)); 
@@ -480,18 +522,25 @@ export class HttpParamsBuilderGenerator {
             return Object.entries(value).map(([k, v]) => \`\${k}=\${v}\`).join('&'); 
         } 
         return String(value);`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'serializeUrlEncodedBody',
-            isStatic: true,
-            scope: Scope.Public,
-            parameters: [
-                { name: 'body', type: 'string | number | boolean | object | undefined | null' },
-                { name: 'encodings', type: 'Record<string, SerializeQueryParamConfig>', initializer: '{}' },
-            ],
-            returnType: 'HttpParams',
-            statements: `
+		classDeclaration.addMethod({
+			name: "serializeUrlEncodedBody",
+			isStatic: true,
+			scope: Scope.Public,
+			parameters: [
+				{
+					name: "body",
+					type: "string | number | boolean | object | undefined | null",
+				},
+				{
+					name: "encodings",
+					type: "Record<string, SerializeQueryParamConfig>",
+					initializer: "{}",
+				},
+			],
+			returnType: "HttpParams",
+			statements: `
             let params = new HttpParams({ encoder: new ApiParameterCodec() }); 
             if (!body || typeof body !== 'object') return params; 
 
@@ -503,19 +552,21 @@ export class HttpParamsBuilderGenerator {
                 params = this.serializeQueryParam(params, paramConfig, value); 
             }); 
             return params;`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'encodeReservedInternal',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [
-                { name: 'value', type: 'string' },
-                { name: 'allowPathDelims', type: 'boolean' },
-            ],
-            returnType: 'string',
-            docs: ['RFC 3986 encoding that preserves reserved characters and existing percent-encoded triples.'],
-            statements: `
+		classDeclaration.addMethod({
+			name: "encodeReservedInternal",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [
+				{ name: "value", type: "string" },
+				{ name: "allowPathDelims", type: "boolean" },
+			],
+			returnType: "string",
+			docs: [
+				"RFC 3986 encoding that preserves reserved characters and existing percent-encoded triples.",
+			],
+			statements: `
         const parts = value.split(/(%[0-9A-Fa-f]{2})/g);
         return parts.map(part => {
             if (/^%[0-9A-Fa-f]{2}$/.test(part)) return part;
@@ -545,30 +596,32 @@ export class HttpParamsBuilderGenerator {
             }
             return encoded;
         }).join('');`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'encodeReserved',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [{ name: 'value', type: 'string' }],
-            returnType: 'string',
-            docs: ['RFC 3986 encoding but preserves reserved characters and percent-encoded triples.'],
-            statements: `
+		classDeclaration.addMethod({
+			name: "encodeReserved",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [{ name: "value", type: "string" }],
+			returnType: "string",
+			docs: [
+				"RFC 3986 encoding but preserves reserved characters and percent-encoded triples.",
+			],
+			statements: `
         return this.encodeReservedInternal(value, true);`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'encodeReservedQuery',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [{ name: 'value', type: 'string' }],
-            returnType: 'string',
-            docs: [
-                'RFC 3986 encoding for query components that preserves reserved characters',
-                'except query delimiters (?, #, &, =, +) and preserves percent-encoded triples.',
-            ],
-            statements: `
+		classDeclaration.addMethod({
+			name: "encodeReservedQuery",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [{ name: "value", type: "string" }],
+			returnType: "string",
+			docs: [
+				"RFC 3986 encoding for query components that preserves reserved characters",
+				"except query delimiters (?, #, &, =, +) and preserves percent-encoded triples.",
+			],
+			statements: `
         const parts = value.split(/(%[0-9A-Fa-f]{2})/g);
         return parts.map(part => {
             if (/^%[0-9A-Fa-f]{2}$/.test(part)) return part;
@@ -589,19 +642,21 @@ export class HttpParamsBuilderGenerator {
                 .replace(/%3B/gi, ';');
             return encoded;
         }).join('');`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'encodeReservedPath',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [{ name: 'value', type: 'string' }],
-            returnType: 'string',
-            docs: ['RFC 3986 encoding with reserved characters preserved except "/", "?", and "#".'],
-            statements: `
+		classDeclaration.addMethod({
+			name: "encodeReservedPath",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [{ name: "value", type: "string" }],
+			returnType: "string",
+			docs: [
+				'RFC 3986 encoding with reserved characters preserved except "/", "?", and "#".',
+			],
+			statements: `
         return this.encodeReservedInternal(value, false);`,
-        });
+		});
 
-        sourceFile.formatText();
-    }
+		sourceFile.formatText();
+	}
 }

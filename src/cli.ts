@@ -1,811 +1,1031 @@
-import { Command, Option } from 'commander';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import yaml from 'js-yaml';
-import { generateFromConfigSync } from './index.js';
-import { SwaggerParser } from './openapi/parse.js';
-import { generateDocsJson as generateDocsJsonImpl } from './functions/docs_generator.js';
-import { GeneratorConfig, GeneratorConfigOptions, OpenApiValue } from './core/types/index.js';
+import { Command, Option } from "commander";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import yaml from "js-yaml";
+import { generateFromConfigSync } from "./index.js";
+import { SwaggerParser } from "./openapi/parse.js";
+import { generateDocsJson as generateDocsJsonImpl } from "./functions/docs_generator.js";
+import type {
+	GeneratorConfig,
+	GeneratorConfigOptions,
+	OpenApiValue,
+} from "./core/types/index.js";
 import {
-    applyReverseMetadata,
-    buildOpenApiSpecFromServices,
-    buildOpenApiSpecFromScan,
-    isUrl,
-    parseGeneratedMetadata,
-    parseGeneratedModels,
-    parseGeneratedServices,
-    readOpenApiSnapshot,
-    scanTypeScriptProject,
-} from './functions/utils.js';
-import * as http from 'node:http';
+	applyReverseMetadata,
+	buildOpenApiSpecFromServices,
+	buildOpenApiSpecFromScan,
+	isUrl,
+	parseGeneratedMetadata,
+	parseGeneratedModels,
+	parseGeneratedServices,
+	readOpenApiSnapshot,
+	scanTypeScriptProject,
+} from "./functions/utils.js";
+import * as http from "node:http";
 
-let packageJson = { version: '1.0.0' };
+let packageJson = { version: "1.0.0" };
 try {
-    const packageJsonPath = new URL('../package.json', import.meta.url);
-    packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8')) as { version: string };
-} catch (e) {
-    // Ignore, fallback to default
+	const packageJsonPath = new URL("../package.json", import.meta.url);
+	packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8")) as {
+		version: string;
+	};
+} catch (_e) {
+	// Ignore, fallback to default
 }
 
 /** Defines the shape of the options object from the 'from_openapi' command. */
-interface CliOptions {
-    config?: string;
-    input?: string;
-    inputDir?: string;
-    output?: string;
-    clientName?: string;
-    framework?: 'angular' | 'react' | 'vue' | 'vanilla' | 'Vanilla JS';
-    implementation?: 'angular' | 'fetch' | 'axios' | 'node';
-    dateType?: 'string' | 'Date';
-    enumStyle?: 'enum' | 'union';
-    admin?: boolean;
-    generateServices?: boolean;
-    testsForService?: boolean;
-    testsForAdmin?: boolean;
-    tests?: boolean;
-    testGen?: boolean;
-    githubActions?: boolean;
-    installablePackage?: boolean;
-    orm?: 'typeorm';
-    serverFramework?: 'express' | 'node' | 'bun' | 'deno';
-    int64Type?: 'number' | 'string' | 'bigint';
-    platform?: 'browser' | 'node';
-    customHeader?: string[];
+export interface CliOptions {
+	config?: string;
+	input?: string;
+	inputDir?: string;
+	output?: string;
+	clientName?: string;
+	framework?: "angular" | "react" | "vue" | "vanilla" | "Vanilla JS";
+	implementation?: "angular" | "fetch" | "axios" | "node";
+	dateType?: "string" | "Date";
+	enumStyle?: "enum" | "union";
+	admin?: boolean;
+	generateServices?: boolean;
+	testsForService?: boolean;
+	testsForAdmin?: boolean;
+	tests?: boolean;
+	testGen?: boolean;
+	githubActions?: boolean;
+	installablePackage?: boolean;
+	orm?: "typeorm";
+	serverFramework?: "express" | "node" | "bun" | "deno";
+	int64Type?: "number" | "string" | "bigint";
+	platform?: "browser" | "node";
+	customHeader?: string[];
 }
 
 /** Defines the shape of the options object from the 'to_openapi' command. */
-interface ToActionOptions {
-    input: string;
-    format: 'json' | 'yaml';
-    output?: string;
-    orm?: 'typeorm';
+export interface ToActionOptions {
+	input: string;
+	format: "json" | "yaml";
+	output?: string;
+	orm?: "typeorm";
 }
 
-async function loadConfigFile(configPath: string): Promise<Partial<GeneratorConfig>> {
-    const resolvedPath = path.resolve(process.cwd(), configPath);
-    if (!fs.existsSync(resolvedPath)) {
-        throw new Error(`Configuration file not found: ${resolvedPath}`);
-    }
+async function loadConfigFile(
+	configPath: string,
+): Promise<Partial<GeneratorConfig>> {
+	const resolvedPath = path.resolve(process.cwd(), configPath);
+	if (!fs.existsSync(resolvedPath)) {
+		throw new Error(`Configuration file not found: ${resolvedPath}`);
+	}
 
-    try {
-        const configModule = (await import(`file://${resolvedPath}`)) as Record<string, unknown>;
-        const config = (configModule.default || configModule.config || configModule) as GeneratorConfig;
+	try {
+		const configModule = (await import(`file://${resolvedPath}`)) as Record<
+			string,
+			unknown
+		>;
+		const config = (configModule.default ||
+			configModule.config ||
+			configModule) as GeneratorConfig;
 
-        const configDir = path.dirname(resolvedPath);
-        if (config.input && !isUrl(config.input) && !path.isAbsolute(config.input)) {
-            config.input = path.resolve(configDir, config.input);
-        }
-        if (config.output && !path.isAbsolute(config.output)) {
-            config.output = path.resolve(configDir, config.output);
-        }
-        return config;
-    } catch (error) {
-        throw new Error(`Failed to load configuration file: ${error instanceof Error ? error.message : String(error)}`);
-    }
+		const configDir = path.dirname(resolvedPath);
+		if (
+			config.input &&
+			!isUrl(config.input) &&
+			!path.isAbsolute(config.input)
+		) {
+			config.input = path.resolve(configDir, config.input);
+		}
+		if (config.output && !path.isAbsolute(config.output)) {
+			config.output = path.resolve(configDir, config.output);
+		}
+		return config;
+	} catch (error) {
+		throw new Error(
+			`Failed to load configuration file: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	}
 }
 
 /**
  * Generate code from an OpenAPI specification.
  */
 export async function generateFromOpenApi(
-    options: CliOptions,
-    targetScope?: 'to_sdk' | 'to_sdk_cli' | 'to_server' | 'to_orm',
+	options: CliOptions,
+	targetScope?: "to_sdk" | "to_sdk_cli" | "to_server" | "to_orm",
 ) {
-    const startTime = Date.now();
-    const extractArg = (flag: string) => {
-        const argv = typeof process !== 'undefined' ? process.argv : [];
-        for (let i = 0; i < argv.length; i++) {
-            if (argv[i] === flag && i + 1 < argv.length) return argv[i + 1];
-            if (argv[i].startsWith(flag + '=')) return argv[i].substring(flag.length + 1);
-        }
-        return undefined;
-    };
-    try {
-        console.log('PARSED OPTIONS:', JSON.stringify(options));
-        let baseConfig: Partial<GeneratorConfig> = {};
-        if (options.config) {
-            console.log(`📜 Loading configuration from: ${options.config}`);
-            baseConfig = await loadConfigFile(options.config);
-        }
+	const startTime = Date.now();
+	const extractArg = (flag: string) => {
+		const argv = typeof process !== "undefined" ? process.argv : [];
+		for (let i = 0; i < argv.length; i++) {
+			if (argv[i] === flag && i + 1 < argv.length) return argv[i + 1];
+			if (argv[i].startsWith(`${flag}=`))
+				return argv[i].substring(flag.length + 1);
+		}
+		return undefined;
+	};
+	try {
+		console.log("PARSED OPTIONS:", JSON.stringify(options));
+		let baseConfig: Partial<GeneratorConfig> = {};
+		if (options.config) {
+			console.log(`📜 Loading configuration from: ${options.config}`);
+			baseConfig = await loadConfigFile(options.config);
+		}
 
-        const cliOptions: Partial<GeneratorConfigOptions> = {};
-        if (options.framework) cliOptions.framework = options.framework;
-        if (options.implementation) cliOptions.implementation = options.implementation;
-        if (options.dateType) cliOptions.dateType = options.dateType;
-        if (options.enumStyle) cliOptions.enumStyle = options.enumStyle;
-        if (options.generateServices === false) cliOptions.generateServices = false;
-        if (options.admin !== undefined) cliOptions.admin = options.admin;
+		const cliOptions: Partial<GeneratorConfigOptions> = {};
+		if (options.framework) cliOptions.framework = options.framework;
+		if (options.implementation)
+			cliOptions.implementation = options.implementation;
+		if (options.dateType) cliOptions.dateType = options.dateType;
+		if (options.enumStyle) cliOptions.enumStyle = options.enumStyle;
+		if (options.generateServices === false) cliOptions.generateServices = false;
+		if (options.admin !== undefined) cliOptions.admin = options.admin;
 
-        // Commander sets boolean flags derived from --no-* to true by default.
-        // Only override if explicitly set to false, or if it was provided via config.
-        if (options.testsForService === false) cliOptions.generateServiceTests = false;
-        if (options.testsForAdmin === false) cliOptions.generateAdminTests = false;
-        if (options.installablePackage === false) cliOptions.noInstallablePackage = true;
-        if (options.githubActions === false) cliOptions.noGithubActions = true;
-        if (options.testGen === false) {
-            cliOptions.generateServiceTests = false;
-            cliOptions.generateAdminTests = false;
-            cliOptions.composableTests = false;
-        }
+		// Commander sets boolean flags derived from --no-* to true by default.
+		// Only override if explicitly set to false, or if it was provided via config.
+		if (options.testsForService === false)
+			cliOptions.generateServiceTests = false;
+		if (options.testsForAdmin === false) cliOptions.generateAdminTests = false;
+		if (options.installablePackage === false)
+			cliOptions.noInstallablePackage = true;
+		if (options.githubActions === false) cliOptions.noGithubActions = true;
+		if (options.testGen === false) {
+			cliOptions.generateServiceTests = false;
+			cliOptions.generateAdminTests = false;
+			cliOptions.composableTests = false;
+		}
 
-        if (options.tests !== undefined) {
-            const isTestsEnabled =
-                typeof options.tests === 'string'
-                    ? options.tests !== 'false' && options.tests !== '0'
-                    : !!options.tests;
-            cliOptions.composableTests = isTestsEnabled;
-            cliOptions.tests = isTestsEnabled;
-        }
-        if (options.orm) cliOptions.orm = options.orm;
-        if (options.serverFramework) cliOptions.serverFramework = options.serverFramework;
-        if (options.int64Type) cliOptions.int64Type = options.int64Type;
-        if (options.platform) cliOptions.platform = options.platform;
-        if (options.customHeader && options.customHeader.length > 0) {
-            cliOptions.customHeaders = {};
-            for (const header of options.customHeader) {
-                const [key, ...valueParts] = header.split(':');
-                if (key && valueParts.length > 0) {
-                    cliOptions.customHeaders[key.trim()] = valueParts.join(':').trim();
-                }
-            }
-        }
+		if (options.tests !== undefined) {
+			const isTestsEnabled =
+				typeof options.tests === "string"
+					? options.tests !== "false" && options.tests !== "0"
+					: !!options.tests;
+			cliOptions.composableTests = isTestsEnabled;
+			cliOptions.tests = isTestsEnabled;
+		}
+		if (options.orm) cliOptions.orm = options.orm;
+		if (options.serverFramework)
+			cliOptions.serverFramework = options.serverFramework;
+		if (options.int64Type) cliOptions.int64Type = options.int64Type;
+		if (options.platform) cliOptions.platform = options.platform;
+		if (options.customHeader && options.customHeader.length > 0) {
+			cliOptions.customHeaders = {};
+			for (const header of options.customHeader) {
+				const [key, ...valueParts] = header.split(":");
+				if (key && valueParts.length > 0) {
+					cliOptions.customHeaders[key.trim()] = valueParts.join(":").trim();
+				}
+			}
+		}
 
-        const defaults: GeneratorConfigOptions = {
-            framework: 'vanilla',
-            dateType: 'Date',
-            enumStyle: 'enum',
-            generateServices: true,
-            admin: false,
-            generateServiceTests: false,
-            generateAdminTests: false,
-        };
+		const defaults: GeneratorConfigOptions = {
+			framework: "vanilla",
+			dateType: "Date",
+			enumStyle: "enum",
+			generateServices: true,
+			admin: false,
+			generateServiceTests: false,
+			generateAdminTests: false,
+		};
 
-        const finalConfigInProgress: Partial<GeneratorConfig> = {
-            options: {
-                ...defaults,
-                ...baseConfig.options,
-                ...cliOptions,
-            },
-            compilerOptions: {
-                ...baseConfig.compilerOptions,
-            },
-        };
+		const finalConfigInProgress: Partial<GeneratorConfig> = {
+			options: {
+				...defaults,
+				...baseConfig.options,
+				...cliOptions,
+			},
+			compilerOptions: {
+				...baseConfig.compilerOptions,
+			},
+		};
 
-        const input =
-            options.input ?? options.inputDir ?? baseConfig.input ?? extractArg('-i') ?? extractArg('--input');
-        if (input) {
-            finalConfigInProgress.input = input;
-        }
+		const input =
+			options.input ??
+			options.inputDir ??
+			baseConfig.input ??
+			extractArg("-i") ??
+			extractArg("--input");
+		if (input) {
+			finalConfigInProgress.input = input;
+		}
 
-        const output = options.output ?? baseConfig.output ?? extractArg('-o') ?? extractArg('--output');
-        if (output) {
-            finalConfigInProgress.output = output;
-        }
+		const output =
+			options.output ??
+			baseConfig.output ??
+			extractArg("-o") ??
+			extractArg("--output");
+		if (output) {
+			finalConfigInProgress.output = output;
+		}
 
-        const clientName = options.clientName ?? baseConfig.clientName;
-        if (clientName) {
-            finalConfigInProgress.clientName = clientName;
-        }
+		const clientName = options.clientName ?? baseConfig.clientName;
+		if (clientName) {
+			finalConfigInProgress.clientName = clientName;
+		}
 
-        if (!finalConfigInProgress.input) {
-            throw new Error('Input path or URL is required. Provide it via --input, --input-dir or a config file.');
-        }
-        if (!finalConfigInProgress.output) {
-            finalConfigInProgress.output = process.cwd();
-            console.warn(`Output path not specified, defaulting to '${finalConfigInProgress.output}'.`);
-        }
+		if (!finalConfigInProgress.input) {
+			throw new Error(
+				"Input path or URL is required. Provide it via --input, --input-dir or a config file.",
+			);
+		}
+		if (!finalConfigInProgress.output) {
+			finalConfigInProgress.output = process.cwd();
+			console.warn(
+				`Output path not specified, defaulting to '${finalConfigInProgress.output}'.`,
+			);
+		}
 
-        if (!path.isAbsolute(finalConfigInProgress.output)) {
-            finalConfigInProgress.output = path.resolve(process.cwd(), finalConfigInProgress.output);
-        }
+		if (!path.isAbsolute(finalConfigInProgress.output)) {
+			finalConfigInProgress.output = path.resolve(
+				process.cwd(),
+				finalConfigInProgress.output,
+			);
+		}
 
-        console.log('🚀 Starting code generation with the following configuration:');
-        console.log(
-            yaml.dump(
-                { ...finalConfigInProgress },
-                {
-                    indent: 2,
-                    skipInvalid: true,
-                },
-            ),
-        );
+		console.log(
+			"🚀 Starting code generation with the following configuration:",
+		);
+		console.log(
+			yaml.dump(
+				{ ...finalConfigInProgress },
+				{
+					indent: 2,
+					skipInvalid: true,
+				},
+			),
+		);
 
-        const targetOutputRoot = finalConfigInProgress.output;
-        if (
-            !finalConfigInProgress.options?.noInstallablePackage &&
-            (targetScope === 'to_sdk' || targetScope === 'to_server')
-        ) {
-            finalConfigInProgress.output = path.join(targetOutputRoot, 'src');
-        }
+		const targetOutputRoot = finalConfigInProgress.output;
+		if (
+			!finalConfigInProgress.options?.noInstallablePackage &&
+			(targetScope === "to_sdk" || targetScope === "to_server")
+		) {
+			finalConfigInProgress.output = path.join(targetOutputRoot, "src");
+		}
 
-        generateFromConfigSync(finalConfigInProgress as GeneratorConfig, undefined, undefined, targetScope);
-        // Handling specific scopes
-        if (targetScope === 'to_sdk_cli') {
-            console.log('Target scope SDK CLI executed.');
-        } else if (targetScope === 'to_server') {
-            console.log('Target scope Server executed.');
-        } else if (targetScope === 'to_sdk') {
-            console.log('Target scope SDK executed.');
-        }
+		generateFromConfigSync(
+			finalConfigInProgress as GeneratorConfig,
+			undefined,
+			undefined,
+			targetScope,
+		);
+		// Handling specific scopes
+		if (targetScope === "to_sdk_cli") {
+			console.log("Target scope SDK CLI executed.");
+		} else if (targetScope === "to_server") {
+			console.log("Target scope Server executed.");
+		} else if (targetScope === "to_sdk") {
+			console.log("Target scope SDK executed.");
+		}
 
-        if (!finalConfigInProgress.options?.noInstallablePackage) {
-            console.log('Generating package scaffolding...');
-            fs.writeFileSync(
-                path.join(targetOutputRoot, 'package.json'),
-                JSON.stringify(
-                    {
-                        name: 'generated-client',
-                        version: '1.0.0',
-                        main: 'dist/index.js',
-                        types: 'dist/index.d.ts',
-                        scripts: { build: 'tsc' },
-                    },
-                    null,
-                    2,
-                ),
-            );
-            fs.writeFileSync(
-                path.join(targetOutputRoot, 'tsconfig.json'),
-                JSON.stringify(
-                    {
-                        compilerOptions: {
-                            target: 'ES2022',
-                            module: 'CommonJS',
-                            outDir: 'dist',
-                            rootDir: 'src',
-                            declaration: true,
-                        },
-                    },
-                    null,
-                    2,
-                ),
-            );
-        }
+		if (!finalConfigInProgress.options?.noInstallablePackage) {
+			console.log("Generating package scaffolding...");
+			fs.writeFileSync(
+				path.join(targetOutputRoot, "package.json"),
+				JSON.stringify(
+					{
+						name: "generated-client",
+						version: "1.0.0",
+						main: "dist/index.js",
+						types: "dist/index.d.ts",
+						scripts: { build: "tsc" },
+						dependencies:
+							targetScope === "to_sdk_cli" || targetScope === "to_server"
+								? {
+										"@modelcontextprotocol/sdk": "^1.29.0",
+										zod: "^3.23.0",
+										commander: "^12.1.0",
+										express: "^4.21.2",
+										"@types/express": "^5.0.0",
+									}
+								: {},
+					},
+					null,
+					2,
+				),
+			);
+			fs.writeFileSync(
+				path.join(targetOutputRoot, "tsconfig.json"),
+				JSON.stringify(
+					{
+						compilerOptions: {
+							target: "ES2022",
+							module: "CommonJS",
+							outDir: "dist",
+							rootDir: "src",
+							declaration: true,
+						},
+					},
+					null,
+					2,
+				),
+			);
+		}
 
-        if (!finalConfigInProgress.options?.noGithubActions) {
-            console.log('Generating GitHub actions...');
-            const ghDir = path.join(targetOutputRoot, '.github', 'workflows');
-            fs.mkdirSync(ghDir, { recursive: true });
-            fs.writeFileSync(
-                path.join(ghDir, 'ci.yml'),
-                'name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n      - run: npm install\n      - run: npm run build\n      - run: npm test\n',
-            );
-        }
+		if (!finalConfigInProgress.options?.noGithubActions) {
+			console.log("Generating GitHub actions...");
+			const ghDir = path.join(targetOutputRoot, ".github", "workflows");
+			fs.mkdirSync(ghDir, { recursive: true });
+			fs.writeFileSync(
+				path.join(ghDir, "ci.yml"),
+				"name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n      - run: npm install\n      - run: npm run build\n      - run: npm test\n",
+			);
+		}
 
-        return 'Success';
-    } catch (error: unknown) {
-        console.error('runGeneration error:', error);
-        if (error instanceof Error && error.stack) console.error(error.stack);
-        throw error;
-    } finally {
-        const duration = (Date.now() - startTime) / 1000;
-        console.log(`\n⏱️  Duration: ${duration.toFixed(2)} seconds`);
+		return "Success";
+	} catch (error: unknown) {
+		console.error("runGeneration error:", error);
+		if (error instanceof Error && error.stack) console.error(error.stack);
+		throw error;
+	} finally {
+		const duration = (Date.now() - startTime) / 1000;
+		console.log(`\n⏱️  Duration: ${duration.toFixed(2)} seconds`);
 
-        // Print the fs dump here before Javy potentially traps
-        if (typeof globalThis !== 'undefined' && (globalThis as { __FsData?: unknown }).__FsData) {
-            console.log('JAVY_FS_DUMP:' + JSON.stringify((globalThis as { __FsData?: unknown }).__FsData));
-        }
-    }
+		// Print the fs dump here before Javy potentially traps
+		if (
+			typeof globalThis !== "undefined" &&
+			(globalThis as { __FsData?: unknown }).__FsData
+		) {
+			console.log(
+				"JAVY_FS_DUMP:" +
+					JSON.stringify((globalThis as { __FsData?: unknown }).__FsData),
+			);
+		}
+	}
 }
 
 /**
  * Generate an OpenAPI specification from source code.
  */
-export async function generateToOpenApi(options: ToActionOptions, returnObject = false): Promise<void | OpenApiValue> {
-    let spec: OpenApiValue;
-    try {
-        ({ spec } = readOpenApiSnapshot(
-            options.input,
-            fs as OpenApiValue as Parameters<typeof readOpenApiSnapshot>[1],
-        ));
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        const shouldFallback =
-            message.includes('No OpenAPI snapshot found') || message.includes('Unsupported snapshot file extension');
-        if (!shouldFallback) {
-            throw error;
-        }
+export async function generateToOpenApi(
+	options: ToActionOptions,
+	returnObject = false,
+): Promise<undefined | OpenApiValue> {
+	let spec: OpenApiValue;
+	try {
+		({ spec } = readOpenApiSnapshot(
+			options.input,
+			fs as OpenApiValue as Parameters<typeof readOpenApiSnapshot>[1],
+		));
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		const shouldFallback =
+			message.includes("No OpenAPI snapshot found") ||
+			message.includes("Unsupported snapshot file extension");
+		if (!shouldFallback) {
+			throw error;
+		}
 
-        console.warn(`⚠️  ${message}`);
-        console.warn('ℹ️  Falling back to parsing generated service files.');
+		console.warn(`⚠️  ${message}`);
+		console.warn("ℹ️  Falling back to parsing generated service files.");
 
-        try {
-            const services = parseGeneratedServices(
-                options.input,
-                fs as OpenApiValue as Parameters<typeof parseGeneratedServices>[1],
-            );
-            let schemas: Record<string, OpenApiValue> | undefined;
+		try {
+			const services = parseGeneratedServices(
+				options.input,
+				fs as OpenApiValue as Parameters<typeof parseGeneratedServices>[1],
+			);
+			let schemas: Record<string, OpenApiValue> | undefined;
 
-            try {
-                schemas = parseGeneratedModels(
-                    options.input,
-                    fs as OpenApiValue as Parameters<typeof parseGeneratedModels>[1],
-                );
-            } catch (modelError) {
-                const modelMessage = modelError instanceof Error ? modelError.message : String(modelError);
-                console.warn(`⚠️  ${modelMessage}`);
-                console.warn('ℹ️  Continuing without reconstructed component schemas.');
-            }
+			try {
+				schemas = parseGeneratedModels(
+					options.input,
+					fs as OpenApiValue as Parameters<typeof parseGeneratedModels>[1],
+				);
+			} catch (modelError) {
+				const modelMessage =
+					modelError instanceof Error ? modelError.message : String(modelError);
+				console.warn(`⚠️  ${modelMessage}`);
+				console.warn("ℹ️  Continuing without reconstructed component schemas.");
+			}
 
-            if (options.orm === 'typeorm') {
-                console.log(`📡 Parsing TypeORM entities from ${options.input}`);
-                const { Project } = await import('ts-morph');
-                const { TypeOrmParser } = await import('./vendors/typeorm/parse.js');
-                const project = new Project();
-                project.addSourceFilesAtPaths(`${options.input}/**/*.ts`);
-                const ormSchemas = new TypeOrmParser().parse(project);
-                schemas = { ...schemas, ...ormSchemas };
-            }
+			if (options.orm === "typeorm") {
+				console.log(`📡 Parsing TypeORM entities from ${options.input}`);
+				const { Project } = await import("ts-morph");
+				const { TypeOrmParser } = await import("./vendors/typeorm/parse.js");
+				const project = new Project();
+				project.addSourceFilesAtPaths(`${options.input}/**/*.ts`);
+				const ormSchemas = new TypeOrmParser().parse(project);
+				schemas = { ...schemas, ...ormSchemas };
+			}
 
-            spec = buildOpenApiSpecFromServices(
-                services,
-                {},
-                schemas as OpenApiValue as Parameters<typeof buildOpenApiSpecFromServices>[2],
-            );
+			spec = buildOpenApiSpecFromServices(
+				services,
+				{},
+				schemas as OpenApiValue as Parameters<
+					typeof buildOpenApiSpecFromServices
+				>[2],
+			);
 
-            try {
-                const metadata = parseGeneratedMetadata(
-                    options.input,
-                    fs as OpenApiValue as Parameters<typeof parseGeneratedMetadata>[1],
-                );
-                spec = applyReverseMetadata(
-                    spec as OpenApiValue as Parameters<typeof applyReverseMetadata>[0],
-                    metadata,
-                );
-            } catch (metaError) {
-                const metaMessage = metaError instanceof Error ? metaError.message : String(metaError);
-                console.warn(`⚠️  ${metaMessage}`);
-                console.warn('ℹ️  Continuing without reconstructed metadata.');
-            }
-        } catch (serviceError) {
-            const serviceMessage = serviceError instanceof Error ? serviceError.message : String(serviceError);
-            console.warn(`⚠️  ${serviceMessage}`);
-            console.warn('ℹ️  Falling back to AST-based TypeScript scanning.');
-            const scan = scanTypeScriptProject(
-                options.input,
-                fs as OpenApiValue as Parameters<typeof scanTypeScriptProject>[1],
-            );
-            spec = buildOpenApiSpecFromScan(scan);
-            try {
-                const metadata = parseGeneratedMetadata(
-                    options.input,
-                    fs as OpenApiValue as Parameters<typeof parseGeneratedMetadata>[1],
-                );
-                spec = applyReverseMetadata(
-                    spec as OpenApiValue as Parameters<typeof applyReverseMetadata>[0],
-                    metadata,
-                );
-            } catch (metaError) {
-                const metaMessage = metaError instanceof Error ? metaError.message : String(metaError);
-                console.warn(`⚠️  ${metaMessage}`);
-                console.warn('ℹ️  Continuing without reconstructed metadata.');
-            }
-        }
-    }
+			try {
+				const metadata = parseGeneratedMetadata(
+					options.input,
+					fs as OpenApiValue as Parameters<typeof parseGeneratedMetadata>[1],
+				);
+				spec = applyReverseMetadata(
+					spec as OpenApiValue as Parameters<typeof applyReverseMetadata>[0],
+					metadata,
+				);
+			} catch (metaError) {
+				const metaMessage =
+					metaError instanceof Error ? metaError.message : String(metaError);
+				console.warn(`⚠️  ${metaMessage}`);
+				console.warn("ℹ️  Continuing without reconstructed metadata.");
+			}
+		} catch (serviceError) {
+			const serviceMessage =
+				serviceError instanceof Error
+					? serviceError.message
+					: String(serviceError);
+			console.warn(`⚠️  ${serviceMessage}`);
+			console.warn("ℹ️  Falling back to AST-based TypeScript scanning.");
+			const scan = scanTypeScriptProject(
+				options.input,
+				fs as OpenApiValue as Parameters<typeof scanTypeScriptProject>[1],
+			);
+			spec = buildOpenApiSpecFromScan(scan);
+			try {
+				const metadata = parseGeneratedMetadata(
+					options.input,
+					fs as OpenApiValue as Parameters<typeof parseGeneratedMetadata>[1],
+				);
+				spec = applyReverseMetadata(
+					spec as OpenApiValue as Parameters<typeof applyReverseMetadata>[0],
+					metadata,
+				);
+			} catch (metaError) {
+				const metaMessage =
+					metaError instanceof Error ? metaError.message : String(metaError);
+				console.warn(`⚠️  ${metaMessage}`);
+				console.warn("ℹ️  Continuing without reconstructed metadata.");
+			}
+		}
+	}
 
-    if (returnObject) {
-        return spec;
-    }
+	if (returnObject) {
+		return spec;
+	}
 
-    const output = options.format === 'json' ? JSON.stringify(spec, null, 2) : yaml.dump(spec, { noRefs: true });
+	const output =
+		options.format === "json"
+			? JSON.stringify(spec, null, 2)
+			: yaml.dump(spec, { noRefs: true });
 
-    if (options.output) {
-        fs.writeFileSync(options.output, output.trimEnd() + '\n', 'utf8');
-    } else {
-        process.stdout.write(output.trimEnd() + '\n');
-    }
-    return undefined;
+	if (options.output) {
+		fs.writeFileSync(options.output, `${output.trimEnd()}\n`, "utf8");
+	} else {
+		process.stdout.write(`${output.trimEnd()}\n`);
+	}
+	return undefined;
 }
 interface DocsJsonOptions {
-    input: string;
-    output?: string;
-    imports: boolean;
-    wrapping: boolean;
-    framework?: 'angular' | 'react' | 'vue' | 'vanilla' | 'Vanilla JS';
+	input: string;
+	output?: string;
+	imports: boolean;
+	wrapping: boolean;
+	framework?: "angular" | "react" | "vue" | "vanilla" | "Vanilla JS";
 }
 
 /**
  * Generate JSON documentation with code snippets for an OpenAPI specification.
  */
-export async function generateDocsJson(options: DocsJsonOptions, returnObject = false): Promise<void | OpenApiValue> {
-    const config = {
-        input: options.input,
-        output: './generated',
-        options: {
-            framework: options.framework || 'vanilla',
-            dateType: 'Date',
-            enumStyle: 'enum',
-        },
-        compilerOptions: {},
-    } as GeneratorConfig;
-    const parser = await SwaggerParser.create(options.input, config);
-    const docsOptions = {
-        imports: options.imports !== false,
-        wrapping: options.wrapping !== false,
-    };
-    const docs = generateDocsJsonImpl(parser, config, docsOptions);
+export async function generateDocsJson(
+	options: DocsJsonOptions,
+	returnObject = false,
+): Promise<undefined | OpenApiValue> {
+	const config = {
+		input: options.input,
+		output: "./generated",
+		options: {
+			framework: options.framework || "vanilla",
+			dateType: "Date",
+			enumStyle: "enum",
+		},
+		compilerOptions: {},
+	} as GeneratorConfig;
+	const parser = await SwaggerParser.create(options.input, config);
+	const docsOptions = {
+		imports: options.imports !== false,
+		wrapping: options.wrapping !== false,
+	};
+	const docs = generateDocsJsonImpl(parser, config, docsOptions);
 
-    if (returnObject) {
-        return docs;
-    }
+	if (returnObject) {
+		return docs;
+	}
 
-    const outputStr = JSON.stringify(docs, null, 2) + '\n';
-    if (options.output) {
-        fs.writeFileSync(options.output, outputStr, 'utf8');
-    } else {
-        process.stdout.write(outputStr);
-    }
-    return undefined;
+	const outputStr = `${JSON.stringify(docs, null, 2)}\n`;
+	if (options.output) {
+		fs.writeFileSync(options.output, outputStr, "utf8");
+	} else {
+		process.stdout.write(outputStr);
+	}
+	return undefined;
 }
 
 const program = new Command();
-program.name('cdd-ts').description('OpenAPI ↔ TypeScript').version(packageJson.version);
+program
+	.name("cdd-ts")
+	.description("OpenAPI ↔ TypeScript")
+	.version(packageJson.version);
 
-const fromOpenApi = program.command('from_openapi').description('Generate code from an OpenAPI specification.');
+const fromOpenApi = program
+	.command("from_openapi")
+	.description("Generate code from an OpenAPI specification.");
 
 const addCommonOptions = (cmd: Command) => {
-    return cmd
-        .addOption(new Option('-c, --config <path>', 'Path to a configuration file').env('CDD_CONFIG'))
-        .addOption(new Option('-i, --input <path>', 'Path or URL to the OpenAPI specification.'))
-        .addOption(new Option('--input-dir <path>', 'Path to directory of OpenAPI specs').env('CDD_INPUT_DIR'))
-        .addOption(new Option('-o, --output <path>', 'Output directory for generated files').env('CDD_OUTPUT'))
-        .addOption(new Option('--dateType <type>', 'Date type to use').choices(['string', 'Date']).env('CDD_DATE_TYPE'))
-        .addOption(
-            new Option('--enumStyle <style>', 'Style for enums').choices(['enum', 'union']).env('CDD_ENUM_STYLE'),
-        )
-        .addOption(
-            new Option('--int64Type <type>', 'Type for int64 formatting')
-                .choices(['number', 'string', 'bigint'])
-                .env('CDD_INT64_TYPE'),
-        )
-        .addOption(new Option('--no-test-gen', 'Disable all test generation').env('CDD_NO_TEST_GEN'))
-        .addOption(new Option('--tests', 'Generate integration tests and mocks.').env('CDD_TESTS'))
-        .addOption(
-            new Option('--no-github-actions', 'Do not generate GitHub Actions scaffolding.').env(
-                'CDD_NO_GITHUB_ACTIONS',
-            ),
-        )
-        .addOption(
-            new Option('--no-installable-package', 'Do not generate installable package scaffolding.').env(
-                'CDD_NO_INSTALLABLE_PACKAGE',
-            ),
-        );
+	return cmd
+		.addOption(
+			new Option("-c, --config <path>", "Path to a configuration file").env(
+				"CDD_CONFIG",
+			),
+		)
+		.addOption(
+			new Option(
+				"-i, --input <path>",
+				"Path or URL to the OpenAPI specification.",
+			),
+		)
+		.addOption(
+			new Option(
+				"--input-dir <path>",
+				"Path to directory of OpenAPI specs",
+			).env("CDD_INPUT_DIR"),
+		)
+		.addOption(
+			new Option(
+				"-o, --output <path>",
+				"Output directory for generated files",
+			).env("CDD_OUTPUT"),
+		)
+		.addOption(
+			new Option("--dateType <type>", "Date type to use")
+				.choices(["string", "Date"])
+				.env("CDD_DATE_TYPE"),
+		)
+		.addOption(
+			new Option("--enumStyle <style>", "Style for enums")
+				.choices(["enum", "union"])
+				.env("CDD_ENUM_STYLE"),
+		)
+		.addOption(
+			new Option("--int64Type <type>", "Type for int64 formatting")
+				.choices(["number", "string", "bigint"])
+				.env("CDD_INT64_TYPE"),
+		)
+		.addOption(
+			new Option("--no-test-gen", "Disable all test generation").env(
+				"CDD_NO_TEST_GEN",
+			),
+		)
+		.addOption(
+			new Option("--tests", "Generate integration tests and mocks.").env(
+				"CDD_TESTS",
+			),
+		)
+		.addOption(
+			new Option(
+				"--no-github-actions",
+				"Do not generate GitHub Actions scaffolding.",
+			).env("CDD_NO_GITHUB_ACTIONS"),
+		)
+		.addOption(
+			new Option(
+				"--no-installable-package",
+				"Do not generate installable package scaffolding.",
+			).env("CDD_NO_INSTALLABLE_PACKAGE"),
+		);
 };
 
 const addSdkOptions = (cmd: Command) => {
-    return cmd
-        .addOption(new Option('--clientName <name>', 'Name for the generated client').env('CDD_CLIENT_NAME'))
-        .addOption(
-            new Option('--framework <framework>', 'Target framework')
-                .choices(['angular', 'react', 'vue', 'vanilla', 'Vanilla JS'])
-                .env('CDD_FRAMEWORK'),
-        )
-        .addOption(
-            new Option('--implementation <implementation>', 'HTTP implementation')
-                .choices(['angular', 'fetch', 'axios', 'node'])
-                .env('CDD_IMPLEMENTATION'),
-        )
-        .addOption(
-            new Option('--platform <platform>', 'Target runtime platform')
-                .choices(['browser', 'node'])
-                .env('CDD_PLATFORM'),
-        )
-        .addOption(
-            new Option(
-                '--customHeader <header...>',
-                'Custom headers to add to generated requests, formatted as Key:Value',
-            ),
-        )
-        .addOption(new Option('--admin', 'Generate an auto-admin UI').env('CDD_ADMIN'))
-        .addOption(
-            new Option('--no-generate-services', 'Disable generation of services').env('CDD_NO_GENERATE_SERVICES'),
-        )
-        .addOption(
-            new Option('--no-tests-for-service', 'Disable generation of tests for services').env(
-                'CDD_NO_TESTS_FOR_SERVICE',
-            ),
-        )
-        .addOption(
-            new Option('--no-tests-for-admin', 'Disable generation of tests for the admin UI').env(
-                'CDD_NO_TESTS_FOR_ADMIN',
-            ),
-        );
+	return cmd
+		.addOption(
+			new Option("--clientName <name>", "Name for the generated client").env(
+				"CDD_CLIENT_NAME",
+			),
+		)
+		.addOption(
+			new Option("--framework <framework>", "Target framework")
+				.choices(["angular", "react", "vue", "vanilla", "Vanilla JS"])
+				.env("CDD_FRAMEWORK"),
+		)
+		.addOption(
+			new Option("--implementation <implementation>", "HTTP implementation")
+				.choices(["angular", "fetch", "axios", "node"])
+				.env("CDD_IMPLEMENTATION"),
+		)
+		.addOption(
+			new Option("--platform <platform>", "Target runtime platform")
+				.choices(["browser", "node"])
+				.env("CDD_PLATFORM"),
+		)
+		.addOption(
+			new Option(
+				"--customHeader <header...>",
+				"Custom headers to add to generated requests, formatted as Key:Value",
+			),
+		)
+		.addOption(
+			new Option("--admin", "Generate an auto-admin UI").env("CDD_ADMIN"),
+		)
+		.addOption(
+			new Option(
+				"--no-generate-services",
+				"Disable generation of services",
+			).env("CDD_NO_GENERATE_SERVICES"),
+		)
+		.addOption(
+			new Option(
+				"--no-tests-for-service",
+				"Disable generation of tests for services",
+			).env("CDD_NO_TESTS_FOR_SERVICE"),
+		)
+		.addOption(
+			new Option(
+				"--no-tests-for-admin",
+				"Disable generation of tests for the admin UI",
+			).env("CDD_NO_TESTS_FOR_ADMIN"),
+		);
 };
 
 const addServerOptions = (cmd: Command) => {
-    return cmd
-        .addOption(
-            new Option('--serverFramework <type>', 'Target server framework')
-                .choices(['express', 'node', 'bun', 'deno'])
-                .env('CDD_SERVER_FRAMEWORK'),
-        )
-        .addOption(
-            new Option('--orm <type>', 'Target ORM implementation for models').choices(['typeorm']).env('CDD_ORM'),
-        );
+	return cmd
+		.addOption(
+			new Option("--serverFramework <type>", "Target server framework")
+				.choices(["express", "node", "bun", "deno"])
+				.env("CDD_SERVER_FRAMEWORK"),
+		)
+		.addOption(
+			new Option("--orm <type>", "Target ORM implementation for models")
+				.choices(["typeorm"])
+				.env("CDD_ORM"),
+		);
 };
 
 const addOrmOptions = (cmd: Command) => {
-    return cmd.addOption(
-        new Option('--orm <type>', 'Target ORM implementation for models').choices(['typeorm']).env('CDD_ORM'),
-    );
+	return cmd.addOption(
+		new Option("--orm <type>", "Target ORM implementation for models")
+			.choices(["typeorm"])
+			.env("CDD_ORM"),
+	);
 };
 
-addSdkOptions(addCommonOptions(fromOpenApi.command('to_sdk_cli')))
-    .description('Generate Client SDK CLI from an OpenAPI specification')
-    .action(async (options: CliOptions, cmd: Command) => {
-        console.log('CMD.OPTS() IS:', JSON.stringify(cmd.opts()));
-        console.log('PARENT OPTS() IS:', JSON.stringify(cmd.parent?.opts()));
-        console.log('PROGRAM OPTS() IS:', JSON.stringify(cmd.parent?.parent?.opts()));
-        console.log('OPTIONS IS:', JSON.stringify(options));
-        try {
-            await generateFromOpenApi(options, 'to_sdk_cli');
-        } catch (err: unknown) {
-            console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
-            if (err instanceof Error && err.stack) console.error(err.stack);
-            process.exit(1);
-        }
-    });
+addSdkOptions(addCommonOptions(fromOpenApi.command("to_sdk_cli")))
+	.description("Generate Client SDK CLI from an OpenAPI specification")
+	.action(async (options: CliOptions, cmd: Command) => {
+		console.log("CMD.OPTS() IS:", JSON.stringify(cmd.opts()));
+		console.log("PARENT OPTS() IS:", JSON.stringify(cmd.parent?.opts()));
+		console.log(
+			"PROGRAM OPTS() IS:",
+			JSON.stringify(cmd.parent?.parent?.opts()),
+		);
+		console.log("OPTIONS IS:", JSON.stringify(options));
+		try {
+			await generateFromOpenApi(options, "to_sdk_cli");
+		} catch (err: unknown) {
+			console.error(
+				"❌ Generation failed:",
+				err instanceof Error ? err.message : String(err),
+			);
+			if (err instanceof Error && err.stack) console.error(err.stack);
+			process.exit(1);
+		}
+	});
 
-addSdkOptions(addCommonOptions(fromOpenApi.command('to_sdk')))
-    .description('Generate Client SDK from an OpenAPI specification')
-    .action(async (options: CliOptions) => {
-        try {
-            await generateFromOpenApi(options, 'to_sdk');
-        } catch (err: unknown) {
-            console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
-            if (err instanceof Error && err.stack) console.error(err.stack);
-            process.exit(1);
-        }
-    });
+addSdkOptions(addCommonOptions(fromOpenApi.command("to_sdk")))
+	.description("Generate Client SDK from an OpenAPI specification")
+	.action(async (options: CliOptions) => {
+		try {
+			await generateFromOpenApi(options, "to_sdk");
+		} catch (err: unknown) {
+			console.error(
+				"❌ Generation failed:",
+				err instanceof Error ? err.message : String(err),
+			);
+			if (err instanceof Error && err.stack) console.error(err.stack);
+			process.exit(1);
+		}
+	});
 
-addServerOptions(addCommonOptions(fromOpenApi.command('to_server')))
-    .description('Generate Server from an OpenAPI specification')
-    .action(async (options: CliOptions) => {
-        try {
-            await generateFromOpenApi(options, 'to_server');
-        } catch (err: unknown) {
-            console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
-            if (err instanceof Error && err.stack) console.error(err.stack);
-            process.exit(1);
-        }
-    });
+addServerOptions(addCommonOptions(fromOpenApi.command("to_server")))
+	.description("Generate Server from an OpenAPI specification")
+	.action(async (options: CliOptions) => {
+		try {
+			await generateFromOpenApi(options, "to_server");
+		} catch (err: unknown) {
+			console.error(
+				"❌ Generation failed:",
+				err instanceof Error ? err.message : String(err),
+			);
+			if (err instanceof Error && err.stack) console.error(err.stack);
+			process.exit(1);
+		}
+	});
 
-addOrmOptions(addCommonOptions(fromOpenApi.command('to_orm')))
-    .description('Generate ORM entities/models from an OpenAPI specification')
-    .action(async (options: CliOptions) => {
-        if (!options.orm) {
-            console.error('❌ You must specify an ORM implementation using the --orm flag (e.g., --orm typeorm)');
-            process.exit(1);
-        }
-        try {
-            await generateFromOpenApi(options, 'to_orm');
-        } catch (err: unknown) {
-            console.error('❌ Generation failed:', err instanceof Error ? err.message : String(err));
-            if (err instanceof Error && err.stack) console.error(err.stack);
-            process.exit(1);
-        }
-    });
-
-program
-    .command('to_openapi')
-    .description('Generate an OpenAPI specification from source code.')
-    .addOption(
-        new Option('-i, --input <path>', 'Path to a snapshot file or a generated output directory')
-            .env('CDD_INPUT')
-            .makeOptionMandatory(),
-    )
-    .addOption(new Option('-o, --output <path>', 'Output file').env('CDD_OUTPUT'))
-    .addOption(
-        new Option('--format <format>', 'Output format for the OpenAPI spec')
-            .choices(['json', 'yaml'])
-            .default('yaml')
-            .env('CDD_FORMAT'),
-    )
-    .addOption(
-        new Option('--orm <type>', 'Target ORM implementation to parse entities from')
-            .choices(['typeorm'])
-            .env('CDD_ORM'),
-    )
-    .action(async (options: ToActionOptions) => {
-        try {
-            await generateToOpenApi(options);
-        } catch (error) {
-            console.error(
-                '❌ to_openapi failed:',
-                error instanceof Error ? error.message : `Unknown error: ${String(error)}`,
-            );
-            process.exit(1);
-        }
-    });
+addOrmOptions(addCommonOptions(fromOpenApi.command("to_orm")))
+	.description("Generate ORM entities/models from an OpenAPI specification")
+	.action(async (options: CliOptions) => {
+		if (!options.orm) {
+			console.error(
+				"❌ You must specify an ORM implementation using the --orm flag (e.g., --orm typeorm)",
+			);
+			process.exit(1);
+		}
+		try {
+			await generateFromOpenApi(options, "to_orm");
+		} catch (err: unknown) {
+			console.error(
+				"❌ Generation failed:",
+				err instanceof Error ? err.message : String(err),
+			);
+			if (err instanceof Error && err.stack) console.error(err.stack);
+			process.exit(1);
+		}
+	});
 
 program
-    .command('to_docs_json')
-    .description('Generate JSON documentation with code snippets for an OpenAPI specification.')
-    .addOption(
-        new Option('-i, --input <path>', 'Path or URL to the OpenAPI specification.')
-            .env('CDD_INPUT')
-            .makeOptionMandatory(),
-    )
-    .addOption(new Option('-o, --output <path>', 'Path to write the JSON to').env('CDD_OUTPUT'))
-    .addOption(
-        new Option('--framework <framework>', 'Target framework')
-            .choices(['angular', 'react', 'vue', 'vanilla', 'Vanilla JS'])
-            .default('vanilla')
-            .env('CDD_FRAMEWORK'),
-    )
-    .addOption(new Option('--no-imports', 'Omit the imports field.').env('CDD_NO_IMPORTS'))
-    .addOption(new Option('--no-wrapping', 'Omit the wrapper fields.').env('CDD_NO_WRAPPING'))
-    .action(async (options: DocsJsonOptions) => {
-        try {
-            await generateDocsJson(options);
-        } catch (error) {
-            console.error(
-                '❌ to_docs_json failed:',
-                error instanceof Error ? error.message : `Unknown error: ${String(error)}`,
-            );
-            process.exit(1);
-        }
-    });
+	.command("to_openapi")
+	.description("Generate an OpenAPI specification from source code.")
+	.addOption(
+		new Option(
+			"-i, --input <path>",
+			"Path to a snapshot file or a generated output directory",
+		)
+			.env("CDD_INPUT")
+			.makeOptionMandatory(),
+	)
+	.addOption(new Option("-o, --output <path>", "Output file").env("CDD_OUTPUT"))
+	.addOption(
+		new Option("--format <format>", "Output format for the OpenAPI spec")
+			.choices(["json", "yaml"])
+			.default("yaml")
+			.env("CDD_FORMAT"),
+	)
+	.addOption(
+		new Option(
+			"--orm <type>",
+			"Target ORM implementation to parse entities from",
+		)
+			.choices(["typeorm"])
+			.env("CDD_ORM"),
+	)
+	.action(async (options: ToActionOptions) => {
+		try {
+			await generateToOpenApi(options);
+		} catch (error) {
+			console.error(
+				"❌ to_openapi failed:",
+				error instanceof Error
+					? error.message
+					: `Unknown error: ${String(error)}`,
+			);
+			process.exit(1);
+		}
+	});
 
 program
-    .command('serve_json_rpc')
-    .description('Expose CLI interface as a JSON-RPC server.')
-    .addOption(new Option('-p, --port <port>', 'Port to listen on').default('8080').env('CDD_PORT'))
-    .addOption(new Option('-l, --listen <address>', 'Address to listen on').default('127.0.0.1').env('CDD_LISTEN'))
-    .action(serveJsonRpc);
+	.command("to_docs_json")
+	.description(
+		"Generate JSON documentation with code snippets for an OpenAPI specification.",
+	)
+	.addOption(
+		new Option(
+			"-i, --input <path>",
+			"Path or URL to the OpenAPI specification.",
+		)
+			.env("CDD_INPUT")
+			.makeOptionMandatory(),
+	)
+	.addOption(
+		new Option("-o, --output <path>", "Path to write the JSON to").env(
+			"CDD_OUTPUT",
+		),
+	)
+	.addOption(
+		new Option("--framework <framework>", "Target framework")
+			.choices(["angular", "react", "vue", "vanilla", "Vanilla JS"])
+			.default("vanilla")
+			.env("CDD_FRAMEWORK"),
+	)
+	.addOption(
+		new Option("--no-imports", "Omit the imports field.").env("CDD_NO_IMPORTS"),
+	)
+	.addOption(
+		new Option("--no-wrapping", "Omit the wrapper fields.").env(
+			"CDD_NO_WRAPPING",
+		),
+	)
+	.action(async (options: DocsJsonOptions) => {
+		try {
+			await generateDocsJson(options);
+		} catch (error) {
+			console.error(
+				"❌ to_docs_json failed:",
+				error instanceof Error
+					? error.message
+					: `Unknown error: ${String(error)}`,
+			);
+			process.exit(1);
+		}
+	});
+
+program
+	.command("serve_json_rpc")
+	.description("Expose CLI interface as a JSON-RPC server.")
+	.addOption(
+		new Option("-p, --port <port>", "Port to listen on")
+			.default("8080")
+			.env("CDD_PORT"),
+	)
+	.addOption(
+		new Option("-l, --listen <address>", "Address to listen on")
+			.default("127.0.0.1")
+			.env("CDD_LISTEN"),
+	)
+	.action(serveJsonRpc);
+
+program
+	.command("mcp")
+	.description("Start Model Context Protocol (MCP) server over stdio")
+	.action(async () => {
+		const { serveMcp } = await import("./mcp_server.js");
+		await serveMcp();
+	});
 /**
  * Expose CLI interface as a JSON-RPC server.
  */
 export async function serveJsonRpc(options: { port: string; listen: string }) {
-    const port = parseInt(options.port, 10);
-    const host = options.listen;
-    const server = http.createServer(async (req, res) => {
-        if (req.method === 'POST') {
-            let body = '';
-            req.on('data', (chunk: Buffer) => {
-                body += chunk.toString();
-            });
-            req.on('end', async () => {
-                let parsed: { method?: string; params?: Record<string, OpenApiValue>; id?: string | number | null };
-                try {
-                    parsed = JSON.parse(body);
-                } catch (err) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(
-                        JSON.stringify({
-                            jsonrpc: '2.0',
-                            error: { code: -32700, message: 'Parse error' },
-                            id: null,
-                        }),
-                    );
-                    return;
-                }
-                try {
-                    let result: OpenApiValue;
-                    switch (parsed.method) {
-                        case 'from_openapi_to_sdk_cli':
-                            result = await generateFromOpenApi(
-                                parsed.params as OpenApiValue as CliOptions,
-                                'to_sdk_cli',
-                            );
-                            break;
-                        case 'from_openapi_to_sdk':
-                            result = await generateFromOpenApi(parsed.params as OpenApiValue as CliOptions, 'to_sdk');
-                            break;
-                        case 'from_openapi_to_server':
-                            result = await generateFromOpenApi(
-                                parsed.params as OpenApiValue as CliOptions,
-                                'to_server',
-                            );
-                            break;
-                        case 'to_openapi':
-                            result = (await generateToOpenApi(
-                                parsed.params as OpenApiValue as ToActionOptions,
-                                true,
-                            )) as OpenApiValue;
-                            break;
-                        case 'to_docs_json':
-                            result = (await generateDocsJson(
-                                parsed.params as OpenApiValue as DocsJsonOptions,
-                                true,
-                            )) as OpenApiValue;
-                            break;
-                        case 'version':
-                            result = packageJson.version;
-                            break;
-                        default:
-                            throw { code: -32601, message: 'Method not found' };
-                    }
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ jsonrpc: '2.0', result, id: parsed.id }));
-                } catch (err) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(
-                        JSON.stringify({
-                            jsonrpc: '2.0',
-                            error: (err as { code?: number }).code
-                                ? err
-                                : { code: -32000, message: (err as { message?: string }).message || String(err) },
-                            id: parsed.id,
-                        }),
-                    );
-                }
-            });
-        } else {
-            res.writeHead(405);
-            res.end();
-        }
-    });
-    server.listen(port, host, () => {
-        console.log(`JSON-RPC server running at http://${host}:${port}/`);
-    });
+	const port = parseInt(options.port, 10);
+	const host = options.listen;
+	const server = http.createServer(async (req, res) => {
+		if (req.method === "POST") {
+			let body = "";
+			req.on("data", (chunk: Buffer) => {
+				body += chunk.toString();
+			});
+			req.on("end", async () => {
+				let parsed: {
+					method?: string;
+					params?: Record<string, OpenApiValue>;
+					id?: string | number | null;
+				};
+				try {
+					parsed = JSON.parse(body);
+				} catch (_err) {
+					res.writeHead(400, { "Content-Type": "application/json" });
+					res.end(
+						JSON.stringify({
+							jsonrpc: "2.0",
+							error: { code: -32700, message: "Parse error" },
+							id: null,
+						}),
+					);
+					return;
+				}
+				try {
+					let result: OpenApiValue;
+					switch (parsed.method) {
+						case "from_openapi_to_sdk_cli":
+							result = await generateFromOpenApi(
+								parsed.params as OpenApiValue as CliOptions,
+								"to_sdk_cli",
+							);
+							break;
+						case "from_openapi_to_sdk":
+							result = await generateFromOpenApi(
+								parsed.params as OpenApiValue as CliOptions,
+								"to_sdk",
+							);
+							break;
+						case "from_openapi_to_server":
+							result = await generateFromOpenApi(
+								parsed.params as OpenApiValue as CliOptions,
+								"to_server",
+							);
+							break;
+						case "to_openapi":
+							result = (await generateToOpenApi(
+								parsed.params as OpenApiValue as ToActionOptions,
+								true,
+							)) as OpenApiValue;
+							break;
+						case "to_docs_json":
+							result = (await generateDocsJson(
+								parsed.params as OpenApiValue as DocsJsonOptions,
+								true,
+							)) as OpenApiValue;
+							break;
+						case "version":
+							result = packageJson.version;
+							break;
+						default:
+							throw { code: -32601, message: "Method not found" };
+					}
+					res.writeHead(200, { "Content-Type": "application/json" });
+					res.end(JSON.stringify({ jsonrpc: "2.0", result, id: parsed.id }));
+				} catch (err) {
+					res.writeHead(400, { "Content-Type": "application/json" });
+					res.end(
+						JSON.stringify({
+							jsonrpc: "2.0",
+							error: (err as { code?: number }).code
+								? err
+								: {
+										code: -32000,
+										message:
+											(err as { message?: string }).message || String(err),
+									},
+							id: parsed.id,
+						}),
+					);
+				}
+			});
+		} else {
+			res.writeHead(405);
+			res.end();
+		}
+	});
+	server.listen(port, host, () => {
+		console.log(`JSON-RPC server running at http://${host}:${port}/`);
+	});
 }
 
 export async function run(argv: string[]) {
-    await program.parseAsync(argv);
+	await program.parseAsync(argv);
 }
 
 // Check if run directly
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath } from "node:url";
 export function checkIsMain(argv1: string, metaUrl?: string): boolean {
-    if (!metaUrl) return false;
-    try {
-        return argv1 === fileURLToPath(metaUrl);
-    } catch {
-        return false;
-    }
+	if (!metaUrl) return false;
+	try {
+		return argv1 === fileURLToPath(metaUrl);
+	} catch {
+		return false;
+	}
 }
 
-const isMain = typeof process !== 'undefined' && process.argv ? checkIsMain(process.argv[1], import.meta.url) : false;
+const isMain =
+	typeof process !== "undefined" && process.argv
+		? checkIsMain(process.argv[1], import.meta.url)
+		: false;
 if (isMain) {
-    run(process.argv).catch((err: unknown) => {
-        console.error(err);
-        process.exit(1);
-    });
-} else if (typeof globalThis !== 'undefined' && (globalThis as { __FsData?: unknown }).__FsData) {
-    const Javy = (globalThis as { Javy?: { IO?: { readSync: (fd: number, buffer: Uint8Array) => number } } }).Javy;
-    if (Javy && Javy.IO) {
-        const buffer = new Uint8Array(20 * 1024 * 1024); // 20MB buffer
-        let offset = 0;
-        try {
-            while (offset < buffer.length) {
-                const chunk = buffer.subarray(offset);
-                const bytesRead = Javy.IO.readSync(0, chunk);
-                if (!bytesRead || bytesRead === 0) break;
-                offset += bytesRead;
-            }
-        } catch (e) {
-            // Ignore EOF errors
-        }
+	run(process.argv).catch((err: unknown) => {
+		console.error(err);
+		process.exit(1);
+	});
+} else if (
+	typeof globalThis !== "undefined" &&
+	(globalThis as { __FsData?: unknown }).__FsData
+) {
+	const Javy = (
+		globalThis as {
+			Javy?: { IO?: { readSync: (fd: number, buffer: Uint8Array) => number } };
+		}
+	).Javy;
+	if (Javy?.IO) {
+		const buffer = new Uint8Array(20 * 1024 * 1024); // 20MB buffer
+		let offset = 0;
+		try {
+			while (offset < buffer.length) {
+				const chunk = buffer.subarray(offset);
+				const bytesRead = Javy.IO.readSync(0, chunk);
+				if (!bytesRead || bytesRead === 0) break;
+				offset += bytesRead;
+			}
+		} catch (_e) {
+			// Ignore EOF errors
+		}
 
-        const stdinContent = new TextDecoder().decode(buffer.subarray(0, offset));
+		const stdinContent = new TextDecoder().decode(buffer.subarray(0, offset));
 
-        if (stdinContent) {
-            try {
-                const parsed = JSON.parse(stdinContent) as { input?: unknown; args?: string[] };
-                if (parsed.input) {
-                    (globalThis as { __SPEC_JSON?: unknown }).__SPEC_JSON = parsed.input;
-                }
-                if (parsed.args) {
-                    const actualArgs = parsed.args[0] === 'cdd-ts' ? parsed.args.slice(1) : parsed.args;
-                    const runArgs = ['node', 'cdd-ts', ...actualArgs];
-                    if (typeof process !== 'undefined') process.argv = runArgs;
-                    console.log('RUNNING WITH ARGS:', JSON.stringify(runArgs));
-                    run(runArgs)
-                        .then(() => {
-                            console.log(
-                                'JAVY_FS_DUMP:' +
-                                    JSON.stringify((globalThis as { __FsData?: unknown }).__FsData) +
-                                    '\n',
-                            );
-                        })
-                        .catch((err: unknown) => {
-                            console.error(err);
-                        });
-                }
-            } catch (e: unknown) {
-                console.error('Failed to parse stdin:', e);
-            }
-        }
-    }
+		if (stdinContent) {
+			try {
+				const parsed = JSON.parse(stdinContent) as {
+					input?: unknown;
+					args?: string[];
+				};
+				if (parsed.input) {
+					(globalThis as { __SPEC_JSON?: unknown }).__SPEC_JSON = parsed.input;
+				}
+				if (parsed.args) {
+					const actualArgs =
+						parsed.args[0] === "cdd-ts" ? parsed.args.slice(1) : parsed.args;
+					const runArgs = ["node", "cdd-ts", ...actualArgs];
+					if (typeof process !== "undefined") process.argv = runArgs;
+					console.log("RUNNING WITH ARGS:", JSON.stringify(runArgs));
+					run(runArgs)
+						.then(() => {
+							console.log(
+								"JAVY_FS_DUMP:" +
+									JSON.stringify(
+										(globalThis as { __FsData?: unknown }).__FsData,
+									) +
+									"\n",
+							);
+						})
+						.catch((err: unknown) => {
+							console.error(err);
+						});
+				}
+			} catch (e: unknown) {
+				console.error("Failed to parse stdin:", e);
+			}
+		}
+	}
 }

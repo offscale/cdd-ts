@@ -1,105 +1,118 @@
 // @ts-nocheck
-import ts from 'typescript';
+import ts from "typescript";
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-import { Project } from 'ts-morph';
+import type { Project } from "ts-morph";
 
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { ServerGenerator } from '@src/routes/emit_server.js';
-import { SwaggerSpec } from '@src/core/types/index.js';
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { ServerGenerator } from "@src/routes/emit_server.js";
+import type { SwaggerSpec } from "@src/core/types/index.js";
 
-import { createTestProject } from '../shared/helpers.js';
+import { createTestProject } from "../shared/helpers.js";
 
 const multiEnvSpec: SwaggerSpec = {
-    openapi: '3.2.0',
-    info: { title: 'Server Test', version: '1.0' },
-    paths: {},
-    servers: [
-        { url: 'https://api.production.com/v1', description: 'Production', name: 'prod' },
-        { url: 'https://api.staging.com/v1', description: 'Staging', name: 'staging' },
-    ],
+	openapi: "3.2.0",
+	info: { title: "Server Test", version: "1.0" },
+	paths: {},
+	servers: [
+		{
+			url: "https://api.production.com/v1",
+			description: "Production",
+			name: "prod",
+		},
+		{
+			url: "https://api.staging.com/v1",
+			description: "Staging",
+			name: "staging",
+		},
+	],
 } as string | number | boolean | object | undefined | null;
 
-describe('Emitter: ServerGenerator', () => {
-    const runGenerator = (spec: SwaggerSpec) => {
-        const project = createTestProject();
-        const parser = new SwaggerParser(spec, { options: {} } as
-            | string
-            | number
-            | boolean
-            | object
-            | undefined
-            | null);
-        new ServerGenerator(parser, project).generate('/out');
-        return project;
-    };
+describe("Emitter: ServerGenerator", () => {
+	const runGenerator = (spec: SwaggerSpec) => {
+		const project = createTestProject();
+		const parser = new SwaggerParser(spec, { options: {} } as
+			| string
+			| number
+			| boolean
+			| object
+			| undefined
+			| null);
+		new ServerGenerator(parser, project).generate("/out");
+		return project;
+	};
 
-    const compileGeneratedFile = (project: Project) => {
-        const sourceFile = project.getSourceFileOrThrow('/out/servers.ts');
-        const code = sourceFile.getText();
-        const jsCode = ts.transpile(code, { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS });
+	const compileGeneratedFile = (project: Project) => {
+		const sourceFile = project.getSourceFileOrThrow("/out/servers.ts");
+		const code = sourceFile.getText();
+		const jsCode = ts.transpile(code, {
+			target: ts.ScriptTarget.ES5,
+			module: ts.ModuleKind.CommonJS,
+		});
 
-        const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
+		const moduleHelper = {
+			exports: {} as string | number | boolean | object | undefined | null,
+		};
 
-        new Function('exports', jsCode)(moduleHelper.exports);
+		new Function("exports", jsCode)(moduleHelper.exports);
 
-        return moduleHelper.exports;
-    };
+		return moduleHelper.exports;
+	};
 
-    it('should generate registry for static servers with name (OAS 3.2)', () => {
-        const project = runGenerator(multiEnvSpec);
+	it("should generate registry for static servers with name (OAS 3.2)", () => {
+		const project = runGenerator(multiEnvSpec);
 
-        const { API_SERVERS } = compileGeneratedFile(project);
+		const { API_SERVERS } = compileGeneratedFile(project);
 
-        expect(API_SERVERS).toHaveLength(2);
+		expect(API_SERVERS).toHaveLength(2);
 
-        expect(API_SERVERS[0].url).toBe('https://api.production.com/v1');
+		expect(API_SERVERS[0].url).toBe("https://api.production.com/v1");
 
-        expect(API_SERVERS[0].name).toBe('prod');
+		expect(API_SERVERS[0].name).toBe("prod");
 
-        expect(API_SERVERS[1].description).toBe('Staging');
+		expect(API_SERVERS[1].description).toBe("Staging");
 
-        expect(API_SERVERS[1].name).toBe('staging');
-    });
+		expect(API_SERVERS[1].name).toBe("staging");
+	});
 
-    it('should generate default server for OAS specs with empty servers array', () => {
-        const spec: SwaggerSpec = {
-            openapi: '3.0.0',
-            info: { title: 'E', version: '1' },
-            paths: {},
-            servers: [],
-        } as string | number | boolean | object | undefined | null;
-        const project = runGenerator(spec);
-        const sourceFile = project.getSourceFileOrThrow('/out/servers.ts');
+	it("should generate default server for OAS specs with empty servers array", () => {
+		const spec: SwaggerSpec = {
+			openapi: "3.0.0",
+			info: { title: "E", version: "1" },
+			paths: {},
+			servers: [],
+		} as string | number | boolean | object | undefined | null;
+		const project = runGenerator(spec);
+		const sourceFile = project.getSourceFileOrThrow("/out/servers.ts");
 
-        expect(sourceFile.getText()).toContain('export const API_SERVERS');
-        expect(sourceFile.getText()).toContain('"url": "/"');
-    });
+		expect(sourceFile.getText()).toContain("export const API_SERVERS");
+		expect(sourceFile.getText()).toContain('"url": "/"');
+	});
 
-    it('should not generate servers for Swagger 2.0 specs without servers', () => {
-        const spec: SwaggerSpec = {
-            swagger: '2.0',
-            info: { title: 'E', version: '1' },
-            paths: {},
-        } as string | number | boolean | object | undefined | null;
-        const project = runGenerator(spec);
-        const sourceFile = project.getSourceFileOrThrow('/out/servers.ts');
-        expect(sourceFile.getText()).toMatch(/export\s*{\s*};/);
-    });
+	it("should not generate servers for Swagger 2.0 specs without servers", () => {
+		const spec: SwaggerSpec = {
+			swagger: "2.0",
+			info: { title: "E", version: "1" },
+			paths: {},
+		} as string | number | boolean | object | undefined | null;
+		const project = runGenerator(spec);
+		const sourceFile = project.getSourceFileOrThrow("/out/servers.ts");
+		expect(sourceFile.getText()).toMatch(/export\s*{\s*};/);
+	});
 
-    it('should handle undefined parser.servers array (defensive fallback coverage)', () => {
-        const project = createTestProject();
-        // Mock parser structure to force undefined servers, hitting the fallback branch `|| []`
-        const parser = {
-            servers: undefined,
-        } as string | number | boolean | object | undefined | null as SwaggerParser;
+	it("should handle undefined parser.servers array (defensive fallback coverage)", () => {
+		const project = createTestProject();
+		// Mock parser structure to force undefined servers, hitting the fallback branch `|| []`
+		const parser = {
+			servers: undefined,
+		} as string | number | boolean | object | undefined | null as SwaggerParser;
 
-        new ServerGenerator(parser, project).generate('/out');
+		new ServerGenerator(parser, project).generate("/out");
 
-        const sourceFile = project.getSourceFileOrThrow('/out/servers.ts');
-        expect(sourceFile.getText()).toMatch(/export\s*{\s*};/);
-        const vars = sourceFile.getVariableStatements();
-        expect(vars.length).toBe(0);
-    });
+		const sourceFile = project.getSourceFileOrThrow("/out/servers.ts");
+		expect(sourceFile.getText()).toMatch(/export\s*{\s*};/);
+		const vars = sourceFile.getVariableStatements();
+		expect(vars.length).toBe(0);
+	});
 });

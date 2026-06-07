@@ -1,5 +1,5 @@
 export function generateFormComponentScss(): string {
-    return `
+	return `
 .admin-form-container { padding: 24px; }
 .admin-form-fields { display: flex; flex-direction: column; }
 .admin-form-actions { margin-top: 24px; display: flex; justify-content: flex-end; gap: 8px; }

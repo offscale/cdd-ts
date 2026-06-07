@@ -1,25 +1,25 @@
-import { Project } from 'ts-morph';
-import * as path from 'node:path';
-import { Resource } from '@src/core/types/index.js';
-import { pascalCase, camelCase } from '@src/functions/utils.js';
+import type { Project } from "ts-morph";
+import * as path from "node:path";
+import type { Resource } from "@src/core/types/index.js";
+import { pascalCase, camelCase } from "@src/functions/utils.js";
 
 export class FormComponentGenerator {
-    constructor(private project: Project) {}
+	constructor(private project: Project) {}
 
-    public generate(resource: Resource, adminDir: string): void {
-        const componentName = `${pascalCase(resource.name)}Form`;
-        const fileName = `${componentName}.vue`;
-        const filePath = path.posix.join(adminDir, resource.name, fileName);
+	public generate(resource: Resource, adminDir: string): void {
+		const componentName = `${pascalCase(resource.name)}Form`;
+		const fileName = `${componentName}.vue`;
+		const filePath = path.posix.join(adminDir, resource.name, fileName);
 
-        const createOp = resource.operations.find(op => op.action === 'create');
-        const updateOp = resource.operations.find(op => op.action === 'update');
-        const getOp = resource.operations.find(op => op.action === 'getById');
+		const createOp = resource.operations.find((op) => op.action === "create");
+		const updateOp = resource.operations.find((op) => op.action === "update");
+		const getOp = resource.operations.find((op) => op.action === "getById");
 
-        const serviceName = pascalCase(resource.name);
+		const serviceName = pascalCase(resource.name);
 
-        const properties = resource.formProperties;
+		const properties = resource.formProperties;
 
-        const content = `<template>
+		const content = `<template>
     <div class="${resource.name}-form">
         <h1>{{ isEditMode ? t('${resource.name}.form.editTitle', 'Edit ${pascalCase(resource.name)}') : t('${resource.name}.form.createTitle', 'Create ${pascalCase(resource.name)}') }}</h1>
 
@@ -33,14 +33,15 @@ export class FormComponentGenerator {
 
         <form v-else @submit.prevent="handleSubmit" class="form-container">
 ${properties
-    .map(prop => {
-        let inputType = 'text';
-        const schemaType = (prop.schema as { type?: string })?.type;
-        if (schemaType === 'number' || schemaType === 'integer') inputType = 'number';
-        if (schemaType === 'boolean') inputType = 'checkbox';
+	.map((prop) => {
+		let inputType = "text";
+		const schemaType = (prop.schema as { type?: string })?.type;
+		if (schemaType === "number" || schemaType === "integer")
+			inputType = "number";
+		if (schemaType === "boolean") inputType = "checkbox";
 
-        if (inputType === 'checkbox') {
-            return `            <div class="form-group checkbox-group">
+		if (inputType === "checkbox") {
+			return `            <div class="form-group checkbox-group">
                 <input 
                     type="checkbox" 
                     :id="'${prop.name}'" 
@@ -48,9 +49,9 @@ ${properties
                 />
                 <label :for="'${prop.name}'">{{ t('${resource.name}.fields.${prop.name}', '${pascalCase(prop.name)}') }}</label>
             </div>`;
-        }
+		}
 
-        return `            <div class="form-group">
+		return `            <div class="form-group">
                 <label :for="'${prop.name}'">{{ t('${resource.name}.fields.${prop.name}', '${pascalCase(prop.name)}') }}</label>
                 <input 
                     type="${inputType}" 
@@ -59,8 +60,8 @@ ${properties
                     class="form-control"
                 />
             </div>`;
-    })
-    .join('\n')}
+	})
+	.join("\n")}
 
             <div class="form-actions">
                 <button type="button" @click="goBack" class="btn btn-secondary">
@@ -90,13 +91,14 @@ const itemId = computed(() => route.params.id as string);
 
 const formData = ref<Record<string, any>>({
 ${properties
-    .map(prop => {
-        const schemaType = (prop.schema as { type?: string })?.type;
-        if (schemaType === 'boolean') return `    ${prop.name}: false,`;
-        if (schemaType === 'number' || schemaType === 'integer') return `    ${prop.name}: 0,`;
-        return `    ${prop.name}: '',`;
-    })
-    .join('\n')}
+	.map((prop) => {
+		const schemaType = (prop.schema as { type?: string })?.type;
+		if (schemaType === "boolean") return `    ${prop.name}: false,`;
+		if (schemaType === "number" || schemaType === "integer")
+			return `    ${prop.name}: 0,`;
+		return `    ${prop.name}: '',`;
+	})
+	.join("\n")}
 });
 
 const loading = ref(false);
@@ -114,8 +116,8 @@ const loadData = async () => {
     error.value = null;
     try {
         ${
-            getOp
-                ? `const response = await ${camelCase(resource.name)}Service.${getOp.methodName}(itemId.value);
+					getOp
+						? `const response = await ${camelCase(resource.name)}Service.${getOp.methodName}(itemId.value);
         const data = response.data || response;
         if (data) {
             Object.keys(formData.value).forEach(key => {
@@ -124,8 +126,8 @@ const loadData = async () => {
                 }
             });
         }`
-                : `// TODO: Implement fetch logic`
-        }
+						: `// TODO: Implement fetch logic`
+				}
     } catch (err: any) {
         error.value = err.message || t('common.errorFetching', 'Error fetching data');
     } finally {
@@ -216,6 +218,6 @@ const goBack = () => {
 </style>
 `;
 
-        this.project.createSourceFile(filePath, content, { overwrite: true });
-    }
+		this.project.createSourceFile(filePath, content, { overwrite: true });
+	}
 }

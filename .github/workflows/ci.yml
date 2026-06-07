@@ -54,7 +54,7 @@ jobs:
               run: npm ci
 
             - name: Check Code Formatting
-              run: npx prettier --check 'src/**/*.ts' 'tests/**/*.ts'
+              run: npx @biomejs/biome format .
 
             - name: Run Lint
               run: npm run lint

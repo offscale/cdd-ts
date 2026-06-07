@@ -1,79 +1,87 @@
 // @ts-nocheck
-import ts from 'typescript';
+import ts from "typescript";
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-import { Project } from 'ts-morph';
+import type { Project } from "ts-morph";
 
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { ResponsesGenerator } from '@src/openapi/emit_responses.js';
-import { GeneratorConfig, SwaggerSpec } from '@src/core/types/index.js';
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { ResponsesGenerator } from "@src/openapi/emit_responses.js";
+import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 
-import { createTestProject } from '../shared/helpers.js';
+import { createTestProject } from "../shared/helpers.js";
 
 const specWithResponses: SwaggerSpec = {
-    openapi: '3.2.0',
-    info: { title: 'Responses', version: '1.0' },
-    paths: {},
-    components: {
-        responses: {
-            NotFound: {
-                description: 'Not found',
-                content: {
-                    'application/json': {
-                        schema: { type: 'object', properties: { message: { type: 'string' } } },
-                    },
-                },
-            },
-        },
-    },
+	openapi: "3.2.0",
+	info: { title: "Responses", version: "1.0" },
+	paths: {},
+	components: {
+		responses: {
+			NotFound: {
+				description: "Not found",
+				content: {
+					"application/json": {
+						schema: {
+							type: "object",
+							properties: { message: { type: "string" } },
+						},
+					},
+				},
+			},
+		},
+	},
 };
 
-describe('Emitter: ResponsesGenerator', () => {
-    const runGenerator = (spec: SwaggerSpec) => {
-        const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out', options: {} } as
-            | string
-            | number
-            | boolean
-            | object
-            | undefined
-            | null;
-        const parser = new SwaggerParser(spec, config);
-        new ResponsesGenerator(parser, project).generate('/out');
-        return project;
-    };
+describe("Emitter: ResponsesGenerator", () => {
+	const runGenerator = (spec: SwaggerSpec) => {
+		const project = createTestProject();
+		const config: GeneratorConfig = { output: "/out", options: {} } as
+			| string
+			| number
+			| boolean
+			| object
+			| undefined
+			| null;
+		const parser = new SwaggerParser(spec, config);
+		new ResponsesGenerator(parser, project).generate("/out");
+		return project;
+	};
 
-    const compileGeneratedFile = (project: Project) => {
-        const sourceFile = project.getSourceFileOrThrow('/out/responses.ts');
-        const code = sourceFile.getText();
-        const jsCode = ts.transpile(code, { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS });
+	const compileGeneratedFile = (project: Project) => {
+		const sourceFile = project.getSourceFileOrThrow("/out/responses.ts");
+		const code = sourceFile.getText();
+		const jsCode = ts.transpile(code, {
+			target: ts.ScriptTarget.ES5,
+			module: ts.ModuleKind.CommonJS,
+		});
 
-        const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
+		const moduleHelper = {
+			exports: {} as string | number | boolean | object | undefined | null,
+		};
 
-        new Function('exports', jsCode)(moduleHelper.exports);
+		new Function("exports", jsCode)(moduleHelper.exports);
 
-        return moduleHelper.exports;
-    };
+		return moduleHelper.exports;
+	};
 
-    it('should generate registry map for responses', () => {
-        const project = runGenerator(specWithResponses);
+	it("should generate registry map for responses", () => {
+		const project = runGenerator(specWithResponses);
 
-        const { API_RESPONSES } = compileGeneratedFile(project);
+		const { API_RESPONSES } = compileGeneratedFile(project);
 
-        expect(API_RESPONSES.NotFound).toBeDefined();
+		expect(API_RESPONSES.NotFound).toBeDefined();
 
-        expect(API_RESPONSES.NotFound.description).toBe('Not found');
-    });
+		expect(API_RESPONSES.NotFound.description).toBe("Not found");
+	});
 
-    it('should handle specs without responses', () => {
-        const emptySpec: SwaggerSpec = {
-            openapi: '3.2.0',
-            info: { title: 'Empty', version: '1.0' },
-            paths: {},
-        };
-        const project = runGenerator(emptySpec);
-        const sourceFile = project.getSourceFileOrThrow('/out/responses.ts');
-        expect(sourceFile.getText()).toContain('export { };');
-    });
+	it("should handle specs without responses", () => {
+		const emptySpec: SwaggerSpec = {
+			openapi: "3.2.0",
+			info: { title: "Empty", version: "1.0" },
+			paths: {},
+		};
+		const project = runGenerator(emptySpec);
+		const sourceFile = project.getSourceFileOrThrow("/out/responses.ts");
+		expect(sourceFile.getText()).toContain("export { };");
+	});
 });

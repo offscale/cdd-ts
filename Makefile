@@ -47,8 +47,9 @@ run: build
 
 build_wasm: build
 	@echo "Building WASM (browser bundle)..."
-	npx esbuild dist/cli.js --bundle --platform=browser --target=es2020 --format=esm --inject:./wasm-stubs/inject.js --alias:path=path-browserify --alias:node:path=path-browserify --alias:url=./wasm-stubs/node-url.js --alias:node:url=./wasm-stubs/node-url.js --alias:fs=./wasm-stubs/node-fs.js --alias:node:fs=./wasm-stubs/node-fs.js --alias:fs/promises=./wasm-stubs/node-fs-promises.js --alias:node:fs/promises=./wasm-stubs/node-fs-promises.js --alias:os=./wasm-stubs/node-os.js --alias:node:os=./wasm-stubs/node-os.js --alias:http=./wasm-stubs/node-http.js --alias:node:http=./wasm-stubs/node-http.js --alias:events=./wasm-stubs/node-events.js --alias:node:events=./wasm-stubs/node-events.js --alias:child_process=./wasm-stubs/node-child_process.js --alias:node:child_process=./wasm-stubs/node-child_process.js --alias:process=./wasm-stubs/node-process.js --alias:node:process=./wasm-stubs/node-process.js --outfile=bin/cdd-ts.js --define:__filename="\"/cli.js\"" --define:__dirname="\"\/\""
+	npx rolldown -c rolldown.config.js
 	@echo "Compiling to WebAssembly..."
+	node scripts/fix-bundle.cjs
 	npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts-javy.wasm
 
 build_docker:
@@ -67,8 +68,9 @@ build_with_ts_go:
 	@echo "Building cdd-ts using local ts-morph fork..."
 	npm run build
 	@echo "Building WASM (browser bundle)..."
-	npx esbuild dist/cli.js --bundle --platform=browser --target=es2020 --format=esm --inject:./wasm-stubs/inject.js --alias:path=path-browserify --alias:node:path=path-browserify --alias:url=./wasm-stubs/node-url.js --alias:node:url=./wasm-stubs/node-url.js --alias:fs=./wasm-stubs/node-fs.js --alias:node:fs=./wasm-stubs/node-fs.js --alias:fs/promises=./wasm-stubs/node-fs-promises.js --alias:node:fs/promises=./wasm-stubs/node-fs-promises.js --alias:os=./wasm-stubs/node-os.js --alias:node:os=./wasm-stubs/node-os.js --alias:http=./wasm-stubs/node-http.js --alias:node:http=./wasm-stubs/node-http.js --alias:events=./wasm-stubs/node-events.js --alias:node:events=./wasm-stubs/node-events.js --alias:child_process=./wasm-stubs/node-child_process.js --alias:node:child_process=./wasm-stubs/node-child_process.js --alias:process=./wasm-stubs/node-process.js --alias:node:process=./wasm-stubs/node-process.js --outfile=bin/cdd-ts.js --define:__filename="\"/cli.js\"" --define:__dirname="\"\/\""
+	npx rolldown -c rolldown.config.js
 	@echo "Compiling to WebAssembly via javy..."
+	node scripts/fix-bundle.cjs
 	npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts-go-javy.wasm
 	@echo "build_with_ts_go completed successfully!"
 

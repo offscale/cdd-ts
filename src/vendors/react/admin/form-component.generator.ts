@@ -1,56 +1,64 @@
-import { Project, SourceFile } from 'ts-morph';
-import * as path from 'node:path';
-import { Resource } from '@src/core/types/index.js';
-import { pascalCase } from '@src/functions/utils.js';
-import { ReactElementBuilder } from './html-element.builder.js';
-import { FormRenderer } from './form.renderer.js';
+import type { Project, SourceFile } from "ts-morph";
+import * as path from "node:path";
+import type { Resource } from "@src/core/types/index.js";
+import { pascalCase } from "@src/functions/utils.js";
+import { ReactElementBuilder } from "./html-element.builder.js";
+import { FormRenderer } from "./form.renderer.js";
 
 /**
  * Generates a React form component for a resource.
  */
 export class FormComponentGenerator {
-    /**
-     * Initializes a new FormComponentGenerator.
-     * @param project The ts-morph project for writing source files.
-     */
-    constructor(private project: Project) {}
+	/**
+	 * Initializes a new FormComponentGenerator.
+	 * @param project The ts-morph project for writing source files.
+	 */
+	constructor(private project: Project) {}
 
-    /**
-     * Generates a React form component (TSX) for the specified resource.
-     * @param resource The resource to generate a form component for.
-     * @param adminDir The directory to save the output files.
-     * @returns The generated source file.
-     */
-    public generate(resource: Resource, adminDir: string): SourceFile {
-        const filePath = path.join(adminDir, `${resource.name}`, `${resource.name}-form.tsx`);
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+	/**
+	 * Generates a React form component (TSX) for the specified resource.
+	 * @param resource The resource to generate a form component for.
+	 * @param adminDir The directory to save the output files.
+	 * @returns The generated source file.
+	 */
+	public generate(resource: Resource, adminDir: string): SourceFile {
+		const filePath = path.join(
+			adminDir,
+			`${resource.name}`,
+			`${resource.name}-form.tsx`,
+		);
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        const componentName = `${pascalCase(resource.name)}Form`;
+		const componentName = `${pascalCase(resource.name)}Form`;
 
-        const getOp = resource.operations.find(op => op.action === 'getById');
-        const getHook = getOp?.methodName ? `use${pascalCase(getOp.methodName)}` : `useGet${pascalCase(resource.name)}`;
+		const getOp = resource.operations.find((op) => op.action === "getById");
+		const getHook = getOp?.methodName
+			? `use${pascalCase(getOp.methodName)}`
+			: `useGet${pascalCase(resource.name)}`;
 
-        const createOp = resource.operations.find(op => op.action === 'create');
-        const createHook = createOp?.methodName
-            ? `use${pascalCase(createOp.methodName)}`
-            : `useCreate${pascalCase(resource.name)}`;
+		const createOp = resource.operations.find((op) => op.action === "create");
+		const createHook = createOp?.methodName
+			? `use${pascalCase(createOp.methodName)}`
+			: `useCreate${pascalCase(resource.name)}`;
 
-        const updateOp = resource.operations.find(op => op.action === 'update');
-        const updateHook = updateOp?.methodName
-            ? `use${pascalCase(updateOp.methodName)}`
-            : `useUpdate${pascalCase(resource.name)}`;
+		const updateOp = resource.operations.find((op) => op.action === "update");
+		const updateHook = updateOp?.methodName
+			? `use${pascalCase(updateOp.methodName)}`
+			: `useUpdate${pascalCase(resource.name)}`;
 
-        const imports = [
-            `import React, { useTransition, useCallback } from 'react';`,
-            `import { useNavigate, useParams } from 'react-router-dom';`,
-            `import { ${getHook}, ${createHook}, ${updateHook} } from '../../hooks/${resource.name}.hook.js';`,
-            `import { useTranslation } from '../../shared/i18n.js';`,
-            `import './${resource.name}-form.css';`,
-        ];
+		const imports = [
+			`import React, { useTransition, useCallback } from 'react';`,
+			`import { useNavigate, useParams } from 'react-router-dom';`,
+			`import { ${getHook}, ${createHook}, ${updateHook} } from '../../hooks/${resource.name}.hook.js';`,
+			`import { useTranslation } from '../../shared/i18n.js';`,
+			`import './${resource.name}-form.css';`,
+		];
 
-        const fields = FormRenderer.extractFields(resource);
+		const fields = FormRenderer.extractFields(resource);
 
-        const body = `    const { id } = useParams();
+		const body = `    const { id } = useParams();
     const navigate = useNavigate();
     const { t } = useTranslation();
     const isEdit = Boolean(id);
@@ -85,10 +93,10 @@ export class FormComponentGenerator {
         navigate('/${resource.name}');
     }, [navigate]);`;
 
-        const render = `
+		const render = `
             <h2>{isEdit ? t('edit', 'Edit') : t('create', 'Create')} {t('resource.${resource.name}', '${pascalCase(resource.name)}')}</h2>
             <form onSubmit={onSubmit} aria-label={t('form_aria_label', '${pascalCase(resource.name)} Form')}>
-                ${fields.length ? fields.map(p => ReactElementBuilder.buildInput(p.name, (p.schema as { type?: string })?.type === 'number' ? 'number' : 'text', true)).join('\n') : ReactElementBuilder.buildInput('name', 'text', true)}
+                ${fields.length ? fields.map((p) => ReactElementBuilder.buildInput(p.name, (p.schema as { type?: string })?.type === "number" ? "number" : "text", true)).join("\n") : ReactElementBuilder.buildInput("name", "text", true)}
                 <div className="form-actions">
                     <button type="submit" className="btn-primary" aria-label={t('save_aria', 'Save ${pascalCase(resource.name)}')} disabled={isPending}>
                         {isPending ? t('saving', 'Saving...') : t('save', 'Save')}
@@ -99,9 +107,14 @@ export class FormComponentGenerator {
                 </div>
             </form>`;
 
-        const content = ReactElementBuilder.buildFunctionalComponent(componentName, imports, body, render);
-        sourceFile.addStatements(content);
+		const content = ReactElementBuilder.buildFunctionalComponent(
+			componentName,
+			imports,
+			body,
+			render,
+		);
+		sourceFile.addStatements(content);
 
-        return sourceFile;
-    }
+		return sourceFile;
+	}
 }

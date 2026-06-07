@@ -1,391 +1,457 @@
 // src/generators/angular/admin/resource-discovery.ts
-import { SwaggerParser } from '@src/openapi/parse.js';
-import {
-    DiscriminatorObject,
-    FormProperty,
-    PathInfo,
-    Resource,
-    ResourceOperation,
-    SwaggerDefinition,
-    OpenApiValue,
-} from '@src/core/types/index.js';
-import { camelCase, pascalCase, singular } from '@src/functions/utils.js';
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type {
+	DiscriminatorObject,
+	FormProperty,
+	PathInfo,
+	Resource,
+	ResourceOperation,
+	SwaggerDefinition,
+	OpenApiValue,
+} from "@src/core/types/index.js";
+import { camelCase, pascalCase, singular } from "@src/functions/utils.js";
 
 function getMethodName(op: PathInfo): string {
-    const pathToMethodName = (path: string): string =>
-        path
-            .split('/')
-            .filter(Boolean)
-            .map(segment =>
-                segment.startsWith('{') && segment.endsWith('}')
-                    ? `By${pascalCase(segment.slice(1, -1))}`
-                    : pascalCase(segment),
-            )
-            .join('');
+	const pathToMethodName = (path: string): string =>
+		path
+			.split("/")
+			.filter(Boolean)
+			.map((segment) =>
+				segment.startsWith("{") && segment.endsWith("}")
+					? `By${pascalCase(segment.slice(1, -1))}`
+					: pascalCase(segment),
+			)
+			.join("");
 
-    return op.operationId ? camelCase(op.operationId) : `${op.method.toLowerCase()}${pathToMethodName(op.path)}`;
+	return op.operationId
+		? camelCase(op.operationId)
+		: `${op.method.toLowerCase()}${pathToMethodName(op.path)}`;
 }
 
 function getResourceName(path: PathInfo): string {
-    const tag = path.tags?.[0];
+	const tag = path.tags?.[0];
 
-    if (tag) return camelCase(tag);
+	if (tag) return camelCase(tag);
 
-    const firstSegment = path.path.split('/').filter(p => p && !p.startsWith('{'))[0];
+	const firstSegment = path.path
+		.split("/")
+		.filter((p) => p && !p.startsWith("{"))[0];
 
-    return camelCase(firstSegment ?? 'default');
+	return camelCase(firstSegment ?? "default");
 }
 
-function classifyAction(path: PathInfo, method: string): ResourceOperation['action'] {
-    const hasIdSuffix = path.path.endsWith('}');
+function classifyAction(
+	path: PathInfo,
+	method: string,
+): ResourceOperation["action"] {
+	const hasIdSuffix = path.path.endsWith("}");
 
-    const m = method.toLowerCase();
+	const m = method.toLowerCase();
 
-    const opId = path.operationId || '';
+	const opId = path.operationId || "";
 
-    const opIdLower = opId.toLowerCase();
+	const opIdLower = opId.toLowerCase();
 
-    if ((m === 'get' || m === 'query') && !hasIdSuffix) return 'list';
+	if ((m === "get" || m === "query") && !hasIdSuffix) return "list";
 
-    if ((m === 'get' || m === 'query') && hasIdSuffix) return 'getById';
+	if ((m === "get" || m === "query") && hasIdSuffix) return "getById";
 
-    if (['put', 'patch'].includes(m) && hasIdSuffix) return 'update';
+	if (["put", "patch"].includes(m) && hasIdSuffix) return "update";
 
-    if (m === 'delete' && hasIdSuffix) return 'delete';
+	if (m === "delete" && hasIdSuffix) return "delete";
 
-    if (m === 'post' && !hasIdSuffix) {
-        const nonParamSegments = path.path.split('/').filter(s => s && !s.startsWith('{')).length;
+	if (m === "post" && !hasIdSuffix) {
+		const nonParamSegments = path.path
+			.split("/")
+			.filter((s) => s && !s.startsWith("{")).length;
 
-        const isCustomPath = nonParamSegments > 1;
+		const isCustomPath = nonParamSegments > 1;
 
-        const customActionKeywords = [
-            'search',
-            'export',
-            'query',
-            'login',
-            'upload',
-            'import',
-            'sync',
-            'item',
-            'reboot',
-            'start',
-        ];
+		const customActionKeywords = [
+			"search",
+			"export",
+			"query",
+			"login",
+			"upload",
+			"import",
+			"sync",
+			"item",
+			"reboot",
+			"start",
+		];
 
-        const hasCustomKeyword = opId && customActionKeywords.some(kw => opIdLower.includes(kw));
+		const hasCustomKeyword =
+			opId && customActionKeywords.some((kw) => opIdLower.includes(kw));
 
-        if (isCustomPath || hasCustomKeyword) {
-            // custom
-        } else {
-            return 'create';
-        }
-    }
+		if (isCustomPath || hasCustomKeyword) {
+			// custom
+		} else {
+			return "create";
+		}
+	}
 
-    if (opId) {
-        return camelCase(opId);
-    }
+	if (opId) {
+		return camelCase(opId);
+	}
 
-    const nonParamSegments = path.path.split('/').filter(s => s && !s.startsWith('{'));
+	const nonParamSegments = path.path
+		.split("/")
+		.filter((s) => s && !s.startsWith("{"));
 
-    const parts = [m, ...nonParamSegments, ...(hasIdSuffix ? ['ById'] : [])];
+	const parts = [m, ...nonParamSegments, ...(hasIdSuffix ? ["ById"] : [])];
 
-    return camelCase(parts.join(' '));
+	return camelCase(parts.join(" "));
 }
 
 function findSchema(
-    schema:
-        | SwaggerDefinition
-        | boolean
-        | {
-              $ref: string;
-          }
-        | undefined,
-    parser: SwaggerParser,
+	schema:
+		| SwaggerDefinition
+		| boolean
+		| {
+				$ref: string;
+		  }
+		| undefined,
+	parser: SwaggerParser,
 ): SwaggerDefinition | undefined {
-    if (!schema) return undefined;
+	if (!schema) return undefined;
 
-    if (typeof schema === 'boolean') return undefined;
+	if (typeof schema === "boolean") return undefined;
 
-    if ('$ref' in schema && typeof schema.$ref === 'string')
-        return parser.resolveReference<SwaggerDefinition>(schema.$ref);
+	if ("$ref" in schema && typeof schema.$ref === "string")
+		return parser.resolveReference<SwaggerDefinition>(schema.$ref);
 
-    return schema as SwaggerDefinition;
+	return schema as SwaggerDefinition;
 }
 
-export function getFormProperties(operations: PathInfo[], parser: SwaggerParser): FormProperty[] {
-    const allSchemas: SwaggerDefinition[] = [];
+export function getFormProperties(
+	operations: PathInfo[],
+	parser: SwaggerParser,
+): FormProperty[] {
+	const allSchemas: SwaggerDefinition[] = [];
 
-    const formDataProperties: Record<string, SwaggerDefinition> = {};
+	const formDataProperties: Record<string, SwaggerDefinition> = {};
 
-    operations.forEach(op => {
-        const reqSchema = findSchema(
-            op.requestBody?.content?.['application/json']?.schema as OpenApiValue as SwaggerDefinition,
-            parser,
-        );
+	operations.forEach((op) => {
+		const reqSchema = findSchema(
+			op.requestBody?.content?.["application/json"]
+				?.schema as OpenApiValue as SwaggerDefinition,
+			parser,
+		);
 
-        if (reqSchema) allSchemas.push(reqSchema);
+		if (reqSchema) allSchemas.push(reqSchema);
 
-        const formSchemas = [
-            findSchema(
-                op.requestBody?.content?.['multipart/form-data']?.schema as OpenApiValue as SwaggerDefinition,
-                parser,
-            ),
-            findSchema(
-                op.requestBody?.content?.['application/x-www-form-urlencoded']
-                    ?.schema as OpenApiValue as SwaggerDefinition,
-                parser,
-            ),
-        ].filter(Boolean) as SwaggerDefinition[];
+		const formSchemas = [
+			findSchema(
+				op.requestBody?.content?.["multipart/form-data"]
+					?.schema as OpenApiValue as SwaggerDefinition,
+				parser,
+			),
+			findSchema(
+				op.requestBody?.content?.["application/x-www-form-urlencoded"]
+					?.schema as OpenApiValue as SwaggerDefinition,
+				parser,
+			),
+		].filter(Boolean) as SwaggerDefinition[];
 
-        formSchemas.forEach(formSchema => {
-            if (!formSchema || typeof formSchema !== 'object') return;
+		formSchemas.forEach((formSchema) => {
+			if (!formSchema || typeof formSchema !== "object") return;
 
-            if (!formSchema.properties) return;
+			if (!formSchema.properties) return;
 
-            Object.entries(formSchema.properties).forEach(([propName, propSchema]) => {
-                if (!propSchema || typeof propSchema !== 'object') return;
+			Object.entries(formSchema.properties).forEach(
+				([propName, propSchema]) => {
+					if (!propSchema || typeof propSchema !== "object") return;
 
-                if ('$ref' in propSchema) return;
+					if ("$ref" in propSchema) return;
 
-                const cloned: SwaggerDefinition = { ...(propSchema as SwaggerDefinition) };
+					const cloned: SwaggerDefinition = {
+						...(propSchema as SwaggerDefinition),
+					};
 
-                if (Array.isArray((propSchema as SwaggerDefinition).type)) {
-                    delete (cloned as SwaggerDefinition).type;
-                }
+					if (Array.isArray((propSchema as SwaggerDefinition).type)) {
+						delete (cloned as SwaggerDefinition).type;
+					}
 
-                formDataProperties[propName] = cloned;
-            });
-        });
+					formDataProperties[propName] = cloned;
+				},
+			);
+		});
 
-        const resSchema =
-            findSchema(
-                op.responses?.['200']?.content?.['application/json']?.schema as OpenApiValue as SwaggerDefinition,
-                parser,
-            ) ??
-            findSchema(
-                op.responses?.['201']?.content?.['application/json']?.schema as OpenApiValue as SwaggerDefinition,
-                parser,
-            );
+		const resSchema =
+			findSchema(
+				op.responses?.["200"]?.content?.["application/json"]
+					?.schema as OpenApiValue as SwaggerDefinition,
+				parser,
+			) ??
+			findSchema(
+				op.responses?.["201"]?.content?.["application/json"]
+					?.schema as OpenApiValue as SwaggerDefinition,
+				parser,
+			);
 
-        if (resSchema) allSchemas.push(resSchema);
+		if (resSchema) allSchemas.push(resSchema);
 
-        op.parameters?.forEach(param => {
-            if (
-                param.in === 'formData' &&
-                param.schema &&
-                typeof param.schema === 'object' &&
-                !('$ref' in param.schema) &&
-                !('$dynamicRef' in param.schema)
-            ) {
-                const schemaObj = param.schema as SwaggerDefinition;
+		op.parameters?.forEach((param) => {
+			if (
+				param.in === "formData" &&
+				param.schema &&
+				typeof param.schema === "object" &&
+				!("$ref" in param.schema) &&
+				!("$dynamicRef" in param.schema)
+			) {
+				const schemaObj = param.schema as SwaggerDefinition;
 
-                const prop: Partial<SwaggerDefinition> = {};
+				const prop: Partial<SwaggerDefinition> = {};
 
-                if (schemaObj.format) prop.format = schemaObj.format;
+				if (schemaObj.format) prop.format = schemaObj.format;
 
-                if (param.description) prop.description = param.description;
+				if (param.description) prop.description = param.description;
 
-                const paramType = schemaObj.type;
+				const paramType = schemaObj.type;
 
-                if (paramType && !Array.isArray(paramType))
-                    prop.type = paramType as Exclude<SwaggerDefinition['type'], undefined>;
+				if (paramType && !Array.isArray(paramType))
+					prop.type = paramType as Exclude<
+						SwaggerDefinition["type"],
+						undefined
+					>;
 
-                formDataProperties[param.name] = prop as SwaggerDefinition;
-            }
-        });
-    });
+				formDataProperties[param.name] = prop as SwaggerDefinition;
+			}
+		});
+	});
 
-    if (allSchemas.length === 0 && Object.keys(formDataProperties).length === 0) {
-        return [{ name: 'id', schema: { type: 'string' } }];
-    }
+	if (allSchemas.length === 0 && Object.keys(formDataProperties).length === 0) {
+		return [{ name: "id", schema: { type: "string" } }];
+	}
 
-    const mergedProperties: Record<string, SwaggerDefinition | boolean> = { ...formDataProperties };
+	const mergedProperties: Record<string, SwaggerDefinition | boolean> = {
+		...formDataProperties,
+	};
 
-    const mergedRequired = new Set<string>();
-    let mergedOneOf: (SwaggerDefinition | boolean)[] | undefined, mergedDiscriminator: DiscriminatorObject | undefined;
+	const mergedRequired = new Set<string>();
+	let mergedOneOf: (SwaggerDefinition | boolean)[] | undefined,
+		mergedDiscriminator: DiscriminatorObject | undefined;
 
-    const assignPropertiesRecursive = (schema: SwaggerDefinition) => {
-        if (schema.properties) {
-            Object.assign(mergedProperties, schema.properties);
-        }
+	const assignPropertiesRecursive = (schema: SwaggerDefinition) => {
+		if (schema.properties) {
+			Object.assign(mergedProperties, schema.properties);
+		}
 
-        schema.required?.forEach(r => mergedRequired.add(r));
+		schema.required?.forEach((r) => mergedRequired.add(r));
 
-        if (schema.oneOf) mergedOneOf = schema.oneOf;
+		if (schema.oneOf) mergedOneOf = schema.oneOf;
 
-        if (schema.discriminator) mergedDiscriminator = schema.discriminator;
+		if (schema.discriminator) mergedDiscriminator = schema.discriminator;
 
-        if (schema.allOf) {
-            schema.allOf.forEach(sub => {
-                const resolvedSub = findSchema(sub as OpenApiValue as SwaggerDefinition, parser);
+		if (schema.allOf) {
+			schema.allOf.forEach((sub) => {
+				const resolvedSub = findSchema(
+					sub as OpenApiValue as SwaggerDefinition,
+					parser,
+				);
 
-                if (resolvedSub) {
-                    assignPropertiesRecursive(resolvedSub);
-                }
-            });
-        }
-    };
+				if (resolvedSub) {
+					assignPropertiesRecursive(resolvedSub);
+				}
+			});
+		}
+	};
 
-    allSchemas.forEach(schema => {
-        const effectiveSchema =
-            findSchema(schema.type === 'array' ? (schema.items as SwaggerDefinition) : schema, parser) ?? schema;
+	allSchemas.forEach((schema) => {
+		const effectiveSchema =
+			findSchema(
+				schema.type === "array" ? (schema.items as SwaggerDefinition) : schema,
+				parser,
+			) ?? schema;
 
-        assignPropertiesRecursive(effectiveSchema);
-    });
+		assignPropertiesRecursive(effectiveSchema);
+	});
 
-    const finalSchema: SwaggerDefinition = {
-        properties: mergedProperties,
-        required: Array.from(mergedRequired),
-        ...(mergedOneOf && { oneOf: mergedOneOf }),
-        ...(mergedDiscriminator && { discriminator: mergedDiscriminator }),
-    };
+	const finalSchema: SwaggerDefinition = {
+		properties: mergedProperties,
+		required: Array.from(mergedRequired),
+		...(mergedOneOf && { oneOf: mergedOneOf }),
+		...(mergedDiscriminator && { discriminator: mergedDiscriminator }),
+	};
 
-    const properties: FormProperty[] = Object.entries(finalSchema.properties!).map(([name, propSchema]) => {
-        const resolvedSchema = findSchema(propSchema as OpenApiValue as SwaggerDefinition, parser);
-        const finalPropSchema =
-            resolvedSchema && typeof propSchema === 'object'
-                ? { ...(propSchema as SwaggerDefinition), ...resolvedSchema }
-                : propSchema;
+	const properties: FormProperty[] = Object.entries(
+		finalSchema.properties!,
+	).map(([name, propSchema]) => {
+		const resolvedSchema = findSchema(
+			propSchema as OpenApiValue as SwaggerDefinition,
+			parser,
+		);
+		const finalPropSchema =
+			resolvedSchema && typeof propSchema === "object"
+				? { ...(propSchema as SwaggerDefinition), ...resolvedSchema }
+				: propSchema;
 
-        if (
-            typeof finalPropSchema === 'object' &&
-            finalSchema.required?.includes(name) &&
-            !(finalPropSchema as OpenApiValue as { required?: string[] }).required?.includes(name)
-        ) {
-            ((finalPropSchema as OpenApiValue as { required?: string[] }).required ||= []).push(name);
-        }
+		if (
+			typeof finalPropSchema === "object" &&
+			finalSchema.required?.includes(name) &&
+			!(
+				finalPropSchema as OpenApiValue as { required?: string[] }
+			).required?.includes(name)
+		) {
+			((finalPropSchema as OpenApiValue as { required?: string[] }).required ||=
+				[]).push(name);
+		}
 
-        return { name, schema: finalPropSchema };
-    });
+		return { name, schema: finalPropSchema };
+	});
 
-    if (finalSchema.oneOf && finalSchema.discriminator) {
-        const dPropName = finalSchema.discriminator.propertyName;
+	if (finalSchema.oneOf && finalSchema.discriminator) {
+		const dPropName = finalSchema.discriminator.propertyName;
 
-        const existingProp = properties.find(p => p.name === dPropName);
+		const existingProp = properties.find((p) => p.name === dPropName);
 
-        if (existingProp && typeof existingProp.schema === 'object') {
-            existingProp.schema.oneOf = finalSchema.oneOf;
+		if (existingProp && typeof existingProp.schema === "object") {
+			existingProp.schema.oneOf = finalSchema.oneOf;
 
-            existingProp.schema.discriminator = finalSchema.discriminator;
-        } else {
-            const syntheticProp: FormProperty = {
-                name: dPropName,
-                schema: {
-                    type: 'string',
-                    description: `Determines the type of the polymorphic object.`,
-                    oneOf: finalSchema.oneOf,
-                    discriminator: finalSchema.discriminator,
-                },
-            };
+			existingProp.schema.discriminator = finalSchema.discriminator;
+		} else {
+			const syntheticProp: FormProperty = {
+				name: dPropName,
+				schema: {
+					type: "string",
+					description: `Determines the type of the polymorphic object.`,
+					oneOf: finalSchema.oneOf,
+					discriminator: finalSchema.discriminator,
+				},
+			};
 
-            properties.push(syntheticProp);
-        }
-    }
+			properties.push(syntheticProp);
+		}
+	}
 
-    return properties.length > 0 ? properties : [{ name: 'id', schema: { type: 'string' } }];
+	return properties.length > 0
+		? properties
+		: [{ name: "id", schema: { type: "string" } }];
 }
 
-export function getModelName(resourceName: string, operations: PathInfo[]): string {
-    const op =
-        operations.find(o => o.method === 'POST') ??
-        operations.find(o => o.method === 'GET') ??
-        operations.find(o => o.method === 'QUERY');
+export function getModelName(
+	resourceName: string,
+	operations: PathInfo[],
+): string {
+	const op =
+		operations.find((o) => o.method === "POST") ??
+		operations.find((o) => o.method === "GET") ??
+		operations.find((o) => o.method === "QUERY");
 
-    const schema = (op?.requestBody?.content?.['application/json']?.schema ??
-        op?.responses?.['200']?.content?.['application/json']?.schema) as
-        | Record<string, string | number | boolean | object | undefined | null>
-        | undefined;
+	const schema = (op?.requestBody?.content?.["application/json"]?.schema ??
+		op?.responses?.["200"]?.content?.["application/json"]?.schema) as
+		| Record<string, string | number | boolean | object | undefined | null>
+		| undefined;
 
-    if (schema && typeof schema === 'object') {
-        let ref: string | null | undefined = null;
+	if (schema && typeof schema === "object") {
+		let ref: string | null | undefined = null;
 
-        if ('$ref' in schema) {
-            ref = schema.$ref as string | undefined;
-        } else if (
-            schema.type === 'array' &&
-            schema.items &&
-            !Array.isArray(schema.items) &&
-            '$ref' in (schema.items as Record<string, string | number | boolean | object | undefined | null>)
-        ) {
-            ref = (schema.items as { $ref?: string }).$ref;
-        }
+		if ("$ref" in schema) {
+			ref = schema.$ref as string | undefined;
+		} else if (
+			schema.type === "array" &&
+			schema.items &&
+			!Array.isArray(schema.items) &&
+			"$ref" in
+				(schema.items as Record<
+					string,
+					string | number | boolean | object | undefined | null
+				>)
+		) {
+			ref = (schema.items as { $ref?: string }).$ref;
+		}
 
-        if (ref) return pascalCase(ref.split('/').pop()!);
-    }
+		if (ref) return pascalCase(ref.split("/").pop()!);
+	}
 
-    return singular(pascalCase(resourceName));
+	return singular(pascalCase(resourceName));
 }
 
 export function discoverAdminResources(parser: SwaggerParser): Resource[] {
-    const resourceMap = new Map<string, { name: string; operations: PathInfo[] }>();
+	const resourceMap = new Map<
+		string,
+		{ name: string; operations: PathInfo[] }
+	>();
 
-    for (const op of parser.operations) {
-        const resourceName = getResourceName(op);
+	for (const op of parser.operations) {
+		const resourceName = getResourceName(op);
 
-        if (!resourceMap.has(resourceName)) {
-            resourceMap.set(resourceName, { name: resourceName, operations: [] });
-        }
+		if (!resourceMap.has(resourceName)) {
+			resourceMap.set(resourceName, { name: resourceName, operations: [] });
+		}
 
-        resourceMap.get(resourceName)!.operations.push(op);
-    }
+		resourceMap.get(resourceName)?.operations.push(op);
+	}
 
-    const finalResources: Resource[] = [];
+	const finalResources: Resource[] = [];
 
-    for (const group of resourceMap.values()) {
-        const classifiedOps: ResourceOperation[] = group.operations.map(op => {
-            const action = classifyAction(op, op.method);
+	for (const group of resourceMap.values()) {
+		const classifiedOps: ResourceOperation[] = group.operations.map((op) => {
+			const action = classifyAction(op, op.method);
 
-            const hasPathParams = op.parameters?.some(p => p.in === 'path') ?? false;
+			const hasPathParams =
+				op.parameters?.some((p) => p.in === "path") ?? false;
 
-            const resourceOperation: ResourceOperation = {
-                action,
-                path: op.path,
-                method: op.method,
-            };
+			const resourceOperation: ResourceOperation = {
+				action,
+				path: op.path,
+				method: op.method,
+			};
 
-            const methodName = getMethodName(op);
+			const methodName = getMethodName(op);
 
-            if (methodName) {
-                resourceOperation.methodName = methodName;
-            }
+			if (methodName) {
+				resourceOperation.methodName = methodName;
+			}
 
-            if (op.operationId) {
-                resourceOperation.operationId = op.operationId;
-            }
+			if (op.operationId) {
+				resourceOperation.operationId = op.operationId;
+			}
 
-            if (op.parameters) {
-                resourceOperation.methodParameters = op.parameters;
-            }
+			if (op.parameters) {
+				resourceOperation.methodParameters = op.parameters;
+			}
 
-            const isCustom = !['list', 'create', 'getById', 'update', 'delete'].includes(action);
+			const isCustom = ![
+				"list",
+				"create",
+				"getById",
+				"update",
+				"delete",
+			].includes(action);
 
-            if (isCustom && hasPathParams) {
-                resourceOperation.isCustomItemAction = true;
-            }
+			if (isCustom && hasPathParams) {
+				resourceOperation.isCustomItemAction = true;
+			}
 
-            if (isCustom && !hasPathParams) {
-                resourceOperation.isCustomCollectionAction = true;
-            }
+			if (isCustom && !hasPathParams) {
+				resourceOperation.isCustomCollectionAction = true;
+			}
 
-            return resourceOperation;
-        });
+			return resourceOperation;
+		});
 
-        const formProperties = getFormProperties(group.operations, parser);
+		const formProperties = getFormProperties(group.operations, parser);
 
-        finalResources.push({
-            name: group.name,
-            modelName: getModelName(group.name, group.operations),
-            operations: classifiedOps,
+		finalResources.push({
+			name: group.name,
+			modelName: getModelName(group.name, group.operations),
+			operations: classifiedOps,
 
-            isEditable: group.operations.some(op => ['POST', 'PUT', 'PATCH'].includes(op.method)),
-            formProperties,
-            listProperties: formProperties.filter(
-                p =>
-                    typeof p.schema === 'object' &&
-                    !p.schema.readOnly &&
-                    ['string', 'number', 'integer', 'boolean'].includes(p.schema.type as string),
-            ),
-        });
-    }
+			isEditable: group.operations.some((op) =>
+				["POST", "PUT", "PATCH"].includes(op.method),
+			),
+			formProperties,
+			listProperties: formProperties.filter(
+				(p) =>
+					typeof p.schema === "object" &&
+					!p.schema.readOnly &&
+					["string", "number", "integer", "boolean"].includes(
+						p.schema.type as string,
+					),
+			),
+		});
+	}
 
-    return finalResources;
+	return finalResources;
 }

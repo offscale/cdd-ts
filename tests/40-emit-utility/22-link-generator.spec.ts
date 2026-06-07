@@ -1,692 +1,730 @@
 // @ts-nocheck
-import { describe, expect, it, vi } from 'vitest';
-import { Project } from 'ts-morph';
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { LinkGenerator } from '@src/openapi/emit_link.js';
-import { createTestProject } from '../shared/helpers.js';
-import { GeneratorConfig, SwaggerSpec } from '@src/core/types/index.js';
-import ts from 'typescript';
+import { describe, expect, it, vi } from "vitest";
+import type { Project } from "ts-morph";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { LinkGenerator } from "@src/openapi/emit_link.js";
+import { createTestProject } from "../shared/helpers.js";
+import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
+import ts from "typescript";
 
 const linksSpec: SwaggerSpec = {
-    openapi: '3.0.0',
-    info: { title: 'Link Test', version: '1.0' },
-    paths: {
-        '/users/{id}': {
-            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-            get: {
-                operationId: 'getUserById',
-                responses: {
-                    '200': {
-                        description: 'User details',
-                        links: {
-                            GetUserAddress: {
-                                operationId: 'getUserAddress',
-                                parameters: { userId: '$response.body#/id' },
-                                description: 'The address of this user',
-                            },
-                        },
-                    },
-                },
-            },
-        },
-        '/users/{id}/address': {
-            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-            get: { operationId: 'getUserAddress', responses: { '200': { description: 'ok' } } },
-        },
-    },
-    components: { schemas: {} },
+	openapi: "3.0.0",
+	info: { title: "Link Test", version: "1.0" },
+	paths: {
+		"/users/{id}": {
+			parameters: [
+				{ name: "id", in: "path", required: true, schema: { type: "string" } },
+			],
+			get: {
+				operationId: "getUserById",
+				responses: {
+					"200": {
+						description: "User details",
+						links: {
+							GetUserAddress: {
+								operationId: "getUserAddress",
+								parameters: { userId: "$response.body#/id" },
+								description: "The address of this user",
+							},
+						},
+					},
+				},
+			},
+		},
+		"/users/{id}/address": {
+			parameters: [
+				{ name: "id", in: "path", required: true, schema: { type: "string" } },
+			],
+			get: {
+				operationId: "getUserAddress",
+				responses: { "200": { description: "ok" } },
+			},
+		},
+	},
+	components: { schemas: {} },
 };
 
 const refLinksSpec: SwaggerSpec = {
-    openapi: '3.0.0',
-    info: { title: 'Ref Link Test', version: '1.0' },
-    paths: {
-        '/orders/{id}': {
-            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-            get: {
-                operationId: 'getOrder',
-                responses: {
-                    '200': {
-                        description: 'Order',
-                        links: {
-                            CancelOrder: { $ref: '#/components/links/CancelOrderLink' },
-                        },
-                    },
-                },
-            },
-        },
-    },
-    components: {
-        links: {
-            CancelOrderLink: {
-                operationId: 'cancelOrder',
-                parameters: { orderId: '$request.path.id' },
-            },
-        },
-        schemas: {},
-    },
+	openapi: "3.0.0",
+	info: { title: "Ref Link Test", version: "1.0" },
+	paths: {
+		"/orders/{id}": {
+			parameters: [
+				{ name: "id", in: "path", required: true, schema: { type: "string" } },
+			],
+			get: {
+				operationId: "getOrder",
+				responses: {
+					"200": {
+						description: "Order",
+						links: {
+							CancelOrder: { $ref: "#/components/links/CancelOrderLink" },
+						},
+					},
+				},
+			},
+		},
+	},
+	components: {
+		links: {
+			CancelOrderLink: {
+				operationId: "cancelOrder",
+				parameters: { orderId: "$request.path.id" },
+			},
+		},
+		schemas: {},
+	},
 };
 
 const componentOnlyLinksSpec: SwaggerSpec = {
-    openapi: '3.2.0',
-    info: { title: 'Component Links Only', version: '1.0' },
-    paths: {},
-    components: {
-        links: {
-            NextPage: {
-                operationId: 'listThings',
-                description: 'Next page link',
-            },
-        },
-    },
+	openapi: "3.2.0",
+	info: { title: "Component Links Only", version: "1.0" },
+	paths: {},
+	components: {
+		links: {
+			NextPage: {
+				operationId: "listThings",
+				description: "Next page link",
+			},
+		},
+	},
 };
 
 const componentOperationRefSpec: SwaggerSpec = {
-    openapi: '3.2.0',
-    info: { title: 'Component OperationRef', version: '1.0' },
-    paths: {
-        '/target': {
-            get: {
-                operationId: 'getTarget',
-                responses: { '200': { description: 'ok' } },
-            },
-        },
-    },
-    components: {
-        links: {
-            GoTarget: {
-                operationRef: '#/paths/~1target/get',
-            },
-        },
-    },
+	openapi: "3.2.0",
+	info: { title: "Component OperationRef", version: "1.0" },
+	paths: {
+		"/target": {
+			get: {
+				operationId: "getTarget",
+				responses: { "200": { description: "ok" } },
+			},
+		},
+	},
+	components: {
+		links: {
+			GoTarget: {
+				operationRef: "#/paths/~1target/get",
+			},
+		},
+	},
 };
 
 // Spec to cover all fields (operationRef, requestBody, server) and missing fields logic
 const complexLinkSpec: SwaggerSpec = {
-    openapi: '3.0.0',
-    info: { title: 'Complex Link Test', version: '1.0' },
-    paths: {
-        '/resource': {
-            get: {
-                operationId: 'getResource',
-                responses: {
-                    '200': {
-                        description: 'ok',
-                        links: {
-                            DeepLink: {
-                                operationRef: '#/paths/~1other/get',
-                                requestBody: '$request.body',
-                                server: { url: 'https://other.com' },
-                                // Description and parameters intentionally omitted to hit false branches
-                            },
-                        },
-                    },
-                },
-            },
-        },
-        '/other': {
-            get: {
-                operationId: 'getOther',
-                responses: {
-                    '200': { description: 'ok' },
-                },
-            },
-        },
-    },
-    components: {},
+	openapi: "3.0.0",
+	info: { title: "Complex Link Test", version: "1.0" },
+	paths: {
+		"/resource": {
+			get: {
+				operationId: "getResource",
+				responses: {
+					"200": {
+						description: "ok",
+						links: {
+							DeepLink: {
+								operationRef: "#/paths/~1other/get",
+								requestBody: "$request.body",
+								server: { url: "https://other.com" },
+								// Description and parameters intentionally omitted to hit false branches
+							},
+						},
+					},
+				},
+			},
+		},
+		"/other": {
+			get: {
+				operationId: "getOther",
+				responses: {
+					"200": { description: "ok" },
+				},
+			},
+		},
+	},
+	components: {},
 };
 
 // Spec with broken references to test graceful failure
 const brokenRefsSpec: SwaggerSpec = {
-    openapi: '3.0.0',
-    info: { title: 'Broken Refs', version: '1.0' },
-    paths: {
-        '/bad-response': {
-            get: {
-                operationId: 'getBadResponse',
-                responses: {
-                    // Response ref does not exist
-                    '200': { $ref: '#/components/responses/MissingResponse' },
-                },
-            },
-        },
-        '/bad-link': {
-            get: {
-                operationId: 'getBadLink',
-                responses: {
-                    '200': {
-                        description: 'ok',
-                        links: {
-                            // Link ref does not exist
-                            BrokenLink: { $ref: '#/components/links/MissingLink' },
-                        },
-                    },
-                },
-            },
-        },
-    },
-    components: {},
+	openapi: "3.0.0",
+	info: { title: "Broken Refs", version: "1.0" },
+	paths: {
+		"/bad-response": {
+			get: {
+				operationId: "getBadResponse",
+				responses: {
+					// Response ref does not exist
+					"200": { $ref: "#/components/responses/MissingResponse" },
+				},
+			},
+		},
+		"/bad-link": {
+			get: {
+				operationId: "getBadLink",
+				responses: {
+					"200": {
+						description: "ok",
+						links: {
+							// Link ref does not exist
+							BrokenLink: { $ref: "#/components/links/MissingLink" },
+						},
+					},
+				},
+			},
+		},
+	},
+	components: {},
 };
 
 const webhookLinkSpec: SwaggerSpec = {
-    openapi: '3.2.0',
-    info: { title: 'Webhook Link Test', version: '1.0' },
-    paths: {
-        '/trigger': {
-            post: {
-                operationId: 'triggerWebhook',
-                responses: {
-                    '200': {
-                        description: 'ok',
-                        links: {
-                            NotifyWebhook: {
-                                operationRef: '#/webhooks/user.created/post',
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    },
-    webhooks: {
-        'user.created': {
-            post: {
-                operationId: 'handleUserCreated',
-                responses: { '200': { description: 'ok' } },
-            },
-        },
-    },
-    components: {},
+	openapi: "3.2.0",
+	info: { title: "Webhook Link Test", version: "1.0" },
+	paths: {
+		"/trigger": {
+			post: {
+				operationId: "triggerWebhook",
+				responses: {
+					"200": {
+						description: "ok",
+						links: {
+							NotifyWebhook: {
+								operationRef: "#/webhooks/user.created/post",
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	webhooks: {
+		"user.created": {
+			post: {
+				operationId: "handleUserCreated",
+				responses: { "200": { description: "ok" } },
+			},
+		},
+	},
+	components: {},
 };
 
 const extensionLinksSpec: SwaggerSpec = {
-    openapi: '3.2.0',
-    info: { title: 'Link Extensions', version: '1.0' },
-    paths: {
-        '/items/{id}': {
-            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-            get: {
-                operationId: 'getItem',
-                responses: {
-                    '200': {
-                        description: 'ok',
-                        links: {
-                            Next: {
-                                operationId: 'getNext',
-                                'x-trace': 'keep-me',
-                                'x-meta': { level: 1 },
-                            },
-                        },
-                    },
-                },
-            },
-        },
-        '/items/{id}/next': {
-            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-            get: { operationId: 'getNext', responses: { '200': { description: 'ok' } } },
-        },
-    },
-    components: {
-        links: {
-            Paged: {
-                operationId: 'listThings',
-                'x-note': 'component-link',
-            },
-        },
-        schemas: {},
-    },
+	openapi: "3.2.0",
+	info: { title: "Link Extensions", version: "1.0" },
+	paths: {
+		"/items/{id}": {
+			parameters: [
+				{ name: "id", in: "path", required: true, schema: { type: "string" } },
+			],
+			get: {
+				operationId: "getItem",
+				responses: {
+					"200": {
+						description: "ok",
+						links: {
+							Next: {
+								operationId: "getNext",
+								"x-trace": "keep-me",
+								"x-meta": { level: 1 },
+							},
+						},
+					},
+				},
+			},
+		},
+		"/items/{id}/next": {
+			parameters: [
+				{ name: "id", in: "path", required: true, schema: { type: "string" } },
+			],
+			get: {
+				operationId: "getNext",
+				responses: { "200": { description: "ok" } },
+			},
+		},
+	},
+	components: {
+		links: {
+			Paged: {
+				operationId: "listThings",
+				"x-note": "component-link",
+			},
+		},
+		schemas: {},
+	},
 };
 
 // Spec missing operationId or responses
 const sparseSpec: SwaggerSpec = {
-    openapi: '3.0.0',
-    info: { title: 'Sparse', version: '1.0' },
-    paths: {
-        '/no-id': {
-            get: {
-                // Missing operationId
-                responses: { '200': { description: 'ok' } },
-            },
-        },
-        // Missing responses (technically invalid OAS but parser handles it)
-        '/no-responses': {
-            get: {
-                operationId: 'actionNoResp',
-                responses: { '200': { description: 'ok' } },
-            } as string | number | boolean | object | undefined | null,
-        },
-    },
+	openapi: "3.0.0",
+	info: { title: "Sparse", version: "1.0" },
+	paths: {
+		"/no-id": {
+			get: {
+				// Missing operationId
+				responses: { "200": { description: "ok" } },
+			},
+		},
+		// Missing responses (technically invalid OAS but parser handles it)
+		"/no-responses": {
+			get: {
+				operationId: "actionNoResp",
+				responses: { "200": { description: "ok" } },
+			} as string | number | boolean | object | undefined | null,
+		},
+	},
 };
 
-describe('Emitter: LinkGenerator', () => {
-    const runGenerator = (spec: SwaggerSpec) => {
-        const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out', options: {} } as
-            | string
-            | number
-            | boolean
-            | object
-            | undefined
-            | null;
-        const parser = new SwaggerParser(spec, config);
-        new LinkGenerator(parser, project).generate('/out');
-        return project;
-    };
+describe("Emitter: LinkGenerator", () => {
+	const runGenerator = (spec: SwaggerSpec) => {
+		const project = createTestProject();
+		const config: GeneratorConfig = { output: "/out", options: {} } as
+			| string
+			| number
+			| boolean
+			| object
+			| undefined
+			| null;
+		const parser = new SwaggerParser(spec, config);
+		new LinkGenerator(parser, project).generate("/out");
+		return project;
+	};
 
-    const compileGeneratedFile = (project: Project) => {
-        const sourceFile = project.getSourceFileOrThrow('/out/links.ts');
-        const code = sourceFile.getText();
-        const jsCode = ts.transpile(code, { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS });
+	const compileGeneratedFile = (project: Project) => {
+		const sourceFile = project.getSourceFileOrThrow("/out/links.ts");
+		const code = sourceFile.getText();
+		const jsCode = ts.transpile(code, {
+			target: ts.ScriptTarget.ES5,
+			module: ts.ModuleKind.CommonJS,
+		});
 
-        const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
+		const moduleHelper = {
+			exports: {} as string | number | boolean | object | undefined | null,
+		};
 
-        new Function('exports', jsCode)(moduleHelper.exports);
+		new Function("exports", jsCode)(moduleHelper.exports);
 
-        return moduleHelper.exports;
-    };
+		return moduleHelper.exports;
+	};
 
-    it('should generate links registry for inline links (Id, Desc, Params)', () => {
-        const project = runGenerator(linksSpec);
+	it("should generate links registry for inline links (Id, Desc, Params)", () => {
+		const project = runGenerator(linksSpec);
 
-        const { API_LINKS } = compileGeneratedFile(project);
+		const { API_LINKS } = compileGeneratedFile(project);
 
-        expect(API_LINKS).toBeDefined();
+		expect(API_LINKS).toBeDefined();
 
-        expect(API_LINKS['getUserById']).toBeDefined();
+		expect(API_LINKS.getUserById).toBeDefined();
 
-        expect(API_LINKS['getUserById']['200']).toBeDefined();
+		expect(API_LINKS.getUserById["200"]).toBeDefined();
 
-        const link = API_LINKS['getUserById']['200']['GetUserAddress'];
+		const link = API_LINKS.getUserById["200"].GetUserAddress;
 
-        expect(link).toBeDefined();
+		expect(link).toBeDefined();
 
-        expect(link.operationId).toBe('getUserAddress');
+		expect(link.operationId).toBe("getUserAddress");
 
-        expect(link.description).toBe('The address of this user');
+		expect(link.description).toBe("The address of this user");
 
-        expect(link.parameters).toEqual({ userId: '$response.body#/id' });
+		expect(link.parameters).toEqual({ userId: "$response.body#/id" });
 
-        // Assert missing fields are truly undefined in the generated object
+		// Assert missing fields are truly undefined in the generated object
 
-        expect(link.operationRef).toBeUndefined();
+		expect(link.operationRef).toBeUndefined();
 
-        expect(link.requestBody).toBeUndefined();
+		expect(link.requestBody).toBeUndefined();
 
-        expect(link.server).toBeUndefined();
-    });
+		expect(link.server).toBeUndefined();
+	});
 
-    it('should emit component links registry when components.links is defined', () => {
-        const project = runGenerator(componentOnlyLinksSpec);
+	it("should emit component links registry when components.links is defined", () => {
+		const project = runGenerator(componentOnlyLinksSpec);
 
-        const { API_COMPONENT_LINKS } = compileGeneratedFile(project);
+		const { API_COMPONENT_LINKS } = compileGeneratedFile(project);
 
-        expect(API_COMPONENT_LINKS).toBeDefined();
+		expect(API_COMPONENT_LINKS).toBeDefined();
 
-        expect(API_COMPONENT_LINKS.NextPage).toBeDefined();
+		expect(API_COMPONENT_LINKS.NextPage).toBeDefined();
 
-        expect(API_COMPONENT_LINKS.NextPage.operationId).toBe('listThings');
+		expect(API_COMPONENT_LINKS.NextPage.operationId).toBe("listThings");
 
-        expect(API_COMPONENT_LINKS.NextPage.description).toBe('Next page link');
-    });
+		expect(API_COMPONENT_LINKS.NextPage.description).toBe("Next page link");
+	});
 
-    it('should resolve operationRef for component links', () => {
-        const project = runGenerator(componentOperationRefSpec);
+	it("should resolve operationRef for component links", () => {
+		const project = runGenerator(componentOperationRefSpec);
 
-        const { API_COMPONENT_LINKS } = compileGeneratedFile(project);
+		const { API_COMPONENT_LINKS } = compileGeneratedFile(project);
 
-        expect(API_COMPONENT_LINKS).toBeDefined();
+		expect(API_COMPONENT_LINKS).toBeDefined();
 
-        expect(API_COMPONENT_LINKS.GoTarget).toBeDefined();
+		expect(API_COMPONENT_LINKS.GoTarget).toBeDefined();
 
-        expect(API_COMPONENT_LINKS.GoTarget.operationRef).toBe('#/paths/~1target/get');
+		expect(API_COMPONENT_LINKS.GoTarget.operationRef).toBe(
+			"#/paths/~1target/get",
+		);
 
-        expect(API_COMPONENT_LINKS.GoTarget.operationId).toBe('getTarget');
-    });
+		expect(API_COMPONENT_LINKS.GoTarget.operationId).toBe("getTarget");
+	});
 
-    it('should resolve referenced links', () => {
-        const project = runGenerator(refLinksSpec);
+	it("should resolve referenced links", () => {
+		const project = runGenerator(refLinksSpec);
 
-        const { API_LINKS } = compileGeneratedFile(project);
+		const { API_LINKS } = compileGeneratedFile(project);
 
-        const link = API_LINKS['getOrder']['200']['CancelOrder'];
+		const link = API_LINKS.getOrder["200"].CancelOrder;
 
-        expect(link).toBeDefined();
+		expect(link).toBeDefined();
 
-        expect(link.operationId).toBe('cancelOrder');
+		expect(link.operationId).toBe("cancelOrder");
 
-        expect(link.parameters).toEqual({ orderId: '$request.path.id' });
-    });
+		expect(link.parameters).toEqual({ orderId: "$request.path.id" });
+	});
+
+	it("should resolve operationRef to operationId and preserve operationRef, requestBody, server", () => {
+		const project = runGenerator(complexLinkSpec);
 
-    it('should resolve operationRef to operationId and preserve operationRef, requestBody, server', () => {
-        const project = runGenerator(complexLinkSpec);
-
-        const { API_LINKS } = compileGeneratedFile(project);
-
-        const link = API_LINKS['getResource']['200']['DeepLink'];
-
-        expect(link.operationRef).toBe('#/paths/~1other/get');
+		const { API_LINKS } = compileGeneratedFile(project);
 
-        expect(link.requestBody).toBe('$request.body');
+		const link = API_LINKS.getResource["200"].DeepLink;
 
-        expect(link.server).toEqual({ url: 'https://other.com' });
+		expect(link.operationRef).toBe("#/paths/~1other/get");
 
-        // Verify omitted fields
+		expect(link.requestBody).toBe("$request.body");
 
-        expect(link.operationId).toBe('getOther');
+		expect(link.server).toEqual({ url: "https://other.com" });
 
-        expect(link.description).toBeUndefined();
+		// Verify omitted fields
 
-        expect(link.parameters).toBeUndefined();
-    });
+		expect(link.operationId).toBe("getOther");
 
-    it('should resolve operationRef that targets webhooks', () => {
-        const project = runGenerator(webhookLinkSpec);
+		expect(link.description).toBeUndefined();
 
-        const { API_LINKS } = compileGeneratedFile(project);
+		expect(link.parameters).toBeUndefined();
+	});
 
-        const link = API_LINKS['triggerWebhook']['200']['NotifyWebhook'];
+	it("should resolve operationRef that targets webhooks", () => {
+		const project = runGenerator(webhookLinkSpec);
 
-        expect(link.operationRef).toBe('#/webhooks/user.created/post');
+		const { API_LINKS } = compileGeneratedFile(project);
 
-        expect(link.operationId).toBe('handleUserCreated');
-    });
+		const link = API_LINKS.triggerWebhook["200"].NotifyWebhook;
 
-    it('should preserve x- extensions on operation and component links', () => {
-        const project = runGenerator(extensionLinksSpec);
+		expect(link.operationRef).toBe("#/webhooks/user.created/post");
 
-        const { API_LINKS, API_COMPONENT_LINKS } = compileGeneratedFile(project);
-
-        const link = API_LINKS['getItem']['200']['Next'];
-
-        expect(link['x-trace']).toBe('keep-me');
-
-        expect(link['x-meta']).toEqual({ level: 1 });
-
-        expect(API_COMPONENT_LINKS.Paged['x-note']).toBe('component-link');
-    });
-
-    it('should resolve external operationRef when the target document is cached', () => {
-        const entrySpec: SwaggerSpec = {
-            openapi: '3.2.0',
-            info: { title: 'Entry', version: '1.0' },
-            paths: {
-                '/entry': {
-                    get: {
-                        operationId: 'getEntry',
-                        responses: {
-                            '200': {
-                                description: 'ok',
-                                links: {
-                                    External: {
-                                        operationRef: 'other.json#/paths/~1external/get',
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        };
-
-        const externalSpec: SwaggerSpec = {
-            openapi: '3.2.0',
-            info: { title: 'External', version: '1.0' },
-            paths: {
-                '/external': {
-                    get: {
-                        operationId: 'getExternal',
-                        responses: { '200': { description: 'ok' } },
-                    },
-                },
-            },
-        };
-
-        const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out', options: {} } as
-            | string
-            | number
-            | boolean
-            | object
-            | undefined
-            | null;
-        const entryUri = 'http://api.com/spec.json';
-        const externalUri = 'http://api.com/other.json';
-        const specCache = new Map<string, SwaggerSpec>([
-            [entryUri, entrySpec],
-            [externalUri, externalSpec],
-        ]);
-        const parser = new SwaggerParser(entrySpec, config, specCache, entryUri);
-        new LinkGenerator(parser, project).generate('/out');
-
-        const { API_LINKS } = compileGeneratedFile(project);
-
-        const link = API_LINKS['getEntry']['200']['External'];
-
-        expect(link.operationRef).toBe('other.json#/paths/~1external/get');
-
-        expect(link.operationId).toBe('getExternal');
-    });
-
-    it('should ignore operations without identifiers or links', () => {
-        // Test sparse spec
-        const project = runGenerator(sparseSpec);
-
-        const { API_LINKS } = compileGeneratedFile(project);
-
-        expect(API_LINKS).toBeUndefined();
-        const sourceFile = project.getSourceFileOrThrow('/out/links.ts');
-        expect(sourceFile.getText()).toContain('export { };');
-    });
-
-    it('should handle unresolvable references gracefully', () => {
-        // Suppress warning expectation in test output
-        vi.spyOn(console, 'warn').mockImplementation(() => {});
-        const project = runGenerator(brokenRefsSpec);
-
-        const { API_LINKS } = compileGeneratedFile(project);
-
-        expect(API_LINKS).toBeUndefined();
-        const sourceFile = project.getSourceFileOrThrow('/out/links.ts');
-        expect(sourceFile.getText()).toContain('export { };');
-    });
-
-    it('should produce valid module for empty links', () => {
-        const spec: SwaggerSpec = {
-            openapi: '3.0.0',
-            info: { title: 'Empty', version: '1' },
-            paths: {},
-        };
-        const project = runGenerator(spec);
-        const sourceFile = project.getSourceFileOrThrow('/out/links.ts');
-        expect(sourceFile.getText()).toContain('export { };');
-    });
-
-    it('should handle malformed operationRef in decodePointerToken', () => {
-        const spec: SwaggerSpec = {
-            openapi: '3.0.0',
-            info: { title: 'Malformed', version: '1' },
-            paths: {
-                '/test': {
-                    get: {
-                        operationId: 'getTest',
-                        responses: {
-                            '200': {
-                                description: 'ok',
-                                links: {
-                                    MalformedLink: {
-                                        // A token with an invalid URI component
-                                        operationRef: '#/paths/~1test%ZZ/get',
-                                    },
-                                    NoFragment: {
-                                        operationRef: 'no-fragment-here',
-                                    },
-                                    ShortFragment: {
-                                        operationRef: '#/paths',
-                                    },
-                                    UnknownRoot: {
-                                        operationRef: '#/components/schemas/Test',
-                                    },
-                                    UnknownPathMethod: {
-                                        operationRef: '#/paths/~1unknown/get',
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        };
-        const project = runGenerator(spec);
-        const { API_LINKS } = compileGeneratedFile(project) as {
-            API_LINKS: Record<string, Record<string, Record<string, { operationId?: string }>>>;
-        };
-        const linkBlock = API_LINKS['getTest']['200'];
-        expect(linkBlock['MalformedLink'].operationId).toBeUndefined();
-        expect(linkBlock['NoFragment'].operationId).toBeUndefined();
-        expect(linkBlock['ShortFragment'].operationId).toBeUndefined();
-        expect(linkBlock['UnknownRoot'].operationId).toBeUndefined();
-        expect(linkBlock['UnknownPathMethod'].operationId).toBeUndefined();
-    });
-
-    it('should resolve operationId from relative operationRef for additionalOperations', () => {
-        const spec: SwaggerSpec = {
-            openapi: '3.0.0',
-            info: { title: 'T', version: '1' },
-            paths: {
-                '/foo': {
-                    post: {
-                        operationId: 'createFoo',
-                        responses: {
-                            '200': {
-                                description: 'ok',
-                                links: {
-                                    myLink: {
-                                        operationRef: '#/paths/~1foo/additionalOperations/report',
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            components: { links: {} },
-        };
-        const parser = new SwaggerParser(spec, { output: '/out', options: {} } as any);
-        parser.operations.push({
-            path: '/foo',
-            method: 'report',
-            operationId: 'customReport',
-            parameters: [],
-            responses: {},
-        });
-        const project = createTestProject();
-        new LinkGenerator(parser, project).generate('/out');
-        const { API_LINKS } = compileGeneratedFile(project) as {
-            API_LINKS: Record<string, Record<string, Record<string, { operationId?: string }>>>;
-        };
-        expect(API_LINKS['createFoo']['200']['myLink'].operationId).toBe('customReport');
-    });
-
-    it('should return undefined when path is not found in pool', () => {
-        const spec: SwaggerSpec = {
-            openapi: '3.0.0',
-            info: { title: 'T', version: '1' },
-            paths: {
-                '/foo': {
-                    post: {
-                        operationId: 'createFoo',
-                        responses: {
-                            '200': {
-                                description: 'ok',
-                                links: {
-                                    myLink: {
-                                        operationRef: '#/paths/~1missing/get',
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            components: { links: {} },
-        };
-        const project = runGenerator(spec);
-        const { API_LINKS } = compileGeneratedFile(project) as {
-            API_LINKS: Record<string, Record<string, Record<string, { operationId?: string }>>>;
-        };
-        expect(API_LINKS['createFoo']['200']['myLink'].operationId).toBeUndefined();
-    });
-
-    it('should return undefined when path is found but method does not match', () => {
-        const spec: SwaggerSpec = {
-            openapi: '3.0.0',
-            info: { title: 'T', version: '1' },
-            paths: {
-                '/foo': {
-                    post: {
-                        operationId: 'createFoo',
-                        responses: {
-                            '200': {
-                                description: 'ok',
-                                links: {
-                                    myLink: {
-                                        operationRef: '#/paths/~1foo/put',
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            components: { links: {} },
-        };
-        const project = runGenerator(spec);
-        const { API_LINKS } = compileGeneratedFile(project) as {
-            API_LINKS: Record<string, Record<string, Record<string, { operationId?: string }>>>;
-        };
-        expect(API_LINKS['createFoo']['200']['myLink'].operationId).toBeUndefined();
-    });
-
-    it('should fall back to undefined operationId when operation lacks it', () => {
-        const spec: SwaggerSpec = {
-            openapi: '3.0.0',
-            info: { title: 'T', version: '1' },
-            paths: {
-                '/foo': {
-                    get: {
-                        responses: { '200': { description: 'ok' } },
-                    },
-                    post: {
-                        operationId: 'myOp',
-                        responses: {
-                            '200': {
-                                description: 'ok',
-                                links: {
-                                    myLink: {
-                                        operationRef: '#/paths/~1foo/post',
-                                    },
-                                    shortLink: {
-                                        operationRef: '#/paths/~1foo',
-                                    },
-                                    missingLink: {
-                                        operationRef: '#/paths/~1foo/get',
-                                    },
-                                    malformedLongLink: {
-                                        operationRef: '#/paths/~1foo/bar/baz/qux',
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            components: { links: {} },
-        };
-        const project = runGenerator(spec);
-        const { API_LINKS } = compileGeneratedFile(project) as any;
-        expect(API_LINKS['myOp']['200']['myLink'].operationId).toBe('myOp');
-        expect(API_LINKS['myOp']['200']['shortLink'].operationId).toBeUndefined();
-        expect(API_LINKS['myOp']['200']['missingLink'].operationId).toBeUndefined();
-        expect(API_LINKS['myOp']['200']['malformedLongLink'].operationId).toBeUndefined();
-    });
+		expect(link.operationId).toBe("handleUserCreated");
+	});
+
+	it("should preserve x- extensions on operation and component links", () => {
+		const project = runGenerator(extensionLinksSpec);
+
+		const { API_LINKS, API_COMPONENT_LINKS } = compileGeneratedFile(project);
+
+		const link = API_LINKS.getItem["200"].Next;
+
+		expect(link["x-trace"]).toBe("keep-me");
+
+		expect(link["x-meta"]).toEqual({ level: 1 });
+
+		expect(API_COMPONENT_LINKS.Paged["x-note"]).toBe("component-link");
+	});
+
+	it("should resolve external operationRef when the target document is cached", () => {
+		const entrySpec: SwaggerSpec = {
+			openapi: "3.2.0",
+			info: { title: "Entry", version: "1.0" },
+			paths: {
+				"/entry": {
+					get: {
+						operationId: "getEntry",
+						responses: {
+							"200": {
+								description: "ok",
+								links: {
+									External: {
+										operationRef: "other.json#/paths/~1external/get",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		};
+
+		const externalSpec: SwaggerSpec = {
+			openapi: "3.2.0",
+			info: { title: "External", version: "1.0" },
+			paths: {
+				"/external": {
+					get: {
+						operationId: "getExternal",
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			},
+		};
+
+		const project = createTestProject();
+		const config: GeneratorConfig = { output: "/out", options: {} } as
+			| string
+			| number
+			| boolean
+			| object
+			| undefined
+			| null;
+		const entryUri = "http://api.com/spec.json";
+		const externalUri = "http://api.com/other.json";
+		const specCache = new Map<string, SwaggerSpec>([
+			[entryUri, entrySpec],
+			[externalUri, externalSpec],
+		]);
+		const parser = new SwaggerParser(entrySpec, config, specCache, entryUri);
+		new LinkGenerator(parser, project).generate("/out");
+
+		const { API_LINKS } = compileGeneratedFile(project);
+
+		const link = API_LINKS.getEntry["200"].External;
+
+		expect(link.operationRef).toBe("other.json#/paths/~1external/get");
+
+		expect(link.operationId).toBe("getExternal");
+	});
+
+	it("should ignore operations without identifiers or links", () => {
+		// Test sparse spec
+		const project = runGenerator(sparseSpec);
+
+		const { API_LINKS } = compileGeneratedFile(project);
+
+		expect(API_LINKS).toBeUndefined();
+		const sourceFile = project.getSourceFileOrThrow("/out/links.ts");
+		expect(sourceFile.getText()).toContain("export { };");
+	});
+
+	it("should handle unresolvable references gracefully", () => {
+		// Suppress warning expectation in test output
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const project = runGenerator(brokenRefsSpec);
+
+		const { API_LINKS } = compileGeneratedFile(project);
+
+		expect(API_LINKS).toBeUndefined();
+		const sourceFile = project.getSourceFileOrThrow("/out/links.ts");
+		expect(sourceFile.getText()).toContain("export { };");
+	});
+
+	it("should produce valid module for empty links", () => {
+		const spec: SwaggerSpec = {
+			openapi: "3.0.0",
+			info: { title: "Empty", version: "1" },
+			paths: {},
+		};
+		const project = runGenerator(spec);
+		const sourceFile = project.getSourceFileOrThrow("/out/links.ts");
+		expect(sourceFile.getText()).toContain("export { };");
+	});
+
+	it("should handle malformed operationRef in decodePointerToken", () => {
+		const spec: SwaggerSpec = {
+			openapi: "3.0.0",
+			info: { title: "Malformed", version: "1" },
+			paths: {
+				"/test": {
+					get: {
+						operationId: "getTest",
+						responses: {
+							"200": {
+								description: "ok",
+								links: {
+									MalformedLink: {
+										// A token with an invalid URI component
+										operationRef: "#/paths/~1test%ZZ/get",
+									},
+									NoFragment: {
+										operationRef: "no-fragment-here",
+									},
+									ShortFragment: {
+										operationRef: "#/paths",
+									},
+									UnknownRoot: {
+										operationRef: "#/components/schemas/Test",
+									},
+									UnknownPathMethod: {
+										operationRef: "#/paths/~1unknown/get",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		};
+		const project = runGenerator(spec);
+		const { API_LINKS } = compileGeneratedFile(project) as {
+			API_LINKS: Record<
+				string,
+				Record<string, Record<string, { operationId?: string }>>
+			>;
+		};
+		const linkBlock = API_LINKS.getTest["200"];
+		expect(linkBlock.MalformedLink.operationId).toBeUndefined();
+		expect(linkBlock.NoFragment.operationId).toBeUndefined();
+		expect(linkBlock.ShortFragment.operationId).toBeUndefined();
+		expect(linkBlock.UnknownRoot.operationId).toBeUndefined();
+		expect(linkBlock.UnknownPathMethod.operationId).toBeUndefined();
+	});
+
+	it("should resolve operationId from relative operationRef for additionalOperations", () => {
+		const spec: SwaggerSpec = {
+			openapi: "3.0.0",
+			info: { title: "T", version: "1" },
+			paths: {
+				"/foo": {
+					post: {
+						operationId: "createFoo",
+						responses: {
+							"200": {
+								description: "ok",
+								links: {
+									myLink: {
+										operationRef: "#/paths/~1foo/additionalOperations/report",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			components: { links: {} },
+		};
+		const parser = new SwaggerParser(spec, {
+			output: "/out",
+			options: {},
+		} as any);
+		parser.operations.push({
+			path: "/foo",
+			method: "report",
+			operationId: "customReport",
+			parameters: [],
+			responses: {},
+		});
+		const project = createTestProject();
+		new LinkGenerator(parser, project).generate("/out");
+		const { API_LINKS } = compileGeneratedFile(project) as {
+			API_LINKS: Record<
+				string,
+				Record<string, Record<string, { operationId?: string }>>
+			>;
+		};
+		expect(API_LINKS.createFoo["200"].myLink.operationId).toBe("customReport");
+	});
+
+	it("should return undefined when path is not found in pool", () => {
+		const spec: SwaggerSpec = {
+			openapi: "3.0.0",
+			info: { title: "T", version: "1" },
+			paths: {
+				"/foo": {
+					post: {
+						operationId: "createFoo",
+						responses: {
+							"200": {
+								description: "ok",
+								links: {
+									myLink: {
+										operationRef: "#/paths/~1missing/get",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			components: { links: {} },
+		};
+		const project = runGenerator(spec);
+		const { API_LINKS } = compileGeneratedFile(project) as {
+			API_LINKS: Record<
+				string,
+				Record<string, Record<string, { operationId?: string }>>
+			>;
+		};
+		expect(API_LINKS.createFoo["200"].myLink.operationId).toBeUndefined();
+	});
+
+	it("should return undefined when path is found but method does not match", () => {
+		const spec: SwaggerSpec = {
+			openapi: "3.0.0",
+			info: { title: "T", version: "1" },
+			paths: {
+				"/foo": {
+					post: {
+						operationId: "createFoo",
+						responses: {
+							"200": {
+								description: "ok",
+								links: {
+									myLink: {
+										operationRef: "#/paths/~1foo/put",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			components: { links: {} },
+		};
+		const project = runGenerator(spec);
+		const { API_LINKS } = compileGeneratedFile(project) as {
+			API_LINKS: Record<
+				string,
+				Record<string, Record<string, { operationId?: string }>>
+			>;
+		};
+		expect(API_LINKS.createFoo["200"].myLink.operationId).toBeUndefined();
+	});
+
+	it("should fall back to undefined operationId when operation lacks it", () => {
+		const spec: SwaggerSpec = {
+			openapi: "3.0.0",
+			info: { title: "T", version: "1" },
+			paths: {
+				"/foo": {
+					get: {
+						responses: { "200": { description: "ok" } },
+					},
+					post: {
+						operationId: "myOp",
+						responses: {
+							"200": {
+								description: "ok",
+								links: {
+									myLink: {
+										operationRef: "#/paths/~1foo/post",
+									},
+									shortLink: {
+										operationRef: "#/paths/~1foo",
+									},
+									missingLink: {
+										operationRef: "#/paths/~1foo/get",
+									},
+									malformedLongLink: {
+										operationRef: "#/paths/~1foo/bar/baz/qux",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			components: { links: {} },
+		};
+		const project = runGenerator(spec);
+		const { API_LINKS } = compileGeneratedFile(project) as any;
+		expect(API_LINKS.myOp["200"].myLink.operationId).toBe("myOp");
+		expect(API_LINKS.myOp["200"].shortLink.operationId).toBeUndefined();
+		expect(API_LINKS.myOp["200"].missingLink.operationId).toBeUndefined();
+		expect(API_LINKS.myOp["200"].malformedLongLink.operationId).toBeUndefined();
+	});
 });

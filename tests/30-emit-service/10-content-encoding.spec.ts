@@ -1,191 +1,203 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
-import { Project, Scope } from 'ts-morph';
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { GeneratorConfig } from '@src/core/types/index.js';
-import { ServiceMethodGenerator } from '@src/vendors/angular/service/service-method.generator.js';
-import { TypeGenerator } from '@src/classes/emit.js';
+import { describe, expect, it } from "vitest";
+import { Project, Scope } from "ts-morph";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
+import { TypeGenerator } from "@src/classes/emit.js";
 
 const encodingSpec = {
-    openapi: '3.1.0',
-    info: { title: 'Content Encoding Test', version: '1.0' },
-    components: {
-        schemas: {
-            Metadata: {
-                type: 'object',
-                properties: {
-                    version: { type: 'number' },
-                },
-            },
-        },
-    },
-    paths: {
-        '/encode-request': {
-            post: {
-                operationId: 'postEncodedData',
-                requestBody: {
-                    content: {
-                        'application/json': {
-                            schema: {
-                                type: 'object',
-                                properties: {
-                                    id: { type: 'string' },
-                                    // Implicit intent: User sends object, client stringifies it
-                                    config: {
-                                        type: 'string',
-                                        contentMediaType: 'application/json',
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-                responses: { '200': { description: 'ok' } },
-            },
-        },
-        '/nested-encoding': {
-            post: {
-                operationId: 'postNested',
-                requestBody: {
-                    content: {
-                        'application/json': {
-                            schema: {
-                                type: 'object',
-                                properties: {
-                                    items: {
-                                        type: 'array',
-                                        items: {
-                                            type: 'object',
-                                            properties: {
-                                                raw: { type: 'string', contentMediaType: 'application/json' },
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-                responses: { '200': { description: 'ok' } },
-            },
-        },
-        '/base64-request': {
-            post: {
-                operationId: 'postBase64',
-                requestBody: {
-                    content: {
-                        'application/json': {
-                            schema: {
-                                type: 'object',
-                                properties: {
-                                    data: { type: 'string', contentEncoding: 'base64' },
-                                },
-                            },
-                        },
-                    },
-                },
-                responses: { '200': { description: 'ok' } },
-            },
-        },
-    },
+	openapi: "3.1.0",
+	info: { title: "Content Encoding Test", version: "1.0" },
+	components: {
+		schemas: {
+			Metadata: {
+				type: "object",
+				properties: {
+					version: { type: "number" },
+				},
+			},
+		},
+	},
+	paths: {
+		"/encode-request": {
+			post: {
+				operationId: "postEncodedData",
+				requestBody: {
+					content: {
+						"application/json": {
+							schema: {
+								type: "object",
+								properties: {
+									id: { type: "string" },
+									// Implicit intent: User sends object, client stringifies it
+									config: {
+										type: "string",
+										contentMediaType: "application/json",
+									},
+								},
+							},
+						},
+					},
+				},
+				responses: { "200": { description: "ok" } },
+			},
+		},
+		"/nested-encoding": {
+			post: {
+				operationId: "postNested",
+				requestBody: {
+					content: {
+						"application/json": {
+							schema: {
+								type: "object",
+								properties: {
+									items: {
+										type: "array",
+										items: {
+											type: "object",
+											properties: {
+												raw: {
+													type: "string",
+													contentMediaType: "application/json",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				responses: { "200": { description: "ok" } },
+			},
+		},
+		"/base64-request": {
+			post: {
+				operationId: "postBase64",
+				requestBody: {
+					content: {
+						"application/json": {
+							schema: {
+								type: "object",
+								properties: {
+									data: { type: "string", contentEncoding: "base64" },
+								},
+							},
+						},
+					},
+				},
+				responses: { "200": { description: "ok" } },
+			},
+		},
+	},
 };
 
-describe('Emitter: ServiceMethodGenerator (Request Encoding)', () => {
-    const createTestEnv = () => {
-        const config: GeneratorConfig = {
-            input: '',
-            output: '/out',
-            options: { enumStyle: 'enum', framework: 'angular' },
-        };
-        const project = new Project({ useInMemoryFileSystem: true });
-        const parser = new SwaggerParser(encodingSpec as string | number | boolean | object | undefined | null, config);
+describe("Emitter: ServiceMethodGenerator (Request Encoding)", () => {
+	const createTestEnv = () => {
+		const config: GeneratorConfig = {
+			input: "",
+			output: "/out",
+			options: { enumStyle: "enum", framework: "angular" },
+		};
+		const project = new Project({ useInMemoryFileSystem: true });
+		const parser = new SwaggerParser(
+			encodingSpec as string | number | boolean | object | undefined | null,
+			config,
+		);
 
-        new TypeGenerator(parser, project, config).generate('/out');
+		new TypeGenerator(parser, project, config).generate("/out");
 
-        const methodGen = new ServiceMethodGenerator(config, parser);
-        const sourceFile = project.createSourceFile('/out/service.ts');
-        const serviceClass = sourceFile.addClass({ name: 'TestService' });
-        serviceClass.addProperty({
-            name: 'http',
-            scope: Scope.Private,
-            isReadonly: true,
-            type: 'string | number | boolean | object | undefined | null',
-        });
-        serviceClass.addProperty({
-            name: 'basePath',
-            scope: Scope.Private,
-            isReadonly: true,
-            type: 'string',
-            initializer: "''",
-        });
-        serviceClass.addMethod({
-            name: 'createContextWithClientId',
-            scope: Scope.Private,
-            returnType: 'string | number | boolean | object | undefined | null',
-            statements: 'return {};',
-        });
+		const methodGen = new ServiceMethodGenerator(config, parser);
+		const sourceFile = project.createSourceFile("/out/service.ts");
+		const serviceClass = sourceFile.addClass({ name: "TestService" });
+		serviceClass.addProperty({
+			name: "http",
+			scope: Scope.Private,
+			isReadonly: true,
+			type: "string | number | boolean | object | undefined | null",
+		});
+		serviceClass.addProperty({
+			name: "basePath",
+			scope: Scope.Private,
+			isReadonly: true,
+			type: "string",
+			initializer: "''",
+		});
+		serviceClass.addMethod({
+			name: "createContextWithClientId",
+			scope: Scope.Private,
+			returnType: "string | number | boolean | object | undefined | null",
+			statements: "return {};",
+		});
 
-        return { methodGen, serviceClass };
-    };
+		return { methodGen, serviceClass };
+	};
 
-    it('should apply ContentEncoder.encode to request body with encoded properties', () => {
-        const { methodGen, serviceClass } = createTestEnv();
+	it("should apply ContentEncoder.encode to request body with encoded properties", () => {
+		const { methodGen, serviceClass } = createTestEnv();
 
-        const op: string | number | boolean | object | undefined | null = {
-            method: 'POST',
-            path: '/encode-request',
-            methodName: 'postEncodedData',
-            requestBody: encodingSpec.paths['/encode-request'].post.requestBody,
-            responses: encodingSpec.paths['/encode-request'].post.responses,
-        };
+		const op: string | number | boolean | object | undefined | null = {
+			method: "POST",
+			path: "/encode-request",
+			methodName: "postEncodedData",
+			requestBody: encodingSpec.paths["/encode-request"].post.requestBody,
+			responses: encodingSpec.paths["/encode-request"].post.responses,
+		};
 
-        methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, op);
 
-        const body = serviceClass.getMethodOrThrow('postEncodedData').getBodyText()!;
+		const body = serviceClass
+			.getMethodOrThrow("postEncodedData")
+			.getBodyText()!;
 
-        // Verify call to ContentEncoder
-        expect(body).toContain('body = ContentEncoder.encode(body,');
-        // Verify config structure
-        expect(body).toContain('"properties":{"config":{"contentMediaType":"application/json","encode":true}}');
-    });
+		// Verify call to ContentEncoder
+		expect(body).toContain("body = ContentEncoder.encode(body,");
+		// Verify config structure
+		expect(body).toContain(
+			'"properties":{"config":{"contentMediaType":"application/json","encode":true}}',
+		);
+	});
 
-    it('should apply ContentEncoder.encode recursively for nested arrays', () => {
-        const { methodGen, serviceClass } = createTestEnv();
+	it("should apply ContentEncoder.encode recursively for nested arrays", () => {
+		const { methodGen, serviceClass } = createTestEnv();
 
-        const op: string | number | boolean | object | undefined | null = {
-            method: 'POST',
-            path: '/nested-encoding',
-            methodName: 'postNested',
-            requestBody: encodingSpec.paths['/nested-encoding'].post.requestBody,
-            responses: encodingSpec.paths['/nested-encoding'].post.responses,
-        };
+		const op: string | number | boolean | object | undefined | null = {
+			method: "POST",
+			path: "/nested-encoding",
+			methodName: "postNested",
+			requestBody: encodingSpec.paths["/nested-encoding"].post.requestBody,
+			responses: encodingSpec.paths["/nested-encoding"].post.responses,
+		};
 
-        methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, op);
 
-        const body = serviceClass.getMethodOrThrow('postNested').getBodyText()!;
+		const body = serviceClass.getMethodOrThrow("postNested").getBodyText()!;
 
-        // Check nested structure
-        expect(body).toContain('ContentEncoder.encode(body,');
-        expect(body).toContain(
-            '"properties":{"items":{"items":{"properties":{"raw":{"contentMediaType":"application/json","encode":true}}}}}',
-        );
-    });
+		// Check nested structure
+		expect(body).toContain("ContentEncoder.encode(body,");
+		expect(body).toContain(
+			'"properties":{"items":{"items":{"properties":{"raw":{"contentMediaType":"application/json","encode":true}}}}}',
+		);
+	});
 
-    it('should include contentEncoding in ContentEncoder config', () => {
-        const { methodGen, serviceClass } = createTestEnv();
+	it("should include contentEncoding in ContentEncoder config", () => {
+		const { methodGen, serviceClass } = createTestEnv();
 
-        const op: string | number | boolean | object | undefined | null = {
-            method: 'POST',
-            path: '/base64-request',
-            methodName: 'postBase64',
-            requestBody: encodingSpec.paths['/base64-request'].post.requestBody,
-            responses: encodingSpec.paths['/base64-request'].post.responses,
-        };
+		const op: string | number | boolean | object | undefined | null = {
+			method: "POST",
+			path: "/base64-request",
+			methodName: "postBase64",
+			requestBody: encodingSpec.paths["/base64-request"].post.requestBody,
+			responses: encodingSpec.paths["/base64-request"].post.responses,
+		};
 
-        methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, op);
 
-        const body = serviceClass.getMethodOrThrow('postBase64').getBodyText()!;
-        expect(body).toContain('ContentEncoder.encode(body,');
-        expect(body).toContain('"properties":{"data":{"contentEncoding":"base64"}}');
-    });
+		const body = serviceClass.getMethodOrThrow("postBase64").getBodyText()!;
+		expect(body).toContain("ContentEncoder.encode(body,");
+		expect(body).toContain(
+			'"properties":{"data":{"contentEncoding":"base64"}}',
+		);
+	});
 });

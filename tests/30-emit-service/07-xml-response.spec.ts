@@ -1,106 +1,106 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
-import { Project, Scope } from 'ts-morph';
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { GeneratorConfig } from '@src/core/types/index.js';
-import { ServiceMethodGenerator } from '@src/vendors/angular/service/service-method.generator.js';
-import { TypeGenerator } from '@src/classes/emit.js';
+import { describe, expect, it } from "vitest";
+import { Project, Scope } from "ts-morph";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
+import { TypeGenerator } from "@src/classes/emit.js";
 
 const xmlResponseSpec = {
-    openapi: '3.0.0',
-    info: { title: 'XML Response Test', version: '1.0' },
-    paths: {
-        '/xml-data': {
-            get: {
-                operationId: 'getXmlData',
-                responses: {
-                    '200': {
-                        description: 'ok',
-                        content: {
-                            'application/xml': {
-                                schema: {
-                                    type: 'object',
-                                    properties: {
-                                        id: { type: 'integer', xml: { attribute: true } },
-                                        label: { type: 'string' },
-                                    },
-                                    xml: { name: 'DataRoot' },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    },
-    components: {},
+	openapi: "3.0.0",
+	info: { title: "XML Response Test", version: "1.0" },
+	paths: {
+		"/xml-data": {
+			get: {
+				operationId: "getXmlData",
+				responses: {
+					"200": {
+						description: "ok",
+						content: {
+							"application/xml": {
+								schema: {
+									type: "object",
+									properties: {
+										id: { type: "integer", xml: { attribute: true } },
+										label: { type: "string" },
+									},
+									xml: { name: "DataRoot" },
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	components: {},
 };
 
-describe('Emitter: ServiceMethodGenerator (XML Response Parsing)', () => {
-    const createTestEnv = () => {
-        const config: GeneratorConfig = {
-            input: '',
-            output: '/out',
-            options: { enumStyle: 'enum', framework: 'angular' },
-        };
-        const project = new Project({ useInMemoryFileSystem: true });
-        const parser = new SwaggerParser(
-            xmlResponseSpec as string | number | boolean | object | undefined | null,
-            config,
-        );
+describe("Emitter: ServiceMethodGenerator (XML Response Parsing)", () => {
+	const createTestEnv = () => {
+		const config: GeneratorConfig = {
+			input: "",
+			output: "/out",
+			options: { enumStyle: "enum", framework: "angular" },
+		};
+		const project = new Project({ useInMemoryFileSystem: true });
+		const parser = new SwaggerParser(
+			xmlResponseSpec as string | number | boolean | object | undefined | null,
+			config,
+		);
 
-        new TypeGenerator(parser, project, config).generate('/out');
+		new TypeGenerator(parser, project, config).generate("/out");
 
-        const methodGen = new ServiceMethodGenerator(config, parser);
-        const sourceFile = project.createSourceFile('/out/service.ts');
-        const serviceClass = sourceFile.addClass({ name: 'TestService' });
-        serviceClass.addProperty({
-            name: 'http',
-            scope: Scope.Private,
-            isReadonly: true,
-            type: 'string | number | boolean | object | undefined | null',
-        });
-        serviceClass.addProperty({
-            name: 'basePath',
-            scope: Scope.Private,
-            isReadonly: true,
-            type: 'string',
-            initializer: "''",
-        });
-        serviceClass.addMethod({
-            name: 'createContextWithClientId',
-            scope: Scope.Private,
-            returnType: 'string | number | boolean | object | undefined | null',
-            statements: 'return {};',
-        });
+		const methodGen = new ServiceMethodGenerator(config, parser);
+		const sourceFile = project.createSourceFile("/out/service.ts");
+		const serviceClass = sourceFile.addClass({ name: "TestService" });
+		serviceClass.addProperty({
+			name: "http",
+			scope: Scope.Private,
+			isReadonly: true,
+			type: "string | number | boolean | object | undefined | null",
+		});
+		serviceClass.addProperty({
+			name: "basePath",
+			scope: Scope.Private,
+			isReadonly: true,
+			type: "string",
+			initializer: "''",
+		});
+		serviceClass.addMethod({
+			name: "createContextWithClientId",
+			scope: Scope.Private,
+			returnType: "string | number | boolean | object | undefined | null",
+			statements: "return {};",
+		});
 
-        return { methodGen, serviceClass };
-    };
+		return { methodGen, serviceClass };
+	};
 
-    it('should set responseType to text and pipe through XmlParser.parse', () => {
-        const { methodGen, serviceClass } = createTestEnv();
+	it("should set responseType to text and pipe through XmlParser.parse", () => {
+		const { methodGen, serviceClass } = createTestEnv();
 
-        const op: string | number | boolean | object | undefined | null = {
-            method: 'GET',
-            path: '/xml-data',
-            methodName: 'getXmlData',
-            responses: xmlResponseSpec.paths['/xml-data'].get.responses,
-        };
+		const op: string | number | boolean | object | undefined | null = {
+			method: "GET",
+			path: "/xml-data",
+			methodName: "getXmlData",
+			responses: xmlResponseSpec.paths["/xml-data"].get.responses,
+		};
 
-        methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, op);
 
-        const body = serviceClass.getMethodOrThrow('getXmlData').getBodyText()!;
+		const body = serviceClass.getMethodOrThrow("getXmlData").getBodyText()!;
 
-        expect(body).toContain(`responseType: 'text'`);
-        expect(body).toContain('.pipe(');
-        expect(body).toContain(
-            'map((response: Blob | string | Record<string, string | number | boolean | object | undefined | null>) => {',
-        );
+		expect(body).toContain(`responseType: 'text'`);
+		expect(body).toContain(".pipe(");
+		expect(body).toContain(
+			"map((response: Blob | string | Record<string, string | number | boolean | object | undefined | null>) => {",
+		);
 
-        expect(body).toContain('return XmlParser.parse(response,');
-        expect(body).toContain('"name":"DataRoot"');
-        expect(body).toContain('"nodeType":"element"');
-        expect(body).toContain('"properties":{');
-        expect(body).toContain('"id":{"attribute":true');
-    });
+		expect(body).toContain("return XmlParser.parse(response,");
+		expect(body).toContain('"name":"DataRoot"');
+		expect(body).toContain('"nodeType":"element"');
+		expect(body).toContain('"properties":{');
+		expect(body).toContain('"id":{"attribute":true');
+	});
 });

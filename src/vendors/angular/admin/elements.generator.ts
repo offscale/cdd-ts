@@ -1,78 +1,80 @@
-import { Project } from 'ts-morph';
-import { Resource } from '@src/core/types/index.js';
-import { camelCase, pascalCase } from '@src/functions/utils.js';
+import type { Project } from "ts-morph";
+import type { Resource } from "@src/core/types/index.js";
+import { camelCase, pascalCase } from "@src/functions/utils.js";
 
 export class ElementsGenerator {
-    constructor(private readonly project: Project) {}
+	constructor(private readonly project: Project) {}
 
-    public generate(resources: Resource[], outDir: string): void {
-        const filePath = `${outDir}/elements.ts`;
+	public generate(resources: Resource[], outDir: string): void {
+		const filePath = `${outDir}/elements.ts`;
 
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        sourceFile.addImportDeclaration({
-            moduleSpecifier: '@angular/core',
-            namedImports: ['Injector'],
-        });
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "@angular/core",
+			namedImports: ["Injector"],
+		});
 
-        sourceFile.addImportDeclaration({
-            moduleSpecifier: '@angular/elements',
-            namedImports: ['createCustomElement'],
-        });
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "@angular/elements",
+			namedImports: ["createCustomElement"],
+		});
 
-        // Import components
+		// Import components
 
-        const componentNames: string[] = [];
+		const componentNames: string[] = [];
 
-        for (const resource of resources) {
-            const hasList = resource.operations.some(op => op.action === 'list');
+		for (const resource of resources) {
+			const hasList = resource.operations.some((op) => op.action === "list");
 
-            const hasForm = resource.isEditable;
+			const hasForm = resource.isEditable;
 
-            if (hasList) {
-                const className = `${pascalCase(resource.name)}ListComponent`;
+			if (hasList) {
+				const className = `${pascalCase(resource.name)}ListComponent`;
 
-                sourceFile.addImportDeclaration({
-                    moduleSpecifier: `./${resource.name}/${resource.name}-list/${resource.name}-list.component`,
-                    namedImports: [className],
-                });
+				sourceFile.addImportDeclaration({
+					moduleSpecifier: `./${resource.name}/${resource.name}-list/${resource.name}-list.component`,
+					namedImports: [className],
+				});
 
-                componentNames.push(className);
-            }
+				componentNames.push(className);
+			}
 
-            if (hasForm) {
-                const className = `${pascalCase(resource.name)}FormComponent`;
+			if (hasForm) {
+				const className = `${pascalCase(resource.name)}FormComponent`;
 
-                sourceFile.addImportDeclaration({
-                    moduleSpecifier: `./${resource.name}/${resource.name}-form/${resource.name}-form.component`,
-                    namedImports: [className],
-                });
+				sourceFile.addImportDeclaration({
+					moduleSpecifier: `./${resource.name}/${resource.name}-form/${resource.name}-form.component`,
+					namedImports: [className],
+				});
 
-                componentNames.push(className);
-            }
-        }
+				componentNames.push(className);
+			}
+		}
 
-        // Generate registration function
+		// Generate registration function
 
-        const body = componentNames
-            .map(name => {
-                const tag = `app-${camelCase(name)
-                    .replace(/([A-Z])/g, '-$1')
-                    .toLowerCase()}`;
+		const body = componentNames
+			.map((name) => {
+				const tag = `app-${camelCase(name)
+					.replace(/([A-Z])/g, "-$1")
+					.toLowerCase()}`;
 
-                return `
+				return `
         const ${name}Element = createCustomElement(${name}, { injector });
         if (!customElements.get('${tag}')) {
             customElements.define('${tag}', ${name}Element);
         }`;
-            })
-            .join('\n');
+			})
+			.join("\n");
 
-        sourceFile.addFunction({
-            isExported: true,
-            name: 'registerAdminWebComponents',
-            parameters: [{ name: 'injector', type: 'Injector' }],
-            statements: body,
-        });
-    }
+		sourceFile.addFunction({
+			isExported: true,
+			name: "registerAdminWebComponents",
+			parameters: [{ name: "injector", type: "Injector" }],
+			statements: body,
+		});
+	}
 }

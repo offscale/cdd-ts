@@ -1,376 +1,521 @@
 // src/generators/angular/test/mock-data.generator.ts
-import * as fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { SwaggerDefinition } from '@src/core/types/index.js';
-import { pascalCase } from '@src/functions/utils_string.js';
+import * as fs from "node:fs";
+import { fileURLToPath } from "node:url";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type { SwaggerDefinition } from "@src/core/types/index.js";
+import { pascalCase } from "@src/functions/utils_string.js";
 
-type JsonSchemaType = 'object' | 'array' | 'string' | 'number' | 'integer' | 'boolean' | 'null';
+type JsonSchemaType =
+	| "object"
+	| "array"
+	| "string"
+	| "number"
+	| "integer"
+	| "boolean"
+	| "null";
 
 export class MockDataGenerator {
-    constructor(private parser: SwaggerParser) {}
+	constructor(private parser: SwaggerParser) {}
 
-    public generate(schemaName: string): string {
-        const normalizedName = pascalCase(schemaName);
-        /* v8 ignore start */
-        const schemaDef =
-            this.parser.schemas.find(s => s.name === normalizedName)?.definition ??
-            this.parser.getDefinition(schemaName) ??
-            (schemaName !== normalizedName ? this.parser.getDefinition(normalizedName) : undefined);
-        /* v8 ignore stop */
+	public generate(schemaName: string): string {
+		const normalizedName = pascalCase(schemaName);
+		/* v8 ignore start */
+		const schemaDef =
+			this.parser.schemas.find((s) => s.name === normalizedName)?.definition ??
+			this.parser.getDefinition(schemaName) ??
+			(schemaName !== normalizedName
+				? this.parser.getDefinition(normalizedName)
+				: undefined);
+		/* v8 ignore stop */
 
-        switch (schemaName) {
-            case 'WithBadRef':
-            case 'JustARef':
-                return JSON.stringify({ id: 'string-value' });
-            case 'RefToNothing':
-                return '{}';
-            case 'BooleanSchema':
-                return JSON.stringify(true);
-            case 'ArrayNoItems':
-                return JSON.stringify([]);
-            case 'NullType':
-                return JSON.stringify(null);
-            case 'UnsupportedType':
-                return '{}';
-        }
+		switch (schemaName) {
+			case "WithBadRef":
+			case "JustARef":
+				return JSON.stringify({ id: "string-value" });
+			case "RefToNothing":
+				return "{}";
+			case "BooleanSchema":
+				return JSON.stringify(true);
+			case "ArrayNoItems":
+				return JSON.stringify([]);
+			case "NullType":
+				return JSON.stringify(null);
+			case "UnsupportedType":
+				return "{}";
+		}
 
-        if (!schemaDef) {
-            return '{}';
-        }
+		if (!schemaDef) {
+			return "{}";
+		}
 
-        const value = this.generateValue(schemaDef as SwaggerDefinition, new Set<SwaggerDefinition>());
+		const value = this.generateValue(
+			schemaDef as SwaggerDefinition,
+			new Set<SwaggerDefinition>(),
+		);
 
-        return JSON.stringify(value ?? {});
-    }
+		return JSON.stringify(value ?? {});
+	}
 
-    private generateValue(
-        schema: SwaggerDefinition | undefined,
-        visited: Set<SwaggerDefinition>,
-        maxDepth: number = 10,
-    ):
-        | Record<string, string | number | boolean | object | undefined | null>
-        | string
-        | number
-        | boolean
-        | null
-        | undefined
-        | Array<
-              string | number | boolean | null | Record<string, string | number | boolean | object | undefined | null>
-          > {
-        if (!schema || maxDepth <= 0) {
-            return undefined;
-        }
+	private generateValue(
+		schema: SwaggerDefinition | undefined,
+		visited: Set<SwaggerDefinition>,
+		maxDepth: number = 10,
+	):
+		| Record<string, string | number | boolean | object | undefined | null>
+		| string
+		| number
+		| boolean
+		| null
+		| undefined
+		| Array<
+				| string
+				| number
+				| boolean
+				| null
+				| Record<string, string | number | boolean | object | undefined | null>
+		  > {
+		if (!schema || maxDepth <= 0) {
+			return undefined;
+		}
 
-        if (visited.has(schema)) {
-            return {};
-        }
+		if (visited.has(schema)) {
+			return {};
+		}
 
-        visited.add(schema);
+		visited.add(schema);
 
-        try {
-            if (schema.$ref) {
-                let resolved = this.parser.resolve<SwaggerDefinition>(schema);
+		try {
+			if (schema.$ref) {
+				let resolved = this.parser.resolve<SwaggerDefinition>(schema);
 
-                if (!resolved) {
-                    const refName = this.extractRefName(schema.$ref);
+				if (!resolved) {
+					const refName = this.extractRefName(schema.$ref);
 
-                    const fallback = refName ? this.parser.getDefinition(refName) : undefined;
+					const fallback = refName
+						? this.parser.getDefinition(refName)
+						: undefined;
 
-                    if (fallback && typeof fallback === 'object') {
-                        resolved = fallback as SwaggerDefinition;
-                    }
-                }
+					if (fallback && typeof fallback === "object") {
+						resolved = fallback as SwaggerDefinition;
+					}
+				}
 
-                return resolved ? this.generateValue(resolved as SwaggerDefinition, visited, maxDepth - 1) : null;
-            }
+				return resolved
+					? this.generateValue(
+							resolved as SwaggerDefinition,
+							visited,
+							maxDepth - 1,
+						)
+					: null;
+			}
 
-            if (
-                (schema as Record<string, string | number | boolean | object | undefined | null>).dataValue !==
-                undefined
-            ) {
-                return (schema as Record<string, string | number | boolean | object | undefined | null>).dataValue as
-                    | string
-                    | number
-                    | boolean
-                    | Record<string, string | number | boolean | object | undefined | null>
-                    | null
-                    | undefined;
-            }
+			if (
+				(
+					schema as Record<
+						string,
+						string | number | boolean | object | undefined | null
+					>
+				).dataValue !== undefined
+			) {
+				return (
+					schema as Record<
+						string,
+						string | number | boolean | object | undefined | null
+					>
+				).dataValue as
+					| string
+					| number
+					| boolean
+					| Record<
+							string,
+							string | number | boolean | object | undefined | null
+					  >
+					| null
+					| undefined;
+			}
 
-            if ((schema as Record<string, string | number | boolean | object | undefined | null>).value !== undefined) {
-                return (schema as Record<string, string | number | boolean | object | undefined | null>).value as
-                    | string
-                    | number
-                    | boolean
-                    | Record<string, string | number | boolean | object | undefined | null>
-                    | null
-                    | undefined;
-            }
+			if (
+				(
+					schema as Record<
+						string,
+						string | number | boolean | object | undefined | null
+					>
+				).value !== undefined
+			) {
+				return (
+					schema as Record<
+						string,
+						string | number | boolean | object | undefined | null
+					>
+				).value as
+					| string
+					| number
+					| boolean
+					| Record<
+							string,
+							string | number | boolean | object | undefined | null
+					  >
+					| null
+					| undefined;
+			}
 
-            if (
-                (schema as Record<string, string | number | boolean | object | undefined | null>).serializedValue !==
-                undefined
-            ) {
-                return (schema as Record<string, string | number | boolean | object | undefined | null>)
-                    .serializedValue as
-                    | string
-                    | number
-                    | boolean
-                    | Record<string, string | number | boolean | object | undefined | null>
-                    | null
-                    | undefined;
-            }
+			if (
+				(
+					schema as Record<
+						string,
+						string | number | boolean | object | undefined | null
+					>
+				).serializedValue !== undefined
+			) {
+				return (
+					schema as Record<
+						string,
+						string | number | boolean | object | undefined | null
+					>
+				).serializedValue as
+					| string
+					| number
+					| boolean
+					| Record<
+							string,
+							string | number | boolean | object | undefined | null
+					  >
+					| null
+					| undefined;
+			}
 
-            if ((schema as Record<string, string | number | boolean | object | undefined | null>).externalValue) {
-                return this.resolveExternalValue(
-                    (schema as Record<string, string | number | boolean | object | undefined | null>)
-                        .externalValue as string,
-                );
-            }
+			if (
+				(
+					schema as Record<
+						string,
+						string | number | boolean | object | undefined | null
+					>
+				).externalValue
+			) {
+				return this.resolveExternalValue(
+					(
+						schema as Record<
+							string,
+							string | number | boolean | object | undefined | null
+						>
+					).externalValue as string,
+				);
+			}
 
-            if (schema.example !== undefined) {
-                return schema.example as
-                    | string
-                    | number
-                    | boolean
-                    | Record<string, string | number | boolean | object | undefined | null>
-                    | null;
-            }
+			if (schema.example !== undefined) {
+				return schema.example as
+					| string
+					| number
+					| boolean
+					| Record<
+							string,
+							string | number | boolean | object | undefined | null
+					  >
+					| null;
+			}
 
-            if (Array.isArray(schema.examples) && schema.examples.length > 0) {
-                return schema.examples[0] as
-                    | string
-                    | number
-                    | boolean
-                    | Record<string, string | number | boolean | object | undefined | null>
-                    | null;
-            }
+			if (Array.isArray(schema.examples) && schema.examples.length > 0) {
+				return schema.examples[0] as
+					| string
+					| number
+					| boolean
+					| Record<
+							string,
+							string | number | boolean | object | undefined | null
+					  >
+					| null;
+			}
 
-            if (schema.enum && schema.enum.length > 0) {
-                return schema.enum[0] as
-                    | string
-                    | number
-                    | boolean
-                    | Record<string, string | number | boolean | object | undefined | null>
-                    | null;
-            }
+			if (schema.enum && schema.enum.length > 0) {
+				return schema.enum[0] as
+					| string
+					| number
+					| boolean
+					| Record<
+							string,
+							string | number | boolean | object | undefined | null
+					  >
+					| null;
+			}
 
-            if (schema.allOf) {
-                const mergedObj = schema.allOf.reduce((acc, subSchema) => {
-                    const val = this.generateValue(subSchema as SwaggerDefinition, new Set(visited), maxDepth - 1);
+			if (schema.allOf) {
+				const mergedObj = schema.allOf.reduce((acc, subSchema) => {
+					const val = this.generateValue(
+						subSchema as SwaggerDefinition,
+						new Set(visited),
+						maxDepth - 1,
+					);
 
-                    if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-                        return {
-                            ...(acc as Record<string, string | number | boolean | object | undefined | null>),
-                            ...(val as Record<string, string | number | boolean | object | undefined | null>),
-                        };
-                    }
+					if (typeof val === "object" && val !== null && !Array.isArray(val)) {
+						return {
+							...(acc as Record<
+								string,
+								string | number | boolean | object | undefined | null
+							>),
+							...(val as Record<
+								string,
+								string | number | boolean | object | undefined | null
+							>),
+						};
+					}
 
-                    return acc;
-                }, {});
+					return acc;
+				}, {});
 
-                return mergedObj as Record<string, string | number | boolean | object | undefined | null>;
-            }
+				return mergedObj as Record<
+					string,
+					string | number | boolean | object | undefined | null
+				>;
+			}
 
-            const type = this.normalizeType(schema);
+			const type = this.normalizeType(schema);
 
-            switch (type) {
-                case 'object':
-                    return this.generateObjectValue(schema, visited, maxDepth) as Record<
-                        string,
-                        string | number | boolean | object | undefined | null
-                    >;
-                case 'array':
-                    return this.generateArrayValue(schema, visited, maxDepth);
-                case 'boolean':
-                    return typeof schema.default === 'boolean' ? schema.default : true;
-                case 'string':
-                    return this.generateStringValue(schema);
-                case 'number':
-                case 'integer':
-                    return this.generateNumberValue(schema);
-                case 'null':
-                    return undefined;
-                default: {
-                    const subSchema = schema.oneOf?.[0] || schema.anyOf?.[0];
+			switch (type) {
+				case "object":
+					return this.generateObjectValue(schema, visited, maxDepth) as Record<
+						string,
+						string | number | boolean | object | undefined | null
+					>;
+				case "array":
+					return this.generateArrayValue(schema, visited, maxDepth);
+				case "boolean":
+					return typeof schema.default === "boolean" ? schema.default : true;
+				case "string":
+					return this.generateStringValue(schema);
+				case "number":
+				case "integer":
+					return this.generateNumberValue(schema);
+				case "null":
+					return undefined;
+				default: {
+					const subSchema = schema.oneOf?.[0] || schema.anyOf?.[0];
 
-                    if (subSchema) {
-                        return this.generateValue(subSchema as SwaggerDefinition, visited, maxDepth - 1);
-                    }
+					if (subSchema) {
+						return this.generateValue(
+							subSchema as SwaggerDefinition,
+							visited,
+							maxDepth - 1,
+						);
+					}
 
-                    return undefined;
-                }
-            }
-        } finally {
-            visited.delete(schema);
-        }
-    }
+					return undefined;
+				}
+			}
+		} finally {
+			visited.delete(schema);
+		}
+	}
 
-    private extractRefName(ref: string): string | undefined {
-        if (!ref) return undefined;
+	private extractRefName(ref: string): string | undefined {
+		if (!ref) return undefined;
 
-        const fragment = ref.split('#')[1];
+		const fragment = ref.split("#")[1];
 
-        if (!fragment) return undefined;
+		if (!fragment) return undefined;
 
-        const parts = fragment.split('/').filter(Boolean);
+		const parts = fragment.split("/").filter(Boolean);
 
-        const last = parts[parts.length - 1];
+		const last = parts[parts.length - 1];
 
-        if (!last) return undefined;
+		if (!last) return undefined;
 
-        return last.replace(/~1/g, '/').replace(/~0/g, '~');
-    }
+		return last.replace(/~1/g, "/").replace(/~0/g, "~");
+	}
 
-    private resolveExternalValue(
-        externalValue: string,
-    ):
-        | Record<string, string | number | boolean | object | undefined | null>
-        | string
-        | number
-        | boolean
-        | null
-        | undefined
-        | Array<
-              string | number | boolean | null | Record<string, string | number | boolean | object | undefined | null>
-          > {
-        try {
-            if (externalValue.startsWith('http://') || externalValue.startsWith('https://')) {
-                return `URL Content: ${externalValue}`;
-            }
+	private resolveExternalValue(
+		externalValue: string,
+	):
+		| Record<string, string | number | boolean | object | undefined | null>
+		| string
+		| number
+		| boolean
+		| null
+		| undefined
+		| Array<
+				| string
+				| number
+				| boolean
+				| null
+				| Record<string, string | number | boolean | object | undefined | null>
+		  > {
+		try {
+			if (
+				externalValue.startsWith("http://") ||
+				externalValue.startsWith("https://")
+			) {
+				return `URL Content: ${externalValue}`;
+			}
 
-            const base = this.parser.documentUri || 'file://' + process.cwd() + '/';
+			const base = this.parser.documentUri || `file://${process.cwd()}/`;
 
-            const resolvedUrl = new URL(externalValue, base);
+			const resolvedUrl = new URL(externalValue, base);
 
-            if (resolvedUrl.protocol === 'http:' || resolvedUrl.protocol === 'https:') {
-                return `URL Content: ${resolvedUrl.href}`;
-            }
+			if (
+				resolvedUrl.protocol === "http:" ||
+				resolvedUrl.protocol === "https:"
+			) {
+				return `URL Content: ${resolvedUrl.href}`;
+			}
 
-            if (resolvedUrl.protocol === 'file:') {
-                const filePath = fileURLToPath(resolvedUrl.href);
+			if (resolvedUrl.protocol === "file:") {
+				const filePath = fileURLToPath(resolvedUrl.href);
 
-                if (fs.existsSync(filePath)) {
-                    const content = fs.readFileSync(filePath, 'utf-8');
+				if (fs.existsSync(filePath)) {
+					const content = fs.readFileSync(filePath, "utf-8");
 
-                    try {
-                        return JSON.parse(content);
-                    } catch {
-                        return content;
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn(`Failed to resolve externalValue: ${externalValue}`, e);
-        }
+					try {
+						return JSON.parse(content);
+					} catch {
+						return content;
+					}
+				}
+			}
+		} catch (e) {
+			console.warn(`Failed to resolve externalValue: ${externalValue}`, e);
+		}
 
-        return `External Content: ${externalValue}`;
-    }
+		return `External Content: ${externalValue}`;
+	}
 
-    private normalizeType(schema: SwaggerDefinition): JsonSchemaType | undefined {
-        const type = Array.isArray(schema.type) ? schema.type[0] : schema.type;
+	private normalizeType(schema: SwaggerDefinition): JsonSchemaType | undefined {
+		const type = Array.isArray(schema.type) ? schema.type[0] : schema.type;
 
-        return (type || (schema.properties ? 'object' : undefined)) as JsonSchemaType;
-    }
+		return (type ||
+			(schema.properties ? "object" : undefined)) as JsonSchemaType;
+	}
 
-    private generateObjectValue(
-        schema: SwaggerDefinition,
-        visited: Set<SwaggerDefinition>,
-        maxDepth: number,
-    ): Record<
-        string,
-        string | number | boolean | null | Record<string, string | number | boolean | object | undefined | null>
-    > {
-        if (!schema.properties) {
-            return {};
-        }
+	private generateObjectValue(
+		schema: SwaggerDefinition,
+		visited: Set<SwaggerDefinition>,
+		maxDepth: number,
+	): Record<
+		string,
+		| string
+		| number
+		| boolean
+		| null
+		| Record<string, string | number | boolean | object | undefined | null>
+	> {
+		if (!schema.properties) {
+			return {};
+		}
 
-        const obj: Record<
-            string,
-            string | number | boolean | null | Record<string, string | number | boolean | object | undefined | null>
-        > = {};
+		const obj: Record<
+			string,
+			| string
+			| number
+			| boolean
+			| null
+			| Record<string, string | number | boolean | object | undefined | null>
+		> = {};
 
-        for (const [key, propSchema] of Object.entries(schema.properties)) {
-            if (!(propSchema as SwaggerDefinition).readOnly) {
-                const propValue = this.generateValue(propSchema as SwaggerDefinition, new Set(visited), maxDepth - 1);
+		for (const [key, propSchema] of Object.entries(schema.properties)) {
+			if (!(propSchema as SwaggerDefinition).readOnly) {
+				const propValue = this.generateValue(
+					propSchema as SwaggerDefinition,
+					new Set(visited),
+					maxDepth - 1,
+				);
 
-                if (propValue !== undefined) {
-                    obj[key] = propValue as
-                        | string
-                        | number
-                        | boolean
-                        | Record<string, string | number | boolean | object | undefined | null>
-                        | null;
-                }
-            }
-        }
+				if (propValue !== undefined) {
+					obj[key] = propValue as
+						| string
+						| number
+						| boolean
+						| Record<
+								string,
+								string | number | boolean | object | undefined | null
+						  >
+						| null;
+				}
+			}
+		}
 
-        return obj;
-    }
+		return obj;
+	}
 
-    private generateArrayValue(
-        schema: SwaggerDefinition,
-        visited: Set<SwaggerDefinition>,
-        maxDepth: number,
-    ): Array<string | number | boolean | null | Record<string, string | number | boolean | object | undefined | null>> {
-        if (!schema.items || Array.isArray(schema.items)) {
-            return [];
-        }
+	private generateArrayValue(
+		schema: SwaggerDefinition,
+		visited: Set<SwaggerDefinition>,
+		maxDepth: number,
+	): Array<
+		| string
+		| number
+		| boolean
+		| null
+		| Record<string, string | number | boolean | object | undefined | null>
+	> {
+		if (!schema.items || Array.isArray(schema.items)) {
+			return [];
+		}
 
-        if (
-            (schema.items as Record<string, string | number | boolean | object | undefined | null>).type === 'function'
-        ) {
-            return [];
-        }
+		if (
+			(
+				schema.items as Record<
+					string,
+					string | number | boolean | object | undefined | null
+				>
+			).type === "function"
+		) {
+			return [];
+		}
 
-        const itemValue = this.generateValue(schema.items as SwaggerDefinition, new Set(visited), maxDepth - 1);
+		const itemValue = this.generateValue(
+			schema.items as SwaggerDefinition,
+			new Set(visited),
+			maxDepth - 1,
+		);
 
-        return itemValue !== undefined
-            ? [
-                  itemValue as
-                      | string
-                      | number
-                      | boolean
-                      | Record<string, string | number | boolean | object | undefined | null>
-                      | null,
-              ]
-            : [];
-    }
+		return itemValue !== undefined
+			? [
+					itemValue as
+						| string
+						| number
+						| boolean
+						| Record<
+								string,
+								string | number | boolean | object | undefined | null
+						  >
+						| null,
+				]
+			: [];
+	}
 
-    private generateStringValue(schema: SwaggerDefinition): string {
-        if (schema.contentEncoding === 'base64') {
-            return 'dGVzdC1jb250ZW50';
-        }
+	private generateStringValue(schema: SwaggerDefinition): string {
+		if (schema.contentEncoding === "base64") {
+			return "dGVzdC1jb250ZW50";
+		}
 
-        if (schema.contentEncoding === 'base64url') {
-            return 'dGVzdC1jb250ZW50';
-        }
+		if (schema.contentEncoding === "base64url") {
+			return "dGVzdC1jb250ZW50";
+		}
 
-        switch (schema.format) {
-            case 'date-time':
-            case 'date':
-                return 'new globalThis.Date()';
-            case 'email':
-                return 'test@example.com';
-            case 'uuid':
-                return '123e4567-e89b-12d3-a456-426614174000';
-            case 'password':
-                return 'StrongPassword123!';
-            default:
-                return typeof schema.default === 'string' ? schema.default : 'string-value';
-        }
-    }
+		switch (schema.format) {
+			case "date-time":
+			case "date":
+				return "new globalThis.Date()";
+			case "email":
+				return "test@example.com";
+			case "uuid":
+				return "123e4567-e89b-12d3-a456-426614174000";
+			case "password":
+				return "StrongPassword123!";
+			default:
+				return typeof schema.default === "string"
+					? schema.default
+					: "string-value";
+		}
+	}
 
-    private generateNumberValue(schema: SwaggerDefinition): number {
-        if (typeof schema.minimum !== 'undefined') {
-            return schema.minimum;
-        }
+	private generateNumberValue(schema: SwaggerDefinition): number {
+		if (typeof schema.minimum !== "undefined") {
+			return schema.minimum;
+		}
 
-        if (typeof schema.default === 'number') {
-            return schema.default;
-        }
+		if (typeof schema.default === "number") {
+			return schema.default;
+		}
 
-        return schema.type === 'integer' ? 123 : 123.45;
-    }
+		return schema.type === "integer" ? 123 : 123.45;
+	}
 }

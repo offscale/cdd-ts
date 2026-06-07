@@ -1,459 +1,527 @@
-import * as os from 'node:os';
-import * as path from 'node:path';
+import * as os from "node:os";
+import * as path from "node:path";
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
-import { generateFromConfigSync } from '@src/index.js';
-import { GeneratorConfig } from '@src/core/types/index.js';
-import { Project } from 'ts-morph';
-import { FetchServiceMethodGenerator } from '@src/vendors/fetch/service/service-method.generator.js';
+import { describe, expect, it } from "vitest";
+import { generateFromConfigSync } from "@src/index.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { Project } from "ts-morph";
+import { FetchServiceMethodGenerator } from "@src/vendors/fetch/service/service-method.generator.js";
 
-import { FetchServiceTestGenerator } from '@src/vendors/fetch/test/service-test.generator.js';
-import { SwaggerParser } from '@src/openapi/parse.js';
+import { FetchServiceTestGenerator } from "@src/vendors/fetch/test/service-test.generator.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
 
-describe('Fetch Implementation Edge Cases', () => {
-    it('should generate .client.ts files when framework is vanilla', () => {
-        const config: GeneratorConfig = {
-            input: 'dummy',
-            output: path.join(os.tmpdir(), 'test-output-vanilla'),
-            options: { framework: 'vanilla', implementation: 'fetch', generateServiceTests: true },
-        };
+describe("Fetch Implementation Edge Cases", () => {
+	it("should generate .client.ts files when framework is vanilla", () => {
+		const config: GeneratorConfig = {
+			input: "dummy",
+			output: path.join(os.tmpdir(), "test-output-vanilla"),
+			options: {
+				framework: "vanilla",
+				implementation: "fetch",
+				generateServiceTests: true,
+			},
+		};
 
-        const spec = {
-            openapi: '3.0.0',
-            info: { title: 'Test API', version: '1.0' },
-            paths: {
-                '/test': {
-                    get: {
-                        responses: { '200': { description: 'OK' } },
-                    },
-                },
-            },
-        };
+		const spec = {
+			openapi: "3.0.0",
+			info: { title: "Test API", version: "1.0" },
+			paths: {
+				"/test": {
+					get: {
+						responses: { "200": { description: "OK" } },
+					},
+				},
+			},
+		};
 
-        const project = new Project({ useInMemoryFileSystem: true });
-        generateFromConfigSync(config, project, { spec });
+		const project = new Project({ useInMemoryFileSystem: true });
+		generateFromConfigSync(config, project, { spec });
 
-        const serviceFile = project.getSourceFile(
-            path.join(os.tmpdir(), 'test-output-vanilla/services/test.client.ts'),
-        );
-        expect(serviceFile).toBeDefined();
+		const serviceFile = project.getSourceFile(
+			path.join(os.tmpdir(), "test-output-vanilla/services/test.client.ts"),
+		);
+		expect(serviceFile).toBeDefined();
 
-        const testFile = project.getSourceFile(
-            path.join(os.tmpdir(), 'test-output-vanilla/services/test.client.spec.ts'),
-        );
-        expect(testFile).toBeDefined();
-    });
+		const testFile = project.getSourceFile(
+			path.join(
+				os.tmpdir(),
+				"test-output-vanilla/services/test.client.spec.ts",
+			),
+		);
+		expect(testFile).toBeDefined();
+	});
 
-    it('should cover missing branches in FetchServiceTestGenerator', () => {
-        const config: GeneratorConfig = {
-            input: 'dummy',
-            output: path.join(os.tmpdir(), 'test-output-mocked'),
-            options: { implementation: 'fetch' },
-        };
+	it("should cover missing branches in FetchServiceTestGenerator", () => {
+		const config: GeneratorConfig = {
+			input: "dummy",
+			output: path.join(os.tmpdir(), "test-output-mocked"),
+			options: { implementation: "fetch" },
+		};
 
-        const spec = {
-            openapi: '3.0.0',
-            info: { title: 'Test API', version: '1.0' },
-            paths: {
-                '/mocked': {
-                    get: {
-                        // no operationId or methodName
-                        responses: { '200': { description: 'OK' } },
-                    },
-                    post: {
-                        operationId: 'postMocked', // has operationId but no methodName
-                        responses: { '200': { description: 'OK' } },
-                    },
-                    put: {
-                        operationId: 'putMocked', // has methodName set by analyzer usually, we will mock it
-                        responses: { '200': { description: 'OK' } },
-                    },
-                },
-            },
-        };
+		const spec = {
+			openapi: "3.0.0",
+			info: { title: "Test API", version: "1.0" },
+			paths: {
+				"/mocked": {
+					get: {
+						// no operationId or methodName
+						responses: { "200": { description: "OK" } },
+					},
+					post: {
+						operationId: "postMocked", // has operationId but no methodName
+						responses: { "200": { description: "OK" } },
+					},
+					put: {
+						operationId: "putMocked", // has methodName set by analyzer usually, we will mock it
+						responses: { "200": { description: "OK" } },
+					},
+				},
+			},
+		};
 
-        const parser = new SwaggerParser(spec as any, config);
-        const project = new Project({ useInMemoryFileSystem: true });
-        const testGen = new FetchServiceTestGenerator(parser, project, config);
+		const parser = new SwaggerParser(spec as any, config);
+		const project = new Project({ useInMemoryFileSystem: true });
+		const testGen = new FetchServiceTestGenerator(parser, project, config);
 
-        const ops = parser.operations;
-        ops[2].methodName = 'customPutMocked'; // cover op.methodName
+		const ops = parser.operations;
+		ops[2].methodName = "customPutMocked"; // cover op.methodName
 
-        testGen.generateServiceTestFile('mocked', ops as any, path.join(os.tmpdir(), 'test-output-mocked/services'));
+		testGen.generateServiceTestFile(
+			"mocked",
+			ops as any,
+			path.join(os.tmpdir(), "test-output-mocked/services"),
+		);
 
-        const testFile = project.getSourceFile(
-            path.join(os.tmpdir(), 'test-output-mocked/services/mocked.service.spec.ts'),
-        );
-        expect(testFile).toBeDefined();
+		const testFile = project.getSourceFile(
+			path.join(
+				os.tmpdir(),
+				"test-output-mocked/services/mocked.service.spec.ts",
+			),
+		);
+		expect(testFile).toBeDefined();
 
-        const text = testFile!.getText();
-        expect(text).toContain("describe('getMocked'");
-        expect(text).toContain("describe('postMocked'");
-        expect(text).toContain("describe('customPutMocked'");
-    });
+		const text = testFile?.getText();
+		expect(text).toContain("describe('getMocked'");
+		expect(text).toContain("describe('postMocked'");
+		expect(text).toContain("describe('customPutMocked'");
+	});
 
-    it('should handle operations returning multiple distinct response types', async () => {
-        const config: GeneratorConfig = {
-            input: 'dummy',
-            output: path.join(os.tmpdir(), 'test-multi-resp'),
-            options: { implementation: 'fetch' },
-        };
+	it("should handle operations returning multiple distinct response types", async () => {
+		const config: GeneratorConfig = {
+			input: "dummy",
+			output: path.join(os.tmpdir(), "test-multi-resp"),
+			options: { implementation: "fetch" },
+		};
 
-        const spec = {
-            openapi: '3.0.0',
-            info: { title: 'Test API', version: '1.0' },
-            paths: {
-                '/multi': {
-                    get: {
-                        operationId: 'getMulti',
-                        responses: {
-                            '200': {
-                                description: 'OK',
-                                content: {
-                                    'application/json': { schema: { type: 'string' } },
-                                },
-                            },
-                            '201': {
-                                description: 'Created',
-                                content: {
-                                    'application/json': { schema: { type: 'number' } },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        };
+		const spec = {
+			openapi: "3.0.0",
+			info: { title: "Test API", version: "1.0" },
+			paths: {
+				"/multi": {
+					get: {
+						operationId: "getMulti",
+						responses: {
+							"200": {
+								description: "OK",
+								content: {
+									"application/json": { schema: { type: "string" } },
+								},
+							},
+							"201": {
+								description: "Created",
+								content: {
+									"application/json": { schema: { type: "number" } },
+								},
+							},
+						},
+					},
+				},
+			},
+		};
 
-        const project = new Project();
-        generateFromConfigSync(config, project, { spec });
+		const project = new Project();
+		generateFromConfigSync(config, project, { spec });
 
-        const serviceFile = project.getSourceFile(path.join(os.tmpdir(), 'test-multi-resp/services/multi.service.ts'));
-        const serviceClass = serviceFile!.getClass('MultiService');
-        const method = serviceClass!.getMethod('getMulti');
+		const serviceFile = project.getSourceFile(
+			path.join(os.tmpdir(), "test-multi-resp/services/multi.service.ts"),
+		);
+		const serviceClass = serviceFile?.getClass("MultiService");
+		const method = serviceClass?.getMethod("getMulti");
 
-        expect(method!.getReturnTypeNode()?.getText()).toBe('Promise<string | number>');
-    });
+		expect(method?.getReturnTypeNode()?.getText()).toBe(
+			"Promise<string | number>",
+		);
+	});
 
-    it('should handle operations with an explicitly json responseSerialization', async () => {
-        const config: GeneratorConfig = {
-            input: 'dummy',
-            output: path.join(os.tmpdir(), 'test-json'),
-            options: { implementation: 'fetch' },
-        };
+	it("should handle operations with an explicitly json responseSerialization", async () => {
+		const config: GeneratorConfig = {
+			input: "dummy",
+			output: path.join(os.tmpdir(), "test-json"),
+			options: { implementation: "fetch" },
+		};
 
-        const spec = {
-            openapi: '3.0.0',
-            info: { title: 'Test API', version: '1.0' },
-            paths: {
-                '/json-only': {
-                    get: {
-                        operationId: 'getJson',
-                        responses: {
-                            '200': {
-                                description: 'OK',
-                                content: {
-                                    'application/json': { schema: { type: 'object' } },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        };
+		const spec = {
+			openapi: "3.0.0",
+			info: { title: "Test API", version: "1.0" },
+			paths: {
+				"/json-only": {
+					get: {
+						operationId: "getJson",
+						responses: {
+							"200": {
+								description: "OK",
+								content: {
+									"application/json": { schema: { type: "object" } },
+								},
+							},
+						},
+					},
+				},
+			},
+		};
 
-        const project = new Project();
-        generateFromConfigSync(config, project, { spec });
+		const project = new Project();
+		generateFromConfigSync(config, project, { spec });
 
-        const serviceFile =
-            project.getSourceFile(path.join(os.tmpdir(), 'test-json/services/json-only.service.ts')) ||
-            project.getSourceFile(path.join(os.tmpdir(), 'test-json/services/jsonOnly.service.ts')) ||
-            project
-                .getSourceFiles()
-                .find(f => f.getFilePath().includes('json-only') || f.getFilePath().includes('service.ts'))!;
+		const serviceFile =
+			project.getSourceFile(
+				path.join(os.tmpdir(), "test-json/services/json-only.service.ts"),
+			) ||
+			project.getSourceFile(
+				path.join(os.tmpdir(), "test-json/services/jsonOnly.service.ts"),
+			) ||
+			project
+				.getSourceFiles()
+				.find(
+					(f) =>
+						f.getFilePath().includes("json-only") ||
+						f.getFilePath().includes("service.ts"),
+				)!;
 
-        const serviceClass = serviceFile.getClasses()[0];
-        const method = serviceClass!.getMethod('getJson');
-        const body = method!
-            .getStatements()
-            .map(s => s.getText())
-            .join('\n');
+		const serviceClass = serviceFile.getClasses()[0];
+		const method = serviceClass?.getMethod("getJson");
+		const body = method
+			?.getStatements()
+			.map((s) => s.getText())
+			.join("\n");
 
-        expect(body).toContain('return response.json();');
-    });
+		expect(body).toContain("return response.json();");
+	});
 
-    it('should handle analyzer returning null (e.g. invalid operation)', () => {
-        const generator = new FetchServiceMethodGenerator(
-            {} as string | number | boolean | object | undefined | null,
-            { paths: {} } as string | number | boolean | object | undefined | null,
-        );
-        // We mock analyzer so we can force it to return null
-        (
-            generator as string | number | boolean | object | undefined | null as { analyzer: { analyze: () => null } }
-        ).analyzer = { analyze: () => null };
-        const project = new Project();
-        const sf = project.createSourceFile('test.ts', 'class Test {}');
-        const cls = sf.getClass('Test')!;
+	it("should handle analyzer returning null (e.g. invalid operation)", () => {
+		const generator = new FetchServiceMethodGenerator(
+			{} as string | number | boolean | object | undefined | null,
+			{ paths: {} } as string | number | boolean | object | undefined | null,
+		);
+		// We mock analyzer so we can force it to return null
+		(
+			generator as string | number | boolean | object | undefined | null as {
+				analyzer: { analyze: () => null };
+			}
+		).analyzer = { analyze: () => null };
+		const project = new Project();
+		const sf = project.createSourceFile("test.ts", "class Test {}");
+		const cls = sf.getClass("Test")!;
 
-        // Should not throw, should just return early
-        expect(() =>
-            generator.addServiceMethod(cls, {} as string | number | boolean | object | undefined | null),
-        ).not.toThrow();
-        expect(cls.getMethods().length).toBe(0);
-    });
+		// Should not throw, should just return early
+		expect(() =>
+			generator.addServiceMethod(
+				cls,
+				{} as string | number | boolean | object | undefined | null,
+			),
+		).not.toThrow();
+		expect(cls.getMethods().length).toBe(0);
+	});
 });
 
-it('should assign root paths to Default controller', async () => {
-    const config: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-default'),
-        options: { implementation: 'fetch' },
-    };
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0' },
-        paths: {
-            '/': { get: { operationId: 'getRoot', responses: { '200': { description: 'OK' } } } },
-        },
-    };
-    const project = new Project();
-    generateFromConfigSync(config, project, { spec });
-    const serviceFile = project.getSourceFile(path.join(os.tmpdir(), 'test-default/services/default.service.ts'));
-    expect(serviceFile).toBeDefined();
-    expect(serviceFile!.getClass('DefaultService')).toBeDefined();
+it("should assign root paths to Default controller", async () => {
+	const config: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-default"),
+		options: { implementation: "fetch" },
+	};
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test API", version: "1.0" },
+		paths: {
+			"/": {
+				get: {
+					operationId: "getRoot",
+					responses: { "200": { description: "OK" } },
+				},
+			},
+		},
+	};
+	const project = new Project();
+	generateFromConfigSync(config, project, { spec });
+	const serviceFile = project.getSourceFile(
+		path.join(os.tmpdir(), "test-default/services/default.service.ts"),
+	);
+	expect(serviceFile).toBeDefined();
+	expect(serviceFile?.getClass("DefaultService")).toBeDefined();
 });
 
-it('should respect generateServiceTests config option', async () => {
-    const config: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-notests'),
-        options: { implementation: 'fetch', generateServiceTests: false },
-    };
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'A', version: '1' },
-        paths: { '/a': { get: { responses: { '200': { description: 'OK' } } } } },
-    };
-    generateFromConfigSync(config, new Project(), { spec });
+it("should respect generateServiceTests config option", async () => {
+	const config: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-notests"),
+		options: { implementation: "fetch", generateServiceTests: false },
+	};
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "A", version: "1" },
+		paths: { "/a": { get: { responses: { "200": { description: "OK" } } } } },
+	};
+	generateFromConfigSync(config, new Project(), { spec });
 
-    const config2: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-yestests'),
-        options: { implementation: 'fetch', generateServiceTests: true },
-    };
-    generateFromConfigSync(config2, new Project(), { spec });
+	const config2: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-yestests"),
+		options: { implementation: "fetch", generateServiceTests: true },
+	};
+	generateFromConfigSync(config2, new Project(), { spec });
 });
 
-it('should handle operation-level servers', async () => {
-    const config: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-op-servers'),
-        options: { implementation: 'fetch' },
-    };
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test', version: '1.0' },
-        paths: {
-            '/op-server': {
-                get: {
-                    operationId: 'getOpServer',
-                    servers: [{ url: 'https://op.server.com' }],
-                    responses: { '200': { description: 'OK' } },
-                },
-            },
-        },
-    };
-    const project = new Project();
-    generateFromConfigSync(config, project, { spec });
-    const sf = project
-        .getSourceFiles()
-        .find(f => f.getFilePath().includes('op-server') || f.getFilePath().includes('OpServer'));
-    const sf2 = project.getSourceFile(path.join(os.tmpdir(), 'test-op-servers/services/opServer.service.ts'));
-    const m = sf2!.getClasses()[0]!.getMethod('getOpServer');
-    expect(m!.getText()).toContain('const operationServers = [');
+it("should handle operation-level servers", async () => {
+	const config: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-op-servers"),
+		options: { implementation: "fetch" },
+	};
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test", version: "1.0" },
+		paths: {
+			"/op-server": {
+				get: {
+					operationId: "getOpServer",
+					servers: [{ url: "https://op.server.com" }],
+					responses: { "200": { description: "OK" } },
+				},
+			},
+		},
+	};
+	const project = new Project();
+	generateFromConfigSync(config, project, { spec });
+	const _sf = project
+		.getSourceFiles()
+		.find(
+			(f) =>
+				f.getFilePath().includes("op-server") ||
+				f.getFilePath().includes("OpServer"),
+		);
+	const sf2 = project.getSourceFile(
+		path.join(os.tmpdir(), "test-op-servers/services/opServer.service.ts"),
+	);
+	const m = sf2?.getClasses()[0]?.getMethod("getOpServer");
+	expect(m?.getText()).toContain("const operationServers = [");
 });
 
-it('should handle path params with explicit style and multipart/form-data body', async () => {
-    const config: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-params-multipart'),
-        options: { implementation: 'fetch' },
-    };
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test', version: '1.0' },
-        paths: {
-            '/test/{id}': {
-                post: {
-                    operationId: 'postMultipart',
-                    parameters: [
-                        { name: 'id', in: 'path', required: true, style: 'matrix', schema: { type: 'string' } },
-                    ],
-                    requestBody: {
-                        content: { 'multipart/form-data': { schema: { type: 'object' } } },
-                    },
-                    responses: { '200': { description: 'OK' } },
-                },
-            },
-        },
-    };
-    const project = new Project();
-    generateFromConfigSync(config, project, { spec });
-    const sf = project.getSourceFiles().find(f => f.getFilePath().includes('test.service.ts'));
-    const m = sf!.getClasses()[0]!.getMethod('postMultipart');
-    expect(m!.getText()).toContain("'matrix'");
+it("should handle path params with explicit style and multipart/form-data body", async () => {
+	const config: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-params-multipart"),
+		options: { implementation: "fetch" },
+	};
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test", version: "1.0" },
+		paths: {
+			"/test/{id}": {
+				post: {
+					operationId: "postMultipart",
+					parameters: [
+						{
+							name: "id",
+							in: "path",
+							required: true,
+							style: "matrix",
+							schema: { type: "string" },
+						},
+					],
+					requestBody: {
+						content: { "multipart/form-data": { schema: { type: "object" } } },
+					},
+					responses: { "200": { description: "OK" } },
+				},
+			},
+		},
+	};
+	const project = new Project();
+	generateFromConfigSync(config, project, { spec });
+	const sf = project
+		.getSourceFiles()
+		.find((f) => f.getFilePath().includes("test.service.ts"));
+	const m = sf?.getClasses()[0]?.getMethod("postMultipart");
+	expect(m?.getText()).toContain("'matrix'");
 });
 
-it('should handle responses and request bodies without schemas or that are plain objects', async () => {
-    const config: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-no-schemas'),
-        options: { implementation: 'fetch' },
-    };
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test', version: '1.0' },
-        paths: {
-            '/no-schema': {
-                post: {
-                    operationId: 'postEmpty',
-                    requestBody: { content: { 'application/json': {} } }, // no schema
-                    responses: {
-                        '200': { description: 'OK', content: { 'text/plain': {} } }, // no schema
-                    },
-                },
-            },
-        },
-    };
-    const project = new Project();
-    generateFromConfigSync(config, project, { spec });
-    const sf = project.getSourceFiles().find(f => f.getFilePath().includes('oSchema'));
-    expect(sf).toBeDefined();
+it("should handle responses and request bodies without schemas or that are plain objects", async () => {
+	const config: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-no-schemas"),
+		options: { implementation: "fetch" },
+	};
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test", version: "1.0" },
+		paths: {
+			"/no-schema": {
+				post: {
+					operationId: "postEmpty",
+					requestBody: { content: { "application/json": {} } }, // no schema
+					responses: {
+						"200": { description: "OK", content: { "text/plain": {} } }, // no schema
+					},
+				},
+			},
+		},
+	};
+	const project = new Project();
+	generateFromConfigSync(config, project, { spec });
+	const sf = project
+		.getSourceFiles()
+		.find((f) => f.getFilePath().includes("oSchema"));
+	expect(sf).toBeDefined();
 });
 
-it('should ignore non-exported service classes in index', async () => {
-    const config: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-index-ignore'),
-        options: { implementation: 'fetch' },
-    };
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: '1', version: '1' },
-        paths: { '/a': { get: { responses: { '200': { description: 'A' } } } } },
-    };
-    const project = new Project();
-    generateFromConfigSync(config, project, { spec });
+it("should ignore non-exported service classes in index", async () => {
+	const config: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-index-ignore"),
+		options: { implementation: "fetch" },
+	};
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "1", version: "1" },
+		paths: { "/a": { get: { responses: { "200": { description: "A" } } } } },
+	};
+	const project = new Project();
+	generateFromConfigSync(config, project, { spec });
 
-    // Manually break the exported class before index generation runs?
-    // Actually this branch is hit if there is NO exported serviceClass.
-    // I'll manually modify the generated file and re-run index generation
-    const sf = project.getSourceFiles().find(f => f.getFilePath().includes('a.service.ts'));
-    sf!.getClasses()[0]!.setIsExported(false);
+	// Manually break the exported class before index generation runs?
+	// Actually this branch is hit if there is NO exported serviceClass.
+	// I'll manually modify the generated file and re-run index generation
+	const sf = project
+		.getSourceFiles()
+		.find((f) => f.getFilePath().includes("a.service.ts"));
+	sf?.getClasses()[0]?.setIsExported(false);
 
-    const { FetchServiceIndexGenerator } = await import('@src/vendors/fetch/utils/index.generator.js');
-    new FetchServiceIndexGenerator(project).generateIndex(path.join(os.tmpdir(), 'test-index-ignore'));
+	const { FetchServiceIndexGenerator } = await import(
+		"@src/vendors/fetch/utils/index.generator.js"
+	);
+	new FetchServiceIndexGenerator(project).generateIndex(
+		path.join(os.tmpdir(), "test-index-ignore"),
+	);
 
-    const indexFile = project.getSourceFile(path.join(os.tmpdir(), 'test-index-ignore/services/index.ts'));
-    expect(indexFile!.getText()).not.toContain('AService');
+	const indexFile = project.getSourceFile(
+		path.join(os.tmpdir(), "test-index-ignore/services/index.ts"),
+	);
+	expect(indexFile?.getText()).not.toContain("AService");
 });
 
-it('should hit branch for non-interface application/json body in FetchServiceGenerator', async () => {
-    const config: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-output-json-primitive'),
-        options: { implementation: 'fetch' as const },
-    };
+it("should hit branch for non-interface application/json body in FetchServiceGenerator", async () => {
+	const config: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-output-json-primitive"),
+		options: { implementation: "fetch" as const },
+	};
 
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0' },
-        paths: {
-            '/primitive-body': {
-                post: {
-                    operationId: 'postPrimitiveBody',
-                    requestBody: {
-                        content: {
-                            'application/json': { schema: { type: 'string' } },
-                        },
-                    },
-                    responses: { '200': { description: 'OK' } },
-                },
-            },
-        },
-    };
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test API", version: "1.0" },
+		paths: {
+			"/primitive-body": {
+				post: {
+					operationId: "postPrimitiveBody",
+					requestBody: {
+						content: {
+							"application/json": { schema: { type: "string" } },
+						},
+					},
+					responses: { "200": { description: "OK" } },
+				},
+			},
+		},
+	};
 
-    const project = new Project();
-    generateFromConfigSync(config, project, { spec });
+	const project = new Project();
+	generateFromConfigSync(config, project, { spec });
 });
 
-it('should generate composable tests when config.options.composableTests is true', async () => {
-    const config = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-output-composable-fetch'),
-        options: { implementation: 'fetch', tests: true, composableTests: true },
-    };
+it("should generate composable tests when config.options.composableTests is true", async () => {
+	const config = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-output-composable-fetch"),
+		options: { implementation: "fetch", tests: true, composableTests: true },
+	};
 
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0' },
-        paths: {
-            '/composable': {
-                get: {
-                    operationId: 'getComposable',
-                    responses: { '200': { description: 'OK' } },
-                },
-            },
-        },
-    };
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test API", version: "1.0" },
+		paths: {
+			"/composable": {
+				get: {
+					operationId: "getComposable",
+					responses: { "200": { description: "OK" } },
+				},
+			},
+		},
+	};
 
-    const project = new Project();
-    generateFromConfigSync(config as any, project, { spec });
+	const project = new Project();
+	generateFromConfigSync(config as any, project, { spec });
 
-    const testFile = project.getSourceFile(
-        path.join(os.tmpdir(), 'test-output-composable-fetch/services/composable.service.spec.ts'),
-    );
-    expect(testFile).toBeDefined();
-    const text = testFile!.getText();
+	const testFile = project.getSourceFile(
+		path.join(
+			os.tmpdir(),
+			"test-output-composable-fetch/services/composable.service.spec.ts",
+		),
+	);
+	expect(testFile).toBeDefined();
+	const text = testFile?.getText();
 
-    expect(text).toContain('testComposableService();');
+	expect(text).toContain("testComposableService();");
 });
 
-it('should cover missing branches in FetchServiceTestGenerator when isComposable is true', () => {
-    const config = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-output-mocked-composable'),
-        options: { implementation: 'fetch', tests: true, composableTests: true },
-    };
+it("should cover missing branches in FetchServiceTestGenerator when isComposable is true", () => {
+	const config = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-output-mocked-composable"),
+		options: { implementation: "fetch", tests: true, composableTests: true },
+	};
 
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0' },
-        paths: {
-            '/mocked': {
-                get: {
-                    // no operationId or methodName
-                    responses: { '200': { description: 'OK' } },
-                },
-            },
-        },
-    };
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test API", version: "1.0" },
+		paths: {
+			"/mocked": {
+				get: {
+					// no operationId or methodName
+					responses: { "200": { description: "OK" } },
+				},
+			},
+		},
+	};
 
-    const parser = new SwaggerParser(spec as any, config as any);
-    const project = new Project({ useInMemoryFileSystem: true });
-    const testGen = new FetchServiceTestGenerator(parser, project, config as any);
+	const parser = new SwaggerParser(spec as any, config as any);
+	const project = new Project({ useInMemoryFileSystem: true });
+	const testGen = new FetchServiceTestGenerator(parser, project, config as any);
 
-    const ops = parser.operations;
+	const ops = parser.operations;
 
-    testGen.generateServiceTestFile(
-        'mocked',
-        ops as any,
-        path.join(os.tmpdir(), 'test-output-mocked-composable/services'),
-    );
+	testGen.generateServiceTestFile(
+		"mocked",
+		ops as any,
+		path.join(os.tmpdir(), "test-output-mocked-composable/services"),
+	);
 
-    const testFile = project.getSourceFile(
-        path.join(os.tmpdir(), 'test-output-mocked-composable/services/mocked.service.spec.ts'),
-    );
-    expect(testFile).toBeDefined();
-    const text = testFile!.getText();
+	const testFile = project.getSourceFile(
+		path.join(
+			os.tmpdir(),
+			"test-output-mocked-composable/services/mocked.service.spec.ts",
+		),
+	);
+	expect(testFile).toBeDefined();
+	const _text = testFile?.getText();
 });

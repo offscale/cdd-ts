@@ -1,24 +1,27 @@
-import { Project } from 'ts-morph';
-import * as path from 'node:path';
-import { Resource } from '@src/core/types/index.js';
-import { pascalCase, camelCase } from '@src/functions/utils.js';
+import type { Project } from "ts-morph";
+import * as path from "node:path";
+import type { Resource } from "@src/core/types/index.js";
+import { pascalCase, camelCase } from "@src/functions/utils.js";
 
 export class ListComponentGenerator {
-    constructor(private project: Project) {}
+	constructor(private project: Project) {}
 
-    public generate(resource: Resource, adminDir: string): void {
-        const componentName = `${pascalCase(resource.name)}List`;
-        const fileName = `${componentName}.vue`;
-        const filePath = path.posix.join(adminDir, resource.name, fileName);
+	public generate(resource: Resource, adminDir: string): void {
+		const componentName = `${pascalCase(resource.name)}List`;
+		const fileName = `${componentName}.vue`;
+		const filePath = path.posix.join(adminDir, resource.name, fileName);
 
-        const listOp = resource.operations.find(op => op.action === 'list');
-        const deleteOp = resource.operations.find(op => op.action === 'delete');
+		const listOp = resource.operations.find((op) => op.action === "list");
+		const deleteOp = resource.operations.find((op) => op.action === "delete");
 
-        const serviceName = pascalCase(resource.name);
+		const serviceName = pascalCase(resource.name);
 
-        const properties = resource.listProperties.length > 0 ? resource.listProperties : resource.formProperties;
+		const properties =
+			resource.listProperties.length > 0
+				? resource.listProperties
+				: resource.formProperties;
 
-        const content = `<template>
+		const content = `<template>
     <div class="${resource.name}-list">
         <div class="header-actions">
             <h1>{{ t('${resource.name}.list.title', '${componentName}') }}</h1>
@@ -38,24 +41,24 @@ export class ListComponentGenerator {
         <table v-else class="data-table" aria-label="${componentName} Data">
             <thead>
                 <tr>
-${properties.map(prop => `                    <th scope="col">{{ t('${resource.name}.fields.${prop.name}', '${pascalCase(prop.name)}') }}</th>`).join('\n')}
+${properties.map((prop) => `                    <th scope="col">{{ t('${resource.name}.fields.${prop.name}', '${pascalCase(prop.name)}') }}</th>`).join("\n")}
                     <th scope="col">{{ t('common.actions', 'Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="item in items" :key="item.id || item._id">
-${properties.map(prop => `                    <td>{{ item.${prop.name} }}</td>`).join('\n')}
+${properties.map((prop) => `                    <td>{{ item.${prop.name} }}</td>`).join("\n")}
                     <td class="actions">
                         <button @click="navigateToEdit(item.id || item._id)" class="btn btn-sm btn-edit" aria-label="Edit">
                             {{ t('common.edit', 'Edit') }}
                         </button>
                         ${
-                            deleteOp
-                                ? `<button @click="deleteItem(item.id || item._id)" class="btn btn-sm btn-delete" aria-label="Delete">
+													deleteOp
+														? `<button @click="deleteItem(item.id || item._id)" class="btn btn-sm btn-delete" aria-label="Delete">
                             {{ t('common.delete', 'Delete') }}
                         </button>`
-                                : ''
-                        }
+														: ""
+												}
                     </td>
                 </tr>
                 <tr v-if="items.length === 0">
@@ -86,7 +89,7 @@ const fetchItems = async () => {
     loading.value = true;
     error.value = null;
     try {
-        const response = await ${camelCase(resource.name)}Service.${listOp!.methodName}();
+        const response = await ${camelCase(resource.name)}Service.${listOp?.methodName}();
         items.value = response.data || response || [];
     } catch (err: any) {
         error.value = err.message || t('common.errorFetching', 'Error fetching data');
@@ -109,8 +112,8 @@ const navigateToEdit = (id: string | number) => {
 };
 
 ${
-    deleteOp
-        ? `const deleteItem = async (id: string | number) => {
+	deleteOp
+		? `const deleteItem = async (id: string | number) => {
     if (!id) return;
     if (!confirm(t('common.confirmDelete', 'Are you sure you want to delete this item?'))) return;
     
@@ -121,7 +124,7 @@ ${
         alert(err.message || t('common.errorDeleting', 'Error deleting item'));
     }
 };`
-        : ''
+		: ""
 }
 </script>
 
@@ -184,6 +187,6 @@ ${
 </style>
 `;
 
-        this.project.createSourceFile(filePath, content, { overwrite: true });
-    }
+		this.project.createSourceFile(filePath, content, { overwrite: true });
+	}
 }

@@ -28,6 +28,7 @@ The CLI—at a minimum—has:
 - `cdd-ts to_openapi -f path/to/code`
 - `cdd-ts to_docs_json --no-imports --no-wrapping -i spec.json`
 - `cdd-ts serve_json_rpc --port 8080 --listen 0.0.0.0`
+- `cdd-ts mcp`
 
 ## SDK Example
 
@@ -83,6 +84,7 @@ The `cdd-ts` compiler leverages a unified architecture to support various facets
     - **`TypeScript` → OpenAPI**: Statically parse existing `TypeScript` source code and emit compliant OpenAPI specifications.
 - **AST-Driven & Safe**: Employs static analysis instead of unsafe dynamic execution or reflection, allowing it to safely parse and emit code even for incomplete or un-compilable project states.
 - **Seamless Sync**: Keep your docs, tests, database, clients, and routing in perfect harmony. Update your code, and generate the docs; or update the docs, and generate the code.
+- **Model Context Protocol (MCP)**: Native integration exposes CLI capabilities seamlessly as AI agent tools via MCP over stdio.
 
 **Uncommon Features:**
 
@@ -105,6 +107,7 @@ Commands:
   to_docs_json [options]    Generate JSON containing how to call operations in
                             the target language
   serve_json_rpc [options]  Expose CLI interface as JSON-RPC server
+  mcp                       Start Model Context Protocol (MCP) server over stdio
   help [command]            display help for command
 ```
 

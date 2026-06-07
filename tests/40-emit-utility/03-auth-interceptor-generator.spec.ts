@@ -1,244 +1,283 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { createTestProject } from '../shared/helpers.js';
-import { emptySpec, securitySpec } from '../shared/specs.js';
-import { GeneratorConfig } from '@src/core/types/index.js';
-import { AuthInterceptorGenerator } from '@src/vendors/angular/utils/auth-interceptor.generator.js';
+import { describe, expect, it } from "vitest";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { createTestProject } from "../shared/helpers.js";
+import { emptySpec, securitySpec } from "../shared/specs.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { AuthInterceptorGenerator } from "@src/vendors/angular/utils/auth-interceptor.generator.js";
 
-describe('Emitter: AuthInterceptorGenerator', () => {
-    const runGenerator = (spec: object) => {
-        const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out' } as string | number | boolean | object | undefined | null;
-        const parser = new SwaggerParser(spec as string | number | boolean | object | undefined | null, config);
-        const generator = new AuthInterceptorGenerator(parser, project);
-        const result = generator.generate('/out');
-        return { ...result, project };
-    };
+describe("Emitter: AuthInterceptorGenerator", () => {
+	const runGenerator = (spec: object) => {
+		const project = createTestProject();
+		const config: GeneratorConfig = { output: "/out" } as
+			| string
+			| number
+			| boolean
+			| object
+			| undefined
+			| null;
+		const parser = new SwaggerParser(
+			spec as string | number | boolean | object | undefined | null,
+			config,
+		);
+		const generator = new AuthInterceptorGenerator(parser, project);
+		const result = generator.generate("/out");
+		return { ...result, project };
+	};
 
-    it('should not generate if no security schemes are present', () => {
-        const { tokenNames, project } = runGenerator(emptySpec);
-        expect(tokenNames).toBeUndefined();
-        expect(project.getSourceFile('/out/auth/auth.interceptor.ts')).toBeUndefined();
-    });
+	it("should not generate if no security schemes are present", () => {
+		const { tokenNames, project } = runGenerator(emptySpec);
+		expect(tokenNames).toBeUndefined();
+		expect(
+			project.getSourceFile("/out/auth/auth.interceptor.ts"),
+		).toBeUndefined();
+	});
 
-    it('should generate logic for mixed security schemes using applicators map', () => {
-        const { tokenNames, project } = runGenerator(securitySpec);
-        const file = project.getSourceFileOrThrow('/out/auth/auth.interceptor.ts');
-        const interceptorMethod = file.getFunctionOrThrow('authInterceptor');
-        const body = interceptorMethod.getBodyText() ?? '';
+	it("should generate logic for mixed security schemes using applicators map", () => {
+		const { tokenNames, project } = runGenerator(securitySpec);
+		const file = project.getSourceFileOrThrow("/out/auth/auth.interceptor.ts");
+		const interceptorMethod = file.getFunctionOrThrow("authInterceptor");
+		const body = interceptorMethod.getBodyText() ?? "";
 
-        expect(tokenNames).toEqual(['apiKey', 'bearerToken']);
+		expect(tokenNames).toEqual(["apiKey", "bearerToken"]);
 
-        // Check schema applicator definitions
-        // Note: 'ApiKeyQuery' should be in there
-        expect(body).toContain(
-            "'ApiKeyHeader': (req, scopes, deps) => deps.apiKey ? req.clone({ headers: req.headers.set('X-API-KEY', deps.apiKey) }) : null",
-        );
-        expect(body).toContain(
-            "'ApiKeyQuery': (req, scopes, deps) => deps.apiKey ? req.clone({ params: req.params.set('api_key_query', deps.apiKey) }) : null",
-        );
+		// Check schema applicator definitions
+		// Note: 'ApiKeyQuery' should be in there
+		expect(body).toContain(
+			"'ApiKeyHeader': (req, scopes, deps) => deps.apiKey ? req.clone({ headers: req.headers.set('X-API-KEY', deps.apiKey) }) : null",
+		);
+		expect(body).toContain(
+			"'ApiKeyQuery': (req, scopes, deps) => deps.apiKey ? req.clone({ params: req.params.set('api_key_query', deps.apiKey) }) : null",
+		);
 
-        // Check Bearer
-        expect(body).toContain("'BearerAuth': (req, scopes, deps) => {");
-        expect(body).toContain("req.clone({ headers: req.headers.set('Authorization', `Bearer ${token}`) })");
+		// Check Bearer
+		expect(body).toContain("'BearerAuth': (req, scopes, deps) => {");
+		expect(body).toContain(
+			"req.clone({ headers: req.headers.set('Authorization', `Bearer ${token}`) })",
+		);
 
-        // Check iterating logic
-        expect(body).toContain('const requirements = req.context.get(SECURITY_CONTEXT_TOKEN);');
-        expect(body).toContain('for (const requirement of requirements)');
-    });
+		// Check iterating logic
+		expect(body).toContain(
+			"const requirements = req.context.get(SECURITY_CONTEXT_TOKEN);",
+		);
+		expect(body).toContain("for (const requirement of requirements)");
+	});
 
-    it('should generate correct logic for ONLY bearer/oauth2', () => {
-        const { tokenNames, project } = runGenerator({
-            ...emptySpec,
-            components: {
-                securitySchemes: {
-                    BearerAuth: { type: 'http', scheme: 'bearer' },
-                    OAuth2Flow: {
-                        type: 'oauth2',
-                        flows: {
-                            authorizationCode: {
-                                authorizationUrl: 'https://auth.example.com/authorize',
-                                tokenUrl: 'https://auth.example.com/token',
-                                scopes: {},
-                            },
-                        },
-                    },
-                },
-            },
-        });
-        const body = project
-            .getSourceFileOrThrow('/out/auth/auth.interceptor.ts')
-            .getFunctionOrThrow('authInterceptor')!
-            .getBodyText()!;
-        expect(tokenNames).toEqual(['bearerToken']);
-        expect(body).toContain("'BearerAuth':");
-        expect(body).toContain("'OAuth2Flow':");
-        expect(body).not.toContain('this.apiKey');
-    });
+	it("should generate correct logic for ONLY bearer/oauth2", () => {
+		const { tokenNames, project } = runGenerator({
+			...emptySpec,
+			components: {
+				securitySchemes: {
+					BearerAuth: { type: "http", scheme: "bearer" },
+					OAuth2Flow: {
+						type: "oauth2",
+						flows: {
+							authorizationCode: {
+								authorizationUrl: "https://auth.example.com/authorize",
+								tokenUrl: "https://auth.example.com/token",
+								scopes: {},
+							},
+						},
+					},
+				},
+			},
+		});
+		const body = project
+			.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
+			.getFunctionOrThrow("authInterceptor")
+			?.getBodyText()!;
+		expect(tokenNames).toEqual(["bearerToken"]);
+		expect(body).toContain("'BearerAuth':");
+		expect(body).toContain("'OAuth2Flow':");
+		expect(body).not.toContain("this.apiKey");
+	});
 
-    it('should handle openIdConnect as a bearer token scheme', () => {
-        const { tokenNames, project } = runGenerator({
-            ...emptySpec,
-            components: {
-                securitySchemes: {
-                    OIDC: {
-                        type: 'openIdConnect',
-                        openIdConnectUrl: 'https://example.com/.well-known/openid-configuration',
-                    },
-                },
-            },
-        });
-        const body = project
-            .getSourceFileOrThrow('/out/auth/auth.interceptor.ts')
-            .getFunctionOrThrow('authInterceptor')!
-            .getBodyText()!;
-        expect(tokenNames).toEqual(['bearerToken']);
-        expect(body).toContain("'OIDC':");
-    });
+	it("should handle openIdConnect as a bearer token scheme", () => {
+		const { tokenNames, project } = runGenerator({
+			...emptySpec,
+			components: {
+				securitySchemes: {
+					OIDC: {
+						type: "openIdConnect",
+						openIdConnectUrl:
+							"https://example.com/.well-known/openid-configuration",
+					},
+				},
+			},
+		});
+		const body = project
+			.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
+			.getFunctionOrThrow("authInterceptor")
+			?.getBodyText()!;
+		expect(tokenNames).toEqual(["bearerToken"]);
+		expect(body).toContain("'OIDC':");
+	});
 
-    it('should handle generic HTTP schemes (Basic, Digest) by generating correct Authorization header', () => {
-        const { tokenNames, project } = runGenerator({
-            ...emptySpec,
-            components: {
-                securitySchemes: {
-                    BasicAuth: { type: 'http', scheme: 'basic' },
-                    DigestAuth: { type: 'http', scheme: 'digest' },
-                    HobaAuth: { type: 'http', scheme: 'HOBA' },
-                },
-            },
-        });
+	it("should handle generic HTTP schemes (Basic, Digest) by generating correct Authorization header", () => {
+		const { tokenNames, project } = runGenerator({
+			...emptySpec,
+			components: {
+				securitySchemes: {
+					BasicAuth: { type: "http", scheme: "basic" },
+					DigestAuth: { type: "http", scheme: "digest" },
+					HobaAuth: { type: "http", scheme: "HOBA" },
+				},
+			},
+		});
 
-        const body = project
-            .getSourceFileOrThrow('/out/auth/auth.interceptor.ts')
-            .getFunctionOrThrow('authInterceptor')!
-            .getBodyText()!;
+		const body = project
+			.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
+			.getFunctionOrThrow("authInterceptor")
+			?.getBodyText()!;
 
-        expect(tokenNames).toEqual(['bearerToken']);
+		expect(tokenNames).toEqual(["bearerToken"]);
 
-        // Basic -> "Basic ${token}"
-        expect(body).toContain("'BasicAuth': (req, scopes, deps) => {");
-        expect(body).toContain("req.clone({ headers: req.headers.set('Authorization', `Basic ${token}`) })");
+		// Basic -> "Basic ${token}"
+		expect(body).toContain("'BasicAuth': (req, scopes, deps) => {");
+		expect(body).toContain(
+			"req.clone({ headers: req.headers.set('Authorization', `Basic ${token}`) })",
+		);
 
-        // Digest -> "Digest ${token}"
-        expect(body).toContain("'DigestAuth':");
-        expect(body).toContain('`Digest ${token}`');
+		// Digest -> "Digest ${token}"
+		expect(body).toContain("'DigestAuth':");
+		expect(body).toContain("`Digest ${token}`");
 
-        // Custom/Other (HOBA) -> "Hoba ${token}" (PascalCase)
-        expect(body).toContain("'HobaAuth':");
-        expect(body).toContain('`Hoba ${token}`');
-    });
+		// Custom/Other (HOBA) -> "Hoba ${token}" (PascalCase)
+		expect(body).toContain("'HobaAuth':");
+		expect(body).toContain("`Hoba ${token}`");
+	});
 
-    it('should handle apiKey in cookie correctly', () => {
-        const { tokenNames, project } = runGenerator({
-            ...emptySpec,
-            components: {
-                securitySchemes: {
-                    CookieAuth: { type: 'apiKey', in: 'cookie', name: 'session_id' },
-                },
-            },
-        });
+	it("should handle apiKey in cookie correctly", () => {
+		const { tokenNames, project } = runGenerator({
+			...emptySpec,
+			components: {
+				securitySchemes: {
+					CookieAuth: { type: "apiKey", in: "cookie", name: "session_id" },
+				},
+			},
+		});
 
-        expect(tokenNames).toEqual(['cookieAuth']);
-        const file = project.getSourceFileOrThrow('/out/auth/auth.interceptor.ts');
-        expect(file.getImportDeclaration('../utils/http-params-builder')).toBeDefined();
+		expect(tokenNames).toEqual(["cookieAuth"]);
+		const file = project.getSourceFileOrThrow("/out/auth/auth.interceptor.ts");
+		expect(
+			file.getImportDeclaration("../utils/http-params-builder"),
+		).toBeDefined();
 
-        const body = file.getFunctionOrThrow('authInterceptor').getBodyText()!;
+		const body = file.getFunctionOrThrow("authInterceptor").getBodyText()!;
 
-        expect(body).toContain("'CookieAuth': (req, scopes, deps) => {");
-        expect(body).toContain('if (!deps.cookieAuth) return null;');
-        expect(body).toContain(
-            "HttpParamsBuilder.serializeCookieParam('session_id', deps.cookieAuth, 'form', true, false)",
-        );
-        expect(body).toContain("req.clone({ headers: req.headers.set('Cookie', newCookie) })");
-    });
+		expect(body).toContain("'CookieAuth': (req, scopes, deps) => {");
+		expect(body).toContain("if (!deps.cookieAuth) return null;");
+		expect(body).toContain(
+			"HttpParamsBuilder.serializeCookieParam('session_id', deps.cookieAuth, 'form', true, false)",
+		);
+		expect(body).toContain(
+			"req.clone({ headers: req.headers.set('Cookie', newCookie) })",
+		);
+	});
 
-    it('should handle mutualTLS by generating a request context clone', () => {
-        const specWithMtls = {
-            ...emptySpec,
-            components: {
-                securitySchemes: {
-                    MyCert: { type: 'mutualTLS', name: 'MyCert' },
-                },
-            },
-        };
-        const { project, tokenNames } = runGenerator(specWithMtls);
-        const body = project
-            .getSourceFileOrThrow('/out/auth/auth.interceptor.ts')
-            .getFunctionOrThrow('authInterceptor')!
-            .getBodyText()!;
+	it("should handle mutualTLS by generating a request context clone", () => {
+		const specWithMtls = {
+			...emptySpec,
+			components: {
+				securitySchemes: {
+					MyCert: { type: "mutualTLS", name: "MyCert" },
+				},
+			},
+		};
+		const { project, tokenNames } = runGenerator(specWithMtls);
+		const body = project
+			.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
+			.getFunctionOrThrow("authInterceptor")
+			?.getBodyText()!;
 
-        expect(tokenNames).toContain('httpsAgentConfig');
-        expect(body).toContain('HTTPS_AGENT_CONTEXT_TOKEN');
-        // Adjusted expectation for new implementation
-        expect(body).toContain(
-            "'MyCert': (req, scopes, deps) => deps.mtlsConfig ? req.clone({ context: req.context.set(HTTPS_AGENT_CONTEXT_TOKEN, deps.mtlsConfig) }) : req",
-        );
-    });
+		expect(tokenNames).toContain("httpsAgentConfig");
+		expect(body).toContain("HTTPS_AGENT_CONTEXT_TOKEN");
+		// Adjusted expectation for new implementation
+		expect(body).toContain(
+			"'MyCert': (req, scopes, deps) => deps.mtlsConfig ? req.clone({ context: req.context.set(HTTPS_AGENT_CONTEXT_TOKEN, deps.mtlsConfig) }) : req",
+		);
+	});
 
-    it('should check context requirements before iterating', () => {
-        const { project } = runGenerator(securitySpec);
-        const body = project
-            .getSourceFileOrThrow('/out/auth/auth.interceptor.ts')
-            .getFunctionOrThrow('authInterceptor')!
-            .getBodyText()!;
+	it("should check context requirements before iterating", () => {
+		const { project } = runGenerator(securitySpec);
+		const body = project
+			.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
+			.getFunctionOrThrow("authInterceptor")
+			?.getBodyText()!;
 
-        // If requirements array is empty (default), skip auth
-        expect(body).toContain('if (requirements.length === 0)');
-        expect(body).toContain('return next(req);');
-    });
+		// If requirements array is empty (default), skip auth
+		expect(body).toContain("if (requirements.length === 0)");
+		expect(body).toContain("return next(req);");
+	});
 
-    it('should reject apiKey schemes with unsupported in-location', () => {
-        expect(() =>
-            runGenerator({
-                ...emptySpec,
-                components: {
-                    securitySchemes: {
-                        ApiKeyHeader: { type: 'apiKey', in: 'header', name: 'X-API-KEY' },
-                        ApiKeyPath: { type: 'apiKey', in: 'path', name: 'id' },
-                    },
-                },
-            }),
-        ).toThrow(/apiKey security scheme "ApiKeyPath" must define 'in' as 'query', 'header', or 'cookie'/);
-    });
+	it("should reject apiKey schemes with unsupported in-location", () => {
+		expect(() =>
+			runGenerator({
+				...emptySpec,
+				components: {
+					securitySchemes: {
+						ApiKeyHeader: { type: "apiKey", in: "header", name: "X-API-KEY" },
+						ApiKeyPath: { type: "apiKey", in: "path", name: "id" },
+					},
+				},
+			}),
+		).toThrow(
+			/apiKey security scheme "ApiKeyPath" must define 'in' as 'query', 'header', or 'cookie'/,
+		);
+	});
 
-    it('should reject string | number | boolean | object | undefined | null scheme types when building applicators', () => {
-        expect(() =>
-            runGenerator({
-                ...emptySpec,
-                components: {
-                    securitySchemes: {
-                        BearerAuth: { type: 'http', scheme: 'bearer' },
-                        CustomScheme: { type: 'custom' },
-                    },
-                },
-            }),
-        ).toThrow(/Security scheme "CustomScheme" has unsupported type "custom"/);
-    });
+	it("should reject string | number | boolean | object | undefined | null scheme types when building applicators", () => {
+		expect(() =>
+			runGenerator({
+				...emptySpec,
+				components: {
+					securitySchemes: {
+						BearerAuth: { type: "http", scheme: "bearer" },
+						CustomScheme: { type: "custom" },
+					},
+				},
+			}),
+		).toThrow(/Security scheme "CustomScheme" has unsupported type "custom"/);
+	});
 
-    it('should default auth prefix to Bearer for non-http schemes', () => {
-        const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out' } as string | number | boolean | object | undefined | null;
-        const parser = new SwaggerParser(emptySpec as string | number | boolean | object | undefined | null, config);
-        const generator = new AuthInterceptorGenerator(parser, project);
+	it("should default auth prefix to Bearer for non-http schemes", () => {
+		const project = createTestProject();
+		const config: GeneratorConfig = { output: "/out" } as
+			| string
+			| number
+			| boolean
+			| object
+			| undefined
+			| null;
+		const parser = new SwaggerParser(
+			emptySpec as string | number | boolean | object | undefined | null,
+			config,
+		);
+		const generator = new AuthInterceptorGenerator(parser, project);
 
-        const prefix = (generator as string | number | boolean | object | undefined | null).getAuthPrefix({
-            type: 'apiKey',
-        });
+		const prefix = (
+			generator as string | number | boolean | object | undefined | null
+		).getAuthPrefix({
+			type: "apiKey",
+		});
 
-        expect(prefix).toBe('Bearer');
+		expect(prefix).toBe("Bearer");
 
-        const bearerDefault = (generator as string | number | boolean | object | undefined | null).getAuthPrefix({
-            type: 'http',
-        });
+		const bearerDefault = (
+			generator as string | number | boolean | object | undefined | null
+		).getAuthPrefix({
+			type: "http",
+		});
 
-        expect(bearerDefault).toBe('Bearer');
+		expect(bearerDefault).toBe("Bearer");
 
-        const basicPrefix = (generator as string | number | boolean | object | undefined | null).getAuthPrefix({
-            type: 'http',
-            scheme: 'basic',
-        });
+		const basicPrefix = (
+			generator as string | number | boolean | object | undefined | null
+		).getAuthPrefix({
+			type: "http",
+			scheme: "basic",
+		});
 
-        expect(basicPrefix).toBe('Basic');
-    });
+		expect(basicPrefix).toBe("Basic");
+	});
 });

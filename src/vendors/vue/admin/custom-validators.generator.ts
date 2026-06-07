@@ -1,27 +1,29 @@
-import { Project } from 'ts-morph';
-import * as path from 'node:path';
+import type { Project } from "ts-morph";
+import * as path from "node:path";
 
 /**
  * Generates custom validation utility functions for the Vue Admin Interface forms.
  */
 export class CustomValidatorsGenerator {
-    /**
-     * Initializes a new CustomValidatorsGenerator.
-     * @param project The ts-morph project for writing source files.
-     */
-    constructor(private project: Project) {}
+	/**
+	 * Initializes a new CustomValidatorsGenerator.
+	 * @param project The ts-morph project for writing source files.
+	 */
+	constructor(private project: Project) {}
 
-    /**
-     * Generates the shared validators file.
-     * @param adminDir The root admin directory.
-     */
-    public generate(adminDir: string): void {
-        const dir = path.posix.join(adminDir, 'shared');
-        const filePath = path.posix.join(dir, 'validators.ts');
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+	/**
+	 * Generates the shared validators file.
+	 * @param adminDir The root admin directory.
+	 */
+	public generate(adminDir: string): void {
+		const dir = path.posix.join(adminDir, "shared");
+		const filePath = path.posix.join(dir, "validators.ts");
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        sourceFile.addStatements(
-            `
+		sourceFile.addStatements(
+			`
 /**
  * Validates that a value is provided.
  * @param value The value to check.
@@ -63,7 +65,7 @@ export function minLength(length: number) {
     };
 }
 `.trim(),
-        );
-        sourceFile.formatText();
-    }
+		);
+		sourceFile.formatText();
+	}
 }

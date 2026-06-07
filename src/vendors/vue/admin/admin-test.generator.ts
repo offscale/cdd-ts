@@ -1,27 +1,29 @@
-import { Project } from 'ts-morph';
-import * as path from 'node:path';
+import type { Project } from "ts-morph";
+import * as path from "node:path";
 
 /**
  * Generates unit tests for the Vue Admin components.
  */
 export class AdminTestGenerator {
-    /**
-     * Initializes a new AdminTestGenerator.
-     * @param project The ts-morph project for writing source files.
-     */
-    constructor(private project: Project) {}
+	/**
+	 * Initializes a new AdminTestGenerator.
+	 * @param project The ts-morph project for writing source files.
+	 */
+	constructor(private project: Project) {}
 
-    /**
-     * Generates a basic vitest specification for a given Vue component.
-     * @param componentName The base name of the component (e.g. 'users-list.component').
-     * @param resourceDir The directory containing the component.
-     */
-    public generate(componentName: string, resourceDir: string): void {
-        const filePath = path.posix.join(resourceDir, `${componentName}.spec.ts`);
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+	/**
+	 * Generates a basic vitest specification for a given Vue component.
+	 * @param componentName The base name of the component (e.g. 'users-list.component').
+	 * @param resourceDir The directory containing the component.
+	 */
+	public generate(componentName: string, resourceDir: string): void {
+		const filePath = path.posix.join(resourceDir, `${componentName}.spec.ts`);
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        sourceFile.addStatements(
-            `
+		sourceFile.addStatements(
+			`
 import { describe, it, expect, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import Component from './${componentName}.vue';
@@ -56,7 +58,7 @@ describe('${componentName}.vue', () => {
     });
 });
 `.trim(),
-        );
-        sourceFile.formatText();
-    }
+		);
+		sourceFile.formatText();
+	}
 }

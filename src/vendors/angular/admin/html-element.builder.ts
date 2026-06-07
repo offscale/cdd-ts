@@ -4,100 +4,103 @@
  * Angular's template syntax (e.g., @if, [prop], (event)).
  */
 export class HtmlElementBuilder {
-    private tagName: string;
+	private tagName: string;
 
-    private attributes: Map<string, string> = new Map();
+	private attributes: Map<string, string> = new Map();
 
-    private children: (HtmlElementBuilder | string)[] = [];
+	private children: (HtmlElementBuilder | string)[] = [];
 
-    private innerHtml: string | null = null;
+	private innerHtml: string | null = null;
 
-    private textContent: string | null = null;
+	private textContent: string | null = null;
 
-    private isSelfClosing: boolean = false;
+	private isSelfClosing: boolean = false;
 
-    private constructor(tagName: string) {
-        this.tagName = tagName;
-    }
+	private constructor(tagName: string) {
+		this.tagName = tagName;
+	}
 
-    public static create(tagName: string): HtmlElementBuilder {
-        return new HtmlElementBuilder(tagName);
-    }
+	public static create(tagName: string): HtmlElementBuilder {
+		return new HtmlElementBuilder(tagName);
+	}
 
-    public selfClosing(): this {
-        this.isSelfClosing = true;
+	public selfClosing(): this {
+		this.isSelfClosing = true;
 
-        return this;
-    }
+		return this;
+	}
 
-    public setAttribute(name: string, value: string): this {
-        this.attributes.set(name, value);
+	public setAttribute(name: string, value: string): this {
+		this.attributes.set(name, value);
 
-        return this;
-    }
+		return this;
+	}
 
-    public addClass(className: string): this {
-        const existingClass = this.attributes.get('class');
+	public addClass(className: string): this {
+		const existingClass = this.attributes.get("class");
 
-        this.attributes.set('class', existingClass ? `${existingClass} ${className}` : className);
+		this.attributes.set(
+			"class",
+			existingClass ? `${existingClass} ${className}` : className,
+		);
 
-        return this;
-    }
+		return this;
+	}
 
-    public appendChild(child: HtmlElementBuilder | string): this {
-        this.children.push(child);
+	public appendChild(child: HtmlElementBuilder | string): this {
+		this.children.push(child);
 
-        return this;
-    }
+		return this;
+	}
 
-    public setTextContent(text: string): this {
-        this.textContent = text;
+	public setTextContent(text: string): this {
+		this.textContent = text;
 
-        return this;
-    }
+		return this;
+	}
 
-    public setInnerHtml(html: string): this {
-        this.innerHtml = html;
+	public setInnerHtml(html: string): this {
+		this.innerHtml = html;
 
-        return this;
-    }
+		return this;
+	}
 
-    public render(indentationLevel = 0): string {
-        const indent = '  '.repeat(indentationLevel);
+	public render(indentationLevel = 0): string {
+		const indent = "  ".repeat(indentationLevel);
 
-        const attrs = Array.from(this.attributes.entries())
+		const attrs = Array.from(this.attributes.entries())
 
-            .map(([key, value]) => `${key}="${value}"`)
-            .join(' ');
+			.map(([key, value]) => `${key}="${value}"`)
+			.join(" ");
 
-        const openingTagFirstPart = `${indent}<${this.tagName}${attrs ? ' ' + attrs : ''}`;
+		const openingTagFirstPart = `${indent}<${this.tagName}${attrs ? ` ${attrs}` : ""}`;
 
-        if (this.isSelfClosing) {
-            return `${openingTagFirstPart} />`;
-        }
+		if (this.isSelfClosing) {
+			return `${openingTagFirstPart} />`;
+		}
 
-        const openingTag = `${openingTagFirstPart}>`;
+		const openingTag = `${openingTagFirstPart}>`;
 
-        let content = '';
+		let content = "";
 
-        if (this.innerHtml) {
-            content = `\n${this.innerHtml
-                .split('\n')
+		if (this.innerHtml) {
+			content = `\n${this.innerHtml
+				.split("\n")
 
-                .map(line => `${'  '.repeat(indentationLevel + 1)}${line.trim()}`)
-                .join('\n')}\n${indent}`;
-        } else if (this.textContent) {
-            content = this.textContent;
-        } else if (this.children.length > 0) {
-            content = `\n${this.children
-                .map(child =>
-                    child instanceof HtmlElementBuilder
-                        ? child.render(indentationLevel + 1)
-                        : `${'  '.repeat(indentationLevel + 1)}${child}`,
-                )
-                .join('\n')}\n${indent}`;
-        }
+				.map((line) => `${"  ".repeat(indentationLevel + 1)}${line.trim()}`)
+				.join("\n")}\n${indent}`;
+		} else if (this.textContent) {
+			content = this.textContent;
+		} else if (this.children.length > 0) {
+			content = `\n${this.children
+				.map((child) =>
+					child instanceof HtmlElementBuilder
+						? child.render(indentationLevel + 1)
+						: `${"  ".repeat(indentationLevel + 1)}${child}`,
+				)
+				.join("\n")}\n${indent}`;
+		}
 
-        return `${openingTag}${content}</${this.tagName}>`;
-    }
+		return `${openingTag}${content}</${this.tagName}>`;
+	}
 }

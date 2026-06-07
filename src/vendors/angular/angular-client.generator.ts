@@ -1,273 +1,310 @@
-import { Project } from 'ts-morph';
+import type { Project } from "ts-morph";
 
-import { posix as path } from 'node:path';
+import { posix as path } from "node:path";
 
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { GeneratorConfig } from '@src/core/types/index.js';
-import { camelCase, pascalCase } from '@src/functions/utils.js';
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { camelCase, pascalCase } from "@src/functions/utils.js";
 
-import { AbstractClientGenerator } from '../../core/generator.js';
+import { AbstractClientGenerator } from "../../core/generator.js";
 
 // Core Generators
-import { TypeGenerator } from '@src/classes/emit.js';
+import { TypeGenerator } from "@src/classes/emit.js";
 
 // Angular Generators
-import { AdminGenerator } from './admin/admin.generator.js';
-import { AdminTestGenerator } from './admin/admin-test.generator.js';
-import { discoverAdminResources } from './admin/resource-discovery.js';
-import { ServiceGenerator } from './service/service.generator.js';
-import { IntegrationTestGenerator } from './test/integration-test.generator.js';
-import { ServiceTestGenerator } from './test/service-test-generator.js';
+import { AdminGenerator } from "./admin/admin.generator.js";
+import { AdminTestGenerator } from "./admin/admin-test.generator.js";
+import { discoverAdminResources } from "./admin/resource-discovery.js";
+import { ServiceGenerator } from "./service/service.generator.js";
+import { IntegrationTestGenerator } from "./test/integration-test.generator.js";
+import { ServiceTestGenerator } from "./test/service-test-generator.js";
 
 // Angular Utilities
-import { TokenGenerator } from './utils/token.generator.js';
-import { RequestContextGenerator } from './utils/request-context.generator.js';
+import { TokenGenerator } from "./utils/token.generator.js";
+import { RequestContextGenerator } from "./utils/request-context.generator.js";
 // NOTE: HttpParamsBuilderGenerator is replaced/gutted, ensuring only Codec generation if present,
 // but typically for full abstraction we assume logic moved to shared.
 // We keep it if it generates the ApiParameterCodec only.
-import { HttpParamsBuilderGenerator } from './utils/http-params-builder.generator.js';
+import { HttpParamsBuilderGenerator } from "./utils/http-params-builder.generator.js";
 
-import { FileDownloadGenerator } from './utils/file-download.generator.js';
-import { DateTransformerGenerator } from './utils/date-transformer.generator.js';
-import { AuthTokensGenerator } from './utils/auth-tokens.generator.js';
-import { AuthInterceptorGenerator } from './utils/auth-interceptor.generator.js';
-import { OAuthHelperGenerator } from './utils/oauth-helper.generator.js';
-import { BaseInterceptorGenerator } from './utils/base-interceptor.generator.js';
-import { ProviderGenerator } from './utils/provider.generator.js';
-import { MainIndexGenerator, ServiceIndexGenerator } from './utils/index.generator.js';
-import { LinkServiceGenerator } from './utils/link-service.generator.js';
-import { ResponseHeaderParserGenerator } from './utils/response-header-parser.generator.js';
-import { LinkSetParserGenerator } from './utils/link-set-parser.generator.js';
-import { ExtensionTokensGenerator } from './utils/extension-tokens.generator.js';
-import { WebhookHelperGenerator } from './utils/webhook-helper.generator.js';
+import { FileDownloadGenerator } from "./utils/file-download.generator.js";
+import { DateTransformerGenerator } from "./utils/date-transformer.generator.js";
+import { AuthTokensGenerator } from "./utils/auth-tokens.generator.js";
+import { AuthInterceptorGenerator } from "./utils/auth-interceptor.generator.js";
+import { OAuthHelperGenerator } from "./utils/oauth-helper.generator.js";
+import { BaseInterceptorGenerator } from "./utils/base-interceptor.generator.js";
+import { ProviderGenerator } from "./utils/provider.generator.js";
+import {
+	MainIndexGenerator,
+	ServiceIndexGenerator,
+} from "./utils/index.generator.js";
+import { LinkServiceGenerator } from "./utils/link-service.generator.js";
+import { ResponseHeaderParserGenerator } from "./utils/response-header-parser.generator.js";
+import { LinkSetParserGenerator } from "./utils/link-set-parser.generator.js";
+import { ExtensionTokensGenerator } from "./utils/extension-tokens.generator.js";
+import { WebhookHelperGenerator } from "./utils/webhook-helper.generator.js";
 
 // Shared Utilities
-import { ParameterSerializerGenerator } from '../../functions/emit_parameter_serializer.js';
-import { ServerGenerator } from '../../routes/emit_server.js';
-import { ServerUrlGenerator } from '../../routes/emit_server_url.js';
-import { XmlBuilderGenerator } from '../../openapi/emit_xml_builder.js';
-import { XmlParserGenerator } from '../../openapi/emit_xml_parser.js';
-import { ContentDecoderGenerator } from '../../openapi/emit_content_decoder.js';
-import { ContentEncoderGenerator } from '../../openapi/emit_content_encoder.js';
-import { InfoGenerator } from '../../openapi/emit_info.js';
-import { MultipartBuilderGenerator } from '../../functions/emit_multipart.js';
-import { ResponseHeaderRegistryGenerator } from '../../openapi/emit_response_header_registry.js';
-import { CallbackGenerator } from '@src/functions/emit_callback.js';
-import { WebhookGenerator } from '@src/functions/emit_webhook.js';
-import { LinkGenerator } from '@src/openapi/emit_link.js';
-import { DiscriminatorGenerator } from '@src/classes/emit_discriminator.js';
-import { SecurityGenerator } from '@src/openapi/emit_security.js';
-import { TagGenerator } from '@src/openapi/emit_tag.js';
-import { ExamplesGenerator } from '@src/mocks/emit.js';
-import { MediaTypesGenerator } from '@src/openapi/emit_media_types.js';
-import { PathsGenerator } from '@src/routes/emit.js';
-import { PathItemsGenerator } from '@src/routes/emit_path_items.js';
-import { HeadersGenerator } from '@src/openapi/emit_headers.js';
-import { ParametersGenerator } from '@src/routes/emit_parameters.js';
-import { RequestBodiesGenerator } from '@src/openapi/emit_request_bodies.js';
-import { ResponsesGenerator } from '@src/openapi/emit_responses.js';
-import { SpecSnapshotGenerator } from '@src/openapi/emit_snapshot.js';
-import { DocumentMetaGenerator } from '@src/openapi/emit_document_meta.js';
+import { ParameterSerializerGenerator } from "../../functions/emit_parameter_serializer.js";
+import { ServerGenerator } from "../../routes/emit_server.js";
+import { ServerUrlGenerator } from "../../routes/emit_server_url.js";
+import { XmlBuilderGenerator } from "../../openapi/emit_xml_builder.js";
+import { XmlParserGenerator } from "../../openapi/emit_xml_parser.js";
+import { ContentDecoderGenerator } from "../../openapi/emit_content_decoder.js";
+import { ContentEncoderGenerator } from "../../openapi/emit_content_encoder.js";
+import { InfoGenerator } from "../../openapi/emit_info.js";
+import { MultipartBuilderGenerator } from "../../functions/emit_multipart.js";
+import { ResponseHeaderRegistryGenerator } from "../../openapi/emit_response_header_registry.js";
+import { CallbackGenerator } from "@src/functions/emit_callback.js";
+import { WebhookGenerator } from "@src/functions/emit_webhook.js";
+import { LinkGenerator } from "@src/openapi/emit_link.js";
+import { DiscriminatorGenerator } from "@src/classes/emit_discriminator.js";
+import { SecurityGenerator } from "@src/openapi/emit_security.js";
+import { TagGenerator } from "@src/openapi/emit_tag.js";
+import { ExamplesGenerator } from "@src/mocks/emit.js";
+import { MediaTypesGenerator } from "@src/openapi/emit_media_types.js";
+import { PathsGenerator } from "@src/routes/emit.js";
+import { PathItemsGenerator } from "@src/routes/emit_path_items.js";
+import { HeadersGenerator } from "@src/openapi/emit_headers.js";
+import { ParametersGenerator } from "@src/routes/emit_parameters.js";
+import { RequestBodiesGenerator } from "@src/openapi/emit_request_bodies.js";
+import { ResponsesGenerator } from "@src/openapi/emit_responses.js";
+import { SpecSnapshotGenerator } from "@src/openapi/emit_snapshot.js";
+import { DocumentMetaGenerator } from "@src/openapi/emit_document_meta.js";
 
-import { PathInfo } from '@src/core/types/analysis.js';
+import type { PathInfo } from "@src/core/types/analysis.js";
 function getControllerCanonicalName(op: PathInfo): string {
-    if (Array.isArray(op.tags) && op.tags[0]) {
-        return pascalCase(op.tags[0].toString());
-    }
+	if (Array.isArray(op.tags) && op.tags[0]) {
+		return pascalCase(op.tags[0].toString());
+	}
 
-    const firstSegment = op.path.split('/').filter(Boolean)[0];
+	const firstSegment = op.path.split("/").filter(Boolean)[0];
 
-    return firstSegment ? pascalCase(firstSegment) : 'Default';
+	return firstSegment ? pascalCase(firstSegment) : "Default";
 }
 
-function groupPathsByCanonicalController(parser: SwaggerParser): Record<string, PathInfo[]> {
-    const groups: Record<string, PathInfo[]> = {};
+function groupPathsByCanonicalController(
+	parser: SwaggerParser,
+): Record<string, PathInfo[]> {
+	const groups: Record<string, PathInfo[]> = {};
 
-    for (const op of parser.operations) {
-        const group = getControllerCanonicalName(op);
+	for (const op of parser.operations) {
+		const group = getControllerCanonicalName(op);
 
-        if (!groups[group]) groups[group] = [];
+		if (!groups[group]) groups[group] = [];
 
-        groups[group].push(op);
-    }
+		groups[group].push(op);
+	}
 
-    return groups;
+	return groups;
 }
 
 export class AngularClientGenerator extends AbstractClientGenerator {
-    public generate(project: Project, parser: SwaggerParser, config: GeneratorConfig, outputRoot: string): void {
-        // 1. Models
+	public generate(
+		project: Project,
+		parser: SwaggerParser,
+		config: GeneratorConfig,
+		outputRoot: string,
+	): void {
+		// 1. Models
 
-        new TypeGenerator(parser, project, config).generate(outputRoot);
+		new TypeGenerator(parser, project, config).generate(outputRoot);
 
-        console.log('✅ Models generated.');
+		console.log("✅ Models generated.");
 
-        // 2. Shared Utilities
+		// 2. Shared Utilities
 
-        new InfoGenerator(parser, project).generate(outputRoot);
+		new InfoGenerator(parser, project).generate(outputRoot);
 
-        new ServerGenerator(parser, project).generate(outputRoot);
+		new ServerGenerator(parser, project).generate(outputRoot);
 
-        new ServerUrlGenerator(parser, project).generate(outputRoot);
+		new ServerUrlGenerator(parser, project).generate(outputRoot);
 
-        new ParameterSerializerGenerator(project).generate(outputRoot); // NEW
+		new ParameterSerializerGenerator(project).generate(outputRoot); // NEW
 
-        new CallbackGenerator(parser, project).generate(outputRoot);
+		new CallbackGenerator(parser, project).generate(outputRoot);
 
-        new WebhookGenerator(parser, project).generate(outputRoot);
+		new WebhookGenerator(parser, project).generate(outputRoot);
 
-        new LinkGenerator(parser, project).generate(outputRoot);
+		new LinkGenerator(parser, project).generate(outputRoot);
 
-        new DiscriminatorGenerator(parser, project).generate(outputRoot);
+		new DiscriminatorGenerator(parser, project).generate(outputRoot);
 
-        new SecurityGenerator(parser, project).generate(outputRoot);
+		new SecurityGenerator(parser, project).generate(outputRoot);
 
-        new TagGenerator(parser, project).generate(outputRoot);
+		new TagGenerator(parser, project).generate(outputRoot);
 
-        new ExamplesGenerator(parser, project).generate(outputRoot);
+		new ExamplesGenerator(parser, project).generate(outputRoot);
 
-        new MediaTypesGenerator(parser, project).generate(outputRoot);
+		new MediaTypesGenerator(parser, project).generate(outputRoot);
 
-        new PathsGenerator(parser, project).generate(outputRoot);
+		new PathsGenerator(parser, project).generate(outputRoot);
 
-        new PathItemsGenerator(parser, project).generate(outputRoot);
+		new PathItemsGenerator(parser, project).generate(outputRoot);
 
-        new HeadersGenerator(parser, project).generate(outputRoot);
+		new HeadersGenerator(parser, project).generate(outputRoot);
 
-        new ParametersGenerator(parser, project).generate(outputRoot);
+		new ParametersGenerator(parser, project).generate(outputRoot);
 
-        new RequestBodiesGenerator(parser, project).generate(outputRoot);
+		new RequestBodiesGenerator(parser, project).generate(outputRoot);
 
-        new ResponsesGenerator(parser, project).generate(outputRoot);
+		new ResponsesGenerator(parser, project).generate(outputRoot);
 
-        new DocumentMetaGenerator(parser, project).generate(outputRoot);
+		new DocumentMetaGenerator(parser, project).generate(outputRoot);
 
-        new SpecSnapshotGenerator(parser, project).generate(outputRoot);
+		new SpecSnapshotGenerator(parser, project).generate(outputRoot);
 
-        // 3. Services and Angular Specifics
+		// 3. Services and Angular Specifics
 
-        if (config.options.generateServices ?? true) {
-            const servicesDir = path.join(outputRoot, 'services');
+		if (config.options.generateServices ?? true) {
+			const servicesDir = path.join(outputRoot, "services");
 
-            const controllerGroups = groupPathsByCanonicalController(parser);
+			const controllerGroups = groupPathsByCanonicalController(parser);
 
-            // Generate Services using the Refactored Service Generator
+			// Generate Services using the Refactored Service Generator
 
-            new ServiceGenerator(parser, project, config).generate(servicesDir, controllerGroups);
+			new ServiceGenerator(parser, project, config).generate(
+				servicesDir,
+				controllerGroups,
+			);
 
-            new ServiceIndexGenerator(project).generateIndex(outputRoot);
+			new ServiceIndexGenerator(project).generateIndex(outputRoot);
 
-            console.log('✅ Services generated.');
+			console.log("✅ Services generated.");
 
-            // Generate Utilities (tokens, helpers, etc)
+			// Generate Utilities (tokens, helpers, etc)
 
-            new TokenGenerator(project, config.clientName).generate(outputRoot);
+			new TokenGenerator(project, config.clientName).generate(outputRoot);
 
-            new RequestContextGenerator(project).generate(outputRoot);
+			new RequestContextGenerator(project).generate(outputRoot);
 
-            new ExtensionTokensGenerator(project).generate(outputRoot);
+			new ExtensionTokensGenerator(project).generate(outputRoot);
 
-            // Note: This now likely only generates the ApiParameterCodec
+			// Note: This now likely only generates the ApiParameterCodec
 
-            new HttpParamsBuilderGenerator(project).generate(outputRoot);
+			new HttpParamsBuilderGenerator(project).generate(outputRoot);
 
-            new FileDownloadGenerator(project).generate(outputRoot);
+			new FileDownloadGenerator(project).generate(outputRoot);
 
-            new XmlBuilderGenerator(project).generate(outputRoot);
+			new XmlBuilderGenerator(project).generate(outputRoot);
 
-            new XmlParserGenerator(project).generate(outputRoot);
+			new XmlParserGenerator(project).generate(outputRoot);
 
-            new ContentDecoderGenerator(project).generate(outputRoot);
+			new ContentDecoderGenerator(project).generate(outputRoot);
 
-            new ContentEncoderGenerator(project).generate(outputRoot);
+			new ContentEncoderGenerator(project).generate(outputRoot);
 
-            new MultipartBuilderGenerator(project).generate(outputRoot);
+			new MultipartBuilderGenerator(project).generate(outputRoot);
 
-            new LinkServiceGenerator(parser, project).generate(outputRoot);
+			new LinkServiceGenerator(parser, project).generate(outputRoot);
 
-            new ResponseHeaderRegistryGenerator(parser, project).generate(outputRoot);
+			new ResponseHeaderRegistryGenerator(parser, project).generate(outputRoot);
 
-            new LinkSetParserGenerator(project).generate(outputRoot);
+			new LinkSetParserGenerator(project).generate(outputRoot);
 
-            new ResponseHeaderParserGenerator(project).generate(outputRoot);
+			new ResponseHeaderParserGenerator(project).generate(outputRoot);
 
-            new WebhookHelperGenerator(parser, project).generate(outputRoot);
+			new WebhookHelperGenerator(parser, project).generate(outputRoot);
 
-            if (config.options.dateType === 'Date') {
-                new DateTransformerGenerator(project).generate(outputRoot);
-            }
+			if (config.options.dateType === "Date") {
+				new DateTransformerGenerator(project).generate(outputRoot);
+			}
 
-            const securitySchemes = parser.getSecuritySchemes();
+			const securitySchemes = parser.getSecuritySchemes();
 
-            let tokenNames: string[] = [];
+			let tokenNames: string[] = [];
 
-            if (Object.keys(securitySchemes).length > 0) {
-                new AuthTokensGenerator(project).generate(outputRoot);
+			if (Object.keys(securitySchemes).length > 0) {
+				new AuthTokensGenerator(project).generate(outputRoot);
 
-                const interceptorGenerator = new AuthInterceptorGenerator(parser, project);
+				const interceptorGenerator = new AuthInterceptorGenerator(
+					parser,
+					project,
+				);
 
-                const interceptorResult = interceptorGenerator.generate(outputRoot);
+				const interceptorResult = interceptorGenerator.generate(outputRoot);
 
-                tokenNames = interceptorResult?.tokenNames || [];
+				tokenNames = interceptorResult?.tokenNames || [];
 
-                if (Object.values(securitySchemes).some(s => s.type === 'oauth2')) {
-                    new OAuthHelperGenerator(parser, project).generate(outputRoot);
-                }
-            }
+				if (Object.values(securitySchemes).some((s) => s.type === "oauth2")) {
+					new OAuthHelperGenerator(parser, project).generate(outputRoot);
+				}
+			}
 
-            new BaseInterceptorGenerator(project, config.clientName).generate(outputRoot);
+			new BaseInterceptorGenerator(project, config.clientName).generate(
+				outputRoot,
+			);
 
-            new ProviderGenerator(parser, project, tokenNames).generate(outputRoot);
+			new ProviderGenerator(parser, project, tokenNames).generate(outputRoot);
 
-            console.log('✅ Utilities and providers generated.');
+			console.log("✅ Utilities and providers generated.");
 
-            const shouldGenerateTests = config.options.tests ?? config.options.generateServiceTests ?? false;
-            if (shouldGenerateTests) {
-                console.log('📝 Generating tests for services...');
+			const shouldGenerateTests =
+				config.options.tests ?? config.options.generateServiceTests ?? false;
+			if (shouldGenerateTests) {
+				console.log("📝 Generating tests for services...");
 
-                const testGenerator = new ServiceTestGenerator(parser, project, config);
-                const integrationTestGen = new IntegrationTestGenerator(parser, project);
+				const testGenerator = new ServiceTestGenerator(parser, project, config);
+				const integrationTestGen = new IntegrationTestGenerator(
+					parser,
+					project,
+				);
 
-                const controllerGroupsForTest = groupPathsByCanonicalController(parser);
+				const controllerGroupsForTest = groupPathsByCanonicalController(parser);
 
-                for (const [controllerName, operations] of Object.entries(controllerGroupsForTest)) {
-                    for (const op of operations) {
-                        if (!op.methodName) {
-                            if (op.operationId) op.methodName = camelCase(op.operationId);
-                        }
-                    }
+				for (const [controllerName, operations] of Object.entries(
+					controllerGroupsForTest,
+				)) {
+					for (const op of operations) {
+						if (!op.methodName) {
+							if (op.operationId) op.methodName = camelCase(op.operationId);
+						}
+					}
 
-                    testGenerator.generateServiceTestFile(controllerName, operations, servicesDir);
-                }
+					testGenerator.generateServiceTestFile(
+						controllerName,
+						operations,
+						servicesDir,
+					);
+				}
 
-                integrationTestGen.generate(controllerGroupsForTest, outputRoot, config.clientName);
+				integrationTestGen.generate(
+					controllerGroupsForTest,
+					outputRoot,
+					config.clientName,
+				);
 
-                console.log('✅ Service tests generated.');
-            }
+				console.log("✅ Service tests generated.");
+			}
 
-            if (config.options.admin) {
-                new AdminGenerator(parser, project, config).generate(outputRoot);
+			if (config.options.admin) {
+				new AdminGenerator(parser, project, config).generate(outputRoot);
 
-                const shouldGenerateTests = config.options.tests ?? config.options.generateAdminTests ?? false;
+				const shouldGenerateTests =
+					config.options.tests ?? config.options.generateAdminTests ?? false;
 
-                if (shouldGenerateTests) {
-                    console.log('📝 Generating tests for admin UI...');
+				if (shouldGenerateTests) {
+					console.log("📝 Generating tests for admin UI...");
 
-                    const adminTestGen = new AdminTestGenerator(project);
+					const adminTestGen = new AdminTestGenerator(project);
 
-                    const adminResources = discoverAdminResources(parser);
+					const adminResources = discoverAdminResources(parser);
 
-                    for (const resource of adminResources) {
-                        adminTestGen.generate(resource, path.join(outputRoot, 'admin'));
-                    }
+					for (const resource of adminResources) {
+						adminTestGen.generate(resource, path.join(outputRoot, "admin"));
+					}
 
-                    console.log('✅ Admin UI tests generated.');
-                }
-            }
-        }
+					console.log("✅ Admin UI tests generated.");
+				}
+			}
+		}
 
-        new MainIndexGenerator(project, config, parser).generateMainIndex(outputRoot);
+		new MainIndexGenerator(project, config, parser).generateMainIndex(
+			outputRoot,
+		);
 
-        console.log(`🎉 Generation complete! Output written to: ${path.resolve(outputRoot)}`);
-    }
+		console.log(
+			`🎉 Generation complete! Output written to: ${path.resolve(outputRoot)}`,
+		);
+	}
 }

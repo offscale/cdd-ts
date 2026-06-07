@@ -1,67 +1,69 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
-import { Project } from 'ts-morph';
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { GeneratorConfig } from '@src/core/types/index.js';
-import { ServiceMethodGenerator } from '@src/vendors/angular/service/service-method.generator.js';
-import { ExtensionTokensGenerator } from '@src/vendors/angular/utils/extension-tokens.generator.js';
+import { describe, expect, it } from "vitest";
+import { Project } from "ts-morph";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
+import { ExtensionTokensGenerator } from "@src/vendors/angular/utils/extension-tokens.generator.js";
 
 const extensionsSpec = {
-    openapi: '3.0.0',
-    info: { title: 'Ext', version: '1' },
-    paths: {
-        '/cached': {
-            get: {
-                operationId: 'getCachedData',
-                'x-cache-ttl': 300,
-                'x-important': true,
-                responses: { '200': { description: 'ok' } },
-            },
-        },
-    },
+	openapi: "3.0.0",
+	info: { title: "Ext", version: "1" },
+	paths: {
+		"/cached": {
+			get: {
+				operationId: "getCachedData",
+				"x-cache-ttl": 300,
+				"x-important": true,
+				responses: { "200": { description: "ok" } },
+			},
+		},
+	},
 };
 
-describe('Generated Code: Extensions Runtime Support', () => {
-    const run = () => {
-        const project = new Project({ useInMemoryFileSystem: true });
-        const config: GeneratorConfig = { input: '', output: '/out', options: { framework: 'angular' } } as
-            | string
-            | number
-            | boolean
-            | object
-            | undefined
-            | null;
-        const parser = new SwaggerParser(
-            extensionsSpec as string | number | boolean | object | undefined | null,
-            config,
-        );
+describe("Generated Code: Extensions Runtime Support", () => {
+	const run = () => {
+		const project = new Project({ useInMemoryFileSystem: true });
+		const config: GeneratorConfig = {
+			input: "",
+			output: "/out",
+			options: { framework: "angular" },
+		} as string | number | boolean | object | undefined | null;
+		const parser = new SwaggerParser(
+			extensionsSpec as string | number | boolean | object | undefined | null,
+			config,
+		);
 
-        // 1. Test Token Generation
-        new ExtensionTokensGenerator(project).generate('/out');
-        const tokenFile = project.getSourceFileOrThrow('/out/tokens/extensions.token.ts');
-        expect(tokenFile.getText()).toContain('export const EXTENSIONS_CONTEXT_TOKEN');
+		// 1. Test Token Generation
+		new ExtensionTokensGenerator(project).generate("/out");
+		const tokenFile = project.getSourceFileOrThrow(
+			"/out/tokens/extensions.token.ts",
+		);
+		expect(tokenFile.getText()).toContain(
+			"export const EXTENSIONS_CONTEXT_TOKEN",
+		);
 
-        // 2. Test Service Generation Injection
-        const op = parser.operations[0];
-        op.methodName = 'getCachedData';
+		// 2. Test Service Generation Injection
+		const op = parser.operations[0];
+		op.methodName = "getCachedData";
 
-        const methodGen = new ServiceMethodGenerator(config, parser);
-        const sourceFile = project.createSourceFile('/out/service.ts');
-        const cls = sourceFile.addClass({ name: 'TestService' });
-        cls.addMethod({
-            name: 'createContextWithClientId',
-            returnType: 'string | number | boolean | object | undefined | null',
-            statements: 'return {};',
-        });
+		const methodGen = new ServiceMethodGenerator(config, parser);
+		const sourceFile = project.createSourceFile("/out/service.ts");
+		const cls = sourceFile.addClass({ name: "TestService" });
+		cls.addMethod({
+			name: "createContextWithClientId",
+			returnType: "string | number | boolean | object | undefined | null",
+			statements: "return {};",
+		});
 
-        methodGen.addServiceMethod(cls, op);
-        return cls.getMethodOrThrow('getCachedData').getBodyText()!;
-    };
+		methodGen.addServiceMethod(cls, op);
+		return cls.getMethodOrThrow("getCachedData").getBodyText()!;
+	};
 
-    it('should inject extensions into HttpContext when present', () => {
-        const body = run();
-        expect(body).toContain('EXTENSIONS_CONTEXT_TOKEN');
-        expect(body).toContain('"x-cache-ttl":300');
-        expect(body).toContain('"x-important":true');
-    });
+	it("should inject extensions into HttpContext when present", () => {
+		const body = run();
+		expect(body).toContain("EXTENSIONS_CONTEXT_TOKEN");
+		expect(body).toContain('"x-cache-ttl":300');
+		expect(body).toContain('"x-important":true');
+	});
 });

@@ -1,62 +1,68 @@
 // src/analysis/form-types.ts
-import { SwaggerDefinition } from '@src/core/types/index.js';
-import { ValidationRule } from './validation-types.js';
+import type { SwaggerDefinition } from "@src/core/types/index.js";
+import type { ValidationRule } from "./validation-types.js";
 
-export type ControlType = 'control' | 'group' | 'array' | 'map';
+export type ControlType = "control" | "group" | "array" | "map";
 
-export type JsonValue = string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
+export type JsonValue =
+	| string
+	| number
+	| boolean
+	| null
+	| { [key: string]: JsonValue }
+	| JsonValue[];
 
 export interface FormControlModel {
-    name: string;
-    propertyName: string;
-    dataType: string;
-    controlType: ControlType;
-    defaultValue: JsonValue;
-    validationRules: ValidationRule[];
+	name: string;
+	propertyName: string;
+	dataType: string;
+	controlType: ControlType;
+	defaultValue: JsonValue;
+	validationRules: ValidationRule[];
 
-    nestedFormInterface?: string;
-    nestedControls?: FormControlModel[];
+	nestedFormInterface?: string;
+	nestedControls?: FormControlModel[];
 
-    mapValueControl?: FormControlModel;
-    keyPattern?: string;
-    keyMinLength?: number;
-    keyMaxLength?: number;
+	mapValueControl?: FormControlModel;
+	keyPattern?: string;
+	keyMinLength?: number;
+	keyMaxLength?: number;
 
-    schema?: SwaggerDefinition;
+	schema?: SwaggerDefinition;
 }
 
 export interface PolymorphicOptionModel {
-    discriminatorValue: string;
-    subFormName: string;
-    controls: FormControlModel[];
-    modelName: string;
+	discriminatorValue: string;
+	subFormName: string;
+	controls: FormControlModel[];
+	modelName: string;
 }
 
 export interface PolymorphicPropertyConfig {
-    propertyName: string;
-    discriminatorOptions: string[];
-    options: PolymorphicOptionModel[];
-    defaultOption?: string;
+	propertyName: string;
+	discriminatorOptions: string[];
+	options: PolymorphicOptionModel[];
+	defaultOption?: string;
 }
 
 export interface DependencyRule {
-    triggerField: string;
-    targetField: string;
-    type: 'required';
+	triggerField: string;
+	targetField: string;
+	type: "required";
 }
 
 export interface FormAnalysisResult {
-    interfaces: {
-        name: string;
-        properties: { name: string }[];
-        isTopLevel: boolean;
-    }[];
-    topLevelControls: FormControlModel[];
-    usesCustomValidators: boolean;
-    hasFormArrays: boolean;
-    hasFileUploads: boolean;
-    hasMaps?: boolean;
-    isPolymorphic: boolean;
-    polymorphicProperties: PolymorphicPropertyConfig[];
-    dependencyRules: DependencyRule[];
+	interfaces: {
+		name: string;
+		properties: { name: string }[];
+		isTopLevel: boolean;
+	}[];
+	topLevelControls: FormControlModel[];
+	usesCustomValidators: boolean;
+	hasFormArrays: boolean;
+	hasFileUploads: boolean;
+	hasMaps?: boolean;
+	isPolymorphic: boolean;
+	polymorphicProperties: PolymorphicPropertyConfig[];
+	dependencyRules: DependencyRule[];
 }

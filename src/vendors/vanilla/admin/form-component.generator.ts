@@ -1,47 +1,49 @@
-import { Project } from 'ts-morph';
-import { Resource } from '@src/core/types/index.js';
-import { camelCase, pascalCase } from '@src/functions/utils.js';
+import type { Project } from "ts-morph";
+import type { Resource } from "@src/core/types/index.js";
+import { camelCase, pascalCase } from "@src/functions/utils.js";
 
 export class FormComponentGenerator {
-    constructor(private readonly project: Project) {}
+	constructor(private readonly project: Project) {}
 
-    public generate(resource: Resource, outDir: string): void {
-        const componentName = `${pascalCase(resource.name)}FormComponent`;
+	public generate(resource: Resource, outDir: string): void {
+		const componentName = `${pascalCase(resource.name)}FormComponent`;
 
-        const tagName = `app-${camelCase(resource.name)
-            .replace(/([A-Z])/g, '-$1')
-            .toLowerCase()}-form`;
+		const tagName = `app-${camelCase(resource.name)
+			.replace(/([A-Z])/g, "-$1")
+			.toLowerCase()}-form`;
 
-        const serviceName = `${pascalCase(resource.name)}Client`;
+		const serviceName = `${pascalCase(resource.name)}Client`;
 
-        const dirPath = `${outDir}/${resource.name}/${resource.name}-form`;
+		const dirPath = `${outDir}/${resource.name}/${resource.name}-form`;
 
-        if (!this.project.getFileSystem().directoryExistsSync(dirPath)) {
-            this.project.getFileSystem().mkdirSync(dirPath);
-        }
+		if (!this.project.getFileSystem().directoryExistsSync(dirPath)) {
+			this.project.getFileSystem().mkdirSync(dirPath);
+		}
 
-        const filePath = `${dirPath}/${resource.name}-form.component.ts`;
+		const filePath = `${dirPath}/${resource.name}-form.component.ts`;
 
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        const createOp = resource.operations.find(op => op.action === 'create');
+		const createOp = resource.operations.find((op) => op.action === "create");
 
-        const updateOp = resource.operations.find(op => op.action === 'update');
+		const updateOp = resource.operations.find((op) => op.action === "update");
 
-        const getOp = resource.operations.find(op => op.action === 'getById');
+		const getOp = resource.operations.find((op) => op.action === "getById");
 
-        const createMethodCall = createOp?.methodName || 'create';
+		const createMethodCall = createOp?.methodName || "create";
 
-        const updateMethodCall = updateOp?.methodName || 'update';
+		const updateMethodCall = updateOp?.methodName || "update";
 
-        const getMethodCall = getOp?.methodName || 'getById';
+		const getMethodCall = getOp?.methodName || "getById";
 
-        sourceFile.addImportDeclaration({
-            moduleSpecifier: `../../../services/${resource.name}.client.js`,
-            namedImports: [serviceName],
-        });
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: `../../../services/${resource.name}.client.js`,
+			namedImports: [serviceName],
+		});
 
-        const template = `<style>
+		const template = `<style>
     :host { display: block; font-family: sans-serif; }
     .form-group { margin-bottom: 1rem; }
     label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
@@ -53,111 +55,125 @@ export class FormComponentGenerator {
     <h2><span id="form-title">Create</span> ${pascalCase(resource.name)}</h2>
     <form id="resource-form">
         ${resource.formProperties
-            .map(
-                p => `
+					.map(
+						(p) => `
         <div class="form-group">
             <label for="${p.name}">${pascalCase(p.name)}</label>
             <input type="text" id="${p.name}" name="${p.name}" />
         </div>
         `,
-            )
-            .join('')}
+					)
+					.join("")}
         <button type="submit">Save</button>
         <button type="button" class="btn-secondary" id="cancel-btn">Cancel</button>
     </form>
 </div>`;
 
-        const classDecl = sourceFile.addClass({
-            name: componentName,
-            isExported: true,
-            extends: 'HTMLElement',
-        });
+		const classDecl = sourceFile.addClass({
+			name: componentName,
+			isExported: true,
+			extends: "HTMLElement",
+		});
 
-        classDecl.addProperty({
-            name: 'service',
-            initializer: `new ${serviceName}()`,
-        });
+		classDecl.addProperty({
+			name: "service",
+			initializer: `new ${serviceName}()`,
+		});
 
-        classDecl.addProperty({
-            name: 'itemId',
-            type: 'string | null',
-            initializer: 'null',
-        });
+		classDecl.addProperty({
+			name: "itemId",
+			type: "string | null",
+			initializer: "null",
+		});
 
-        classDecl.addMethod({
-            name: 'connectedCallback',
-            isAsync: true,
-            statements: [
-                `this.innerHTML = ${JSON.stringify(template)};`,
-                `const match = window.location.hash.match(/\\/${resource.name}\\/edit\\/(.+)/);`,
-                `if (match) {`,
-                `    this.itemId = match[1];`,
-                `    this.querySelector('#form-title')!.textContent = 'Edit';`,
-                `    await this.loadData();`,
-                `} else {`,
-                `    this.itemId = null;`,
-                `    this.querySelector('#form-title')!.textContent = 'Create';`,
-                `}`,
-                `this.querySelector('#cancel-btn')?.addEventListener('click', () => {`,
-                `    window.dispatchEvent(new CustomEvent('navigate', { detail: { path: '/${resource.name}' } }));`,
-                `});`,
-                `this.querySelector('#resource-form')?.addEventListener('submit', async (e) => {`,
-                `    e.preventDefault();`,
-                `    await this.saveData();`,
-                `});`,
-            ].join('\n'),
-        });
+		classDecl.addMethod({
+			name: "connectedCallback",
+			isAsync: true,
+			statements: [
+				`this.innerHTML = ${JSON.stringify(template)};`,
+				`const match = window.location.hash.match(/\\/${resource.name}\\/edit\\/(.+)/);`,
+				`if (match) {`,
+				`    this.itemId = match[1];`,
+				`    this.querySelector('#form-title')!.textContent = 'Edit';`,
+				`    await this.loadData();`,
+				`} else {`,
+				`    this.itemId = null;`,
+				`    this.querySelector('#form-title')!.textContent = 'Create';`,
+				`}`,
+				`this.querySelector('#cancel-btn')?.addEventListener('click', () => {`,
+				`    window.dispatchEvent(new CustomEvent('navigate', { detail: { path: '/${resource.name}' } }));`,
+				`});`,
+				`this.querySelector('#resource-form')?.addEventListener('submit', async (e) => {`,
+				`    e.preventDefault();`,
+				`    await this.saveData();`,
+				`});`,
+			].join("\n"),
+		});
 
-        const loadDataStatements = [
-            `if (!this.itemId) return;`,
-            `try {`,
-            `    const data = await this.service.${getMethodCall}(this.itemId);`,
-        ];
+		const loadDataStatements = [
+			`if (!this.itemId) return;`,
+			`try {`,
+			`    const data = await this.service.${getMethodCall}(this.itemId);`,
+		];
 
-        resource.formProperties.forEach(p => {
-            loadDataStatements.push(`    const input${p.name} = this.querySelector('#${p.name}') as HTMLInputElement;`);
+		resource.formProperties.forEach((p) => {
+			loadDataStatements.push(
+				`    const input${p.name} = this.querySelector('#${p.name}') as HTMLInputElement;`,
+			);
 
-            loadDataStatements.push(
-                `    if (input${p.name} && data.${p.name} !== undefined) input${p.name}.value = String(data.${p.name});`,
-            );
-        });
+			loadDataStatements.push(
+				`    if (input${p.name} && data.${p.name} !== undefined) input${p.name}.value = String(data.${p.name});`,
+			);
+		});
 
-        loadDataStatements.push(`} catch (error) {`, `    console.error('Failed to load item', error);`, `}`);
+		loadDataStatements.push(
+			`} catch (error) {`,
+			`    console.error('Failed to load item', error);`,
+			`}`,
+		);
 
-        classDecl.addMethod({
-            name: 'loadData',
-            isAsync: true,
-            statements: loadDataStatements.join('\n'),
-        });
+		classDecl.addMethod({
+			name: "loadData",
+			isAsync: true,
+			statements: loadDataStatements.join("\n"),
+		});
 
-        const saveDataStatements = [`const payload: string | number | boolean | object | undefined | null = {};`];
+		const saveDataStatements = [
+			`const payload: string | number | boolean | object | undefined | null = {};`,
+		];
 
-        resource.formProperties.forEach(p => {
-            saveDataStatements.push(`const input${p.name} = this.querySelector('#${p.name}') as HTMLInputElement;`);
+		resource.formProperties.forEach((p) => {
+			saveDataStatements.push(
+				`const input${p.name} = this.querySelector('#${p.name}') as HTMLInputElement;`,
+			);
 
-            saveDataStatements.push(`if (input${p.name}) payload.${p.name} = input${p.name}.value;`);
-        });
+			saveDataStatements.push(
+				`if (input${p.name}) payload.${p.name} = input${p.name}.value;`,
+			);
+		});
 
-        saveDataStatements.push(
-            `try {`,
-            `    if (this.itemId) {`,
-            `        await this.service.${updateMethodCall}(this.itemId, payload);`,
-            `    } else {`,
-            `        await this.service.${createMethodCall}(payload);`,
-            `    }`,
-            `    window.dispatchEvent(new CustomEvent('navigate', { detail: { path: '/${resource.name}' } }));`,
-            `} catch (error) {`,
-            `    console.error('Failed to save item', error);`,
-            `    alert('Failed to save');`,
-            `}`,
-        );
+		saveDataStatements.push(
+			`try {`,
+			`    if (this.itemId) {`,
+			`        await this.service.${updateMethodCall}(this.itemId, payload);`,
+			`    } else {`,
+			`        await this.service.${createMethodCall}(payload);`,
+			`    }`,
+			`    window.dispatchEvent(new CustomEvent('navigate', { detail: { path: '/${resource.name}' } }));`,
+			`} catch (error) {`,
+			`    console.error('Failed to save item', error);`,
+			`    alert('Failed to save');`,
+			`}`,
+		);
 
-        classDecl.addMethod({
-            name: 'saveData',
-            isAsync: true,
-            statements: saveDataStatements.join('\n'),
-        });
+		classDecl.addMethod({
+			name: "saveData",
+			isAsync: true,
+			statements: saveDataStatements.join("\n"),
+		});
 
-        sourceFile.addStatements(`customElements.define('${tagName}', ${componentName});`);
-    }
+		sourceFile.addStatements(
+			`customElements.define('${tagName}', ${componentName});`,
+		);
+	}
 }

@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { IndentationText, ModuleKind, Project, ScriptTarget } from 'ts-morph';
-import { generateFromConfigSync } from '@src/index.js';
-import { GeneratorConfig } from '@src/core/types/index.js';
+import { IndentationText, ModuleKind, Project, ScriptTarget } from "ts-morph";
+import { generateFromConfigSync } from "@src/index.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
 
 /**
  * Creates a standard ts-morph project instance for use in tests.
@@ -10,20 +10,20 @@ import { GeneratorConfig } from '@src/core/types/index.js';
  * @returns A pre-configured Project instance with an in-memory file system.
  */
 export function createTestProject(): Project {
-    return new Project({
-        useInMemoryFileSystem: true,
-        manipulationSettings: { indentationText: IndentationText.TwoSpaces },
-        compilerOptions: {
-            target: ScriptTarget.ESNext,
-            module: ModuleKind.ESNext,
-            moduleResolution: 99, // NodeNext
-            lib: ['ES2022', 'DOM'],
-            strict: true,
-            esModuleInterop: true,
-            allowArbitraryExtensions: true,
-            resolveJsonModule: true,
-        },
-    });
+	return new Project({
+		useInMemoryFileSystem: true,
+		manipulationSettings: { indentationText: IndentationText.TwoSpaces },
+		compilerOptions: {
+			target: ScriptTarget.ESNext,
+			module: ModuleKind.ESNext,
+			moduleResolution: 99, // NodeNext
+			lib: ["ES2022", "DOM"],
+			strict: true,
+			esModuleInterop: true,
+			allowArbitraryExtensions: true,
+			resolveJsonModule: true,
+		},
+	});
 }
 
 /**
@@ -34,26 +34,26 @@ export function createTestProject(): Project {
  * @returns A promise that resolves to the `Project` instance containing all generated files.
  */
 export async function runGeneratorWithConfig(
-    spec: object,
-    config: Partial<GeneratorConfig['options']>,
+	spec: object,
+	config: Partial<GeneratorConfig["options"]>,
 ): Promise<Project> {
-    const project = createTestProject();
+	const project = createTestProject();
 
-    const fullConfig: GeneratorConfig = {
-        input: '/spec.json',
-        output: '/generated',
-        options: {
-            framework: 'angular',
-            dateType: 'string',
-            enumStyle: 'enum',
-            generateServices: true,
-            generateServiceTests: true,
-            admin: false,
-            ...config,
-        },
-    };
-    generateFromConfigSync(fullConfig, project, { spec });
-    return project;
+	const fullConfig: GeneratorConfig = {
+		input: "/spec.json",
+		output: "/generated",
+		options: {
+			framework: "angular",
+			dateType: "string",
+			enumStyle: "enum",
+			generateServices: true,
+			generateServiceTests: true,
+			admin: false,
+			...config,
+		},
+	};
+	generateFromConfigSync(fullConfig, project, { spec });
+	return project;
 }
 
 /**
@@ -62,25 +62,28 @@ export async function runGeneratorWithConfig(
  * @param genConfig Optional overrides for the standard generator config.
  * @returns A promise that resolves to the `Project` instance containing all generated files.
  */
-export async function runGenerator(spec: object, genConfig?: Partial<GeneratorConfig>): Promise<Project> {
-    const project = createTestProject();
+export async function runGenerator(
+	spec: object,
+	genConfig?: Partial<GeneratorConfig>,
+): Promise<Project> {
+	const project = createTestProject();
 
-    const config: GeneratorConfig = {
-        ...genConfig,
-        input: genConfig?.input ?? '/spec.json',
-        output: genConfig?.output ?? '/generated',
-        options: {
-            framework: 'angular',
-            dateType: 'string',
-            enumStyle: 'enum',
-            generateServices: true,
-            admin: false,
-            generateServiceTests: true,
-            ...genConfig?.options,
-        },
-    };
+	const config: GeneratorConfig = {
+		...genConfig,
+		input: genConfig?.input ?? "/spec.json",
+		output: genConfig?.output ?? "/generated",
+		options: {
+			framework: "angular",
+			dateType: "string",
+			enumStyle: "enum",
+			generateServices: true,
+			admin: false,
+			generateServiceTests: true,
+			...genConfig?.options,
+		},
+	};
 
-    generateFromConfigSync(config, project, { spec });
+	generateFromConfigSync(config, project, { spec });
 
-    return project;
+	return project;
 }

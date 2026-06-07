@@ -1,4 +1,4 @@
-import { OpenApiValue } from '@src/core/types/index.js';
+import type { OpenApiValue } from "@src/core/types/index.js";
 
 /**
  * @fileoverview
@@ -13,19 +13,19 @@ import { OpenApiValue } from '@src/core/types/index.js';
  * Represents the state of the HTTP interaction (Request/Response).
  */
 export interface RuntimeContext {
-    url: string;
-    method: string;
-    statusCode: number;
-    request: {
-        headers: Record<string, string | string[] | undefined>;
-        query: Record<string, string | string[] | undefined>;
-        path: Record<string, string | undefined>;
-        body?: OpenApiValue;
-    };
-    response?: {
-        headers: Record<string, string | string[] | undefined>;
-        body?: OpenApiValue;
-    };
+	url: string;
+	method: string;
+	statusCode: number;
+	request: {
+		headers: Record<string, string | string[] | undefined>;
+		query: Record<string, string | string[] | undefined>;
+		path: Record<string, string | undefined>;
+		body?: OpenApiValue;
+	};
+	response?: {
+		headers: Record<string, string | string[] | undefined>;
+		body?: OpenApiValue;
+	};
 }
 
 /**
@@ -36,137 +36,151 @@ export interface RuntimeContext {
  * @param pointer The JSON pointer string (e.g., "/user/0/id").
  * @returns The resolved value or undefined if not found.
  */
-export function evaluateJsonPointer(data: OpenApiValue, pointer: string): OpenApiValue {
-    if (pointer === '' || pointer === '#') return data;
+export function evaluateJsonPointer(
+	data: OpenApiValue,
+	pointer: string,
+): OpenApiValue {
+	if (pointer === "" || pointer === "#") return data;
 
-    // Remove leading # if present (URI fragment style)
+	// Remove leading # if present (URI fragment style)
 
-    const cleanPointer = pointer.startsWith('#') ? pointer.substring(1) : pointer;
+	const cleanPointer = pointer.startsWith("#") ? pointer.substring(1) : pointer;
 
-    if (!cleanPointer.startsWith('/')) return undefined;
+	if (!cleanPointer.startsWith("/")) return undefined;
 
-    const decodeToken = (token: string): string => {
-        let decoded = token;
+	const decodeToken = (token: string): string => {
+		let decoded = token;
 
-        try {
-            decoded = decodeURIComponent(token);
-        } catch {
-            decoded = token;
-        }
+		try {
+			decoded = decodeURIComponent(token);
+		} catch {
+			decoded = token;
+		}
 
-        return decoded.replace(/~1/g, '/').replace(/~0/g, '~');
-    };
+		return decoded.replace(/~1/g, "/").replace(/~0/g, "~");
+	};
 
-    const tokens = cleanPointer.split('/').slice(1).map(decodeToken);
+	const tokens = cleanPointer.split("/").slice(1).map(decodeToken);
 
-    let current: OpenApiValue = data;
+	let current: OpenApiValue = data;
 
-    for (const token of tokens) {
-        if (current === null || typeof current !== 'object') {
-            return undefined;
-        }
-        // Arrays handling: standard JSON pointer can access array indices
+	for (const token of tokens) {
+		if (current === null || typeof current !== "object") {
+			return undefined;
+		}
+		// Arrays handling: standard JSON pointer can access array indices
 
-        if (Array.isArray(current)) {
-            if (!/^\d+$/.test(token)) return undefined;
+		if (Array.isArray(current)) {
+			if (!/^\d+$/.test(token)) return undefined;
 
-            const index = parseInt(token, 10);
+			const index = parseInt(token, 10);
 
-            if (index < 0 || index >= current.length) {
-                return undefined;
-            }
+			if (index < 0 || index >= current.length) {
+				return undefined;
+			}
 
-            current = (current as OpenApiValue[])[index];
-        } else {
-            if (!(token in (current as Record<string, OpenApiValue>))) {
-                return undefined;
-            }
+			current = (current as OpenApiValue[])[index];
+		} else {
+			if (!(token in (current as Record<string, OpenApiValue>))) {
+				return undefined;
+			}
 
-            current = (current as Record<string, OpenApiValue>)[token];
-        }
-    }
+			current = (current as Record<string, OpenApiValue>)[token];
+		}
+	}
 
-    return current;
+	return current;
 }
 
 /**
  * Helper to extract a header value case-insensitively (RFC 7230).
  */
-function getHeader(headers: Record<string, string | string[] | undefined>, key: string): string | undefined {
-    const lowerKey = key.toLowerCase();
+function getHeader(
+	headers: Record<string, string | string[] | undefined>,
+	key: string,
+): string | undefined {
+	const lowerKey = key.toLowerCase();
 
-    const foundKey = Object.keys(headers).find(k => k.toLowerCase() === lowerKey);
+	const foundKey = Object.keys(headers).find(
+		(k) => k.toLowerCase() === lowerKey,
+	);
 
-    if (!foundKey) return undefined;
+	if (!foundKey) return undefined;
 
-    const val = headers[foundKey];
+	const val = headers[foundKey];
 
-    return Array.isArray(val) ? val[0] : val;
+	return Array.isArray(val) ? val[0] : val;
 }
 
 /**
  * Helper to extract a query parameter (Case-sensitive).
  */
-function getQuery(query: Record<string, string | string[] | undefined>, key: string): string | undefined {
-    const val = query[key];
+function getQuery(
+	query: Record<string, string | string[] | undefined>,
+	key: string,
+): string | undefined {
+	const val = query[key];
 
-    return Array.isArray(val) ? val[0] : val;
+	return Array.isArray(val) ? val[0] : val;
 }
 
 /**
  * Resolves a single, bare runtime expression (e.g. "$request.body#/id").
  * Preserves the type of the referenced value (e.g. boolean, number, object).
  */
-function resolveSingleExpression(expr: string, context: RuntimeContext): OpenApiValue {
-    if (expr === '$url') return context.url;
+function resolveSingleExpression(
+	expr: string,
+	context: RuntimeContext,
+): OpenApiValue {
+	if (expr === "$url") return context.url;
 
-    if (expr === '$method') return context.method;
+	if (expr === "$method") return context.method;
 
-    if (expr === '$statusCode') return context.statusCode;
+	if (expr === "$statusCode") return context.statusCode;
 
-    if (expr.startsWith('$request.')) {
-        const part = expr.substring(9); // remove "$request."
+	if (expr.startsWith("$request.")) {
+		const part = expr.substring(9); // remove "$request."
 
-        if (part.startsWith('header.')) {
-            return getHeader(context.request.headers, part.substring(7));
-        }
+		if (part.startsWith("header.")) {
+			return getHeader(context.request.headers, part.substring(7));
+		}
 
-        if (part.startsWith('query.')) {
-            return getQuery(context.request.query, part.substring(6));
-        }
+		if (part.startsWith("query.")) {
+			return getQuery(context.request.query, part.substring(6));
+		}
 
-        if (part.startsWith('path.')) {
-            return context.request.path[part.substring(5)];
-        }
+		if (part.startsWith("path.")) {
+			return context.request.path[part.substring(5)];
+		}
 
-        if (part.startsWith('body')) {
-            if (part === 'body') return context.request.body;
+		if (part.startsWith("body")) {
+			if (part === "body") return context.request.body;
 
-            if (part.startsWith('body#')) {
-                return evaluateJsonPointer(context.request.body, part.substring(5));
-            }
-        }
-    }
+			if (part.startsWith("body#")) {
+				return evaluateJsonPointer(context.request.body, part.substring(5));
+			}
+		}
+	}
 
-    if (expr.startsWith('$response.')) {
-        if (!context.response) return undefined;
+	if (expr.startsWith("$response.")) {
+		if (!context.response) return undefined;
 
-        const part = expr.substring(10); // remove "$response."
+		const part = expr.substring(10); // remove "$response."
 
-        if (part.startsWith('header.')) {
-            return getHeader(context.response.headers, part.substring(7));
-        }
+		if (part.startsWith("header.")) {
+			return getHeader(context.response.headers, part.substring(7));
+		}
 
-        if (part.startsWith('body')) {
-            if (part === 'body') return context.response.body;
+		if (part.startsWith("body")) {
+			if (part === "body") return context.response.body;
 
-            if (part.startsWith('body#')) {
-                return evaluateJsonPointer(context.response.body, part.substring(5));
-            }
-        }
-    }
+			if (part.startsWith("body#")) {
+				return evaluateJsonPointer(context.response.body, part.substring(5));
+			}
+		}
+	}
 
-    return undefined;
+	return undefined;
 }
 
 /**
@@ -180,30 +194,33 @@ function resolveSingleExpression(expr: string, context: RuntimeContext): OpenApi
  * @param context The runtime data (request info, response info).
  * @returns The evaluated result.
  */
-export function evaluateRuntimeExpression(expression: string, context: RuntimeContext): OpenApiValue {
-    const hasBraces = expression.includes('{') && expression.includes('}');
+export function evaluateRuntimeExpression(
+	expression: string,
+	context: RuntimeContext,
+): OpenApiValue {
+	const hasBraces = expression.includes("{") && expression.includes("}");
 
-    // Case 1: Bare expression (must start with $)
+	// Case 1: Bare expression (must start with $)
 
-    if (expression.startsWith('$') && !hasBraces) {
-        return resolveSingleExpression(expression, context);
-    }
+	if (expression.startsWith("$") && !hasBraces) {
+		return resolveSingleExpression(expression, context);
+	}
 
-    // Case 2: Constant string (no braces, no $)
+	// Case 2: Constant string (no braces, no $)
 
-    if (!expression.includes('{')) {
-        return expression;
-    }
+	if (!expression.includes("{")) {
+		return expression;
+	}
 
-    // Case 3: Embedded template string (e.g., "foo/{$url}/bar")
+	// Case 3: Embedded template string (e.g., "foo/{$url}/bar")
 
-    return expression.replace(/\{([^}]+)\}/g, (_, innerExpr: string) => {
-        const trimmed = innerExpr.trim();
-        // Only interpolate if it looks like a variable we recognize, otherwise leave it?
-        // OAS implies logical expressions inside braces.
+	return expression.replace(/\{([^}]+)\}/g, (_, innerExpr: string) => {
+		const trimmed = innerExpr.trim();
+		// Only interpolate if it looks like a variable we recognize, otherwise leave it?
+		// OAS implies logical expressions inside braces.
 
-        const val = resolveSingleExpression(trimmed, context);
+		const val = resolveSingleExpression(trimmed, context);
 
-        return val !== undefined ? String(val) : '';
-    });
+		return val !== undefined ? String(val) : "";
+	});
 }

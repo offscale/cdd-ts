@@ -1,102 +1,121 @@
-import { Project } from 'ts-morph';
-import * as path from 'node:path';
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { PathInfo, SwaggerDefinition } from '@src/core/types/index.js';
-import { camelCase, pascalCase, getBasePathTokenName } from '@src/functions/utils.js';
-import { MockDataGenerator } from './mock-data.generator.js';
+import type { Project } from "ts-morph";
+import * as path from "node:path";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type { PathInfo, SwaggerDefinition } from "@src/core/types/index.js";
+import {
+	camelCase,
+	pascalCase,
+	getBasePathTokenName,
+} from "@src/functions/utils.js";
+import { MockDataGenerator } from "./mock-data.generator.js";
 
 export class IntegrationTestGenerator {
-    private mockDataGenerator: MockDataGenerator;
+	private mockDataGenerator: MockDataGenerator;
 
-    constructor(
-        parser: SwaggerParser,
-        private readonly project: Project,
-    ) {
-        this.mockDataGenerator = new MockDataGenerator(parser);
-    }
+	constructor(
+		parser: SwaggerParser,
+		private readonly project: Project,
+	) {
+		this.mockDataGenerator = new MockDataGenerator(parser);
+	}
 
-    public generate(controllerGroups: Record<string, PathInfo[]>, outputDir: string, clientName?: string): void {
-        const testFilePath = path.join(outputDir, 'integration.spec.ts');
-        const sourceFile = this.project.createSourceFile(testFilePath, '', { overwrite: true });
+	public generate(
+		controllerGroups: Record<string, PathInfo[]>,
+		outputDir: string,
+		clientName?: string,
+	): void {
+		const testFilePath = path.join(outputDir, "integration.spec.ts");
+		const sourceFile = this.project.createSourceFile(testFilePath, "", {
+			overwrite: true,
+		});
 
-        // Add imports
-        sourceFile.addStatements(`
+		// Add imports
+		sourceFile.addStatements(`
             import { TestBed } from '@angular/core/testing';
             import { HttpClientModule } from '@angular/common/http';
             import { firstValueFrom } from 'rxjs';
         `);
 
-        // Import all services
-        const serviceNames: string[] = [];
-        for (const controllerName of Object.keys(controllerGroups)) {
-            const serviceName = `${pascalCase(controllerName)}Service`;
-            serviceNames.push(serviceName);
-            sourceFile.addStatements(
-                `import { ${serviceName} } from './services/${camelCase(controllerName)}.service';`,
-            );
-        }
+		// Import all services
+		const serviceNames: string[] = [];
+		for (const controllerName of Object.keys(controllerGroups)) {
+			const serviceName = `${pascalCase(controllerName)}Service`;
+			serviceNames.push(serviceName);
+			sourceFile.addStatements(
+				`import { ${serviceName} } from './services/${camelCase(controllerName)}.service';`,
+			);
+		}
 
-        const basePathTokenName = getBasePathTokenName(clientName || 'default');
+		const basePathTokenName = getBasePathTokenName(clientName || "default");
 
-        // Add token import
-        sourceFile.addStatements(`import { ${basePathTokenName} } from './tokens';`);
+		// Add token import
+		sourceFile.addStatements(
+			`import { ${basePathTokenName} } from './tokens';`,
+		);
 
-        // Setup test suite
-        sourceFile.addStatements(`
+		// Setup test suite
+		sourceFile.addStatements(`
             describe('SDK Integration Tests', () => {
                 beforeEach(() => {
                     TestBed.configureTestingModule({
                         imports: [HttpClientModule],
                         providers: [
-                            ${serviceNames.join(',\n                            ')},
+                            ${serviceNames.join(",\n                            ")},
                             { provide: ${basePathTokenName}, useValue: 'http://localhost:8080/v2' }
                         ]
                     });
                 });
         `);
 
-        // Generate a test case for each operation
-        for (const [controllerName, operations] of Object.entries(controllerGroups)) {
-            const serviceName = `${pascalCase(controllerName)}Service`;
+		// Generate a test case for each operation
+		for (const [controllerName, operations] of Object.entries(
+			controllerGroups,
+		)) {
+			const serviceName = `${pascalCase(controllerName)}Service`;
 
-            sourceFile.addStatements(`
+			sourceFile.addStatements(`
                 describe('${serviceName}', () => {
             `);
 
-            for (const op of operations) {
-                /* v8 ignore next */
-                const methodName = op.methodName || camelCase(op.operationId || 'unknown');
-                /* v8 ignore next */
-                const parameters = op.parameters || [];
-                const mockArgs: string[] = [];
+			for (const op of operations) {
+				/* v8 ignore next */
+				const methodName =
+					op.methodName || camelCase(op.operationId || "unknown");
+				/* v8 ignore next */
+				const parameters = op.parameters || [];
+				const mockArgs: string[] = [];
 
-                // Add mock data for parameters
-                for (const param of parameters) {
-                    if (param.required) {
-                        /* v8 ignore start */
-                        const schemaDef = (param.schema || param) as SwaggerDefinition;
-                        const schemaName = schemaDef?.name || param.name;
-                        /* v8 ignore stop */
-                        mockArgs.push(this.mockDataGenerator.generate(String(schemaName)) + ' as any');
-                    } else {
-                        mockArgs.push('null as any');
-                    }
-                }
+				// Add mock data for parameters
+				for (const param of parameters) {
+					if (param.required) {
+						/* v8 ignore start */
+						const schemaDef = (param.schema || param) as SwaggerDefinition;
+						const schemaName = schemaDef?.name || param.name;
+						/* v8 ignore stop */
+						mockArgs.push(
+							`${this.mockDataGenerator.generate(String(schemaName))} as any`,
+						);
+					} else {
+						mockArgs.push("null as any");
+					}
+				}
 
-                if (op.requestBody && op.requestBody.content) {
-                    const contentTypes = Object.keys(op.requestBody.content);
-                    /* v8 ignore next 6 */
-                    if (contentTypes.length > 0) {
-                        const schema = op.requestBody.content[contentTypes[0]].schema;
-                        const schemaDef = schema as SwaggerDefinition;
-                        const schemaName = schemaDef && schemaDef.name ? schemaDef.name : 'Unknown';
-                        mockArgs.push(this.mockDataGenerator.generate(String(schemaName)) + ' as any');
-                    }
-                }
+				if (op.requestBody?.content) {
+					const contentTypes = Object.keys(op.requestBody.content);
+					/* v8 ignore next 6 */
+					if (contentTypes.length > 0) {
+						const schema = op.requestBody.content[contentTypes[0]].schema;
+						const schemaDef = schema as SwaggerDefinition;
+						const schemaName = schemaDef?.name ? schemaDef.name : "Unknown";
+						mockArgs.push(
+							`${this.mockDataGenerator.generate(String(schemaName))} as any`,
+						);
+					}
+				}
 
-                const argsString = mockArgs.join(', ');
+				const argsString = mockArgs.join(", ");
 
-                sourceFile.addStatements(`
+				sourceFile.addStatements(`
                     it('should call ${methodName} successfully', async () => {
                         const service = TestBed.inject(${serviceName});
                         try {
@@ -111,15 +130,15 @@ export class IntegrationTestGenerator {
                         }
                     });
                 `);
-            }
+			}
 
-            sourceFile.addStatements(`
+			sourceFile.addStatements(`
                 });
             `);
-        }
+		}
 
-        sourceFile.addStatements(`
+		sourceFile.addStatements(`
             });
         `);
-    }
+	}
 }

@@ -1,58 +1,66 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-import { validateSpec } from '@src/openapi/parse_validator.js';
+import { validateSpec } from "@src/openapi/parse_validator.js";
 
-describe('Input Validation: additionalOperations', () => {
-    it('should reject additionalOperations that reuse fixed HTTP methods', () => {
-        const spec = {
-            openapi: '3.2.0',
-            info: { title: 'Additional Ops', version: '1.0' },
-            paths: {
-                '/bad': {
-                    additionalOperations: {
-                        POST: { responses: { '200': { description: 'ok' } } },
-                    },
-                },
-            },
-        };
+describe("Input Validation: additionalOperations", () => {
+	it("should reject additionalOperations that reuse fixed HTTP methods", () => {
+		const spec = {
+			openapi: "3.2.0",
+			info: { title: "Additional Ops", version: "1.0" },
+			paths: {
+				"/bad": {
+					additionalOperations: {
+						POST: { responses: { "200": { description: "ok" } } },
+					},
+				},
+			},
+		};
 
-        expect(() => validateSpec(spec as string | number | boolean | object | undefined | null)).toThrow(
-            /additionalOperations method "POST"/,
-        );
-    });
+		expect(() =>
+			validateSpec(
+				spec as string | number | boolean | object | undefined | null,
+			),
+		).toThrow(/additionalOperations method "POST"/);
+	});
 
-    it('should allow non-standard methods in additionalOperations', () => {
-        const spec = {
-            openapi: '3.2.0',
-            info: { title: 'Additional Ops', version: '1.0' },
-            paths: {
-                '/good': {
-                    additionalOperations: {
-                        LOCK: { responses: { '200': { description: 'ok' } } },
-                    },
-                },
-            },
-        };
+	it("should allow non-standard methods in additionalOperations", () => {
+		const spec = {
+			openapi: "3.2.0",
+			info: { title: "Additional Ops", version: "1.0" },
+			paths: {
+				"/good": {
+					additionalOperations: {
+						LOCK: { responses: { "200": { description: "ok" } } },
+					},
+				},
+			},
+		};
 
-        expect(() => validateSpec(spec as string | number | boolean | object | undefined | null)).not.toThrow();
-    });
+		expect(() =>
+			validateSpec(
+				spec as string | number | boolean | object | undefined | null,
+			),
+		).not.toThrow();
+	});
 
-    it('should reject additionalOperations with invalid HTTP method tokens', () => {
-        const spec = {
-            openapi: '3.2.0',
-            info: { title: 'Additional Ops', version: '1.0' },
-            paths: {
-                '/bad-token': {
-                    additionalOperations: {
-                        'BAD METHOD': { responses: { '200': { description: 'ok' } } },
-                    },
-                },
-            },
-        };
+	it("should reject additionalOperations with invalid HTTP method tokens", () => {
+		const spec = {
+			openapi: "3.2.0",
+			info: { title: "Additional Ops", version: "1.0" },
+			paths: {
+				"/bad-token": {
+					additionalOperations: {
+						"BAD METHOD": { responses: { "200": { description: "ok" } } },
+					},
+				},
+			},
+		};
 
-        expect(() => validateSpec(spec as string | number | boolean | object | undefined | null)).toThrow(
-            /not a valid HTTP method token/i,
-        );
-    });
+		expect(() =>
+			validateSpec(
+				spec as string | number | boolean | object | undefined | null,
+			),
+		).toThrow(/not a valid HTTP method token/i);
+	});
 });

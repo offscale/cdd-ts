@@ -2,67 +2,80 @@
 // tests/fixtures/ast/express.routes.ts
 
 const app = {
-    get: (..._args: string | number | boolean | object | undefined | null[]) => {
-        void _args;
-    },
-    post: (..._args: string | number | boolean | object | undefined | null[]) => {
-        void _args;
-    },
-    put: (..._args: string | number | boolean | object | undefined | null[]) => {
-        void _args;
-    },
-    patch: (..._args: string | number | boolean | object | undefined | null[]) => {
-        void _args;
-    },
-    delete: (..._args: string | number | boolean | object | undefined | null[]) => {
-        void _args;
-    },
-    query: (..._args: string | number | boolean | object | undefined | null[]) => {
-        void _args;
-    },
-    copy: (..._args: string | number | boolean | object | undefined | null[]) => {
-        void _args;
-    },
+	get: (..._args: string | number | boolean | object | undefined | null[]) => {
+		void _args;
+	},
+	post: (..._args: string | number | boolean | object | undefined | null[]) => {
+		void _args;
+	},
+	put: (..._args: string | number | boolean | object | undefined | null[]) => {
+		void _args;
+	},
+	patch: (
+		..._args: string | number | boolean | object | undefined | null[]
+	) => {
+		void _args;
+	},
+	delete: (
+		..._args: string | number | boolean | object | undefined | null[]
+	) => {
+		void _args;
+	},
+	query: (
+		..._args: string | number | boolean | object | undefined | null[]
+	) => {
+		void _args;
+	},
+	copy: (..._args: string | number | boolean | object | undefined | null[]) => {
+		void _args;
+	},
 };
 const router = {
-    route: (..._args: string | number | boolean | object | undefined | null[]) => {
-        void _args;
-        return {
-            patch: (..._routeArgs: string | number | boolean | object | undefined | null[]) => {
-                void _routeArgs;
-            },
-        };
-    },
+	route: (
+		..._args: string | number | boolean | object | undefined | null[]
+	) => {
+		void _args;
+		return {
+			patch: (
+				..._routeArgs: string | number | boolean | object | undefined | null[]
+			) => {
+				void _routeArgs;
+			},
+		};
+	},
 };
 type Request<
-    Params = Record<string, string | undefined>,
-    _ResBody = string | number | boolean | object | undefined | null,
-    ReqBody = Record<string, string | number | boolean | object | undefined | null> | undefined,
-    ReqQuery = Record<string, string | undefined>,
+	Params = Record<string, string | undefined>,
+	_ResBody = string | number | boolean | object | undefined | null,
+	ReqBody =
+		| Record<string, string | number | boolean | object | undefined | null>
+		| undefined,
+	ReqQuery = Record<string, string | undefined>,
 > = {
-    params: Params;
-    query: ReqQuery;
-    body: ReqBody;
-    headers: Record<string, string | undefined>;
-    cookies: Record<string, string | undefined>;
-    get: (name: string) => string | undefined;
-    is: (type: string) => boolean;
-    url: string;
+	params: Params;
+	query: ReqQuery;
+	body: ReqBody;
+	headers: Record<string, string | undefined>;
+	cookies: Record<string, string | undefined>;
+	get: (name: string) => string | undefined;
+	is: (type: string) => boolean;
+	url: string;
 };
-type Response<ResBody = string | number | boolean | object | undefined | null> = {
-    json: (body: ResBody) => void;
-    send: (body?: ResBody) => void;
-    status: (code: number | string) => Response<ResBody>;
-    type: (type: string) => Response<ResBody>;
-    set: (name: string, value: string) => Response<ResBody>;
-    end: () => void;
-    sendStatus: (code: number) => void;
-};
-const config = { version: 'v1' };
+type Response<ResBody = string | number | boolean | object | undefined | null> =
+	{
+		json: (body: ResBody) => void;
+		send: (body?: ResBody) => void;
+		status: (code: number | string) => Response<ResBody>;
+		type: (type: string) => Response<ResBody>;
+		set: (name: string, value: string) => Response<ResBody>;
+		end: () => void;
+		sendStatus: (code: number) => void;
+	};
+const config = { version: "v1" };
 const middleware = (_req: Request, _res: Response, next: () => void) => {
-    void _req;
-    void _res;
-    next();
+	void _req;
+	void _res;
+	next();
 };
 
 /**
@@ -75,121 +88,128 @@ const middleware = (_req: Request, _res: Response, next: () => void) => {
  * @deprecated
  */
 export function getUser(
-    req: Request<
-        Record<string, string>,
-        string | number | boolean | object | undefined | null,
-        string | number | boolean | object | undefined | null,
-        Record<string, string>
-    >,
-    res: Response,
+	req: Request<
+		Record<string, string>,
+		string | number | boolean | object | undefined | null,
+		string | number | boolean | object | undefined | null,
+		Record<string, string>
+	>,
+	res: Response,
 ) {
-    const { id } = req.params;
-    const search = req.query.search;
-    const token = req.headers['x-token'];
-    const requestId = req.get('X-Request-Id');
-    const session = req.cookies['session'];
-    res.status(200).json({ id, search, token, session, requestId });
+	const { id } = req.params;
+	const search = req.query.search;
+	const token = req.headers["x-token"];
+	const requestId = req.get("X-Request-Id");
+	const session = req.cookies.session;
+	res.status(200).json({ id, search, token, session, requestId });
 }
 
-app.get('/users/:id', getUser);
+app.get("/users/:id", getUser);
 
-router.route('/projects/:projectId').patch(function updateProject(req: Request<Record<string, string>>, res: Response) {
-    const { projectId } = req.params;
-    void projectId;
-    res.type('application/xml').status(200).send('<ok/>');
+router.route("/projects/:projectId").patch(function updateProject(
+	req: Request<Record<string, string>>,
+	res: Response,
+) {
+	const { projectId } = req.params;
+	void projectId;
+	res.type("application/xml").status(200).send("<ok/>");
 });
 
 app.post(
-    '/messages',
-    (
-        req: Request<
-            string | number | boolean | object | undefined | null,
-            string | number | boolean | object | undefined | null,
-            Record<string, string | number | boolean | object | undefined | null>
-        >,
-        res: Response,
-    ) => {
-        const body = req.body;
-        const payload = req.body ? req.body['payload'] : undefined;
-        if (req.is('application/json')) {
-            // json branch
-        }
-        if (body) {
-            // body branch
-        }
-        if (payload) {
-            // payload branch
-        }
-        res.send('ok');
-    },
+	"/messages",
+	(
+		req: Request<
+			string | number | boolean | object | undefined | null,
+			string | number | boolean | object | undefined | null,
+			Record<string, string | number | boolean | object | undefined | null>
+		>,
+		res: Response,
+	) => {
+		const body = req.body;
+		const payload = req.body ? req.body.payload : undefined;
+		if (req.is("application/json")) {
+			// json branch
+		}
+		if (body) {
+			// body branch
+		}
+		if (payload) {
+			// payload branch
+		}
+		res.send("ok");
+	},
 );
 
 export interface CreateMessageBody {
-    message: string;
+	message: string;
 }
 
 export interface MessageReceipt {
-    id: string;
+	id: string;
 }
 
 export function typedMessages(
-    req: Request<string | number | boolean | object | undefined | null, MessageReceipt, CreateMessageBody>,
-    res: Response<MessageReceipt>,
+	req: Request<
+		string | number | boolean | object | undefined | null,
+		MessageReceipt,
+		CreateMessageBody
+	>,
+	res: Response<MessageReceipt>,
 ) {
-    const message = req.body ? req.body.message : undefined;
-    res.status(201).json({ id: message ?? '' });
+	const message = req.body ? req.body.message : undefined;
+	res.status(201).json({ id: message ?? "" });
 }
 
-app.post('/typed-messages', typedMessages);
+app.post("/typed-messages", typedMessages);
 
 app.get(`${config.version}/status`, (_req: Request, res: Response) => {
-    void _req;
-    res.send('status');
+	void _req;
+	res.send("status");
 });
 
-app.put('/array', [
-    middleware,
-    function handleArray(_req: Request, res: Response) {
-        void _req;
-        res.set('Content-Type', 'text/csv').send('id,name');
-    },
+app.put("/array", [
+	middleware,
+	function handleArray(_req: Request, res: Response) {
+		void _req;
+		res.set("Content-Type", "text/csv").send("id,name");
+	},
 ]);
 
 app.get(
-    '/bound/:id',
-    (
-        {
-            params,
-            query,
-            body,
-        }: Request<
-            Record<string, string>,
-            string | number | boolean | object | undefined | null,
-            Record<string, string | number | boolean | object | undefined | null>,
-            Record<string, string>
-        >,
-        res: Response,
-    ) => {
-        const userId = params.id;
-        const filter = query.filter;
-        if (body) {
-            // body branch
-        }
-        if (userId || filter) {
-            // use values
-        }
-        res.end();
-    },
+	"/bound/:id",
+	(
+		{
+			params,
+			query,
+			body,
+		}: Request<
+			Record<string, string>,
+			string | number | boolean | object | undefined | null,
+			Record<string, string | number | boolean | object | undefined | null>,
+			Record<string, string>
+		>,
+		res: Response,
+	) => {
+		const userId = params.id;
+		const filter = query.filter;
+		if (body) {
+			// body branch
+		}
+		if (userId || filter) {
+			// use values
+		}
+		res.end();
+	},
 );
 
-app.post('/object', (_req: Request, res: Response) => {
-    void _req;
-    res.send({ ok: true });
+app.post("/object", (_req: Request, res: Response) => {
+	void _req;
+	res.send({ ok: true });
 });
 
-app.delete('/remove/:id', (_req: Request, res: Response) => {
-    void _req;
-    res.sendStatus(204);
+app.delete("/remove/:id", (_req: Request, res: Response) => {
+	void _req;
+	res.sendStatus(204);
 });
 
 /**
@@ -198,42 +218,45 @@ app.delete('/remove/:id', (_req: Request, res: Response) => {
  * Local handler description.
  */
 const localHandler = (req: Request, res: Response) => {
-    void req;
-    res.send('local');
+	void req;
+	res.send("local");
 };
 
-app.patch('/local', localHandler);
+app.patch("/local", localHandler);
 
-app.get('/string-status', (_req: Request, res: Response) => {
-    void _req;
-    res.status('202').json({ ok: true });
+app.get("/string-status", (_req: Request, res: Response) => {
+	void _req;
+	res.status("202").json({ ok: true });
 });
 
 app.get(`/literal`, (_req: Request, res: Response) => {
-    void _req;
-    res.send('literal');
+	void _req;
+	res.send("literal");
 });
 
 app.query(
-    '/search',
-    (
-        req: Request<
-            string | number | boolean | object | undefined | null,
-            string | number | boolean | object | undefined | null,
-            string | number | boolean | object | undefined | null,
-            Record<string, string>
-        >,
-        res: Response,
-    ) => {
-        const q = req.query.q;
-        res.json({ q });
-    },
+	"/search",
+	(
+		req: Request<
+			string | number | boolean | object | undefined | null,
+			string | number | boolean | object | undefined | null,
+			string | number | boolean | object | undefined | null,
+			Record<string, string>
+		>,
+		res: Response,
+	) => {
+		const q = req.query.q;
+		res.json({ q });
+	},
 );
 
-app.copy('/files/:id', (req: Request<Record<string, string>>, res: Response) => {
-    const { id } = req.params;
-    res.status(201).json({ id });
-});
+app.copy(
+	"/files/:id",
+	(req: Request<Record<string, string>>, res: Response) => {
+		const { id } = req.params;
+		res.status(201).json({ id });
+	},
+);
 
 /**
  * Secure endpoint.
@@ -246,10 +269,10 @@ app.copy('/files/:id', (req: Request<Record<string, string>>, res: Response) => 
  * @x-feature-flag "beta"
  */
 export function secureEndpoint(_req: Request, res: Response) {
-    res.json({ ok: true });
+	res.json({ ok: true });
 }
 
-app.get('/secure', secureEndpoint);
+app.get("/secure", secureEndpoint);
 
 /**
  * Documented response hints.
@@ -260,12 +283,15 @@ app.get('/secure', secureEndpoint);
  * @responseSummary 202 Accepted summary
  * @param id Documented id.
  */
-export function documentedEndpoint(req: Request<Record<string, string>>, res: Response) {
-    const { id } = req.params;
-    res.status(202).json({ id });
+export function documentedEndpoint(
+	req: Request<Record<string, string>>,
+	res: Response,
+) {
+	const { id } = req.params;
+	res.status(202).json({ id });
 }
 
-app.get('/documented/:id', documentedEndpoint);
+app.get("/documented/:id", documentedEndpoint);
 
 /**
  * Raw querystring endpoint.
@@ -273,17 +299,17 @@ app.get('/documented/:id', documentedEndpoint);
  * @querystring rawQuery application/x-www-form-urlencoded
  */
 export function rawQueryEndpoint(req: Request, res: Response) {
-    const raw = req.url;
-    res.send(raw);
+	const raw = req.url;
+	res.send(raw);
 }
 
-app.get('/raw-query', rawQueryEndpoint);
+app.get("/raw-query", rawQueryEndpoint);
 
 export interface CreateMessage {
-    message: string;
+	message: string;
 }
 
 export enum MessageStatus {
-    Sent = 'sent',
-    Failed = 'failed',
+	Sent = "sent",
+	Failed = "failed",
 }

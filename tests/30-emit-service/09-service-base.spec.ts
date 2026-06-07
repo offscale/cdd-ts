@@ -1,60 +1,58 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-import { Project } from 'ts-morph';
+import { Project } from "ts-morph";
 
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { GeneratorConfig } from '@src/core/types/index.js';
-import { AbstractServiceGenerator } from '@src/functions/emit_service.js';
+import { SwaggerParser } from "@src/openapi/parse.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { AbstractServiceGenerator } from "@src/functions/emit_service.js";
 
 class TestServiceGenerator extends AbstractServiceGenerator {
-    protected getFileName(controllerName: string): string {
-        return `${controllerName}.ts`;
-    }
+	protected getFileName(controllerName: string): string {
+		return `${controllerName}.ts`;
+	}
 
-    protected generateImports(): void {
-        // No-op for test
-    }
+	protected generateImports(): void {
+		// No-op for test
+	}
 
-    protected generateServiceContent(): void {
-        // No-op for test
-    }
+	protected generateServiceContent(): void {
+		// No-op for test
+	}
 }
 
-describe('Generators: Service Base', () => {
-    it('should sanitize invalid provided method names', () => {
-        const project = new Project({ useInMemoryFileSystem: true });
-        const config: GeneratorConfig = { input: '', output: '/out', options: {} } as
-            | string
-            | number
-            | boolean
-            | object
-            | undefined
-            | null;
-        const parser = new SwaggerParser(
-            { openapi: '3.0.0', info: { title: 'Test', version: '1' }, paths: {} } as
-                | string
-                | number
-                | boolean
-                | object
-                | undefined
-                | null,
-            config,
-        );
+describe("Generators: Service Base", () => {
+	it("should sanitize invalid provided method names", () => {
+		const project = new Project({ useInMemoryFileSystem: true });
+		const config: GeneratorConfig = {
+			input: "",
+			output: "/out",
+			options: {},
+		} as string | number | boolean | object | undefined | null;
+		const parser = new SwaggerParser(
+			{ openapi: "3.0.0", info: { title: "Test", version: "1" }, paths: {} } as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null,
+			config,
+		);
 
-        const generator = new TestServiceGenerator(parser, project, config);
-        const operations = [
-            { method: 'get', path: '/test', methodName: 'bad-name' } as
-                | string
-                | number
-                | boolean
-                | object
-                | undefined
-                | null,
-        ];
+		const generator = new TestServiceGenerator(parser, project, config);
+		const operations = [
+			{ method: "get", path: "/test", methodName: "bad-name" } as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null,
+		];
 
-        generator.generate('/out', { Test: operations });
+		generator.generate("/out", { Test: operations });
 
-        expect(operations[0].methodName).toBe('badName');
-    });
+		expect(operations[0].methodName).toBe("badName");
+	});
 });

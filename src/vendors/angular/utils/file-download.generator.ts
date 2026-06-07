@@ -1,40 +1,44 @@
-import { Project } from 'ts-morph';
-import * as path from 'node:path';
-import { UTILITY_GENERATOR_HEADER_COMMENT } from '@src/core/constants.js';
+import type { Project } from "ts-morph";
+import * as path from "node:path";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 
 export class FileDownloadGenerator {
-    constructor(private project: Project) {}
+	constructor(private project: Project) {}
 
-    public generate(outputDir: string): void {
-        const utilsDir = path.join(outputDir, 'utils');
+	public generate(outputDir: string): void {
+		const utilsDir = path.join(outputDir, "utils");
 
-        const filePath = path.join(utilsDir, 'file-download.ts');
+		const filePath = path.join(utilsDir, "file-download.ts");
 
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
+		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
-        sourceFile.addImportDeclarations([
-            {
-                namedImports: ['HttpResponse'],
-                moduleSpecifier: '@angular/common/http',
-            },
-            {
-                namedImports: ['Observable', 'tap'],
-                moduleSpecifier: 'rxjs',
-            },
-        ]);
+		sourceFile.addImportDeclarations([
+			{
+				namedImports: ["HttpResponse"],
+				moduleSpecifier: "@angular/common/http",
+			},
+			{
+				namedImports: ["Observable", "tap"],
+				moduleSpecifier: "rxjs",
+			},
+		]);
 
-        sourceFile.addFunction({
-            name: 'downloadFile',
-            isExported: true,
-            parameters: [
-                { name: 'blob', type: 'Blob' },
-                { name: 'filename', type: 'string' },
-            ],
-            returnType: 'void',
-            docs: ['Triggers a browser file download by creating a temporary anchor element.'],
-            statements: `
+		sourceFile.addFunction({
+			name: "downloadFile",
+			isExported: true,
+			parameters: [
+				{ name: "blob", type: "Blob" },
+				{ name: "filename", type: "string" },
+			],
+			returnType: "void",
+			docs: [
+				"Triggers a browser file download by creating a temporary anchor element.",
+			],
+			statements: `
     const url = window.URL.createObjectURL(blob); 
     const link = document.createElement('a'); 
     link.href = url; 
@@ -43,16 +47,18 @@ export class FileDownloadGenerator {
     link.click(); 
     document.body.removeChild(link); 
     window.URL.revokeObjectURL(url);`,
-        });
+		});
 
-        sourceFile.addFunction({
-            name: 'downloadFileOperator',
-            isExported: true,
-            typeParameters: [{ name: 'T', constraint: 'Blob | HttpResponse<Blob>' }],
-            parameters: [{ name: 'fallbackFilename', type: 'string' }],
-            returnType: '(source: Observable<T>) => Observable<T>',
-            docs: ['An RxJS pipeable operator to automatically trigger a file download.'],
-            statements: `
+		sourceFile.addFunction({
+			name: "downloadFileOperator",
+			isExported: true,
+			typeParameters: [{ name: "T", constraint: "Blob | HttpResponse<Blob>" }],
+			parameters: [{ name: "fallbackFilename", type: "string" }],
+			returnType: "(source: Observable<T>) => Observable<T>",
+			docs: [
+				"An RxJS pipeable operator to automatically trigger a file download.",
+			],
+			statements: `
     return (source: Observable<T>) => { 
         return source.pipe( 
             tap((response: T) => { 
@@ -67,15 +73,15 @@ export class FileDownloadGenerator {
             }) 
         ); 
     };`,
-        });
+		});
 
-        sourceFile.addFunction({
-            name: 'extractFilenameFromContentDisposition',
-            isExported: true,
-            parameters: [{ name: 'contentDisposition', type: 'string | null' }],
-            returnType: 'string | null',
-            docs: ["Extracts a filename from a 'Content-Disposition' header string."],
-            statements: `
+		sourceFile.addFunction({
+			name: "extractFilenameFromContentDisposition",
+			isExported: true,
+			parameters: [{ name: "contentDisposition", type: "string | null" }],
+			returnType: "string | null",
+			docs: ["Extracts a filename from a 'Content-Disposition' header string."],
+			statements: `
     if (!contentDisposition) { 
         return null; 
     } 
@@ -92,8 +98,8 @@ export class FileDownloadGenerator {
         } 
     } 
     return filename;`,
-        });
+		});
 
-        sourceFile.formatText();
-    }
+		sourceFile.formatText();
+	}
 }

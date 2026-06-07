@@ -1,145 +1,176 @@
-import { Project } from 'ts-morph';
-import * as path from 'node:path';
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { GeneratorConfig, PathInfo, SwaggerDefinition } from '@src/core/types/index.js';
-import { camelCase, pascalCase } from '@src/functions/utils.js';
-import { MockDataGenerator } from '../../angular/test/mock-data.generator.js';
+import type { Project } from "ts-morph";
+import * as path from "node:path";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type {
+	GeneratorConfig,
+	PathInfo,
+	SwaggerDefinition,
+} from "@src/core/types/index.js";
+import { camelCase, pascalCase } from "@src/functions/utils.js";
+import { MockDataGenerator } from "../../angular/test/mock-data.generator.js";
 
 export class AxiosServiceTestGenerator {
-    private mockDataGenerator: MockDataGenerator;
+	private mockDataGenerator: MockDataGenerator;
 
-    constructor(
-        private readonly parser: SwaggerParser,
-        private readonly project: Project,
-        private readonly config: GeneratorConfig,
-    ) {
-        // Prevent unused warnings
-        this.parser;
-        this.config;
-        this.mockDataGenerator = new MockDataGenerator(parser);
-    }
+	constructor(
+		private readonly parser: SwaggerParser,
+		private readonly project: Project,
+		private readonly config: GeneratorConfig,
+	) {
+		// Prevent unused warnings
+		this.parser;
+		this.config;
+		this.mockDataGenerator = new MockDataGenerator(parser);
+	}
 
-    public generateServiceTestFile(controllerName: string, operations: PathInfo[], servicesDir: string): void {
-        const serviceName = `${pascalCase(controllerName)}Service`;
-        const fileName = `${camelCase(controllerName)}.service.spec.ts`;
-        const filePath = path.join(servicesDir, fileName);
+	public generateServiceTestFile(
+		controllerName: string,
+		operations: PathInfo[],
+		servicesDir: string,
+	): void {
+		const serviceName = `${pascalCase(controllerName)}Service`;
+		const fileName = `${camelCase(controllerName)}.service.spec.ts`;
+		const filePath = path.join(servicesDir, fileName);
 
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
-        const isComposable = this.config.options?.composableTests === true || this.config.options?.tests === true;
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
+		const isComposable =
+			this.config.options?.composableTests === true ||
+			this.config.options?.tests === true;
 
-        sourceFile.addImportDeclarations([
-            {
-                moduleSpecifier: 'vitest',
-                namedImports: ['describe', 'it', 'expect', 'vi', 'beforeEach', 'afterEach'],
-            },
-            {
-                moduleSpecifier: 'axios',
-                defaultImport: 'axios',
-            },
-            {
-                moduleSpecifier: `./${camelCase(controllerName)}.service.js`,
-                namedImports: [serviceName],
-            },
-        ]);
+		sourceFile.addImportDeclarations([
+			{
+				moduleSpecifier: "vitest",
+				namedImports: [
+					"describe",
+					"it",
+					"expect",
+					"vi",
+					"beforeEach",
+					"afterEach",
+				],
+			},
+			{
+				moduleSpecifier: "axios",
+				defaultImport: "axios",
+			},
+			{
+				moduleSpecifier: `./${camelCase(controllerName)}.service.js`,
+				namedImports: [serviceName],
+			},
+		]);
 
-        const testLines: string[] = [];
+		const testLines: string[] = [];
 
-        /* v8 ignore next 2 */
-        if (isComposable) {
-            testLines.push(`export const test${serviceName} = () => describe('${serviceName}', () => {`);
-        } else {
-            testLines.push(`describe('${serviceName}', () => {`);
-        }
+		/* v8 ignore next 2 */
+		if (isComposable) {
+			testLines.push(
+				`export const test${serviceName} = () => describe('${serviceName}', () => {`,
+			);
+		} else {
+			testLines.push(`describe('${serviceName}', () => {`);
+		}
 
-        testLines.push(`    let service: ${serviceName};`);
-        testLines.push(``);
-        testLines.push(`    beforeEach(() => {`);
-        testLines.push(`        service = new ${serviceName}('http://localhost:8080/v2');`);
-        testLines.push(`    });`);
-        testLines.push(``);
-        testLines.push(`    afterEach(() => {`);
-        testLines.push(`        vi.restoreAllMocks();`);
-        testLines.push(`    });`);
-        testLines.push(``);
+		testLines.push(`    let service: ${serviceName};`);
+		testLines.push(``);
+		testLines.push(`    beforeEach(() => {`);
+		testLines.push(
+			`        service = new ${serviceName}('http://localhost:8080/v2');`,
+		);
+		testLines.push(`    });`);
+		testLines.push(``);
+		testLines.push(`    afterEach(() => {`);
+		testLines.push(`        vi.restoreAllMocks();`);
+		testLines.push(`    });`);
+		testLines.push(``);
 
-        for (const op of operations) {
-            const methodName =
-                op.methodName || camelCase(op.operationId || `${op.method}_${op.path.replace(/[^a-zA-Z0-9]/g, '_')}`);
-            testLines.push(`    describe('${methodName}', () => {`);
-            testLines.push(
-                `        it('should make a ${op.method.toUpperCase()} request to ${op.path}', async () => {`,
-            );
-            testLines.push(``);
+		for (const op of operations) {
+			const methodName =
+				op.methodName ||
+				camelCase(
+					op.operationId ||
+						`${op.method}_${op.path.replace(/[^a-zA-Z0-9]/g, "_")}`,
+				);
+			testLines.push(`    describe('${methodName}', () => {`);
+			testLines.push(
+				`        it('should make a ${op.method.toUpperCase()} request to ${op.path}', async () => {`,
+			);
+			testLines.push(``);
 
-            // Build simple params
-            const params: string[] = [];
+			// Build simple params
+			const params: string[] = [];
 
-            if (op.parameters && op.parameters.length > 0) {
-                const requiredParams = op.parameters.filter(p => !('in' in p) || p.required);
-                for (const p of requiredParams) {
-                    let val = this.mockDataGenerator.generate(
-                        ((p.schema as SwaggerDefinition)?.name as string) || p.name,
-                    );
-                    /* v8 ignore next 7 */
-                    if (
-                        typeof val === 'string' &&
-                        !val.startsWith("'") &&
-                        !val.startsWith('"') &&
-                        !val.startsWith('{') &&
-                        !val.startsWith('[')
-                    ) {
-                        val = `'${val}'`;
-                    }
-                    params.push(String(val));
-                }
-            }
-            /* v8 ignore next 25 */
-            if (op.requestBody) {
-                if (op.requestBody.content) {
-                    const contentTypes = Object.keys(op.requestBody.content);
-                    /* v8 ignore next 14 */
-                    if (contentTypes.length > 0) {
-                        const schema = op.requestBody.content[contentTypes[0]].schema;
-                        let val = this.mockDataGenerator.generate(
-                            ((schema as SwaggerDefinition)?.name as string) || 'Unknown',
-                        );
-                        /* v8 ignore next 7 */
-                        if (
-                            typeof val === 'string' &&
-                            !val.startsWith("'") &&
-                            !val.startsWith('"') &&
-                            !val.startsWith('{') &&
-                            !val.startsWith('[')
-                        ) {
-                            val = `'${val}'`;
-                        }
-                        params.push(String(val));
-                    } else {
-                        params.push(`{}`);
-                    }
-                } else {
-                    /* v8 ignore next 2 */
-                    params.push(`{}`);
-                }
-            }
-            const paramString = params.join(', ');
+			if (op.parameters && op.parameters.length > 0) {
+				const requiredParams = op.parameters.filter(
+					(p) => !("in" in p) || p.required,
+				);
+				for (const p of requiredParams) {
+					let val = this.mockDataGenerator.generate(
+						((p.schema as SwaggerDefinition)?.name as string) || p.name,
+					);
+					/* v8 ignore next 7 */
+					if (
+						typeof val === "string" &&
+						!val.startsWith("'") &&
+						!val.startsWith('"') &&
+						!val.startsWith("{") &&
+						!val.startsWith("[")
+					) {
+						val = `'${val}'`;
+					}
+					params.push(String(val));
+				}
+			}
+			/* v8 ignore next 25 */
+			if (op.requestBody) {
+				if (op.requestBody.content) {
+					const contentTypes = Object.keys(op.requestBody.content);
+					/* v8 ignore next 14 */
+					if (contentTypes.length > 0) {
+						const schema = op.requestBody.content[contentTypes[0]].schema;
+						let val = this.mockDataGenerator.generate(
+							((schema as SwaggerDefinition)?.name as string) || "Unknown",
+						);
+						/* v8 ignore next 7 */
+						if (
+							typeof val === "string" &&
+							!val.startsWith("'") &&
+							!val.startsWith('"') &&
+							!val.startsWith("{") &&
+							!val.startsWith("[")
+						) {
+							val = `'${val}'`;
+						}
+						params.push(String(val));
+					} else {
+						params.push(`{}`);
+					}
+				} else {
+					/* v8 ignore next 2 */
+					params.push(`{}`);
+				}
+			}
+			const paramString = params.join(", ");
 
-            testLines.push(`            const result = await service.${methodName}(${paramString});`);
-            testLines.push(`            expect(result).toBeDefined();`);
-            testLines.push(`        });`);
-            testLines.push(`    });`);
-            testLines.push(``);
-        }
+			testLines.push(
+				`            const result = await service.${methodName}(${paramString});`,
+			);
+			testLines.push(`            expect(result).toBeDefined();`);
+			testLines.push(`        });`);
+			testLines.push(`    });`);
+			testLines.push(``);
+		}
 
-        testLines.push(`});`);
+		testLines.push(`});`);
 
-        /* v8 ignore next 4 */
-        if (isComposable) {
-            testLines.push('');
-            testLines.push(`test${serviceName}();`);
-        }
+		/* v8 ignore next 4 */
+		if (isComposable) {
+			testLines.push("");
+			testLines.push(`test${serviceName}();`);
+		}
 
-        sourceFile.addStatements(testLines.join('\n'));
-        sourceFile.formatText();
-    }
+		sourceFile.addStatements(testLines.join("\n"));
+		sourceFile.formatText();
+	}
 }

@@ -1,538 +1,581 @@
-import * as os from 'node:os';
-import * as path from 'node:path';
+import * as os from "node:os";
+import * as path from "node:path";
 // @ts-nocheck
-import { describe, expect, it, vi, afterEach } from 'vitest';
-import { generateFromConfigSync } from '@src/index.js';
-import { GeneratorConfig } from '@src/core/types/index.js';
-import { Project } from 'ts-morph';
-import { ServiceMethodAnalyzer } from '@src/functions/parse_analyzer.js';
+import { describe, expect, it, vi, afterEach } from "vitest";
+import { generateFromConfigSync } from "@src/index.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { Project } from "ts-morph";
+import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
 
-import { AxiosServiceTestGenerator } from '@src/vendors/axios/test/service-test.generator.js';
-import { SwaggerParser } from '@src/openapi/parse.js';
+import { AxiosServiceTestGenerator } from "@src/vendors/axios/test/service-test.generator.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
 
-describe('Axios Implementation Edge Cases', () => {
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
+describe("Axios Implementation Edge Cases", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
 
-    it('should cover missing branches in AxiosServiceTestGenerator', () => {
-        const config: GeneratorConfig = {
-            input: 'dummy',
-            output: path.join(os.tmpdir(), 'test-output-mocked'),
-            options: { implementation: 'axios' },
-        };
+	it("should cover missing branches in AxiosServiceTestGenerator", () => {
+		const config: GeneratorConfig = {
+			input: "dummy",
+			output: path.join(os.tmpdir(), "test-output-mocked"),
+			options: { implementation: "axios" },
+		};
 
-        const spec = {
-            openapi: '3.0.0',
-            info: { title: 'Test API', version: '1.0' },
-            paths: {
-                '/mocked': {
-                    get: {
-                        // no operationId or methodName
-                        responses: { '200': { description: 'OK' } },
-                    },
-                    post: {
-                        operationId: 'postMocked', // has operationId but no methodName
-                        responses: { '200': { description: 'OK' } },
-                    },
-                    put: {
-                        operationId: 'putMocked', // has methodName set by analyzer usually, we will mock it
-                        responses: { '200': { description: 'OK' } },
-                    },
-                },
-            },
-        };
+		const spec = {
+			openapi: "3.0.0",
+			info: { title: "Test API", version: "1.0" },
+			paths: {
+				"/mocked": {
+					get: {
+						// no operationId or methodName
+						responses: { "200": { description: "OK" } },
+					},
+					post: {
+						operationId: "postMocked", // has operationId but no methodName
+						responses: { "200": { description: "OK" } },
+					},
+					put: {
+						operationId: "putMocked", // has methodName set by analyzer usually, we will mock it
+						responses: { "200": { description: "OK" } },
+					},
+				},
+			},
+		};
 
-        const parser = new SwaggerParser(spec as any, config);
-        const project = new Project({ useInMemoryFileSystem: true });
-        const testGen = new AxiosServiceTestGenerator(parser, project, config);
+		const parser = new SwaggerParser(spec as any, config);
+		const project = new Project({ useInMemoryFileSystem: true });
+		const testGen = new AxiosServiceTestGenerator(parser, project, config);
 
-        const ops = parser.operations;
-        ops[2].methodName = 'customPutMocked'; // cover op.methodName
+		const ops = parser.operations;
+		ops[2].methodName = "customPutMocked"; // cover op.methodName
 
-        testGen.generateServiceTestFile('mocked', ops as any, path.join(os.tmpdir(), 'test-output-mocked/services'));
+		testGen.generateServiceTestFile(
+			"mocked",
+			ops as any,
+			path.join(os.tmpdir(), "test-output-mocked/services"),
+		);
 
-        const testFile = project.getSourceFile(
-            path.join(os.tmpdir(), 'test-output-mocked/services/mocked.service.spec.ts'),
-        );
-        expect(testFile).toBeDefined();
+		const testFile = project.getSourceFile(
+			path.join(
+				os.tmpdir(),
+				"test-output-mocked/services/mocked.service.spec.ts",
+			),
+		);
+		expect(testFile).toBeDefined();
 
-        const text = testFile!.getText();
-        expect(text).toContain("describe('getMocked'");
-        expect(text).toContain("describe('postMocked'");
-        expect(text).toContain("describe('customPutMocked'");
-    });
+		const text = testFile?.getText();
+		expect(text).toContain("describe('getMocked'");
+		expect(text).toContain("describe('postMocked'");
+		expect(text).toContain("describe('customPutMocked'");
+	});
 
-    it('should assign root paths to Default controller and handle no generated tests', async () => {
-        const config: GeneratorConfig = {
-            input: 'dummy',
-            output: path.join(os.tmpdir(), 'test-output-edge'),
-            options: {
-                implementation: 'axios',
-                generateServices: true,
-                generateServiceTests: false,
-            },
-        };
+	it("should assign root paths to Default controller and handle no generated tests", async () => {
+		const config: GeneratorConfig = {
+			input: "dummy",
+			output: path.join(os.tmpdir(), "test-output-edge"),
+			options: {
+				implementation: "axios",
+				generateServices: true,
+				generateServiceTests: false,
+			},
+		};
 
-        const spec = {
-            openapi: '3.0.0',
-            info: { title: 'Test API', version: '1.0' },
-            paths: {
-                '/': {
-                    get: {
-                        operationId: 'getRoot',
-                        responses: {
-                            '200': {
-                                description: 'OK',
-                                content: {
-                                    'application/json': { schema: { type: 'string' } },
-                                },
-                            },
-                        },
-                    },
-                },
-                '/notags': {
-                    get: {
-                        operationId: 'getNoTags',
-                        tags: [], // empty tags array
-                        responses: {
-                            '200': { description: 'OK' },
-                        },
-                    },
-                },
-            },
-        };
+		const spec = {
+			openapi: "3.0.0",
+			info: { title: "Test API", version: "1.0" },
+			paths: {
+				"/": {
+					get: {
+						operationId: "getRoot",
+						responses: {
+							"200": {
+								description: "OK",
+								content: {
+									"application/json": { schema: { type: "string" } },
+								},
+							},
+						},
+					},
+				},
+				"/notags": {
+					get: {
+						operationId: "getNoTags",
+						tags: [], // empty tags array
+						responses: {
+							"200": { description: "OK" },
+						},
+					},
+				},
+			},
+		};
 
-        const project = new Project();
-        generateFromConfigSync(config, project, { spec });
+		const project = new Project();
+		generateFromConfigSync(config, project, { spec });
 
-        // Root path defaults to 'Default' controller
-        const serviceFile = project.getSourceFile(
-            path.join(os.tmpdir(), 'test-output-edge/services/default.service.ts'),
-        );
-        expect(serviceFile).toBeDefined();
+		// Root path defaults to 'Default' controller
+		const serviceFile = project.getSourceFile(
+			path.join(os.tmpdir(), "test-output-edge/services/default.service.ts"),
+		);
+		expect(serviceFile).toBeDefined();
 
-        const notagsFile = project.getSourceFile(path.join(os.tmpdir(), 'test-output-edge/services/notags.service.ts'));
-        expect(notagsFile).toBeDefined();
-    });
+		const notagsFile = project.getSourceFile(
+			path.join(os.tmpdir(), "test-output-edge/services/notags.service.ts"),
+		);
+		expect(notagsFile).toBeDefined();
+	});
 
-    it('should handle operation with invalid analyzer state (returns null) and no schema requestBody', async () => {
-        const config: GeneratorConfig = {
-            input: 'dummy',
-            output: path.join(os.tmpdir(), 'test-output-invalid'),
-            options: { implementation: 'axios' },
-        };
+	it("should handle operation with invalid analyzer state (returns null) and no schema requestBody", async () => {
+		const config: GeneratorConfig = {
+			input: "dummy",
+			output: path.join(os.tmpdir(), "test-output-invalid"),
+			options: { implementation: "axios" },
+		};
 
-        const spec = {
-            openapi: '3.0.0',
-            info: { title: 'Test API', version: '1.0' },
-            paths: {
-                '/invalid': {
-                    get: {
-                        responses: {
-                            '200': {
-                                description: 'OK',
-                                content: {
-                                    'application/json': {}, // missing schema
-                                },
-                            },
-                        },
-                    },
-                    put: {
-                        operationId: 'putNoSchema',
-                        requestBody: {
-                            content: {
-                                'application/json': {
-                                    schema: { type: 'string' }, // type string evaluates isDataTypeInterface to false
-                                },
-                            },
-                        },
-                        responses: {
-                            '204': { description: 'No content' },
-                        },
-                    },
-                },
-            },
-        };
+		const spec = {
+			openapi: "3.0.0",
+			info: { title: "Test API", version: "1.0" },
+			paths: {
+				"/invalid": {
+					get: {
+						responses: {
+							"200": {
+								description: "OK",
+								content: {
+									"application/json": {}, // missing schema
+								},
+							},
+						},
+					},
+					put: {
+						operationId: "putNoSchema",
+						requestBody: {
+							content: {
+								"application/json": {
+									schema: { type: "string" }, // type string evaluates isDataTypeInterface to false
+								},
+							},
+						},
+						responses: {
+							"204": { description: "No content" },
+						},
+					},
+				},
+			},
+		};
 
-        const project = new Project();
-        generateFromConfigSync(config, project, { spec });
-        const serviceFile = project.getSourceFile(
-            path.join(os.tmpdir(), 'test-output-invalid/services/invalid.service.ts'),
-        );
-        expect(serviceFile).toBeDefined();
-    });
+		const project = new Project();
+		generateFromConfigSync(config, project, { spec });
+		const serviceFile = project.getSourceFile(
+			path.join(os.tmpdir(), "test-output-invalid/services/invalid.service.ts"),
+		);
+		expect(serviceFile).toBeDefined();
+	});
 
-    it('should handle unexported service classes and null class names in index generator', async () => {
-        const config: GeneratorConfig = {
-            input: 'dummy',
-            output: path.join(os.tmpdir(), 'test-output-unexported'),
-            options: { implementation: 'axios' },
-        };
-        const spec = {
-            openapi: '3.0.0',
-            info: { title: 'Test API', version: '1.0' },
-            paths: {
-                '/test': {
-                    get: {
-                        operationId: 'getTest',
-                        responses: { '200': { description: 'OK' } },
-                    },
-                },
-            },
-        };
-        const project = new Project();
-        generateFromConfigSync(config, project, { spec });
+	it("should handle unexported service classes and null class names in index generator", async () => {
+		const config: GeneratorConfig = {
+			input: "dummy",
+			output: path.join(os.tmpdir(), "test-output-unexported"),
+			options: { implementation: "axios" },
+		};
+		const spec = {
+			openapi: "3.0.0",
+			info: { title: "Test API", version: "1.0" },
+			paths: {
+				"/test": {
+					get: {
+						operationId: "getTest",
+						responses: { "200": { description: "OK" } },
+					},
+				},
+			},
+		};
+		const project = new Project();
+		generateFromConfigSync(config, project, { spec });
 
-        const serviceFile = project.getSourceFile(
-            path.join(os.tmpdir(), 'test-output-unexported/services/test.service.ts'),
-        );
-        const serviceClass = serviceFile!.getClass('TestService');
-        serviceClass!.setIsExported(false);
+		const serviceFile = project.getSourceFile(
+			path.join(os.tmpdir(), "test-output-unexported/services/test.service.ts"),
+		);
+		const serviceClass = serviceFile?.getClass("TestService");
+		serviceClass?.setIsExported(false);
 
-        const { AxiosServiceIndexGenerator } = await import('@src/vendors/axios/utils/index.generator.js');
-        const indexGen = new AxiosServiceIndexGenerator(project);
-        indexGen.generateIndex(path.join(os.tmpdir(), 'test-output-unexported'));
+		const { AxiosServiceIndexGenerator } = await import(
+			"@src/vendors/axios/utils/index.generator.js"
+		);
+		const indexGen = new AxiosServiceIndexGenerator(project);
+		indexGen.generateIndex(path.join(os.tmpdir(), "test-output-unexported"));
 
-        const indexFile = project.getSourceFile(path.join(os.tmpdir(), 'test-output-unexported/services/index.ts'));
-        expect(indexFile!.getText()).not.toContain('export { TestService }');
-    });
+		const indexFile = project.getSourceFile(
+			path.join(os.tmpdir(), "test-output-unexported/services/index.ts"),
+		);
+		expect(indexFile?.getText()).not.toContain("export { TestService }");
+	});
 
-    it('should handle arraybuffer response type', async () => {
-        const config: GeneratorConfig = {
-            input: 'dummy',
-            output: path.join(os.tmpdir(), 'test-output-arraybuffer'),
-            options: { implementation: 'axios' },
-        };
+	it("should handle arraybuffer response type", async () => {
+		const config: GeneratorConfig = {
+			input: "dummy",
+			output: path.join(os.tmpdir(), "test-output-arraybuffer"),
+			options: { implementation: "axios" },
+		};
 
-        const spec = {
-            openapi: '3.0.0',
-            info: { title: 'Test API', version: '1.0' },
-            paths: {
-                '/buffer': {
-                    get: {
-                        operationId: 'getBuffer',
-                        responses: {
-                            '200': {
-                                description: 'OK',
-                                content: {
-                                    'application/octet-stream': { schema: { type: 'string', format: 'binary' } },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        };
+		const spec = {
+			openapi: "3.0.0",
+			info: { title: "Test API", version: "1.0" },
+			paths: {
+				"/buffer": {
+					get: {
+						operationId: "getBuffer",
+						responses: {
+							"200": {
+								description: "OK",
+								content: {
+									"application/octet-stream": {
+										schema: { type: "string", format: "binary" },
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		};
 
-        const originalAnalyze = ServiceMethodAnalyzer.prototype.analyze;
-        vi.spyOn(ServiceMethodAnalyzer.prototype, 'analyze').mockImplementation(function (
-            this: ServiceMethodAnalyzer,
-            op: PathInfo,
-        ) {
-            const result = originalAnalyze.call(this, op);
-            if (result && result.methodName === 'getBuffer') {
-                result.responseSerialization = 'arraybuffer';
-            }
-            return result;
-        });
+		const originalAnalyze = ServiceMethodAnalyzer.prototype.analyze;
+		vi.spyOn(ServiceMethodAnalyzer.prototype, "analyze").mockImplementation(
+			function (this: ServiceMethodAnalyzer, op: PathInfo) {
+				const result = originalAnalyze.call(this, op);
+				if (result && result.methodName === "getBuffer") {
+					result.responseSerialization = "arraybuffer";
+				}
+				return result;
+			},
+		);
 
-        const project = new Project();
-        generateFromConfigSync(config, project, { spec });
+		const project = new Project();
+		generateFromConfigSync(config, project, { spec });
 
-        const serviceFile = project.getSourceFile(
-            path.join(os.tmpdir(), 'test-output-arraybuffer/services/buffer.service.ts'),
-        );
-        const serviceClass = serviceFile!.getClass('BufferService');
-        const getBufferMethod = serviceClass!.getMethod('getBuffer');
+		const serviceFile = project.getSourceFile(
+			path.join(
+				os.tmpdir(),
+				"test-output-arraybuffer/services/buffer.service.ts",
+			),
+		);
+		const serviceClass = serviceFile?.getClass("BufferService");
+		const getBufferMethod = serviceClass?.getMethod("getBuffer");
 
-        expect(getBufferMethod!.getText()).toContain("responseType = 'arraybuffer'");
-    });
+		expect(getBufferMethod?.getText()).toContain(
+			"responseType = 'arraybuffer'",
+		);
+	});
 });
 
-it('should handle multiple distinct response types and raw body type', async () => {
-    const config: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-output-distinct'),
-        options: { implementation: 'axios' },
-    };
+it("should handle multiple distinct response types and raw body type", async () => {
+	const config: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-output-distinct"),
+		options: { implementation: "axios" },
+	};
 
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0' },
-        paths: {
-            '/distinct': {
-                post: {
-                    operationId: 'postDistinct',
-                    requestBody: {
-                        content: {
-                            'text/plain': { schema: { type: 'string' } },
-                        },
-                    },
-                    responses: {
-                        '200': {
-                            description: 'OK',
-                            content: {
-                                'application/json': { schema: { type: 'string' } },
-                            },
-                        },
-                        '201': {
-                            description: 'Created',
-                            content: {
-                                'application/json': { schema: { type: 'number' } },
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    };
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test API", version: "1.0" },
+		paths: {
+			"/distinct": {
+				post: {
+					operationId: "postDistinct",
+					requestBody: {
+						content: {
+							"text/plain": { schema: { type: "string" } },
+						},
+					},
+					responses: {
+						"200": {
+							description: "OK",
+							content: {
+								"application/json": { schema: { type: "string" } },
+							},
+						},
+						"201": {
+							description: "Created",
+							content: {
+								"application/json": { schema: { type: "number" } },
+							},
+						},
+					},
+				},
+			},
+		},
+	};
 
-    const project = new Project();
-    generateFromConfigSync(config, project, { spec });
+	const project = new Project();
+	generateFromConfigSync(config, project, { spec });
 
-    const serviceFile = project.getSourceFile(
-        path.join(os.tmpdir(), 'test-output-distinct/services/distinct.service.ts'),
-    );
-    const serviceClass = serviceFile!.getClass('DistinctService');
-    const postDistinctMethod = serviceClass!.getMethod('postDistinct');
+	const serviceFile = project.getSourceFile(
+		path.join(os.tmpdir(), "test-output-distinct/services/distinct.service.ts"),
+	);
+	const serviceClass = serviceFile?.getClass("DistinctService");
+	const postDistinctMethod = serviceClass?.getMethod("postDistinct");
 
-    expect(postDistinctMethod!.getReturnTypeNode()?.getText()).toContain('Promise<string | number>');
+	expect(postDistinctMethod?.getReturnTypeNode()?.getText()).toContain(
+		"Promise<string | number>",
+	);
 
-    const methodBody = postDistinctMethod!
-        .getStatements()
-        .map(s => s.getText())
-        .join('\n');
-    expect(methodBody).toContain("headers['Content-Type'] = 'application/json'");
+	const methodBody = postDistinctMethod
+		?.getStatements()
+		.map((s) => s.getText())
+		.join("\n");
+	expect(methodBody).toContain("headers['Content-Type'] = 'application/json'");
 });
 
-it('should handle multipart body type', async () => {
-    const config: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-output-multipart'),
-        options: { implementation: 'axios' },
-    };
+it("should handle multipart body type", async () => {
+	const config: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-output-multipart"),
+		options: { implementation: "axios" },
+	};
 
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0' },
-        paths: {
-            '/multipart': {
-                post: {
-                    operationId: 'postMultipart',
-                    requestBody: {
-                        content: {
-                            'multipart/form-data': {
-                                schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },
-                            },
-                        },
-                    },
-                    responses: {
-                        '200': { description: 'OK' },
-                    },
-                },
-            },
-        },
-    };
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test API", version: "1.0" },
+		paths: {
+			"/multipart": {
+				post: {
+					operationId: "postMultipart",
+					requestBody: {
+						content: {
+							"multipart/form-data": {
+								schema: {
+									type: "object",
+									properties: { file: { type: "string", format: "binary" } },
+								},
+							},
+						},
+					},
+					responses: {
+						"200": { description: "OK" },
+					},
+				},
+			},
+		},
+	};
 
-    const project = new Project();
-    generateFromConfigSync(config, project, { spec });
+	const project = new Project();
+	generateFromConfigSync(config, project, { spec });
 
-    const serviceFile = project.getSourceFile(
-        path.join(os.tmpdir(), 'test-output-multipart/services/multipart.service.ts'),
-    );
-    const serviceClass = serviceFile!.getClass('MultipartService');
-    const postMultipartMethod = serviceClass!.getMethod('postMultipart');
+	const serviceFile = project.getSourceFile(
+		path.join(
+			os.tmpdir(),
+			"test-output-multipart/services/multipart.service.ts",
+		),
+	);
+	const serviceClass = serviceFile?.getClass("MultipartService");
+	const postMultipartMethod = serviceClass?.getMethod("postMultipart");
 
-    const methodBody = postMultipartMethod!
-        .getStatements()
-        .map(s => s.getText())
-        .join('\n');
-    expect(methodBody).toContain('axiosConfig.data = body'); // It falls through to the new handling logic
+	const methodBody = postMultipartMethod
+		?.getStatements()
+		.map((s) => s.getText())
+		.join("\n");
+	expect(methodBody).toContain("axiosConfig.data = body"); // It falls through to the new handling logic
 });
 
-it('should handle explicit path style and multiple error responses', async () => {
-    const config: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-output-style'),
-        options: { implementation: 'axios' },
-    };
+it("should handle explicit path style and multiple error responses", async () => {
+	const config: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-output-style"),
+		options: { implementation: "axios" },
+	};
 
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0' },
-        paths: {
-            '/style/{id}': {
-                get: {
-                    operationId: 'getStyle',
-                    parameters: [
-                        { name: 'id', in: 'path', required: true, style: 'matrix', schema: { type: 'string' } },
-                    ],
-                    responses: {
-                        '200': { description: 'OK' },
-                        '400': {
-                            description: 'Bad Request',
-                            content: { 'application/json': { schema: { type: 'string' } } },
-                        },
-                        '404': {
-                            description: 'Not Found',
-                            content: { 'application/json': { schema: { type: 'string' } } },
-                        },
-                        '500': {
-                            description: 'Internal',
-                            content: { 'application/json': { schema: { type: 'number' } } },
-                        },
-                    },
-                },
-            },
-        },
-    };
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test API", version: "1.0" },
+		paths: {
+			"/style/{id}": {
+				get: {
+					operationId: "getStyle",
+					parameters: [
+						{
+							name: "id",
+							in: "path",
+							required: true,
+							style: "matrix",
+							schema: { type: "string" },
+						},
+					],
+					responses: {
+						"200": { description: "OK" },
+						"400": {
+							description: "Bad Request",
+							content: { "application/json": { schema: { type: "string" } } },
+						},
+						"404": {
+							description: "Not Found",
+							content: { "application/json": { schema: { type: "string" } } },
+						},
+						"500": {
+							description: "Internal",
+							content: { "application/json": { schema: { type: "number" } } },
+						},
+					},
+				},
+			},
+		},
+	};
 
-    const project = new Project();
-    generateFromConfigSync(config, project, { spec });
-    const serviceFile = project.getSourceFile(path.join(os.tmpdir(), 'test-output-style/services/style.service.ts'));
-    const serviceClass = serviceFile!.getClass('StyleService');
-    const method = serviceClass!.getMethod('getStyle');
+	const project = new Project();
+	generateFromConfigSync(config, project, { spec });
+	const serviceFile = project.getSourceFile(
+		path.join(os.tmpdir(), "test-output-style/services/style.service.ts"),
+	);
+	const serviceClass = serviceFile?.getClass("StyleService");
+	const method = serviceClass?.getMethod("getStyle");
 
-    const methodBody = method!
-        .getStatements()
-        .map(s => s.getText())
-        .join('\n');
-    expect(methodBody).toContain("'matrix'");
+	const methodBody = method
+		?.getStatements()
+		.map((s) => s.getText())
+		.join("\n");
+	expect(methodBody).toContain("'matrix'");
 });
 
-it('should handle operation with invalid analyzer state explicitly mocked (returns null)', async () => {
-    const config: GeneratorConfig = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-output-mocked-null'),
-        options: { implementation: 'axios' },
-    };
+it("should handle operation with invalid analyzer state explicitly mocked (returns null)", async () => {
+	const config: GeneratorConfig = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-output-mocked-null"),
+		options: { implementation: "axios" },
+	};
 
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0' },
-        paths: {
-            '/mocked': {
-                get: {
-                    operationId: 'getMocked',
-                    responses: { '200': { description: 'OK' } },
-                },
-            },
-        },
-    };
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test API", version: "1.0" },
+		paths: {
+			"/mocked": {
+				get: {
+					operationId: "getMocked",
+					responses: { "200": { description: "OK" } },
+				},
+			},
+		},
+	};
 
-    const originalAnalyze = ServiceMethodAnalyzer.prototype.analyze;
-    vi.spyOn(ServiceMethodAnalyzer.prototype, 'analyze').mockImplementation(function (
-        this: ServiceMethodAnalyzer,
-        op: PathInfo,
-    ) {
-        return null;
-    });
+	const _originalAnalyze = ServiceMethodAnalyzer.prototype.analyze;
+	vi.spyOn(ServiceMethodAnalyzer.prototype, "analyze").mockImplementation(
+		function (this: ServiceMethodAnalyzer, _op: PathInfo) {
+			return null;
+		},
+	);
 
-    const project = new Project();
-    generateFromConfigSync(config, project, { spec });
-    const serviceFile = project.getSourceFile(
-        path.join(os.tmpdir(), 'test-output-mocked-null/services/mocked.service.ts'),
-    );
-    expect(serviceFile).toBeDefined();
+	const project = new Project();
+	generateFromConfigSync(config, project, { spec });
+	const serviceFile = project.getSourceFile(
+		path.join(
+			os.tmpdir(),
+			"test-output-mocked-null/services/mocked.service.ts",
+		),
+	);
+	expect(serviceFile).toBeDefined();
 
-    const serviceClass = serviceFile!.getClass('MockedService');
-    // Because analyze returned null, no method should be added to the class!
-    expect(serviceClass!.getMethods().length).toBe(0);
+	const serviceClass = serviceFile?.getClass("MockedService");
+	// Because analyze returned null, no method should be added to the class!
+	expect(serviceClass?.getMethods().length).toBe(0);
 });
 
-it('should hit branch conditions for test mock string evaluation and parameter sort in axios-test-generator', () => {
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0' },
-        paths: {
-            '/mocked': {
-                get: {
-                    responses: { '200': { description: 'OK' } },
-                },
-                post: {
-                    operationId: 'postMocked',
-                    responses: { '200': { description: 'OK' } },
-                },
-            },
-        },
-    };
-    const config = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-output-mocked'),
-        options: { implementation: 'axios' as const },
-    };
+it("should hit branch conditions for test mock string evaluation and parameter sort in axios-test-generator", () => {
+	const _spec = {
+		openapi: "3.0.0",
+		info: { title: "Test API", version: "1.0" },
+		paths: {
+			"/mocked": {
+				get: {
+					responses: { "200": { description: "OK" } },
+				},
+				post: {
+					operationId: "postMocked",
+					responses: { "200": { description: "OK" } },
+				},
+			},
+		},
+	};
+	const _config = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-output-mocked"),
+		options: { implementation: "axios" as const },
+	};
 
-    // We can just use generateFromConfigSync which invokes all generators!
+	// We can just use generateFromConfigSync which invokes all generators!
 });
 
-it('should generate composable tests when config.options.composableTests is true', async () => {
-    const config = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-output-composable-axios'),
-        options: { implementation: 'axios', tests: true, composableTests: true },
-    };
+it("should generate composable tests when config.options.composableTests is true", async () => {
+	const config = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-output-composable-axios"),
+		options: { implementation: "axios", tests: true, composableTests: true },
+	};
 
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0' },
-        paths: {
-            '/composable': {
-                get: {
-                    operationId: 'getComposable',
-                    responses: { '200': { description: 'OK' } },
-                },
-            },
-        },
-    };
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test API", version: "1.0" },
+		paths: {
+			"/composable": {
+				get: {
+					operationId: "getComposable",
+					responses: { "200": { description: "OK" } },
+				},
+			},
+		},
+	};
 
-    const project = new Project();
-    generateFromConfigSync(config as any, project, { spec });
+	const project = new Project();
+	generateFromConfigSync(config as any, project, { spec });
 
-    const testFile = project.getSourceFile(
-        path.join(os.tmpdir(), 'test-output-composable-axios/services/composable.service.spec.ts'),
-    );
-    expect(testFile).toBeDefined();
-    const text = testFile!.getText();
+	const testFile = project.getSourceFile(
+		path.join(
+			os.tmpdir(),
+			"test-output-composable-axios/services/composable.service.spec.ts",
+		),
+	);
+	expect(testFile).toBeDefined();
+	const text = testFile?.getText();
 
-    expect(text).toContain('testComposableService();');
+	expect(text).toContain("testComposableService();");
 });
 
-it('should cover missing branches in AxiosServiceTestGenerator when isComposable is true', () => {
-    const config = {
-        input: 'dummy',
-        output: path.join(os.tmpdir(), 'test-output-mocked-composable'),
-        options: { implementation: 'axios', tests: true, composableTests: true },
-    };
+it("should cover missing branches in AxiosServiceTestGenerator when isComposable is true", () => {
+	const config = {
+		input: "dummy",
+		output: path.join(os.tmpdir(), "test-output-mocked-composable"),
+		options: { implementation: "axios", tests: true, composableTests: true },
+	};
 
-    const spec = {
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0' },
-        paths: {
-            '/mocked': {
-                get: {
-                    // no operationId or methodName
-                    responses: { '200': { description: 'OK' } },
-                },
-            },
-        },
-    };
+	const spec = {
+		openapi: "3.0.0",
+		info: { title: "Test API", version: "1.0" },
+		paths: {
+			"/mocked": {
+				get: {
+					// no operationId or methodName
+					responses: { "200": { description: "OK" } },
+				},
+			},
+		},
+	};
 
-    const parser = new SwaggerParser(spec as any, config as any);
-    const project = new Project({ useInMemoryFileSystem: true });
-    const testGen = new AxiosServiceTestGenerator(parser, project, config as any);
+	const parser = new SwaggerParser(spec as any, config as any);
+	const project = new Project({ useInMemoryFileSystem: true });
+	const testGen = new AxiosServiceTestGenerator(parser, project, config as any);
 
-    const ops = parser.operations;
+	const ops = parser.operations;
 
-    testGen.generateServiceTestFile(
-        'mocked',
-        ops as any,
-        path.join(os.tmpdir(), 'test-output-mocked-composable/services'),
-    );
+	testGen.generateServiceTestFile(
+		"mocked",
+		ops as any,
+		path.join(os.tmpdir(), "test-output-mocked-composable/services"),
+	);
 
-    const testFile = project.getSourceFile(
-        path.join(os.tmpdir(), 'test-output-mocked-composable/services/mocked.service.spec.ts'),
-    );
-    expect(testFile).toBeDefined();
-    const text = testFile!.getText();
+	const testFile = project.getSourceFile(
+		path.join(
+			os.tmpdir(),
+			"test-output-mocked-composable/services/mocked.service.spec.ts",
+		),
+	);
+	expect(testFile).toBeDefined();
+	const _text = testFile?.getText();
 });

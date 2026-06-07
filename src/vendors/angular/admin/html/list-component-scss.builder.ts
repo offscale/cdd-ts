@@ -1,5 +1,5 @@
 export function generateListComponentScss(): string {
-    return `
+	return `
 .admin-list-container { padding: 24px; }
 .admin-list-toolbar { border-radius: 4px 4px 0 0; }
 .toolbar-spacer { flex: 1 1 auto; }

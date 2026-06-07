@@ -2,17 +2,17 @@
 // tests/fixtures/ast/querystring.examples.ts
 
 const app = {
-    get: (..._args: string | number | boolean | object | undefined | null[]) => {
-        void _args;
-    },
+	get: (..._args: string | number | boolean | object | undefined | null[]) => {
+		void _args;
+	},
 };
 
 interface MockRequest {
-    url: string;
+	url: string;
 }
 
 interface MockResponse {
-    send: (body: string) => void;
+	send: (body: string) => void;
 }
 
 /**
@@ -22,8 +22,8 @@ interface MockResponse {
  * @paramExample rawQuery {"__oasExample":{"serializedValue":"foo=bar&baz=qux"}}
  */
 export function rawQueryExample(req: MockRequest, res: MockResponse) {
-    const raw = req.url;
-    res.send(raw);
+	const raw = req.url;
+	res.send(raw);
 }
 
-app.get('/raw-query-example', rawQueryExample);
+app.get("/raw-query-example", rawQueryExample);

@@ -1,77 +1,82 @@
 // @ts-nocheck
-import ts from 'typescript';
+import ts from "typescript";
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-import { Project } from 'ts-morph';
+import type { Project } from "ts-morph";
 
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { PathItemsGenerator } from '@src/routes/emit_path_items.js';
-import { GeneratorConfig, SwaggerSpec } from '@src/core/types/index.js';
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { PathItemsGenerator } from "@src/routes/emit_path_items.js";
+import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 
-import { createTestProject } from '../shared/helpers.js';
+import { createTestProject } from "../shared/helpers.js";
 
 const specWithPathItems: SwaggerSpec = {
-    openapi: '3.2.0',
-    info: { title: 'PathItems', version: '1.0' },
-    paths: {},
-    components: {
-        pathItems: {
-            Ping: {
-                get: {
-                    operationId: 'ping',
-                    responses: { '200': { description: 'pong' } },
-                },
-            },
-        },
-    },
+	openapi: "3.2.0",
+	info: { title: "PathItems", version: "1.0" },
+	paths: {},
+	components: {
+		pathItems: {
+			Ping: {
+				get: {
+					operationId: "ping",
+					responses: { "200": { description: "pong" } },
+				},
+			},
+		},
+	},
 };
 
-describe('Emitter: PathItemsGenerator', () => {
-    const runGenerator = (spec: SwaggerSpec) => {
-        const project = createTestProject();
-        const config: GeneratorConfig = { output: '/out', options: {} } as
-            | string
-            | number
-            | boolean
-            | object
-            | undefined
-            | null;
-        const parser = new SwaggerParser(spec, config);
-        new PathItemsGenerator(parser, project).generate('/out');
-        return project;
-    };
+describe("Emitter: PathItemsGenerator", () => {
+	const runGenerator = (spec: SwaggerSpec) => {
+		const project = createTestProject();
+		const config: GeneratorConfig = { output: "/out", options: {} } as
+			| string
+			| number
+			| boolean
+			| object
+			| undefined
+			| null;
+		const parser = new SwaggerParser(spec, config);
+		new PathItemsGenerator(parser, project).generate("/out");
+		return project;
+	};
 
-    const compileGeneratedFile = (project: Project) => {
-        const sourceFile = project.getSourceFileOrThrow('/out/path-items.ts');
-        const code = sourceFile.getText();
-        const jsCode = ts.transpile(code, { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS });
+	const compileGeneratedFile = (project: Project) => {
+		const sourceFile = project.getSourceFileOrThrow("/out/path-items.ts");
+		const code = sourceFile.getText();
+		const jsCode = ts.transpile(code, {
+			target: ts.ScriptTarget.ES5,
+			module: ts.ModuleKind.CommonJS,
+		});
 
-        const moduleHelper = { exports: {} as string | number | boolean | object | undefined | null };
+		const moduleHelper = {
+			exports: {} as string | number | boolean | object | undefined | null,
+		};
 
-        new Function('exports', jsCode)(moduleHelper.exports);
+		new Function("exports", jsCode)(moduleHelper.exports);
 
-        return moduleHelper.exports;
-    };
+		return moduleHelper.exports;
+	};
 
-    it('should generate registry map for path items', () => {
-        const project = runGenerator(specWithPathItems);
+	it("should generate registry map for path items", () => {
+		const project = runGenerator(specWithPathItems);
 
-        const { API_PATH_ITEMS } = compileGeneratedFile(project);
+		const { API_PATH_ITEMS } = compileGeneratedFile(project);
 
-        expect(API_PATH_ITEMS.Ping).toBeDefined();
+		expect(API_PATH_ITEMS.Ping).toBeDefined();
 
-        expect(API_PATH_ITEMS.Ping.get.operationId).toBe('ping');
-    });
+		expect(API_PATH_ITEMS.Ping.get.operationId).toBe("ping");
+	});
 
-    it('should handle specs without pathItems', () => {
-        const emptySpec: SwaggerSpec = {
-            openapi: '3.2.0',
-            info: { title: 'Empty', version: '1.0' },
-            paths: {},
-        };
-        const project = runGenerator(emptySpec);
-        const sourceFile = project.getSourceFileOrThrow('/out/path-items.ts');
-        expect(sourceFile.getText()).toContain('export { };');
-    });
+	it("should handle specs without pathItems", () => {
+		const emptySpec: SwaggerSpec = {
+			openapi: "3.2.0",
+			info: { title: "Empty", version: "1.0" },
+			paths: {},
+		};
+		const project = runGenerator(emptySpec);
+		const sourceFile = project.getSourceFileOrThrow("/out/path-items.ts");
+		expect(sourceFile.getText()).toContain("export { };");
+	});
 });

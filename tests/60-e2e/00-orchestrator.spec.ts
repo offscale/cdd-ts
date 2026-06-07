@@ -1,165 +1,191 @@
 // @ts-nocheck
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { generateFromConfigSync } from '@src/index.js';
-import { GeneratorConfig } from '@src/core/types/index.js';
+import { generateFromConfigSync } from "@src/index.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
 
-import { coverageSpec, securitySpec } from '../shared/specs.js';
-import { createTestProject, runGeneratorWithConfig } from '../shared/helpers.js';
+import { coverageSpec, securitySpec } from "../shared/specs.js";
+import {
+	createTestProject,
+	runGeneratorWithConfig,
+} from "../shared/helpers.js";
 
-vi.mock('fs', async importOriginal => {
-    const original = await importOriginal<typeof import('fs')>();
-    return { ...original, mkdirSync: vi.fn(), existsSync: vi.fn().mockReturnValue(true) };
+vi.mock("fs", async (importOriginal) => {
+	const original = await importOriginal<typeof import("fs")>();
+	return {
+		...original,
+		mkdirSync: vi.fn(),
+		existsSync: vi.fn().mockReturnValue(true),
+	};
 });
 
-describe('E2E: Full Generation Orchestrator', () => {
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
+describe("E2E: Full Generation Orchestrator", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
 
-    it('should generate all expected files for a full service-oriented run', async () => {
-        const project = createTestProject();
-        const config: GeneratorConfig = {
-            input: '',
-            output: '/generated',
-            options: { generateServices: true, framework: 'angular' } as
-                | string
-                | number
-                | boolean
-                | object
-                | undefined
-                | null,
-        };
-        generateFromConfigSync(config, project, { spec: coverageSpec });
+	it("should generate all expected files for a full service-oriented run", async () => {
+		const project = createTestProject();
+		const config: GeneratorConfig = {
+			input: "",
+			output: "/generated",
+			options: { generateServices: true, framework: "angular" } as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null,
+		};
+		generateFromConfigSync(config, project, { spec: coverageSpec });
 
-        const filePaths = project.getSourceFiles().map(f => f.getFilePath());
-        expect(filePaths).toContain('/generated/models/index.ts');
-        expect(filePaths).toContain('/generated/services/index.ts');
-    });
+		const filePaths = project.getSourceFiles().map((f) => f.getFilePath());
+		expect(filePaths).toContain("/generated/models/index.ts");
+		expect(filePaths).toContain("/generated/services/index.ts");
+	});
 
-    it('should generate date transformer when dateType is Date', async () => {
-        const project = await runGeneratorWithConfig(coverageSpec, { dateType: 'Date' });
-        const filePaths = project.getSourceFiles().map(f => f.getFilePath());
-        expect(filePaths).toContain('/generated/utils/date-transformer.ts');
-    });
+	it("should generate date transformer when dateType is Date", async () => {
+		const project = await runGeneratorWithConfig(coverageSpec, {
+			dateType: "Date",
+		});
+		const filePaths = project.getSourceFiles().map((f) => f.getFilePath());
+		expect(filePaths).toContain("/generated/utils/date-transformer.ts");
+	});
 
-    it('should generate auth-related files when security spec is provided', async () => {
-        const project = createTestProject();
-        const config: GeneratorConfig = {
-            input: '',
-            output: '/generated',
-            options: { generateServices: true, framework: 'angular' } as
-                | string
-                | number
-                | boolean
-                | object
-                | undefined
-                | null,
-        };
-        generateFromConfigSync(config, project, { spec: securitySpec });
+	it("should generate auth-related files when security spec is provided", async () => {
+		const project = createTestProject();
+		const config: GeneratorConfig = {
+			input: "",
+			output: "/generated",
+			options: { generateServices: true, framework: "angular" } as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null,
+		};
+		generateFromConfigSync(config, project, { spec: securitySpec });
 
-        const filePaths = project.getSourceFiles().map(f => f.getFilePath());
-        expect(filePaths).toContain('/generated/auth/auth.interceptor.ts');
-        expect(filePaths).toContain('/generated/auth/auth.tokens.ts');
-        expect(filePaths).toContain('/generated/auth/oauth.service.ts');
-    });
+		const filePaths = project.getSourceFiles().map((f) => f.getFilePath());
+		expect(filePaths).toContain("/generated/auth/auth.interceptor.ts");
+		expect(filePaths).toContain("/generated/auth/auth.tokens.ts");
+		expect(filePaths).toContain("/generated/auth/oauth.service.ts");
+	});
 
-    it('should handle specs with only cookie security schemes by generating interceptor (Browser restriction noted)', async () => {
-        const project = createTestProject();
-        const config: GeneratorConfig = {
-            input: '',
-            output: '/generated',
-            options: { generateServices: true, framework: 'angular' } as
-                | string
-                | number
-                | boolean
-                | object
-                | undefined
-                | null,
-        };
-        const cookieSecuritySpec = {
-            openapi: '3.0.0',
-            info: { title: 'Test API', version: '1.0.0' },
-            paths: {},
-            components: {
-                securitySchemes: {
-                    CookieAuth: { type: 'apiKey', in: 'cookie', name: 'session_id' },
-                },
-            },
-        };
+	it("should handle specs with only cookie security schemes by generating interceptor (Browser restriction noted)", async () => {
+		const project = createTestProject();
+		const config: GeneratorConfig = {
+			input: "",
+			output: "/generated",
+			options: { generateServices: true, framework: "angular" } as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null,
+		};
+		const cookieSecuritySpec = {
+			openapi: "3.0.0",
+			info: { title: "Test API", version: "1.0.0" },
+			paths: {},
+			components: {
+				securitySchemes: {
+					CookieAuth: { type: "apiKey", in: "cookie", name: "session_id" },
+				},
+			},
+		};
 
-        generateFromConfigSync(config, project, { spec: cookieSecuritySpec });
+		generateFromConfigSync(config, project, { spec: cookieSecuritySpec });
 
-        const filePaths = project.getSourceFiles().map(f => f.getFilePath());
-        // The tokens file is always generated if string | number | boolean | object | undefined | null security schemes exist.
-        expect(filePaths).toContain('/generated/auth/auth.tokens.ts');
+		const filePaths = project.getSourceFiles().map((f) => f.getFilePath());
+		// The tokens file is always generated if string | number | boolean | object | undefined | null security schemes exist.
+		expect(filePaths).toContain("/generated/auth/auth.tokens.ts");
 
-        // The interceptor IS now generated for Cookie
-        expect(filePaths).toContain('/generated/auth/auth.interceptor.ts');
+		// The interceptor IS now generated for Cookie
+		expect(filePaths).toContain("/generated/auth/auth.interceptor.ts");
 
-        // The provider should include cookie auth plumbing
-        expect(filePaths).toContain('/generated/providers.ts');
-        const providerContent = project.getSourceFileOrThrow('/generated/providers.ts').getText();
-        expect(providerContent).toContain('cookieAuth?: string');
-        expect(providerContent).not.toContain('apiKey?: string');
-    });
+		// The provider should include cookie auth plumbing
+		expect(filePaths).toContain("/generated/providers.ts");
+		const providerContent = project
+			.getSourceFileOrThrow("/generated/providers.ts")
+			.getText();
+		expect(providerContent).toContain("cookieAuth?: string");
+		expect(providerContent).not.toContain("apiKey?: string");
+	});
 
-    it('should default to generating services but NOT tests when options are absent', async () => {
-        const project = createTestProject();
-        const config: GeneratorConfig = {
-            input: '',
-            output: '/generated',
-            options: {} as any,
-        };
-        generateFromConfigSync(config, project, { spec: coverageSpec });
+	it("should default to generating services but NOT tests when options are absent", async () => {
+		const project = createTestProject();
+		const config: GeneratorConfig = {
+			input: "",
+			output: "/generated",
+			options: {} as any,
+		};
+		generateFromConfigSync(config, project, { spec: coverageSpec });
 
-        const filePaths = project.getSourceFiles().map(f => f.getFilePath());
+		const filePaths = project.getSourceFiles().map((f) => f.getFilePath());
 
-        expect(filePaths).toContain('/generated/services/users.service.ts');
-        expect(filePaths).not.toContain('/generated/services/users.service.spec.ts');
-    });
+		expect(filePaths).toContain("/generated/services/users.service.ts");
+		expect(filePaths).not.toContain(
+			"/generated/services/users.service.spec.ts",
+		);
+	});
 
-    it('should NOT default to generating admin tests when admin option is present but test option is absent', async () => {
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+	it("should NOT default to generating admin tests when admin option is present but test option is absent", async () => {
+		const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
-        await runGeneratorWithConfig(coverageSpec, { admin: true });
+		await runGeneratorWithConfig(coverageSpec, { admin: true });
 
-        const logCalls = consoleSpy.mock.calls.flat();
+		const logCalls = consoleSpy.mock.calls.flat();
 
-        expect(logCalls).toEqual(expect.arrayContaining(['🚀 Generating Admin UI...']));
-        expect(logCalls).not.toEqual(
-            expect.arrayContaining([expect.stringContaining('Generating tests for admin UI...')]),
-        );
+		expect(logCalls).toEqual(
+			expect.arrayContaining(["🚀 Generating Admin UI..."]),
+		);
+		expect(logCalls).not.toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("Generating tests for admin UI..."),
+			]),
+		);
 
-        consoleSpy.mockRestore();
-    });
+		consoleSpy.mockRestore();
+	});
 
-    it('should skip service generation when config is false', async () => {
-        const project = await runGeneratorWithConfig(coverageSpec, { generateServices: false });
-        const filePaths = project.getSourceFiles().map(f => f.getFilePath());
-        expect(filePaths).toContain('/generated/models/index.ts');
-        expect(filePaths).not.toContain('/generated/services/index.ts');
-        expect(filePaths).not.toContain('/generated/providers.ts');
-    });
+	it("should skip service generation when config is false", async () => {
+		const project = await runGeneratorWithConfig(coverageSpec, {
+			generateServices: false,
+		});
+		const filePaths = project.getSourceFiles().map((f) => f.getFilePath());
+		expect(filePaths).toContain("/generated/models/index.ts");
+		expect(filePaths).not.toContain("/generated/services/index.ts");
+		expect(filePaths).not.toContain("/generated/providers.ts");
+	});
 
-    it('should skip service test generation when config is false', async () => {
-        const project = await runGeneratorWithConfig(coverageSpec, {
-            generateServices: true,
-            generateServiceTests: false,
-        });
-        const filePaths = project.getSourceFiles().map(f => f.getFilePath());
-        expect(filePaths).toContain('/generated/services/users.service.ts');
-        expect(filePaths).not.toContain('/generated/services/users.service.spec.ts');
-    });
+	it("should skip service test generation when config is false", async () => {
+		const project = await runGeneratorWithConfig(coverageSpec, {
+			generateServices: true,
+			generateServiceTests: false,
+		});
+		const filePaths = project.getSourceFiles().map((f) => f.getFilePath());
+		expect(filePaths).toContain("/generated/services/users.service.ts");
+		expect(filePaths).not.toContain(
+			"/generated/services/users.service.spec.ts",
+		);
+	});
 
-    it('should skip admin test generation when config is false', async () => {
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-        await runGeneratorWithConfig(coverageSpec, { admin: true, generateAdminTests: false });
-        const logCalls = consoleSpy.mock.calls.flat();
+	it("should skip admin test generation when config is false", async () => {
+		const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		await runGeneratorWithConfig(coverageSpec, {
+			admin: true,
+			generateAdminTests: false,
+		});
+		const logCalls = consoleSpy.mock.calls.flat();
 
-        const hasAdminTestLog = logCalls.some(log => log.includes('Generating tests for admin UI...'));
-        expect(hasAdminTestLog).toBe(false);
+		const hasAdminTestLog = logCalls.some((log) =>
+			log.includes("Generating tests for admin UI..."),
+		);
+		expect(hasAdminTestLog).toBe(false);
 
-        consoleSpy.mockRestore();
-    });
+		consoleSpy.mockRestore();
+	});
 });

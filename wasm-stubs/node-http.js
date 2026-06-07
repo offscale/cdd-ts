@@ -1,1 +1,4 @@
-export const request = () => ({ on: () => {}, end: () => {} }); export const get = () => ({ on: () => {}, end: () => {} }); export const createServer = () => ({ listen: () => {}, on: () => {} }); export default { request, get, createServer };
+export const request = () => ({ on: () => {}, end: () => {} });
+export const get = () => ({ on: () => {}, end: () => {} });
+export const createServer = () => ({ listen: () => {}, on: () => {} });
+export default { request, get, createServer };

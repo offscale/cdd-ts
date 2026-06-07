@@ -1,28 +1,30 @@
-import { Project } from 'ts-morph';
-import * as path from 'node:path';
+import type { Project } from "ts-morph";
+import * as path from "node:path";
 
 /**
  * Generates an internal i18n composable for the Vue Admin Interface.
  * It provides a simple reactive dictionary to support basic translations.
  */
 export class I18nGenerator {
-    /**
-     * Initializes a new I18nGenerator.
-     * @param project The ts-morph project for writing source files.
-     */
-    constructor(private project: Project) {}
+	/**
+	 * Initializes a new I18nGenerator.
+	 * @param project The ts-morph project for writing source files.
+	 */
+	constructor(private project: Project) {}
 
-    /**
-     * Generates the shared i18n file.
-     * @param adminDir The root admin directory.
-     */
-    public generate(adminDir: string): void {
-        const dir = path.posix.join(adminDir, 'shared');
-        const filePath = path.posix.join(dir, 'i18n.ts');
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+	/**
+	 * Generates the shared i18n file.
+	 * @param adminDir The root admin directory.
+	 */
+	public generate(adminDir: string): void {
+		const dir = path.posix.join(adminDir, "shared");
+		const filePath = path.posix.join(dir, "i18n.ts");
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        sourceFile.addStatements(
-            `
+		sourceFile.addStatements(
+			`
 import { ref, computed } from 'vue';
 
 const currentLocale = ref('en');
@@ -71,7 +73,7 @@ export function useI18n() {
     };
 }
 `.trim(),
-        );
-        sourceFile.formatText();
-    }
+		);
+		sourceFile.formatText();
+	}
 }

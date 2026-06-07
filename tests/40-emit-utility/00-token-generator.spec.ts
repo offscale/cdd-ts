@@ -1,26 +1,34 @@
 // @ts-nocheck
-import { describe, expect, it } from 'vitest';
-import { Project } from 'ts-morph';
-import { TokenGenerator } from '@src/vendors/angular/utils/token.generator.js';
+import { describe, expect, it } from "vitest";
+import { Project } from "ts-morph";
+import { TokenGenerator } from "@src/vendors/angular/utils/token.generator.js";
 
-describe('Emitter: TokenGenerator', () => {
-    it('should generate uniquely named tokens for a given clientName', () => {
-        const project = new Project({ useInMemoryFileSystem: true });
-        new TokenGenerator(project, 'MyTestClient').generate('/out');
-        const fileContent = project.getSourceFileOrThrow('/out/tokens/index.ts').getText();
+describe("Emitter: TokenGenerator", () => {
+	it("should generate uniquely named tokens for a given clientName", () => {
+		const project = new Project({ useInMemoryFileSystem: true });
+		new TokenGenerator(project, "MyTestClient").generate("/out");
+		const fileContent = project
+			.getSourceFileOrThrow("/out/tokens/index.ts")
+			.getText();
 
-        expect(fileContent).toContain('export const BASE_PATH_MYTESTCLIENT');
-        expect(fileContent).toContain('export const HTTP_INTERCEPTORS_MYTESTCLIENT');
-        expect(fileContent).toContain('export const CLIENT_CONTEXT_TOKEN_MYTESTCLIENT');
-    });
+		expect(fileContent).toContain("export const BASE_PATH_MYTESTCLIENT");
+		expect(fileContent).toContain(
+			"export const HTTP_INTERCEPTORS_MYTESTCLIENT",
+		);
+		expect(fileContent).toContain(
+			"export const CLIENT_CONTEXT_TOKEN_MYTESTCLIENT",
+		);
+	});
 
-    it('should generate default token names when clientName is not provided', () => {
-        const project = new Project({ useInMemoryFileSystem: true });
-        new TokenGenerator(project).generate('/out');
-        const fileContent = project.getSourceFileOrThrow('/out/tokens/index.ts').getText();
+	it("should generate default token names when clientName is not provided", () => {
+		const project = new Project({ useInMemoryFileSystem: true });
+		new TokenGenerator(project).generate("/out");
+		const fileContent = project
+			.getSourceFileOrThrow("/out/tokens/index.ts")
+			.getText();
 
-        expect(fileContent).toContain('export const BASE_PATH_DEFAULT');
-        expect(fileContent).toContain('export const HTTP_INTERCEPTORS_DEFAULT');
-        expect(fileContent).toContain('export const CLIENT_CONTEXT_TOKEN_DEFAULT');
-    });
+		expect(fileContent).toContain("export const BASE_PATH_DEFAULT");
+		expect(fileContent).toContain("export const HTTP_INTERCEPTORS_DEFAULT");
+		expect(fileContent).toContain("export const CLIENT_CONTEXT_TOKEN_DEFAULT");
+	});
 });

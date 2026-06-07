@@ -3,11 +3,11 @@ set -e
 
 echo "Running Auto-Code-Format Fix..."
 npm run format || true
-npx prettier --write 'src/**/*.ts' 'tests/**/*.ts' || true
+npx @biomejs/biome format --write .
 git add src/ tests/
 
 echo "Checking Code Formatting..."
-npx prettier --check 'src/**/*.ts' 'tests/**/*.ts'
+npx @biomejs/biome format .
 
 echo "Running Lint..."
 npm run lint
@@ -37,7 +37,7 @@ rm -rf .test_out_openapi
 
 
 echo "Updating Badges in README.md..."
-npx esbuild scripts/update-badges.ts --bundle --platform=node --outfile=scripts/update-badges.cjs
-node scripts/update-badges.cjs
-rm scripts/update-badges.cjs
+
+npx swc-node scripts/update-badges.ts
+
 git add README.md

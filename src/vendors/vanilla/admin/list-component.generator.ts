@@ -1,43 +1,45 @@
-import { Project } from 'ts-morph';
-import { Resource } from '@src/core/types/index.js';
-import { camelCase, pascalCase } from '@src/functions/utils.js';
+import type { Project } from "ts-morph";
+import type { Resource } from "@src/core/types/index.js";
+import { camelCase, pascalCase } from "@src/functions/utils.js";
 
 export class ListComponentGenerator {
-    constructor(private readonly project: Project) {}
+	constructor(private readonly project: Project) {}
 
-    public generate(resource: Resource, outDir: string): void {
-        const componentName = `${pascalCase(resource.name)}ListComponent`;
+	public generate(resource: Resource, outDir: string): void {
+		const componentName = `${pascalCase(resource.name)}ListComponent`;
 
-        const tagName = `app-${camelCase(resource.name)
-            .replace(/([A-Z])/g, '-$1')
-            .toLowerCase()}-list`;
+		const tagName = `app-${camelCase(resource.name)
+			.replace(/([A-Z])/g, "-$1")
+			.toLowerCase()}-list`;
 
-        const serviceName = `${pascalCase(resource.name)}Client`;
+		const serviceName = `${pascalCase(resource.name)}Client`;
 
-        const dirPath = `${outDir}/${resource.name}/${resource.name}-list`;
+		const dirPath = `${outDir}/${resource.name}/${resource.name}-list`;
 
-        if (!this.project.getFileSystem().directoryExistsSync(dirPath)) {
-            this.project.getFileSystem().mkdirSync(dirPath);
-        }
+		if (!this.project.getFileSystem().directoryExistsSync(dirPath)) {
+			this.project.getFileSystem().mkdirSync(dirPath);
+		}
 
-        const filePath = `${dirPath}/${resource.name}-list.component.ts`;
+		const filePath = `${dirPath}/${resource.name}-list.component.ts`;
 
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        const getListOp = resource.operations.find(op => op.action === 'getAll');
+		const getListOp = resource.operations.find((op) => op.action === "getAll");
 
-        const deleteOp = resource.operations.find(op => op.action === 'delete');
+		const deleteOp = resource.operations.find((op) => op.action === "delete");
 
-        const methodCall = getListOp?.methodName || 'getAll';
+		const methodCall = getListOp?.methodName || "getAll";
 
-        const deleteMethodCall = deleteOp?.methodName || 'delete';
+		const deleteMethodCall = deleteOp?.methodName || "delete";
 
-        sourceFile.addImportDeclaration({
-            moduleSpecifier: `../../../services/${resource.name}.client.js`,
-            namedImports: [serviceName],
-        });
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: `../../../services/${resource.name}.client.js`,
+			namedImports: [serviceName],
+		});
 
-        const template = `<style>
+		const template = `<style>
     :host { display: block; font-family: sans-serif; }
     table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -53,7 +55,7 @@ export class ListComponentGenerator {
         <thead>
             <tr>
 
-                ${resource.listProperties.map(p => `<th>${pascalCase(p.name)}</th>`).join('')}
+                ${resource.listProperties.map((p) => `<th>${pascalCase(p.name)}</th>`).join("")}
                 <th>Actions</th>
             </tr>
         </thead>
@@ -63,105 +65,109 @@ export class ListComponentGenerator {
     </table>
 </div>`;
 
-        const classDecl = sourceFile.addClass({
-            name: componentName,
-            isExported: true,
-            extends: 'HTMLElement',
-        });
+		const classDecl = sourceFile.addClass({
+			name: componentName,
+			isExported: true,
+			extends: "HTMLElement",
+		});
 
-        classDecl.addProperty({
-            name: 'service',
-            initializer: `new ${serviceName}()`,
-        });
+		classDecl.addProperty({
+			name: "service",
+			initializer: `new ${serviceName}()`,
+		});
 
-        classDecl.addProperty({
-            name: 'data',
-            type: 'Array<string | number | boolean | object | undefined | null>',
-            initializer: '[]',
-        });
+		classDecl.addProperty({
+			name: "data",
+			type: "Array<string | number | boolean | object | undefined | null>",
+			initializer: "[]",
+		});
 
-        classDecl.addMethod({
-            name: 'connectedCallback',
-            isAsync: true,
-            statements: [
-                `this.innerHTML = ${JSON.stringify(template)};`,
-                `this.querySelector('#create-btn')?.addEventListener('click', () => {`,
-                `    window.dispatchEvent(new CustomEvent('navigate', { detail: { path: '/${resource.name}/new' } }));`,
-                `});`,
-                `await this.loadData();`,
-            ].join('\n'),
-        });
+		classDecl.addMethod({
+			name: "connectedCallback",
+			isAsync: true,
+			statements: [
+				`this.innerHTML = ${JSON.stringify(template)};`,
+				`this.querySelector('#create-btn')?.addEventListener('click', () => {`,
+				`    window.dispatchEvent(new CustomEvent('navigate', { detail: { path: '/${resource.name}/new' } }));`,
+				`});`,
+				`await this.loadData();`,
+			].join("\n"),
+		});
 
-        classDecl.addMethod({
-            name: 'loadData',
-            isAsync: true,
-            statements: [
-                `try {`,
-                `    const response = await this.service.${methodCall}();`,
-                `    this.data = Array.isArray(response) ? response : (response.data || response.items || []);`,
-                `    this.renderTable();`,
-                `} catch (error) {`,
-                `    console.error('Failed to load data', error);`,
-                `    const tbody = this.querySelector('#table-body');`,
-                `    if (tbody) tbody.innerHTML = '<tr><td colspan="${resource.listProperties.length + 1}">Error loading data</td></tr>';`,
-                `}`,
-            ].join('\n'),
-        });
+		classDecl.addMethod({
+			name: "loadData",
+			isAsync: true,
+			statements: [
+				`try {`,
+				`    const response = await this.service.${methodCall}();`,
+				`    this.data = Array.isArray(response) ? response : (response.data || response.items || []);`,
+				`    this.renderTable();`,
+				`} catch (error) {`,
+				`    console.error('Failed to load data', error);`,
+				`    const tbody = this.querySelector('#table-body');`,
+				`    if (tbody) tbody.innerHTML = '<tr><td colspan="${resource.listProperties.length + 1}">Error loading data</td></tr>';`,
+				`}`,
+			].join("\n"),
+		});
 
-        const renderStatements = [
-            `const tbody = this.querySelector('#table-body');`,
-            `if (!tbody) return;`,
-            `if (this.data.length === 0) {`,
-            `    tbody.innerHTML = '<tr><td colspan="${resource.listProperties.length + 1}">No data found.</td></tr>';`,
-            `    return;`,
-            `}`,
-            `tbody.innerHTML = '';`,
-            `this.data.forEach(item => {`,
-            `    const tr = document.createElement('tr');`,
-        ];
+		const renderStatements = [
+			`const tbody = this.querySelector('#table-body');`,
+			`if (!tbody) return;`,
+			`if (this.data.length === 0) {`,
+			`    tbody.innerHTML = '<tr><td colspan="${resource.listProperties.length + 1}">No data found.</td></tr>';`,
+			`    return;`,
+			`}`,
+			`tbody.innerHTML = '';`,
+			`this.data.forEach(item => {`,
+			`    const tr = document.createElement('tr');`,
+		];
 
-        resource.listProperties.forEach(p => {
-            renderStatements.push(`    const td${p.name} = document.createElement('td');`);
+		resource.listProperties.forEach((p) => {
+			renderStatements.push(
+				`    const td${p.name} = document.createElement('td');`,
+			);
 
-            renderStatements.push(
-                `    td${p.name}.textContent = item.${p.name} !== undefined ? String(item.${p.name}) : '';`,
-            );
+			renderStatements.push(
+				`    td${p.name}.textContent = item.${p.name} !== undefined ? String(item.${p.name}) : '';`,
+			);
 
-            renderStatements.push(`    tr.appendChild(td${p.name});`);
-        });
+			renderStatements.push(`    tr.appendChild(td${p.name});`);
+		});
 
-        renderStatements.push(
-            `    const tdActions = document.createElement('td');`,
-            `    tdActions.className = 'actions';`,
-            `    const editBtn = document.createElement('button');`,
-            `    editBtn.textContent = 'Edit';`,
-            `    editBtn.addEventListener('click', () => {`,
-            `        window.dispatchEvent(new CustomEvent('navigate', { detail: { path: '/${resource.name}/edit/' + (item.id || item.name || '') } }));`,
-            `    });`,
-            `    const delBtn = document.createElement('button');`,
-            `    delBtn.textContent = 'Delete';`,
-            `    delBtn.addEventListener('click', async () => {`,
-            `        if (confirm('Are you sure?')) {`,
-            `            try {`,
-            `                await this.service.${deleteMethodCall}(item.id || item.name || '');`,
-            `                await this.loadData();`,
-            `            } catch (e) {`,
-            `                alert('Failed to delete');`,
-            `            }`,
-            `        }`,
-            `    });`,
-            `    tdActions.appendChild(editBtn);`,
-            `    tdActions.appendChild(delBtn);`,
-            `    tr.appendChild(tdActions);`,
-            `    tbody.appendChild(tr);`,
-            `});`,
-        );
+		renderStatements.push(
+			`    const tdActions = document.createElement('td');`,
+			`    tdActions.className = 'actions';`,
+			`    const editBtn = document.createElement('button');`,
+			`    editBtn.textContent = 'Edit';`,
+			`    editBtn.addEventListener('click', () => {`,
+			`        window.dispatchEvent(new CustomEvent('navigate', { detail: { path: '/${resource.name}/edit/' + (item.id || item.name || '') } }));`,
+			`    });`,
+			`    const delBtn = document.createElement('button');`,
+			`    delBtn.textContent = 'Delete';`,
+			`    delBtn.addEventListener('click', async () => {`,
+			`        if (confirm('Are you sure?')) {`,
+			`            try {`,
+			`                await this.service.${deleteMethodCall}(item.id || item.name || '');`,
+			`                await this.loadData();`,
+			`            } catch (e) {`,
+			`                alert('Failed to delete');`,
+			`            }`,
+			`        }`,
+			`    });`,
+			`    tdActions.appendChild(editBtn);`,
+			`    tdActions.appendChild(delBtn);`,
+			`    tr.appendChild(tdActions);`,
+			`    tbody.appendChild(tr);`,
+			`});`,
+		);
 
-        classDecl.addMethod({
-            name: 'renderTable',
-            statements: renderStatements.join('\n'),
-        });
+		classDecl.addMethod({
+			name: "renderTable",
+			statements: renderStatements.join("\n"),
+		});
 
-        sourceFile.addStatements(`customElements.define('${tagName}', ${componentName});`);
-    }
+		sourceFile.addStatements(
+			`customElements.define('${tagName}', ${componentName});`,
+		);
+	}
 }

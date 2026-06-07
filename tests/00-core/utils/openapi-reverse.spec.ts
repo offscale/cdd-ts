@@ -1,36 +1,36 @@
 // @ts-nocheck
 // tests/00-core/utils/openapi-reverse.spec.ts
-import { afterEach, describe, expect, it } from 'vitest';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { afterEach, describe, expect, it } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import {
-    applyReverseMetadata,
-    buildOpenApiSpecFromServices,
-    parseGeneratedMetadata,
-    parseGeneratedServiceSource,
-    parseGeneratedServices,
-} from '@src/openapi/emit.js';
-import { OAS_3_1_DIALECT } from '@src/core/constants.js';
-import type { ReverseMetadata } from '@src/openapi/emit.js';
+	applyReverseMetadata,
+	buildOpenApiSpecFromServices,
+	parseGeneratedMetadata,
+	parseGeneratedServiceSource,
+	parseGeneratedServices,
+} from "@src/openapi/emit.js";
+import { OAS_3_1_DIALECT } from "@src/core/constants.js";
+import type { ReverseMetadata } from "@src/openapi/emit.js";
 
 const tempDirs: string[] = [];
 
 const makeTempDir = () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cdd-ts-reverse-'));
-    tempDirs.push(dir);
-    return dir;
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cdd-ts-reverse-"));
+	tempDirs.push(dir);
+	return dir;
 };
 
 afterEach(() => {
-    while (tempDirs.length > 0) {
-        const dir = tempDirs.pop();
-        if (dir && fs.existsSync(dir)) {
-            fs.rmSync(dir, { recursive: true, force: true });
-        }
-    }
+	while (tempDirs.length > 0) {
+		const dir = tempDirs.pop();
+		if (dir && fs.existsSync(dir)) {
+			fs.rmSync(dir, { recursive: true, force: true });
+		}
+	}
 });
 
 const serviceSource = `
@@ -301,98 +301,151 @@ export class ExampleCarrierService {
 } 
 `;
 
-describe('Core Utils: OpenAPI Reverse', () => {
-    it('should parse generated service source and extract params', () => {
-        const services = parseGeneratedServiceSource(serviceSource, '/users.service.ts');
-        const spec = buildOpenApiSpecFromServices(services, { title: 'Recovered', version: '1.0.0' });
-        const userService = services.find(s => s.serviceName === 'UsersService');
-        expect(userService).toBeDefined();
+describe("Core Utils: OpenAPI Reverse", () => {
+	it("should parse generated service source and extract params", () => {
+		const services = parseGeneratedServiceSource(
+			serviceSource,
+			"/users.service.ts",
+		);
+		const spec = buildOpenApiSpecFromServices(services, {
+			title: "Recovered",
+			version: "1.0.0",
+		});
+		const userService = services.find((s) => s.serviceName === "UsersService");
+		expect(userService).toBeDefined();
 
-        const getUser = userService!.operations.find(op => op.methodName === 'getUser')!;
-        expect(getUser.httpMethod).toBe('POST');
-        expect(getUser.path).toBe('/users/{id}');
-        expect(getUser.operationId).toBe('getUserById');
-        expect(getUser.requestMediaTypes).toEqual(['application/json']);
-        expect(getUser.responseMediaTypes).toEqual(['application/json']);
-        expect(getUser.summary).toBe('Get a user by id.');
-        expect(getUser.description).toBe('Returns a user payload.');
-        expect(getUser.deprecated).toBe(true);
-        expect(getUser.externalDocs).toEqual({ url: 'https://example.com/users', description: 'User docs' });
-        expect(getUser.tags).toEqual(['users', 'admin']);
-        expect(getUser.tags).toEqual(['users', 'admin']);
-        expect(getUser.responseHints).toEqual([
-            { status: '200', mediaTypes: ['application/json'], summary: 'User response', description: 'OK' },
-            { status: '404', description: 'Not found' },
-        ]);
+		const getUser = userService?.operations.find(
+			(op) => op.methodName === "getUser",
+		)!;
+		expect(getUser.httpMethod).toBe("POST");
+		expect(getUser.path).toBe("/users/{id}");
+		expect(getUser.operationId).toBe("getUserById");
+		expect(getUser.requestMediaTypes).toEqual(["application/json"]);
+		expect(getUser.responseMediaTypes).toEqual(["application/json"]);
+		expect(getUser.summary).toBe("Get a user by id.");
+		expect(getUser.description).toBe("Returns a user payload.");
+		expect(getUser.deprecated).toBe(true);
+		expect(getUser.externalDocs).toEqual({
+			url: "https://example.com/users",
+			description: "User docs",
+		});
+		expect(getUser.tags).toEqual(["users", "admin"]);
+		expect(getUser.tags).toEqual(["users", "admin"]);
+		expect(getUser.responseHints).toEqual([
+			{
+				status: "200",
+				mediaTypes: ["application/json"],
+				summary: "User response",
+				description: "OK",
+			},
+			{ status: "404", description: "Not found" },
+		]);
 
-        const specOp = spec.paths!['/users/{id}'].post!;
-        expect(specOp.operationId).toBe('getUserById');
-        expect(Object.keys(specOp.responses || {})).toEqual(expect.arrayContaining(['200', '404']));
+		const specOp = spec.paths?.["/users/{id}"].post!;
+		expect(specOp.operationId).toBe("getUserById");
+		expect(Object.keys(specOp.responses || {})).toEqual(
+			expect.arrayContaining(["200", "404"]),
+		);
 
-        expect(
-            (specOp.responses['200'] as string | number | boolean | object | undefined | null).content?.[
-                'application/json'
-            ],
-        ).toBeDefined();
+		expect(
+			(
+				specOp.responses["200"] as
+					| string
+					| number
+					| boolean
+					| object
+					| undefined
+					| null
+			).content?.["application/json"],
+		).toBeDefined();
 
-        expect((specOp.responses['200'] as string | number | boolean | object | undefined | null).summary).toBe(
-            'User response',
-        );
+		expect(
+			(
+				specOp.responses["200"] as
+					| string
+					| number
+					| boolean
+					| object
+					| undefined
+					| null
+			).summary,
+		).toBe("User response");
 
-        expect((specOp.responses['404'] as string | number | boolean | object | undefined | null).description).toBe(
-            'Not found',
-        );
+		expect(
+			(
+				specOp.responses["404"] as
+					| string
+					| number
+					| boolean
+					| object
+					| undefined
+					| null
+			).description,
+		).toBe("Not found");
 
-        const paramKeys = getUser.params.map(p => `${p.in}:${p.name}`);
-        expect(paramKeys).toEqual(
-            expect.arrayContaining([
-                'path:id',
-                'query:search',
-                'query:filter',
-                'querystring:q',
-                'header:X-Test',
-                'cookie:session',
-                'body:body',
-            ]),
-        );
+		const paramKeys = getUser.params.map((p) => `${p.in}:${p.name}`);
+		expect(paramKeys).toEqual(
+			expect.arrayContaining([
+				"path:id",
+				"query:search",
+				"query:filter",
+				"querystring:q",
+				"header:X-Test",
+				"cookie:session",
+				"body:body",
+			]),
+		);
 
-        const idParam = getUser.params.find(p => p.name === 'id');
-        expect(idParam?.required).toBe(true);
-        expect(idParam?.style).toBe('simple');
-        expect(idParam?.explode).toBe(false);
-        expect(idParam?.allowReserved).toBe(false);
-        expect(getUser.security).toEqual([{ api_key: [] }, { petstore_auth: ['read:pets'] }]);
-        expect(getUser.extensions).toEqual({ 'x-rate-limit': 120, 'x-feature-flag': 'alpha' });
+		const idParam = getUser.params.find((p) => p.name === "id");
+		expect(idParam?.required).toBe(true);
+		expect(idParam?.style).toBe("simple");
+		expect(idParam?.explode).toBe(false);
+		expect(idParam?.allowReserved).toBe(false);
+		expect(getUser.security).toEqual([
+			{ api_key: [] },
+			{ petstore_auth: ["read:pets"] },
+		]);
+		expect(getUser.extensions).toEqual({
+			"x-rate-limit": 120,
+			"x-feature-flag": "alpha",
+		});
 
-        const searchParam = getUser.params.find(p => p.name === 'search');
-        expect(searchParam?.style).toBe('form');
-        expect(searchParam?.explode).toBe(true);
-        expect(searchParam?.allowReserved).toBe(false);
-        expect(searchParam?.allowEmptyValue).toBe(true);
-        expect(searchParam?.contentMediaType).toBe('application/json');
+		const searchParam = getUser.params.find((p) => p.name === "search");
+		expect(searchParam?.style).toBe("form");
+		expect(searchParam?.explode).toBe(true);
+		expect(searchParam?.allowReserved).toBe(false);
+		expect(searchParam?.allowEmptyValue).toBe(true);
+		expect(searchParam?.contentMediaType).toBe("application/json");
 
-        const filterParam = getUser.params.find(p => p.name === 'filter');
-        expect(filterParam?.style).toBe('simple');
-        expect(filterParam?.explode).toBe(false);
-        expect(filterParam?.allowReserved).toBe(true);
-        expect(filterParam?.contentEncoding).toBe('base64');
+		const filterParam = getUser.params.find((p) => p.name === "filter");
+		expect(filterParam?.style).toBe("simple");
+		expect(filterParam?.explode).toBe(false);
+		expect(filterParam?.allowReserved).toBe(true);
+		expect(filterParam?.contentEncoding).toBe("base64");
 
-        const listWithServerSpec = (spec.paths as string | number | boolean | object | undefined | null)['/server-test']
-            .get;
+		const listWithServerSpec = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/server-test"].get;
 
-        expect(listWithServerSpec.servers).toEqual([{ url: 'https://api.example.com/v1', description: 'primary' }]);
+		expect(listWithServerSpec.servers).toEqual([
+			{ url: "https://api.example.com/v1", description: "primary" },
+		]);
 
-        const cookieParam = getUser.params.find(p => p.name === 'session');
-        expect(cookieParam?.style).toBe('form');
-        expect(cookieParam?.explode).toBe(true);
-        expect(cookieParam?.allowReserved).toBe(false);
+		const cookieParam = getUser.params.find((p) => p.name === "session");
+		expect(cookieParam?.style).toBe("form");
+		expect(cookieParam?.explode).toBe(true);
+		expect(cookieParam?.allowReserved).toBe(false);
 
-        const listWithServerOp = userService!.operations.find(op => op.methodName === 'listWithServer')!;
-        expect(listWithServerOp.servers).toEqual([{ url: 'https://api.example.com/v1', description: 'primary' }]);
-    });
+		const listWithServerOp = userService?.operations.find(
+			(op) => op.methodName === "listWithServer",
+		)!;
+		expect(listWithServerOp.servers).toEqual([
+			{ url: "https://api.example.com/v1", description: "primary" },
+		]);
+	});
 
-    it('should handle complex param splitting edge cases and invalid JSON in params', () => {
-        const source = `
+	it("should handle complex param splitting edge cases and invalid JSON in params", () => {
+		const source = `
         export class EdgeCaseService {
             public getEdge(options?: any) {
                 const url = \`\${basePath}/edge\${ParameterSerializer.serializePathParam('id', Number(123), 'simple', false, false)}\`;
@@ -427,255 +480,365 @@ describe('Core Utils: OpenAPI Reverse', () => {
                 return this.http.get<string>(url, { params });
             }
         }`;
-        const services = parseGeneratedServiceSource(source, '/edge.service.ts');
-        const op = services[0].operations[0];
-        const valParam = op.params.find(p => p.name === 'val');
-        expect(valParam?.in).toBe('querystring');
-        expect(valParam?.encoding).toBeUndefined();
-        expect(valParam?.contentEncoderConfig).toBeUndefined();
+		const services = parseGeneratedServiceSource(source, "/edge.service.ts");
+		const op = services[0].operations[0];
+		const valParam = op.params.find((p) => p.name === "val");
+		expect(valParam?.in).toBe("querystring");
+		expect(valParam?.encoding).toBeUndefined();
+		expect(valParam?.contentEncoderConfig).toBeUndefined();
 
-        const unbOp = services[0].operations.find(o => o.methodName === 'unbalanced')!;
-        expect(unbOp.extensions).toBeUndefined();
-    });
+		const unbOp = services[0].operations.find(
+			(o) => o.methodName === "unbalanced",
+		)!;
+		expect(unbOp.extensions).toBeUndefined();
+	});
 
-    it('should extract @param descriptions into parameter metadata', () => {
-        const services = parseGeneratedServiceSource(paramDocServiceSource, '/param-doc.service.ts');
-        const spec = buildOpenApiSpecFromServices(services, { title: 'Recovered', version: '1.0.0' });
-        const operation = services[0].operations[0];
+	it("should extract @param descriptions into parameter metadata", () => {
+		const services = parseGeneratedServiceSource(
+			paramDocServiceSource,
+			"/param-doc.service.ts",
+		);
+		const spec = buildOpenApiSpecFromServices(services, {
+			title: "Recovered",
+			version: "1.0.0",
+		});
+		const operation = services[0].operations[0];
 
-        const idParam = operation.params.find(p => p.name === 'userId');
-        const verboseParam = operation.params.find(p => p.name === 'verbose');
-        const bodyParam = operation.params.find(p => p.in === 'body');
+		const idParam = operation.params.find((p) => p.name === "userId");
+		const verboseParam = operation.params.find((p) => p.name === "verbose");
+		const bodyParam = operation.params.find((p) => p.in === "body");
 
-        expect(idParam?.description).toBe('The user id.');
-        expect(verboseParam?.description).toBe('desc');
-        expect(bodyParam?.description).toBe('Updated payload.');
+		expect(idParam?.description).toBe("The user id.");
+		expect(verboseParam?.description).toBe("desc");
+		expect(bodyParam?.description).toBe("Updated payload.");
 
-        const specParams = spec.paths!['/users/{userId}'].put!.parameters!;
+		const specParams = spec.paths?.["/users/{userId}"].put?.parameters!;
 
-        const specId = specParams.find(
-            (p: string | number | boolean | object | undefined | null) => p.name === 'userId',
-        );
+		const specId = specParams.find(
+			(p: string | number | boolean | object | undefined | null) =>
+				p.name === "userId",
+		);
 
-        const specVerbose = specParams.find(
-            (p: string | number | boolean | object | undefined | null) => p.name === 'verbose',
-        );
+		const specVerbose = specParams.find(
+			(p: string | number | boolean | object | undefined | null) =>
+				p.name === "verbose",
+		);
 
-        const specBody = spec.paths!['/users/{userId}'].put!.requestBody as
-            | string
-            | number
-            | boolean
-            | object
-            | undefined
-            | null;
+		const specBody = spec.paths?.["/users/{userId}"].put?.requestBody as
+			| string
+			| number
+			| boolean
+			| object
+			| undefined
+			| null;
 
-        expect((specId as string | number | boolean | object | undefined | null).description).toBe('The user id.');
+		expect(
+			(specId as string | number | boolean | object | undefined | null)
+				.description,
+		).toBe("The user id.");
 
-        expect((specVerbose as string | number | boolean | object | undefined | null).description).toBe('desc');
+		expect(
+			(specVerbose as string | number | boolean | object | undefined | null)
+				.description,
+		).toBe("desc");
 
-        expect(specBody.description).toBe('Updated payload.');
-    });
+		expect(specBody.description).toBe("Updated payload.");
+	});
 
-    it('should parse @server, @security, and @x-* tags from JSDoc when body hints are missing', () => {
-        const services = parseGeneratedServiceSource(docTagServiceSource, '/doc-tags.service.ts');
-        const operation = services[0].operations[0];
+	it("should parse @server, @security, and @x-* tags from JSDoc when body hints are missing", () => {
+		const services = parseGeneratedServiceSource(
+			docTagServiceSource,
+			"/doc-tags.service.ts",
+		);
+		const operation = services[0].operations[0];
 
-        expect(operation.servers).toEqual([{ url: 'https://example.com', description: 'Primary', name: 'prod' }]);
-        expect(operation.security).toEqual([{ ApiKey: [] }]);
-        expect(operation.extensions).toEqual({ 'x-feature-flag': 'beta' });
-        expect(operation.responseHints?.find(r => r.status === '200')?.summary).toBe('list ok');
+		expect(operation.servers).toEqual([
+			{ url: "https://example.com", description: "Primary", name: "prod" },
+		]);
+		expect(operation.security).toEqual([{ ApiKey: [] }]);
+		expect(operation.extensions).toEqual({ "x-feature-flag": "beta" });
+		expect(
+			operation.responseHints?.find((r) => r.status === "200")?.summary,
+		).toBe("list ok");
 
-        const raw = services[0].operations[1];
-        expect(raw.servers).toEqual([{ url: 'https://api.example.com' }]);
-        expect(raw.security).toEqual([{ ApiKey: ['read', 'write'] }]);
-        expect(raw.extensions).toEqual({ 'x-feature-flag': true });
-        expect(raw.responseHints?.find(r => r.status === '200')?.summary).toBe('raw summary');
-    });
+		const raw = services[0].operations[1];
+		expect(raw.servers).toEqual([{ url: "https://api.example.com" }]);
+		expect(raw.security).toEqual([{ ApiKey: ["read", "write"] }]);
+		expect(raw.extensions).toEqual({ "x-feature-flag": true });
+		expect(raw.responseHints?.find((r) => r.status === "200")?.summary).toBe(
+			"raw summary",
+		);
+	});
 
-    it('should preserve serialized/external examples from wrapped example carriers', () => {
-        const services = parseGeneratedServiceSource(exampleCarrierServiceSource, '/example-carrier.service.ts');
-        const spec = buildOpenApiSpecFromServices(services, { title: 'Recovered', version: '1.0.0' });
+	it("should preserve serialized/external examples from wrapped example carriers", () => {
+		const services = parseGeneratedServiceSource(
+			exampleCarrierServiceSource,
+			"/example-carrier.service.ts",
+		);
+		const spec = buildOpenApiSpecFromServices(services, {
+			title: "Recovered",
+			version: "1.0.0",
+		});
 
-        const getPlain = (spec.paths as string | number | boolean | object | undefined | null)['/plain'].get;
+		const getPlain = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/plain"].get;
 
-        const responseContent = getPlain.responses['200']?.content?.['text/plain'];
+		const responseContent = getPlain.responses["200"]?.content?.["text/plain"];
 
-        expect(responseContent?.example).toBeUndefined();
+		expect(responseContent?.example).toBeUndefined();
 
-        expect(responseContent?.examples?.example?.serializedValue).toBe('OK');
+		expect(responseContent?.examples?.example?.serializedValue).toBe("OK");
 
-        const postPlain = (spec.paths as string | number | boolean | object | undefined | null)['/plain'].post;
+		const postPlain = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/plain"].post;
 
-        const requestContent = postPlain.requestBody?.content?.['text/plain'];
+		const requestContent = postPlain.requestBody?.content?.["text/plain"];
 
-        expect(requestContent?.example).toBeUndefined();
+		expect(requestContent?.example).toBeUndefined();
 
-        expect(requestContent?.examples?.example?.externalValue).toBe('./examples/request.txt');
-    });
+		expect(requestContent?.examples?.example?.externalValue).toBe(
+			"./examples/request.txt",
+		);
+	});
 
-    it('should keep component webhooks scoped to components only', () => {
-        const baseSpec: string | number | boolean | object | undefined | null = {
-            openapi: '3.2.0',
-            info: { title: 'T', version: '1' },
-            paths: {},
-        };
-        const metadata: ReverseMetadata = {
-            webhooks: [
-                {
-                    name: 'ComponentHook',
-                    method: 'post',
-                    scope: 'component',
-                    pathItem: {
-                        post: { responses: { '200': { description: 'ok' } } },
-                    },
-                },
-            ],
-        };
+	it("should keep component webhooks scoped to components only", () => {
+		const baseSpec: string | number | boolean | object | undefined | null = {
+			openapi: "3.2.0",
+			info: { title: "T", version: "1" },
+			paths: {},
+		};
+		const metadata: ReverseMetadata = {
+			webhooks: [
+				{
+					name: "ComponentHook",
+					method: "post",
+					scope: "component",
+					pathItem: {
+						post: { responses: { "200": { description: "ok" } } },
+					},
+				},
+			],
+		};
 
-        const next = applyReverseMetadata(baseSpec, metadata);
-        expect(next.components?.webhooks?.ComponentHook).toBeDefined();
-        expect(next.webhooks?.ComponentHook).toBeUndefined();
-    });
+		const next = applyReverseMetadata(baseSpec, metadata);
+		expect(next.components?.webhooks?.ComponentHook).toBeDefined();
+		expect(next.webhooks?.ComponentHook).toBeUndefined();
+	});
 
-    it('should apply root-scoped webhooks to the OpenAPI Object', () => {
-        const baseSpec: string | number | boolean | object | undefined | null = {
-            openapi: '3.2.0',
-            info: { title: 'T', version: '1' },
-            paths: {},
-        };
-        const metadata: ReverseMetadata = {
-            webhooks: [
-                {
-                    name: 'RootHook',
-                    method: 'post',
-                    scope: 'root',
-                    pathItem: {
-                        post: { responses: { '200': { description: 'ok' } } },
-                    },
-                },
-            ],
-        };
+	it("should apply root-scoped webhooks to the OpenAPI Object", () => {
+		const baseSpec: string | number | boolean | object | undefined | null = {
+			openapi: "3.2.0",
+			info: { title: "T", version: "1" },
+			paths: {},
+		};
+		const metadata: ReverseMetadata = {
+			webhooks: [
+				{
+					name: "RootHook",
+					method: "post",
+					scope: "root",
+					pathItem: {
+						post: { responses: { "200": { description: "ok" } } },
+					},
+				},
+			],
+		};
 
-        const next = applyReverseMetadata(baseSpec, metadata);
-        expect(next.webhooks?.RootHook).toBeDefined();
-        expect(next.components?.webhooks?.RootHook).toBeDefined();
-    });
+		const next = applyReverseMetadata(baseSpec, metadata);
+		expect(next.webhooks?.RootHook).toBeDefined();
+		expect(next.components?.webhooks?.RootHook).toBeDefined();
+	});
 
-    it('should preserve document-level x- extensions from metadata', () => {
-        const dir = makeTempDir();
-        const documentMeta = {
-            openapi: '3.2.0',
-            extensions: {
-                'x-root-flag': true,
-                'x-root-note': 'hello',
-            },
-        };
-        fs.writeFileSync(
-            path.join(dir, 'document.ts'),
-            `export const API_DOCUMENT_META = ${JSON.stringify(documentMeta, null, 2)};`,
-        );
+	it("should preserve document-level x- extensions from metadata", () => {
+		const dir = makeTempDir();
+		const documentMeta = {
+			openapi: "3.2.0",
+			extensions: {
+				"x-root-flag": true,
+				"x-root-note": "hello",
+			},
+		};
+		fs.writeFileSync(
+			path.join(dir, "document.ts"),
+			`export const API_DOCUMENT_META = ${JSON.stringify(documentMeta, null, 2)};`,
+		);
 
-        const metadata = parseGeneratedMetadata(dir, fs as string | number | boolean | object | undefined | null);
-        expect(metadata.documentMeta?.extensions).toEqual(documentMeta.extensions);
+		const metadata = parseGeneratedMetadata(
+			dir,
+			fs as string | number | boolean | object | undefined | null,
+		);
+		expect(metadata.documentMeta?.extensions).toEqual(documentMeta.extensions);
 
-        const baseSpec: string | number | boolean | object | undefined | null = {
-            openapi: '3.2.0',
-            info: { title: 'T', version: '1' },
-            paths: {},
-        };
-        const next = applyReverseMetadata(baseSpec, metadata);
-        expect((next as string | number | boolean | object | undefined | null)['x-root-flag']).toBe(true);
-        expect((next as string | number | boolean | object | undefined | null)['x-root-note']).toBe('hello');
-    });
+		const baseSpec: string | number | boolean | object | undefined | null = {
+			openapi: "3.2.0",
+			info: { title: "T", version: "1" },
+			paths: {},
+		};
+		const next = applyReverseMetadata(baseSpec, metadata);
+		expect(
+			(next as string | number | boolean | object | undefined | null)[
+				"x-root-flag"
+			],
+		).toBe(true);
+		expect(
+			(next as string | number | boolean | object | undefined | null)[
+				"x-root-note"
+			],
+		).toBe("hello");
+	});
 
-    it('should infer $self for snapshotless reverse generation', () => {
-        const dir = makeTempDir();
-        const metadata = parseGeneratedMetadata(dir, fs as string | number | boolean | object | undefined | null);
-        const expectedSelf = pathToFileURL(path.resolve(dir, 'openapi.yaml')).href;
-        expect(metadata.inferredSelf).toBe(expectedSelf);
+	it("should infer $self for snapshotless reverse generation", () => {
+		const dir = makeTempDir();
+		const metadata = parseGeneratedMetadata(
+			dir,
+			fs as string | number | boolean | object | undefined | null,
+		);
+		const expectedSelf = pathToFileURL(path.resolve(dir, "openapi.yaml")).href;
+		expect(metadata.inferredSelf).toBe(expectedSelf);
 
-        const baseSpec: string | number | boolean | object | undefined | null = {
-            openapi: '3.2.0',
-            info: { title: 'T', version: '1' },
-            paths: {},
-        };
-        const next = applyReverseMetadata(baseSpec, metadata);
-        expect(next.$self).toBe(expectedSelf);
-    });
+		const baseSpec: string | number | boolean | object | undefined | null = {
+			openapi: "3.2.0",
+			info: { title: "T", version: "1" },
+			paths: {},
+		};
+		const next = applyReverseMetadata(baseSpec, metadata);
+		expect(next.$self).toBe(expectedSelf);
+	});
 
-    it('should detect media types and request bodies', () => {
-        const services = parseGeneratedServiceSource(serviceSource, '/users.service.ts');
-        const userService = services.find(s => s.serviceName === 'UsersService')!;
+	it("should detect media types and request bodies", () => {
+		const services = parseGeneratedServiceSource(
+			serviceSource,
+			"/users.service.ts",
+		);
+		const userService = services.find((s) => s.serviceName === "UsersService")!;
 
-        const upload = userService.operations.find(op => op.methodName === 'uploadAvatar')!;
-        expect(upload.requestMediaTypes).toEqual(['multipart/form-data']);
-        expect(upload.params.some(p => p.in === 'formData' && p.name === 'file')).toBe(true);
+		const upload = userService.operations.find(
+			(op) => op.methodName === "uploadAvatar",
+		)!;
+		expect(upload.requestMediaTypes).toEqual(["multipart/form-data"]);
+		expect(
+			upload.params.some((p) => p.in === "formData" && p.name === "file"),
+		).toBe(true);
 
-        const uploadAdvanced = userService.operations.find(op => op.methodName === 'uploadAdvanced')!;
-        expect(uploadAdvanced.requestMediaTypes).toEqual(['multipart/form-data']);
+		const uploadAdvanced = userService.operations.find(
+			(op) => op.methodName === "uploadAdvanced",
+		)!;
+		expect(uploadAdvanced.requestMediaTypes).toEqual(["multipart/form-data"]);
 
-        const uploadMixed = userService.operations.find(op => op.methodName === 'uploadMixed')!;
-        expect(uploadMixed.requestMediaTypes).toEqual(['multipart/mixed']);
+		const uploadMixed = userService.operations.find(
+			(op) => op.methodName === "uploadMixed",
+		)!;
+		expect(uploadMixed.requestMediaTypes).toEqual(["multipart/mixed"]);
 
-        const encoded = userService.operations.find(op => op.methodName === 'submitEncoded')!;
-        expect(encoded.requestMediaTypes).toEqual(['application/x-www-form-urlencoded']);
+		const encoded = userService.operations.find(
+			(op) => op.methodName === "submitEncoded",
+		)!;
+		expect(encoded.requestMediaTypes).toEqual([
+			"application/x-www-form-urlencoded",
+		]);
 
-        const encodedMap = userService.operations.find(op => op.methodName === 'submitEncodedWithMap')!;
-        expect(encodedMap.requestMediaTypes).toEqual(['application/x-www-form-urlencoded']);
+		const encodedMap = userService.operations.find(
+			(op) => op.methodName === "submitEncodedWithMap",
+		)!;
+		expect(encodedMap.requestMediaTypes).toEqual([
+			"application/x-www-form-urlencoded",
+		]);
 
-        const xml = userService.operations.find(op => op.methodName === 'sendXml')!;
-        expect(xml.requestMediaTypes).toEqual(['application/xml']);
+		const xml = userService.operations.find(
+			(op) => op.methodName === "sendXml",
+		)!;
+		expect(xml.requestMediaTypes).toEqual(["application/xml"]);
 
-        const text = userService.operations.find(op => op.methodName === 'contentTypeOnly')!;
-        expect(text.requestMediaTypes).toEqual(['text/plain']);
+		const text = userService.operations.find(
+			(op) => op.methodName === "contentTypeOnly",
+		)!;
+		expect(text.requestMediaTypes).toEqual(["text/plain"]);
 
-        const xmlResponse = userService.operations.find(op => op.methodName === 'xmlResponse')!;
-        expect(xmlResponse.requestMediaTypes).toEqual([]);
-        expect(xmlResponse.responseMediaTypes).toEqual(['application/xml']);
+		const xmlResponse = userService.operations.find(
+			(op) => op.methodName === "xmlResponse",
+		)!;
+		expect(xmlResponse.requestMediaTypes).toEqual([]);
+		expect(xmlResponse.responseMediaTypes).toEqual(["application/xml"]);
 
-        const jsonSeq = userService.operations.find(op => op.methodName === 'jsonSeqResponse')!;
-        expect(jsonSeq.responseMediaTypes).toEqual(['application/json-seq']);
+		const jsonSeq = userService.operations.find(
+			(op) => op.methodName === "jsonSeqResponse",
+		)!;
+		expect(jsonSeq.responseMediaTypes).toEqual(["application/json-seq"]);
 
-        const jsonLines = userService.operations.find(op => op.methodName === 'jsonLinesResponse')!;
-        expect(jsonLines.responseMediaTypes).toEqual(['application/jsonl']);
+		const jsonLines = userService.operations.find(
+			(op) => op.methodName === "jsonLinesResponse",
+		)!;
+		expect(jsonLines.responseMediaTypes).toEqual(["application/jsonl"]);
 
-        const accept = userService.operations.find(op => op.methodName === 'acceptVariants')!;
-        expect(accept.responseMediaTypes).toEqual(['application/xml', 'application/json-seq']);
+		const accept = userService.operations.find(
+			(op) => op.methodName === "acceptVariants",
+		)!;
+		expect(accept.responseMediaTypes).toEqual([
+			"application/xml",
+			"application/json-seq",
+		]);
 
-        const sse = userService.operations.find(op => op.methodName === 'sseResponse')!;
-        expect(sse.responseMediaTypes).toEqual(['text/event-stream']);
+		const sse = userService.operations.find(
+			(op) => op.methodName === "sseResponse",
+		)!;
+		expect(sse.responseMediaTypes).toEqual(["text/event-stream"]);
 
-        const requestOption = userService.operations.find(op => op.methodName === 'requestWithBodyOption')!;
-        expect(requestOption.params.some(p => p.in === 'body' && p.name === 'payload')).toBe(true);
+		const requestOption = userService.operations.find(
+			(op) => op.methodName === "requestWithBodyOption",
+		)!;
+		expect(
+			requestOption.params.some((p) => p.in === "body" && p.name === "payload"),
+		).toBe(true);
 
-        const requestAssertion = userService.operations.find(op => op.methodName === 'requestWithBodyAssertion')!;
-        expect(requestAssertion.params.some(p => p.in === 'body' && p.name === 'payload')).toBe(true);
+		const requestAssertion = userService.operations.find(
+			(op) => op.methodName === "requestWithBodyAssertion",
+		)!;
+		expect(
+			requestAssertion.params.some(
+				(p) => p.in === "body" && p.name === "payload",
+			),
+		).toBe(true);
 
-        const noBody = userService.operations.find(op => op.methodName === 'requestWithoutBody')!;
-        expect(noBody.params.some(p => p.in === 'body')).toBe(false);
+		const noBody = userService.operations.find(
+			(op) => op.methodName === "requestWithoutBody",
+		)!;
+		expect(noBody.params.some((p) => p.in === "body")).toBe(false);
 
-        expect(userService.operations.some(op => op.methodName === 'invalidRequest')).toBe(false);
-    });
+		expect(
+			userService.operations.some((op) => op.methodName === "invalidRequest"),
+		).toBe(false);
+	});
 
-    it('should normalize paths without leading slashes', () => {
-        const services = parseGeneratedServiceSource(serviceSource, '/users.service.ts');
-        const otherService = services.find(s => s.serviceName === 'OtherService')!;
-        const status = otherService.operations.find(op => op.methodName === 'getNoLeadingSlash')!;
-        expect(status.path).toBe('/status');
-        const root = otherService.operations.find(op => op.methodName === 'getRoot')!;
-        expect(root.path).toBe('/');
-    });
+	it("should normalize paths without leading slashes", () => {
+		const services = parseGeneratedServiceSource(
+			serviceSource,
+			"/users.service.ts",
+		);
+		const otherService = services.find(
+			(s) => s.serviceName === "OtherService",
+		)!;
+		const status = otherService.operations.find(
+			(op) => op.methodName === "getNoLeadingSlash",
+		)!;
+		expect(status.path).toBe("/status");
+		const root = otherService.operations.find(
+			(op) => op.methodName === "getRoot",
+		)!;
+		expect(root.path).toBe("/");
+	});
 
-    it('should parse services from disk and handle errors', () => {
-        const dir = makeTempDir();
-        const nestedDir = path.join(dir, 'nested');
-        fs.mkdirSync(nestedDir, { recursive: true });
+	it("should parse services from disk and handle errors", () => {
+		const dir = makeTempDir();
+		const nestedDir = path.join(dir, "nested");
+		fs.mkdirSync(nestedDir, { recursive: true });
 
-        fs.writeFileSync(path.join(dir, 'users.service.ts'), serviceSource);
-        fs.writeFileSync(path.join(dir, 'users.service.spec.ts'), 'ignored');
-        fs.writeFileSync(path.join(dir, 'users.service.d.ts'), 'ignored');
+		fs.writeFileSync(path.join(dir, "users.service.ts"), serviceSource);
+		fs.writeFileSync(path.join(dir, "users.service.spec.ts"), "ignored");
+		fs.writeFileSync(path.join(dir, "users.service.d.ts"), "ignored");
 
-        const nestedSource = `
+		const nestedSource = `
         export class NestedService { 
           public ping(options?: string | number | boolean | object | undefined | null) { 
             const url = \`\${basePath}/ping\`; 
@@ -683,714 +846,877 @@ describe('Core Utils: OpenAPI Reverse', () => {
           } 
         } 
         `;
-        fs.writeFileSync(path.join(nestedDir, 'nested.service.ts'), nestedSource);
+		fs.writeFileSync(path.join(nestedDir, "nested.service.ts"), nestedSource);
+
+		const services = parseGeneratedServices(
+			dir,
+			fs as string | number | boolean | object | undefined | null,
+		);
+		expect(services.some((s) => s.serviceName === "NestedService")).toBe(true);
+
+		const fileServices = parseGeneratedServices(
+			path.join(dir, "users.service.ts"),
+			fs as string | number | boolean | object | undefined | null,
+		);
+		expect(fileServices.length).toBeGreaterThan(0);
+
+		const emptyDir = makeTempDir();
+		expect(() =>
+			parseGeneratedServices(
+				emptyDir,
+				fs as string | number | boolean | object | undefined | null,
+			),
+		).toThrow(/No generated service files/);
+
+		const badFile = path.join(dir, "not-service.ts");
+		fs.writeFileSync(badFile, "export const x = 1;");
+		expect(() =>
+			parseGeneratedServices(
+				badFile,
+				fs as string | number | boolean | object | undefined | null,
+			),
+		).toThrow(/Expected a generated service file/);
+
+		const noOpDir = makeTempDir();
+		fs.writeFileSync(
+			path.join(noOpDir, "empty.service.ts"),
+			`export class EmptyService { private helper() { return null; } }`,
+		);
+		expect(() =>
+			parseGeneratedServices(
+				noOpDir,
+				fs as string | number | boolean | object | undefined | null,
+			),
+		).toThrow(/No operations could be reconstructed/);
+
+		// Add test for empty metadata file parsing
+		expect(parseGeneratedMetadata(dir, fs as any).servers).toBeUndefined();
+	});
+
+	it("should build a minimal OpenAPI spec from services", () => {
+		const services = parseGeneratedServiceSource(
+			serviceSource,
+			"/users.service.ts",
+		);
+		const spec = buildOpenApiSpecFromServices(services, {
+			title: "Recovered",
+			version: "1.2.3",
+		});
 
-        const services = parseGeneratedServices(dir, fs as string | number | boolean | object | undefined | null);
-        expect(services.some(s => s.serviceName === 'NestedService')).toBe(true);
+		expect(spec.openapi).toBe("3.2.0");
+		expect(spec.jsonSchemaDialect).toBe(OAS_3_1_DIALECT);
+		expect(spec.info.title).toBe("Recovered");
+		expect(spec.info.version).toBe("1.2.3");
+		expect(spec.tags?.map((tag) => tag.name)).toEqual(["users", "admin"]);
 
-        const fileServices = parseGeneratedServices(
-            path.join(dir, 'users.service.ts'),
-            fs as string | number | boolean | object | undefined | null,
-        );
-        expect(fileServices.length).toBeGreaterThan(0);
+		const getUser = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/users/{id}"].post;
 
-        const emptyDir = makeTempDir();
-        expect(() =>
-            parseGeneratedServices(emptyDir, fs as string | number | boolean | object | undefined | null),
-        ).toThrow(/No generated service files/);
+		const params = getUser.parameters as
+			| string
+			| number
+			| boolean
+			| object
+			| undefined
+			| null[];
 
-        const badFile = path.join(dir, 'not-service.ts');
-        fs.writeFileSync(badFile, 'export const x = 1;');
-        expect(() =>
-            parseGeneratedServices(badFile, fs as string | number | boolean | object | undefined | null),
-        ).toThrow(/Expected a generated service file/);
+		expect(getUser.operationId).toBe("getUserById");
 
-        const noOpDir = makeTempDir();
-        fs.writeFileSync(
-            path.join(noOpDir, 'empty.service.ts'),
-            `export class EmptyService { private helper() { return null; } }`,
-        );
-        expect(() =>
-            parseGeneratedServices(noOpDir, fs as string | number | boolean | object | undefined | null),
-        ).toThrow(/No operations could be reconstructed/);
+		expect(getUser.summary).toBe("Get a user by id.");
 
-        // Add test for empty metadata file parsing
-        expect(parseGeneratedMetadata(dir, fs as any).servers).toBeUndefined();
-    });
+		expect(getUser.description).toBe("Returns a user payload.");
 
-    it('should build a minimal OpenAPI spec from services', () => {
-        const services = parseGeneratedServiceSource(serviceSource, '/users.service.ts');
-        const spec = buildOpenApiSpecFromServices(services, { title: 'Recovered', version: '1.2.3' });
+		expect(getUser.deprecated).toBe(true);
 
-        expect(spec.openapi).toBe('3.2.0');
-        expect(spec.jsonSchemaDialect).toBe(OAS_3_1_DIALECT);
-        expect(spec.info.title).toBe('Recovered');
-        expect(spec.info.version).toBe('1.2.3');
-        expect(spec.tags?.map(tag => tag.name)).toEqual(['users', 'admin']);
+		expect(getUser.externalDocs).toEqual({
+			url: "https://example.com/users",
+			description: "User docs",
+		});
 
-        const getUser = (spec.paths as string | number | boolean | object | undefined | null)['/users/{id}'].post;
+		expect(params.find((p) => p.name === "id")?.required).toBe(true);
 
-        const params = getUser.parameters as string | number | boolean | object | undefined | null[];
+		expect(params.find((p) => p.name === "id")?.style).toBe("simple");
 
-        expect(getUser.operationId).toBe('getUserById');
+		expect(getUser.security).toEqual([
+			{ api_key: [] },
+			{ petstore_auth: ["read:pets"] },
+		]);
 
-        expect(getUser.summary).toBe('Get a user by id.');
+		expect(
+			(getUser as string | number | boolean | object | undefined | null)[
+				"x-rate-limit"
+			],
+		).toBe(120);
 
-        expect(getUser.description).toBe('Returns a user payload.');
+		expect(
+			(getUser as string | number | boolean | object | undefined | null)[
+				"x-feature-flag"
+			],
+		).toBe("alpha");
 
-        expect(getUser.deprecated).toBe(true);
+		const querystringParam = params.find((p) => p.name === "q");
 
-        expect(getUser.externalDocs).toEqual({ url: 'https://example.com/users', description: 'User docs' });
+		expect(querystringParam?.in).toBe("querystring");
 
-        expect(params.find(p => p.name === 'id')?.required).toBe(true);
+		expect(
+			querystringParam?.content?.["application/x-www-form-urlencoded"],
+		).toBeDefined();
 
-        expect(params.find(p => p.name === 'id')?.style).toBe('simple');
+		expect(
+			querystringParam?.content?.["application/x-www-form-urlencoded"]
+				?.encoding,
+		).toEqual({
+			tags: { style: "pipeDelimited", explode: false },
+		});
 
-        expect(getUser.security).toEqual([{ api_key: [] }, { petstore_auth: ['read:pets'] }]);
+		const searchParam = params.find((p) => p.name === "search");
 
-        expect((getUser as string | number | boolean | object | undefined | null)['x-rate-limit']).toBe(120);
+		expect(searchParam?.style).toBe("form");
 
-        expect((getUser as string | number | boolean | object | undefined | null)['x-feature-flag']).toBe('alpha');
+		expect(searchParam?.explode).toBe(true);
 
-        const querystringParam = params.find(p => p.name === 'q');
+		expect(searchParam?.allowReserved).toBe(false);
 
-        expect(querystringParam?.in).toBe('querystring');
+		expect(searchParam?.allowEmptyValue).toBe(true);
 
-        expect(querystringParam?.content?.['application/x-www-form-urlencoded']).toBeDefined();
+		expect(searchParam?.schema?.contentMediaType).toBe("application/json");
 
-        expect(querystringParam?.content?.['application/x-www-form-urlencoded']?.encoding).toEqual({
-            tags: { style: 'pipeDelimited', explode: false },
-        });
+		const filterParam = params.find((p) => p.name === "filter");
 
-        const searchParam = params.find(p => p.name === 'search');
+		expect(filterParam?.style).toBe("simple");
 
-        expect(searchParam?.style).toBe('form');
+		expect(filterParam?.explode).toBe(false);
 
-        expect(searchParam?.explode).toBe(true);
+		expect(filterParam?.allowReserved).toBe(true);
 
-        expect(searchParam?.allowReserved).toBe(false);
+		expect(filterParam?.schema?.contentEncoding).toBe("base64");
 
-        expect(searchParam?.allowEmptyValue).toBe(true);
+		expect(params.find((p) => p.name === "id")?.example).toBe(123);
 
-        expect(searchParam?.schema?.contentMediaType).toBe('application/json');
+		const requestExample =
+			getUser.requestBody?.content?.["application/json"]?.example;
+
+		expect(requestExample).toEqual({ name: "Ada" });
 
-        const filterParam = params.find(p => p.name === 'filter');
-
-        expect(filterParam?.style).toBe('simple');
-
-        expect(filterParam?.explode).toBe(false);
-
-        expect(filterParam?.allowReserved).toBe(true);
-
-        expect(filterParam?.schema?.contentEncoding).toBe('base64');
-
-        expect(params.find(p => p.name === 'id')?.example).toBe(123);
-
-        const requestExample = getUser.requestBody?.content?.['application/json']?.example;
-
-        expect(requestExample).toEqual({ name: 'Ada' });
-
-        const responseExample = getUser.responses['200']?.content?.['application/json']?.example;
-
-        expect(responseExample).toEqual({ id: 123, name: 'Ada' });
-
-        const uploadBody = (spec.paths as string | number | boolean | object | undefined | null)['/upload'].post
-            .requestBody;
-
-        expect(uploadBody.content['multipart/form-data'].schema.type).toBe('object');
-
-        expect(uploadBody.content['multipart/form-data'].schema.properties).toHaveProperty('file');
-
-        const uploadAdvancedBody = (spec.paths as string | number | boolean | object | undefined | null)[
-            '/upload-advanced'
-        ].post.requestBody;
-
-        expect(uploadAdvancedBody.content['multipart/form-data'].encoding).toEqual({
-            meta: { contentType: 'application/json' },
-            file: { contentType: 'image/png' },
-        });
-
-        const uploadMixedBody = (spec.paths as string | number | boolean | object | undefined | null)['/mixed'].post
-            .requestBody;
-
-        expect(uploadMixedBody.content['multipart/mixed'].itemEncoding).toEqual({ contentType: 'image/png' });
-
-        const encodeMapBody = (spec.paths as string | number | boolean | object | undefined | null)['/encode-map'].post
-            .requestBody;
-
-        expect(encodeMapBody.content['application/x-www-form-urlencoded'].encoding).toEqual({
-            foo: { style: 'form', explode: true },
-            bar: { allowReserved: true },
-        });
-
-        const textBody = (spec.paths as string | number | boolean | object | undefined | null)['/text'].post
-            .requestBody;
-
-        expect(textBody.required).toBe(true);
-
-        expect(textBody.content['text/plain']).toBeDefined();
-
-        const noContentSpec = buildOpenApiSpecFromServices([
-            {
-                serviceName: 'Empty',
-                filePath: '/empty.service.ts',
-                operations: [
-                    {
-                        methodName: 'ping',
-                        httpMethod: 'GET',
-                        path: '/ping',
-                        params: [],
-                        requestMediaTypes: [],
-                        responseMediaTypes: [],
-                    },
-                ],
-            },
-        ]);
-
-        const pingResponse = (noContentSpec.paths as string | number | boolean | object | undefined | null)['/ping'].get
-            .responses['200'];
-
-        expect(pingResponse.content).toBeUndefined();
-    });
-
-    it('should apply schema refs when type hints and schemas are available', () => {
-        const services = parseGeneratedServiceSource(typedServiceSource, '/typed.service.ts');
-        const schemas = {
-            User: { type: 'object' },
-            CreateUser: { type: 'object' },
-            ExactMatch: { type: 'object' },
-        };
-        const spec = buildOpenApiSpecFromServices(
-            services,
-            {},
-            schemas as string | number | boolean | object | undefined | null,
-        );
-
-        const createUser = (spec.paths as string | number | boolean | object | undefined | null)['/users'].post;
-
-        expect(createUser.requestBody.content['application/json'].schema).toEqual({
-            $ref: '#/components/schemas/CreateUserRequest',
-        });
-
-        const exactUser = (spec.paths as string | number | boolean | object | undefined | null)['/users/exact'].post;
-
-        expect(exactUser.requestBody.content['application/json'].schema).toEqual({
-            $ref: '#/components/schemas/ExactMatch',
-        });
-
-        expect(createUser.responses['200'].content['application/json'].schema).toEqual({
-            $ref: '#/components/schemas/User',
-        });
-
-        const streamUsers = (spec.paths as string | number | boolean | object | undefined | null)['/users/stream'].get;
-
-        expect(streamUsers.responses['200'].content['application/jsonl'].itemSchema).toEqual({
-            $ref: '#/components/schemas/User',
-        });
-    });
-
-    it('should handle missing schemas or json-seq arrays', () => {
-        const spec = buildOpenApiSpecFromServices(
-            [
-                {
-                    serviceName: 'MissingSchemaService',
-                    filePath: '/missing.service.ts',
-                    operations: [
-                        {
-                            methodName: 'doSomething',
-                            httpMethod: 'GET',
-                            path: '/do',
-                            params: [],
-                            requestMediaTypes: [],
-                            responseMediaTypes: ['application/json'],
-                            responseTypeHint: 'MissingSchema',
-                            responseIsArray: true,
-                            responseExamples: [{ description: 'Example', dataValue: 'test' }],
-                        },
-                        {
-                            methodName: 'doSeq',
-                            httpMethod: 'GET',
-                            path: '/seq',
-                            params: [],
-                            requestMediaTypes: [],
-                            responseMediaTypes: ['application/jsonl'],
-                            responseTypeHint: 'User',
-                            responseIsArray: true,
-                        },
-                        {
-                            methodName: 'doHints',
-                            httpMethod: 'GET',
-                            path: '/hints',
-                            params: [],
-                            requestMediaTypes: [],
-                            responseMediaTypes: [],
-                            responseHints: [
-                                {
-                                    status: '200',
-                                    mediaTypes: ['application/jsonl'],
-                                    description: 'Example',
-                                    summary: 'Summary',
-                                },
-                            ],
-                            responseTypeHint: 'User',
-                            responseIsArray: true,
-                        },
-                    ],
-                },
-            ],
-            {},
-            { User: { type: 'object' } } as any,
-        );
-
-        expect((spec.paths as any)['/do'].get.responses['200'].content['application/json'].schema.type).toBe('array');
-        expect((spec.paths as any)['/seq'].get.responses['200'].content['application/jsonl'].itemSchema.$ref).toBe(
-            '#/components/schemas/User',
-        );
-        expect((spec.paths as any)['/hints'].get.responses['200'].content['application/jsonl'].itemSchema.$ref).toBe(
-            '#/components/schemas/User',
-        );
-    });
-
-    it('should parse generated metadata and apply it to the recovered spec', () => {
-        const dir = makeTempDir();
-        const nestedDir = path.join(dir, 'services');
-        fs.mkdirSync(nestedDir, { recursive: true });
-
-        fs.writeFileSync(
-            path.join(dir, 'info.ts'),
-            `export const API_INFO: ApiInfo = {\"title\":\"Meta API\",\"version\":\"9.9.9\",\"summary\":\"Meta\"};\n` +
-                `export const API_TAGS: ApiTag[] = [{\"name\":\"meta\"}];\n` +
-                `export const API_EXTERNAL_DOCS: { description?: string; url: string; } | undefined = {\"description\":\"Docs\",\"url\":\"https://example.com/docs\"};\n`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'security.ts'),
-            `export const API_SECURITY_SCHEMES = {\"api_key\":{\"type\":\"apiKey\",\"name\":\"X-API-KEY\",\"in\":\"header\"}};\n` +
-                `export const API_SECURITY_REQUIREMENTS = [{\"api_key\":[]}];`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'servers.ts'),
-            `export const API_SERVERS = [{\"url\":\"https://api.example.com\",\"name\":\"prod\"}];`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'response-headers.ts'),
-            `export const API_RESPONSE_HEADERS = {"ping":{"200":{"X-Rate-Limit":"number","X-Xml":"xml","X-Linkset-Json":"linkset+json","Link":"linkset"}}};\n` +
-                `export const API_RESPONSE_HEADER_OBJECTS = {"ping":{"200":{"X-Rate-Limit":{"description":"Rate limit","schema":{"type":"integer"}},"X-Xml":{"content":{"application/xml":{"schema":{"xml":{"name":"Root"}}}}},"X-Linkset-Json":{"content":{"application/linkset+json":{}}}}}};\n` +
-                `export const API_HEADER_XML_CONFIGS = {"ping_200_X-Xml":{"name":"Root"}};\n`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'links.ts'),
-            `export const API_LINKS = {\"ping\":{\"200\":{\"next\":{\"operationId\":\"listThings\"}}}};\n` +
-                `export const API_COMPONENT_LINKS = {\"NextPage\":{\"operationId\":\"listThings\",\"description\":\"Next page link\"}};`,
-        );
-
-        const callbackMeta = [
-            {
-                name: 'onPing',
-                method: 'POST',
-                interfaceName: 'OnPingPostPayload',
-                expression: '{$request.body#/callbackUrl}',
-                pathItem: {
-                    post: {
-                        requestBody: {
-                            content: { 'application/json': { schema: { type: 'string' } } },
-                        },
-                        responses: {
-                            '204': {
-                                description: 'Ack',
-                                content: { 'application/json': { schema: { type: 'string' } } },
-                            },
-                        },
-                    },
-                },
-            },
-        ];
-
-        const webhookMeta = [
-            {
-                name: 'pinged',
-                method: 'POST',
-                interfaceName: 'PingedPostPayload',
-                pathItem: {
-                    post: {
-                        requestBody: {
-                            content: { 'application/json': { schema: { type: 'object' } } },
-                        },
-                        responses: {
-                            '201': {
-                                description: 'Created',
-                                content: { 'application/json': { schema: { type: 'object' } } },
-                            },
-                        },
-                    },
-                },
-            },
-        ];
-
-        fs.writeFileSync(
-            path.join(dir, 'callbacks.ts'),
-            `export const API_CALLBACKS = ${JSON.stringify(callbackMeta)};`,
-        );
-
-        fs.writeFileSync(path.join(dir, 'webhooks.ts'), `export const API_WEBHOOKS = ${JSON.stringify(webhookMeta)};`);
-
-        fs.writeFileSync(
-            path.join(dir, 'examples.ts'),
-            `export const API_EXAMPLES = ${JSON.stringify({
-                ExampleOne: { summary: 'Example', dataValue: { foo: 'bar' } },
-            })};`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'media-types.ts'),
-            `export const API_MEDIA_TYPES = ${JSON.stringify({
-                EventStream: { schema: { type: 'string' } },
-            })};`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'path-items.ts'),
-            `export const API_PATH_ITEMS = ${JSON.stringify({
-                PingItem: { get: { responses: { '200': { description: 'pong' } } } },
-            })};`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'parameters.ts'),
-            `export const API_PARAMETERS = ${JSON.stringify({
-                LimitParam: { name: 'limit', in: 'query', schema: { type: 'integer' } },
-            })};`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'headers.ts'),
-            `export const API_HEADERS = ${JSON.stringify({
-                TraceId: { schema: { type: 'string' }, description: 'Trace header' },
-            })};`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'request-bodies.ts'),
-            `export const API_REQUEST_BODIES = ${JSON.stringify({
-                CreateUser: {
-                    description: 'Create payload',
-                    content: { 'application/json': { schema: { type: 'object' } } },
-                },
-            })};`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'responses.ts'),
-            `export const API_RESPONSES = ${JSON.stringify({
-                NotFound: { description: 'Not found' },
-            })};`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'paths.ts'),
-            `export const API_PATHS = ${JSON.stringify({
-                '/meta': {
-                    summary: 'Meta path',
-                    description: 'Meta description',
-                    parameters: [{ name: 'trace', in: 'header', schema: { type: 'string' } }],
-                    servers: [{ url: 'https://meta.example.com' }],
-                    'x-meta': true,
-                },
-            })};`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'document.ts'),
-            `export const API_DOCUMENT_META = ${JSON.stringify({
-                openapi: '3.1.2',
-                $self: 'https://example.com/openapi',
-                jsonSchemaDialect: 'https://example.com/dialect',
-            })};`,
-        );
-
-        fs.writeFileSync(
-            path.join(nestedDir, 'dummy.service.ts'),
-            'export class DummyService { public ping() { const url = `\\${basePath}/ping`; return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); } }',
-        );
-
-        const metadata = parseGeneratedMetadata(dir, fs as string | number | boolean | object | undefined | null);
-        expect(metadata.info?.title).toBe('Meta API');
-        expect(metadata.tags?.[0].name).toBe('meta');
-        expect(metadata.externalDocs?.url).toBe('https://example.com/docs');
-        expect(metadata.securitySchemes?.api_key?.type).toBe('apiKey');
-        expect(metadata.securityRequirements?.[0]?.api_key).toEqual([]);
-        expect(metadata.servers?.[0].url).toBe('https://api.example.com');
-        expect(metadata.documentMeta?.openapi).toBe('3.1.2');
-        expect(metadata.documentMeta?.$self).toBe('https://example.com/openapi');
-        expect(metadata.documentMeta?.jsonSchemaDialect).toBe('https://example.com/dialect');
-        expect(metadata.parameters?.LimitParam?.in).toBe('query');
-        expect(metadata.headers?.TraceId?.description).toBe('Trace header');
-        expect(metadata.requestBodies?.CreateUser?.description).toBe('Create payload');
-        expect(metadata.responses?.NotFound?.description).toBe('Not found');
-        expect(metadata.componentLinks?.NextPage?.operationId).toBe('listThings');
-        expect(metadata.paths?.['/meta']?.summary).toBe('Meta path');
-
-        const spec = buildOpenApiSpecFromServices([
-            {
-                serviceName: 'DummyService',
-                filePath: '/dummy.service.ts',
-                operations: [
-                    {
-                        methodName: 'ping',
-                        httpMethod: 'GET',
-                        path: '/ping',
-                        params: [],
-                        requestMediaTypes: [],
-                        responseMediaTypes: [],
-                    },
-                ],
-            },
-        ]);
-
-        const merged = applyReverseMetadata(spec, metadata);
-        expect(merged.openapi).toBe('3.1.2');
-        expect(merged.$self).toBe('https://example.com/openapi');
-        expect(merged.jsonSchemaDialect).toBe('https://example.com/dialect');
-        expect(merged.info.title).toBe('Meta API');
-        expect(merged.tags?.length).toBe(1);
-        expect(merged.security).toEqual([{ api_key: [] }]);
-        expect(merged.servers?.length).toBe(1);
-        expect(merged.components?.securitySchemes).toBeDefined();
-
-        expect(
-            (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
-                .headers['X-Rate-Limit'],
-        ).toBeDefined();
-
-        expect(
-            (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
-                .headers['X-Rate-Limit'].description,
-        ).toBe('Rate limit');
-
-        expect(
-            (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
-                .headers['X-Rate-Limit'].schema.type,
-        ).toBe('integer');
-        expect(
-            (merged.paths as string | number | boolean | object | undefined | null)['/ping'].get.responses['200']
-                .headers['X-Xml'].content?.['application/xml'],
-        ).toBeDefined();
-        expect(
-            (
-                (
-                    (
-                        merged.paths!['/ping'].get!.responses[
-                            '200'
-                        ] as import('../../src/core/types/openapi').SwaggerResponse
-                    ).headers!['X-Xml'] as import('../../src/core/types/openapi').HeaderObject
-                ).content?.['application/xml']?.schema as import('../../src/core/types/openapi').SwaggerDefinition
-            )?.xml?.name,
-        ).toBe('Root');
-        expect(
-            (
-                (merged.paths!['/ping'].get!.responses['200'] as import('../../src/core/types/openapi').SwaggerResponse)
-                    .headers!['X-Linkset-Json'] as import('../../src/core/types/openapi').HeaderObject
-            ).content?.['application/linkset+json'],
-        ).toBeDefined();
-        expect(
-            (
-                (merged.paths!['/ping'].get!.responses['200'] as import('../../src/core/types/openapi').SwaggerResponse)
-                    .links!['next'] as import('../../src/core/types/openapi').LinkObject
-            ).operationId,
-        ).toBe('listThings');
-        expect(merged.components?.headers?.TraceId?.description).toBe('Trace header');
-        const componentXmlHeader = merged.components?.headers?.['ping_200_X-Xml'] as
-            | import('../../src/core/types/openapi').HeaderObject
-            | undefined;
-        expect(
-            (
-                (
-                    componentXmlHeader?.content?.[
-                        'application/xml'
-                    ] as import('../../src/core/types/openapi').MediaTypeObject
-                )?.schema as import('../../src/core/types/openapi').SwaggerDefinition
-            )?.xml?.name,
-        ).toBe('Root');
-        expect(merged.components?.links?.NextPage?.operationId).toBe('listThings');
-        expect(merged.components?.examples?.ExampleOne?.summary).toBe('Example');
-        expect(
-            (
-                (
-                    merged.components?.mediaTypes?.[
-                        'EventStream'
-                    ] as import('../../src/core/types/openapi').MediaTypeObject
-                )?.schema as import('../../src/core/types/openapi').SwaggerDefinition
-            )?.type,
-        ).toBe('string');
-        expect(merged.components?.pathItems?.PingItem?.get?.responses?.['200']).toBeDefined();
-        expect(merged.components?.parameters?.LimitParam?.name).toBe('limit');
-
-        expect(
-            (merged.components as string | number | boolean | object | undefined | null)?.requestBodies?.CreateUser
-                ?.content?.['application/json'],
-        ).toBeDefined();
-        expect(merged.components?.responses?.NotFound?.description).toBe('Not found');
-
-        expect((merged.paths as string | number | boolean | object | undefined | null)['/meta']?.summary).toBe(
-            'Meta path',
-        );
-
-        expect(
-            (merged.paths as string | number | boolean | object | undefined | null)['/meta']?.parameters?.[0]?.name,
-        ).toBe('trace');
-
-        expect(
-            (merged.paths as string | number | boolean | object | undefined | null)['/meta']?.servers?.[0]?.url,
-        ).toBe('https://meta.example.com');
-        expect((merged.paths as string | number | boolean | object | undefined | null)['/meta']?.['x-meta']).toBe(true);
-
-        const callbacks = merged.components?.callbacks as string | number | boolean | object | undefined | null;
-        expect(
-            callbacks?.onPing?.['{$request.body#/callbackUrl}']?.post?.requestBody?.content?.['application/json'],
-        ).toBeDefined();
-
-        expect(callbacks?.onPing?.['{$request.body#/callbackUrl}']?.post?.responses?.['204']).toBeDefined();
-
-        const webhooks = merged.components?.webhooks as string | number | boolean | object | undefined | null;
-
-        expect(webhooks?.pinged?.post?.requestBody?.content?.['application/json']).toBeDefined();
-
-        expect(webhooks?.pinged?.post?.responses?.['201']).toBeDefined();
-
-        expect(
-            (merged as string | number | boolean | object | undefined | null).webhooks?.pinged?.post?.requestBody
-                ?.content?.['application/json'],
-        ).toBeDefined();
-    });
-
-    it('should place non-standard HTTP methods in additionalOperations', () => {
-        const spec = buildOpenApiSpecFromServices([
-            {
-                serviceName: 'CustomService',
-                filePath: '/custom.service.ts',
-                operations: [
-                    {
-                        methodName: 'copyThing',
-                        httpMethod: 'COPY',
-                        path: '/things/{id}',
-                        params: [
-                            { name: 'id', in: 'path', required: true } as
-                                | string
-                                | number
-                                | boolean
-                                | object
-                                | undefined
-                                | null,
-                        ],
-                        requestMediaTypes: [],
-                        responseMediaTypes: ['application/json'],
-                    },
-                ],
-            },
-        ]);
-
-        const pathItem = (spec.paths as string | number | boolean | object | undefined | null)['/things/{id}'];
-
-        expect(pathItem.additionalOperations?.COPY).toBeDefined();
-
-        expect(pathItem.copy).toBeUndefined();
-    });
-
-    it('should apply reverse metadata additionalOperations cleanly', () => {
-        const dir = makeTempDir();
-        fs.mkdirSync(path.join(dir, 'services'), { recursive: true });
-
-        fs.writeFileSync(
-            path.join(dir, 'response-headers.ts'),
-            `export const API_RESPONSE_HEADER_OBJECTS = {"copyOp":{"200":{"X-Rate-Limit":{"description":"Rate limit","schema":{"type":"integer"}}}}};\n`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'links.ts'),
-            `export const API_LINKS = {"copyOp":{"200":{"next":{"operationId":"listThings"}}}};\n`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'services', 'dummy.service.ts'),
-            'export class DummyService { public copyThing() {} }',
-        );
-
-        const metadata = parseGeneratedMetadata(dir, fs as any);
-
-        const spec = buildOpenApiSpecFromServices([
-            {
-                serviceName: 'DummyService',
-                filePath: '/dummy.service.ts',
-                operations: [
-                    {
-                        methodName: 'copyThing',
-                        httpMethod: 'COPY',
-                        path: '/things/{id}',
-                        params: [],
-                        requestMediaTypes: [],
-                        responseMediaTypes: [],
-                        operationId: 'copyOp',
-                    },
-                ],
-            },
-        ]);
-
-        const merged = applyReverseMetadata(spec, metadata);
-
-        expect(
-            (merged.paths as any)['/things/{id}'].additionalOperations.COPY.responses['200'].headers['X-Rate-Limit'],
-        ).toBeDefined();
-
-        expect(
-            (merged.paths as any)['/things/{id}'].additionalOperations.COPY.responses['200'].links['next'],
-        ).toBeDefined();
-    });
-
-    it('should ignore header objects and links if operationId cannot be found in the current spec', () => {
-        const dir = makeTempDir();
-        fs.mkdirSync(path.join(dir, 'services'), { recursive: true });
-
-        fs.writeFileSync(
-            path.join(dir, 'response-headers.ts'),
-            `export const API_RESPONSE_HEADER_OBJECTS = {"missingOp":{"200":{"X-Rate-Limit":{"description":"Rate limit","schema":{"type":"integer"}}}}};\n`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'links.ts'),
-            `export const API_LINKS = {"missingOp":{"200":{"next":{"operationId":"listThings"}}}};\n`,
-        );
-
-        fs.writeFileSync(
-            path.join(dir, 'services', 'dummy.service.ts'),
-            'export class DummyService { public copyThing() {} }',
-        );
-
-        const metadata = parseGeneratedMetadata(dir, fs as any);
-
-        const spec = buildOpenApiSpecFromServices([
-            {
-                serviceName: 'DummyService',
-                filePath: '/dummy.service.ts',
-                operations: [
-                    {
-                        methodName: 'copyThing',
-                        httpMethod: 'COPY',
-                        path: '/things/{id}',
-                        params: [],
-                        requestMediaTypes: [],
-                        responseMediaTypes: [],
-                        operationId: 'copyOp',
-                    },
-                ],
-            },
-        ]);
-
-        const merged = applyReverseMetadata(spec, metadata);
-        expect(
-            (merged.paths as any)['/things/{id}'].additionalOperations.COPY.responses['200'].headers,
-        ).toBeUndefined();
-    });
+		const responseExample =
+			getUser.responses["200"]?.content?.["application/json"]?.example;
+
+		expect(responseExample).toEqual({ id: 123, name: "Ada" });
+
+		const uploadBody = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/upload"].post.requestBody;
+
+		expect(uploadBody.content["multipart/form-data"].schema.type).toBe(
+			"object",
+		);
+
+		expect(
+			uploadBody.content["multipart/form-data"].schema.properties,
+		).toHaveProperty("file");
+
+		const uploadAdvancedBody = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/upload-advanced"].post.requestBody;
+
+		expect(uploadAdvancedBody.content["multipart/form-data"].encoding).toEqual({
+			meta: { contentType: "application/json" },
+			file: { contentType: "image/png" },
+		});
+
+		const uploadMixedBody = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/mixed"].post.requestBody;
+
+		expect(uploadMixedBody.content["multipart/mixed"].itemEncoding).toEqual({
+			contentType: "image/png",
+		});
+
+		const encodeMapBody = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/encode-map"].post.requestBody;
+
+		expect(
+			encodeMapBody.content["application/x-www-form-urlencoded"].encoding,
+		).toEqual({
+			foo: { style: "form", explode: true },
+			bar: { allowReserved: true },
+		});
+
+		const textBody = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/text"].post.requestBody;
+
+		expect(textBody.required).toBe(true);
+
+		expect(textBody.content["text/plain"]).toBeDefined();
+
+		const noContentSpec = buildOpenApiSpecFromServices([
+			{
+				serviceName: "Empty",
+				filePath: "/empty.service.ts",
+				operations: [
+					{
+						methodName: "ping",
+						httpMethod: "GET",
+						path: "/ping",
+						params: [],
+						requestMediaTypes: [],
+						responseMediaTypes: [],
+					},
+				],
+			},
+		]);
+
+		const pingResponse = (
+			noContentSpec.paths as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null
+		)["/ping"].get.responses["200"];
+
+		expect(pingResponse.content).toBeUndefined();
+	});
+
+	it("should apply schema refs when type hints and schemas are available", () => {
+		const services = parseGeneratedServiceSource(
+			typedServiceSource,
+			"/typed.service.ts",
+		);
+		const schemas = {
+			User: { type: "object" },
+			CreateUser: { type: "object" },
+			ExactMatch: { type: "object" },
+		};
+		const spec = buildOpenApiSpecFromServices(
+			services,
+			{},
+			schemas as string | number | boolean | object | undefined | null,
+		);
+
+		const createUser = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/users"].post;
+
+		expect(createUser.requestBody.content["application/json"].schema).toEqual({
+			$ref: "#/components/schemas/CreateUserRequest",
+		});
+
+		const exactUser = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/users/exact"].post;
+
+		expect(exactUser.requestBody.content["application/json"].schema).toEqual({
+			$ref: "#/components/schemas/ExactMatch",
+		});
+
+		expect(
+			createUser.responses["200"].content["application/json"].schema,
+		).toEqual({
+			$ref: "#/components/schemas/User",
+		});
+
+		const streamUsers = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/users/stream"].get;
+
+		expect(
+			streamUsers.responses["200"].content["application/jsonl"].itemSchema,
+		).toEqual({
+			$ref: "#/components/schemas/User",
+		});
+	});
+
+	it("should handle missing schemas or json-seq arrays", () => {
+		const spec = buildOpenApiSpecFromServices(
+			[
+				{
+					serviceName: "MissingSchemaService",
+					filePath: "/missing.service.ts",
+					operations: [
+						{
+							methodName: "doSomething",
+							httpMethod: "GET",
+							path: "/do",
+							params: [],
+							requestMediaTypes: [],
+							responseMediaTypes: ["application/json"],
+							responseTypeHint: "MissingSchema",
+							responseIsArray: true,
+							responseExamples: [{ description: "Example", dataValue: "test" }],
+						},
+						{
+							methodName: "doSeq",
+							httpMethod: "GET",
+							path: "/seq",
+							params: [],
+							requestMediaTypes: [],
+							responseMediaTypes: ["application/jsonl"],
+							responseTypeHint: "User",
+							responseIsArray: true,
+						},
+						{
+							methodName: "doHints",
+							httpMethod: "GET",
+							path: "/hints",
+							params: [],
+							requestMediaTypes: [],
+							responseMediaTypes: [],
+							responseHints: [
+								{
+									status: "200",
+									mediaTypes: ["application/jsonl"],
+									description: "Example",
+									summary: "Summary",
+								},
+							],
+							responseTypeHint: "User",
+							responseIsArray: true,
+						},
+					],
+				},
+			],
+			{},
+			{ User: { type: "object" } } as any,
+		);
+
+		expect(
+			(spec.paths as any)["/do"].get.responses["200"].content[
+				"application/json"
+			].schema.type,
+		).toBe("array");
+		expect(
+			(spec.paths as any)["/seq"].get.responses["200"].content[
+				"application/jsonl"
+			].itemSchema.$ref,
+		).toBe("#/components/schemas/User");
+		expect(
+			(spec.paths as any)["/hints"].get.responses["200"].content[
+				"application/jsonl"
+			].itemSchema.$ref,
+		).toBe("#/components/schemas/User");
+	});
+
+	it("should parse generated metadata and apply it to the recovered spec", () => {
+		const dir = makeTempDir();
+		const nestedDir = path.join(dir, "services");
+		fs.mkdirSync(nestedDir, { recursive: true });
+
+		fs.writeFileSync(
+			path.join(dir, "info.ts"),
+			`export const API_INFO: ApiInfo = {"title":"Meta API","version":"9.9.9","summary":"Meta"};\n` +
+				`export const API_TAGS: ApiTag[] = [{"name":"meta"}];\n` +
+				`export const API_EXTERNAL_DOCS: { description?: string; url: string; } | undefined = {"description":"Docs","url":"https://example.com/docs"};\n`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "security.ts"),
+			`export const API_SECURITY_SCHEMES = {"api_key":{"type":"apiKey","name":"X-API-KEY","in":"header"}};\n` +
+				`export const API_SECURITY_REQUIREMENTS = [{"api_key":[]}];`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "servers.ts"),
+			`export const API_SERVERS = [{"url":"https://api.example.com","name":"prod"}];`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "response-headers.ts"),
+			`export const API_RESPONSE_HEADERS = {"ping":{"200":{"X-Rate-Limit":"number","X-Xml":"xml","X-Linkset-Json":"linkset+json","Link":"linkset"}}};\n` +
+				`export const API_RESPONSE_HEADER_OBJECTS = {"ping":{"200":{"X-Rate-Limit":{"description":"Rate limit","schema":{"type":"integer"}},"X-Xml":{"content":{"application/xml":{"schema":{"xml":{"name":"Root"}}}}},"X-Linkset-Json":{"content":{"application/linkset+json":{}}}}}};\n` +
+				`export const API_HEADER_XML_CONFIGS = {"ping_200_X-Xml":{"name":"Root"}};\n`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "links.ts"),
+			`export const API_LINKS = {"ping":{"200":{"next":{"operationId":"listThings"}}}};\n` +
+				`export const API_COMPONENT_LINKS = {"NextPage":{"operationId":"listThings","description":"Next page link"}};`,
+		);
+
+		const callbackMeta = [
+			{
+				name: "onPing",
+				method: "POST",
+				interfaceName: "OnPingPostPayload",
+				expression: "{$request.body#/callbackUrl}",
+				pathItem: {
+					post: {
+						requestBody: {
+							content: { "application/json": { schema: { type: "string" } } },
+						},
+						responses: {
+							"204": {
+								description: "Ack",
+								content: { "application/json": { schema: { type: "string" } } },
+							},
+						},
+					},
+				},
+			},
+		];
+
+		const webhookMeta = [
+			{
+				name: "pinged",
+				method: "POST",
+				interfaceName: "PingedPostPayload",
+				pathItem: {
+					post: {
+						requestBody: {
+							content: { "application/json": { schema: { type: "object" } } },
+						},
+						responses: {
+							"201": {
+								description: "Created",
+								content: { "application/json": { schema: { type: "object" } } },
+							},
+						},
+					},
+				},
+			},
+		];
+
+		fs.writeFileSync(
+			path.join(dir, "callbacks.ts"),
+			`export const API_CALLBACKS = ${JSON.stringify(callbackMeta)};`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "webhooks.ts"),
+			`export const API_WEBHOOKS = ${JSON.stringify(webhookMeta)};`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "examples.ts"),
+			`export const API_EXAMPLES = ${JSON.stringify({
+				ExampleOne: { summary: "Example", dataValue: { foo: "bar" } },
+			})};`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "media-types.ts"),
+			`export const API_MEDIA_TYPES = ${JSON.stringify({
+				EventStream: { schema: { type: "string" } },
+			})};`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "path-items.ts"),
+			`export const API_PATH_ITEMS = ${JSON.stringify({
+				PingItem: { get: { responses: { "200": { description: "pong" } } } },
+			})};`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "parameters.ts"),
+			`export const API_PARAMETERS = ${JSON.stringify({
+				LimitParam: { name: "limit", in: "query", schema: { type: "integer" } },
+			})};`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "headers.ts"),
+			`export const API_HEADERS = ${JSON.stringify({
+				TraceId: { schema: { type: "string" }, description: "Trace header" },
+			})};`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "request-bodies.ts"),
+			`export const API_REQUEST_BODIES = ${JSON.stringify({
+				CreateUser: {
+					description: "Create payload",
+					content: { "application/json": { schema: { type: "object" } } },
+				},
+			})};`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "responses.ts"),
+			`export const API_RESPONSES = ${JSON.stringify({
+				NotFound: { description: "Not found" },
+			})};`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "paths.ts"),
+			`export const API_PATHS = ${JSON.stringify({
+				"/meta": {
+					summary: "Meta path",
+					description: "Meta description",
+					parameters: [
+						{ name: "trace", in: "header", schema: { type: "string" } },
+					],
+					servers: [{ url: "https://meta.example.com" }],
+					"x-meta": true,
+				},
+			})};`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "document.ts"),
+			`export const API_DOCUMENT_META = ${JSON.stringify({
+				openapi: "3.1.2",
+				$self: "https://example.com/openapi",
+				jsonSchemaDialect: "https://example.com/dialect",
+			})};`,
+		);
+
+		fs.writeFileSync(
+			path.join(nestedDir, "dummy.service.ts"),
+			"export class DummyService { public ping() { const url = `\\${basePath}/ping`; return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); } }",
+		);
+
+		const metadata = parseGeneratedMetadata(
+			dir,
+			fs as string | number | boolean | object | undefined | null,
+		);
+		expect(metadata.info?.title).toBe("Meta API");
+		expect(metadata.tags?.[0].name).toBe("meta");
+		expect(metadata.externalDocs?.url).toBe("https://example.com/docs");
+		expect(metadata.securitySchemes?.api_key?.type).toBe("apiKey");
+		expect(metadata.securityRequirements?.[0]?.api_key).toEqual([]);
+		expect(metadata.servers?.[0].url).toBe("https://api.example.com");
+		expect(metadata.documentMeta?.openapi).toBe("3.1.2");
+		expect(metadata.documentMeta?.$self).toBe("https://example.com/openapi");
+		expect(metadata.documentMeta?.jsonSchemaDialect).toBe(
+			"https://example.com/dialect",
+		);
+		expect(metadata.parameters?.LimitParam?.in).toBe("query");
+		expect(metadata.headers?.TraceId?.description).toBe("Trace header");
+		expect(metadata.requestBodies?.CreateUser?.description).toBe(
+			"Create payload",
+		);
+		expect(metadata.responses?.NotFound?.description).toBe("Not found");
+		expect(metadata.componentLinks?.NextPage?.operationId).toBe("listThings");
+		expect(metadata.paths?.["/meta"]?.summary).toBe("Meta path");
+
+		const spec = buildOpenApiSpecFromServices([
+			{
+				serviceName: "DummyService",
+				filePath: "/dummy.service.ts",
+				operations: [
+					{
+						methodName: "ping",
+						httpMethod: "GET",
+						path: "/ping",
+						params: [],
+						requestMediaTypes: [],
+						responseMediaTypes: [],
+					},
+				],
+			},
+		]);
+
+		const merged = applyReverseMetadata(spec, metadata);
+		expect(merged.openapi).toBe("3.1.2");
+		expect(merged.$self).toBe("https://example.com/openapi");
+		expect(merged.jsonSchemaDialect).toBe("https://example.com/dialect");
+		expect(merged.info.title).toBe("Meta API");
+		expect(merged.tags?.length).toBe(1);
+		expect(merged.security).toEqual([{ api_key: [] }]);
+		expect(merged.servers?.length).toBe(1);
+		expect(merged.components?.securitySchemes).toBeDefined();
+
+		expect(
+			(merged.paths as string | number | boolean | object | undefined | null)[
+				"/ping"
+			].get.responses["200"].headers["X-Rate-Limit"],
+		).toBeDefined();
+
+		expect(
+			(merged.paths as string | number | boolean | object | undefined | null)[
+				"/ping"
+			].get.responses["200"].headers["X-Rate-Limit"].description,
+		).toBe("Rate limit");
+
+		expect(
+			(merged.paths as string | number | boolean | object | undefined | null)[
+				"/ping"
+			].get.responses["200"].headers["X-Rate-Limit"].schema.type,
+		).toBe("integer");
+		expect(
+			(merged.paths as string | number | boolean | object | undefined | null)[
+				"/ping"
+			].get.responses["200"].headers["X-Xml"].content?.["application/xml"],
+		).toBeDefined();
+		expect(
+			(
+				(
+					(
+						merged.paths?.["/ping"].get?.responses[
+							"200"
+						] as import("../../src/core/types/openapi").SwaggerResponse
+					).headers?.[
+						"X-Xml"
+					] as import("../../src/core/types/openapi").HeaderObject
+				).content?.["application/xml"]
+					?.schema as import("../../src/core/types/openapi").SwaggerDefinition
+			)?.xml?.name,
+		).toBe("Root");
+		expect(
+			(
+				(
+					merged.paths?.["/ping"].get?.responses[
+						"200"
+					] as import("../../src/core/types/openapi").SwaggerResponse
+				).headers?.[
+					"X-Linkset-Json"
+				] as import("../../src/core/types/openapi").HeaderObject
+			).content?.["application/linkset+json"],
+		).toBeDefined();
+		expect(
+			(
+				(
+					merged.paths?.["/ping"].get?.responses[
+						"200"
+					] as import("../../src/core/types/openapi").SwaggerResponse
+				).links?.next as import("../../src/core/types/openapi").LinkObject
+			).operationId,
+		).toBe("listThings");
+		expect(merged.components?.headers?.TraceId?.description).toBe(
+			"Trace header",
+		);
+		const componentXmlHeader = merged.components?.headers?.["ping_200_X-Xml"] as
+			| import("../../src/core/types/openapi").HeaderObject
+			| undefined;
+		expect(
+			(
+				(
+					componentXmlHeader?.content?.[
+						"application/xml"
+					] as import("../../src/core/types/openapi").MediaTypeObject
+				)?.schema as import("../../src/core/types/openapi").SwaggerDefinition
+			)?.xml?.name,
+		).toBe("Root");
+		expect(merged.components?.links?.NextPage?.operationId).toBe("listThings");
+		expect(merged.components?.examples?.ExampleOne?.summary).toBe("Example");
+		expect(
+			(
+				(
+					merged.components?.mediaTypes
+						?.EventStream as import("../../src/core/types/openapi").MediaTypeObject
+				)?.schema as import("../../src/core/types/openapi").SwaggerDefinition
+			)?.type,
+		).toBe("string");
+		expect(
+			merged.components?.pathItems?.PingItem?.get?.responses?.["200"],
+		).toBeDefined();
+		expect(merged.components?.parameters?.LimitParam?.name).toBe("limit");
+
+		expect(
+			(
+				merged.components as
+					| string
+					| number
+					| boolean
+					| object
+					| undefined
+					| null
+			)?.requestBodies?.CreateUser?.content?.["application/json"],
+		).toBeDefined();
+		expect(merged.components?.responses?.NotFound?.description).toBe(
+			"Not found",
+		);
+
+		expect(
+			(merged.paths as string | number | boolean | object | undefined | null)[
+				"/meta"
+			]?.summary,
+		).toBe("Meta path");
+
+		expect(
+			(merged.paths as string | number | boolean | object | undefined | null)[
+				"/meta"
+			]?.parameters?.[0]?.name,
+		).toBe("trace");
+
+		expect(
+			(merged.paths as string | number | boolean | object | undefined | null)[
+				"/meta"
+			]?.servers?.[0]?.url,
+		).toBe("https://meta.example.com");
+		expect(
+			(merged.paths as string | number | boolean | object | undefined | null)[
+				"/meta"
+			]?.["x-meta"],
+		).toBe(true);
+
+		const callbacks = merged.components?.callbacks as
+			| string
+			| number
+			| boolean
+			| object
+			| undefined
+			| null;
+		expect(
+			callbacks?.onPing?.["{$request.body#/callbackUrl}"]?.post?.requestBody
+				?.content?.["application/json"],
+		).toBeDefined();
+
+		expect(
+			callbacks?.onPing?.["{$request.body#/callbackUrl}"]?.post?.responses?.[
+				"204"
+			],
+		).toBeDefined();
+
+		const webhooks = merged.components?.webhooks as
+			| string
+			| number
+			| boolean
+			| object
+			| undefined
+			| null;
+
+		expect(
+			webhooks?.pinged?.post?.requestBody?.content?.["application/json"],
+		).toBeDefined();
+
+		expect(webhooks?.pinged?.post?.responses?.["201"]).toBeDefined();
+
+		expect(
+			(merged as string | number | boolean | object | undefined | null).webhooks
+				?.pinged?.post?.requestBody?.content?.["application/json"],
+		).toBeDefined();
+	});
+
+	it("should place non-standard HTTP methods in additionalOperations", () => {
+		const spec = buildOpenApiSpecFromServices([
+			{
+				serviceName: "CustomService",
+				filePath: "/custom.service.ts",
+				operations: [
+					{
+						methodName: "copyThing",
+						httpMethod: "COPY",
+						path: "/things/{id}",
+						params: [
+							{ name: "id", in: "path", required: true } as
+								| string
+								| number
+								| boolean
+								| object
+								| undefined
+								| null,
+						],
+						requestMediaTypes: [],
+						responseMediaTypes: ["application/json"],
+					},
+				],
+			},
+		]);
+
+		const pathItem = (
+			spec.paths as string | number | boolean | object | undefined | null
+		)["/things/{id}"];
+
+		expect(pathItem.additionalOperations?.COPY).toBeDefined();
+
+		expect(pathItem.copy).toBeUndefined();
+	});
+
+	it("should apply reverse metadata additionalOperations cleanly", () => {
+		const dir = makeTempDir();
+		fs.mkdirSync(path.join(dir, "services"), { recursive: true });
+
+		fs.writeFileSync(
+			path.join(dir, "response-headers.ts"),
+			`export const API_RESPONSE_HEADER_OBJECTS = {"copyOp":{"200":{"X-Rate-Limit":{"description":"Rate limit","schema":{"type":"integer"}}}}};\n`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "links.ts"),
+			`export const API_LINKS = {"copyOp":{"200":{"next":{"operationId":"listThings"}}}};\n`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "services", "dummy.service.ts"),
+			"export class DummyService { public copyThing() {} }",
+		);
+
+		const metadata = parseGeneratedMetadata(dir, fs as any);
+
+		const spec = buildOpenApiSpecFromServices([
+			{
+				serviceName: "DummyService",
+				filePath: "/dummy.service.ts",
+				operations: [
+					{
+						methodName: "copyThing",
+						httpMethod: "COPY",
+						path: "/things/{id}",
+						params: [],
+						requestMediaTypes: [],
+						responseMediaTypes: [],
+						operationId: "copyOp",
+					},
+				],
+			},
+		]);
+
+		const merged = applyReverseMetadata(spec, metadata);
+
+		expect(
+			(merged.paths as any)["/things/{id}"].additionalOperations.COPY.responses[
+				"200"
+			].headers["X-Rate-Limit"],
+		).toBeDefined();
+
+		expect(
+			(merged.paths as any)["/things/{id}"].additionalOperations.COPY.responses[
+				"200"
+			].links.next,
+		).toBeDefined();
+	});
+
+	it("should ignore header objects and links if operationId cannot be found in the current spec", () => {
+		const dir = makeTempDir();
+		fs.mkdirSync(path.join(dir, "services"), { recursive: true });
+
+		fs.writeFileSync(
+			path.join(dir, "response-headers.ts"),
+			`export const API_RESPONSE_HEADER_OBJECTS = {"missingOp":{"200":{"X-Rate-Limit":{"description":"Rate limit","schema":{"type":"integer"}}}}};\n`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "links.ts"),
+			`export const API_LINKS = {"missingOp":{"200":{"next":{"operationId":"listThings"}}}};\n`,
+		);
+
+		fs.writeFileSync(
+			path.join(dir, "services", "dummy.service.ts"),
+			"export class DummyService { public copyThing() {} }",
+		);
+
+		const metadata = parseGeneratedMetadata(dir, fs as any);
+
+		const spec = buildOpenApiSpecFromServices([
+			{
+				serviceName: "DummyService",
+				filePath: "/dummy.service.ts",
+				operations: [
+					{
+						methodName: "copyThing",
+						httpMethod: "COPY",
+						path: "/things/{id}",
+						params: [],
+						requestMediaTypes: [],
+						responseMediaTypes: [],
+						operationId: "copyOp",
+					},
+				],
+			},
+		]);
+
+		const merged = applyReverseMetadata(spec, metadata);
+		expect(
+			(merged.paths as any)["/things/{id}"].additionalOperations.COPY.responses[
+				"200"
+			].headers,
+		).toBeUndefined();
+	});
 });

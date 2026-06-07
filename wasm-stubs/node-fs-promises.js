@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import fs from "node:fs";
 
 export const readFile = async (path) => fs.readFileSync(path);
 export const writeFile = async (path, data) => fs.writeFileSync(path, data);

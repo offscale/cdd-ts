@@ -1,9 +1,18 @@
-import * as path from 'node:path';
-import { Project, VariableDeclarationKind } from 'ts-morph';
-import { UTILITY_GENERATOR_HEADER_COMMENT } from '../core/constants.js';
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { extractPaths, getRequestBodyType, getResponseType, pascalCase } from '@src/functions/utils.js';
-import { PathInfo, PathItem, OpenApiValue } from '@src/core/types/index.js';
+import * as path from "node:path";
+import { type Project, VariableDeclarationKind } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import {
+	extractPaths,
+	getRequestBodyType,
+	getResponseType,
+	pascalCase,
+} from "@src/functions/utils.js";
+import type {
+	PathInfo,
+	PathItem,
+	OpenApiValue,
+} from "@src/core/types/index.js";
 
 /**
  * Generates the `callbacks.ts` file.
@@ -11,196 +20,217 @@ import { PathInfo, PathItem, OpenApiValue } from '@src/core/types/index.js';
  * This allows consumers to strongly type the data they receive from webhooks.
  */
 export class CallbackGenerator {
-    constructor(
-        private readonly parser: SwaggerParser,
+	constructor(
+		private readonly parser: SwaggerParser,
 
-        private readonly project: Project,
-    ) {}
+		private readonly project: Project,
+	) {}
 
-    public generate(outputDir: string): void {
-        const filePath = path.join(outputDir, 'callbacks.ts');
+	public generate(outputDir: string): void {
+		const filePath = path.join(outputDir, "callbacks.ts");
 
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        // Import models needed for callback payloads
+		// Import models needed for callback payloads
 
-        const requiredModels = new Set<string>();
+		const requiredModels = new Set<string>();
 
-        const registerModel = (type: string) => {
-            // Rudimentary check if it looks like a model (PascalCase)
+		const registerModel = (type: string) => {
+			// Rudimentary check if it looks like a model (PascalCase)
 
-            if (
-                type &&
-                type !== 'string | number | boolean | object | undefined | null' &&
-                /^[A-Z]/.test(type) &&
-                !['Date', 'Blob', 'File'].includes(type) &&
-                !type.includes('{')
-            ) {
-                // Strip array [] suffixes
+			if (
+				type &&
+				type !== "string | number | boolean | object | undefined | null" &&
+				/^[A-Z]/.test(type) &&
+				!["Date", "Blob", "File"].includes(type) &&
+				!type.includes("{")
+			) {
+				// Strip array [] suffixes
 
-                const modelName = type.replace(/\[\]/g, '');
+				const modelName = type.replace(/\[\]/g, "");
 
-                requiredModels.add(modelName);
-            }
-        };
+				requiredModels.add(modelName);
+			}
+		};
 
-        const callbacksFound: {
-            name: string;
-            interfaceName: string;
-            method: string;
-            expression: string;
-            pathItem: PathItem;
-            requestType: string;
-            responseType: string;
-            scope?: 'component' | 'operation';
-        }[] = [];
+		const callbacksFound: {
+			name: string;
+			interfaceName: string;
+			method: string;
+			expression: string;
+			pathItem: PathItem;
+			requestType: string;
+			responseType: string;
+			scope?: "component" | "operation";
+		}[] = [];
 
-        const declaredTypeAliases = new Set<string>();
+		const declaredTypeAliases = new Set<string>();
 
-        const addTypeAliasOnce = (name: string, type: string, docs: string[]) => {
-            if (declaredTypeAliases.has(name)) return;
+		const addTypeAliasOnce = (name: string, type: string, docs: string[]) => {
+			if (declaredTypeAliases.has(name)) return;
 
-            declaredTypeAliases.add(name);
+			declaredTypeAliases.add(name);
 
-            sourceFile.addTypeAlias({
-                isExported: true,
-                name,
-                type,
-                docs,
-            });
-        };
+			sourceFile.addTypeAlias({
+				isExported: true,
+				name,
+				type,
+				docs,
+			});
+		};
 
-        const processCallbackMap = (
-            callbackName: string,
-            callbackMapOrRef: PathItem | { $ref: string } | Record<string, PathItem>,
-            scope: 'component' | 'operation',
-        ) => {
-            const resolved = this.parser.resolve(callbackMapOrRef as OpenApiValue) as Record<string, PathItem>;
+		const processCallbackMap = (
+			callbackName: string,
+			callbackMapOrRef: PathItem | { $ref: string } | Record<string, PathItem>,
+			scope: "component" | "operation",
+		) => {
+			const resolved = this.parser.resolve(
+				callbackMapOrRef as OpenApiValue,
+			) as Record<string, PathItem>;
 
-            if (!resolved) return;
+			if (!resolved) return;
 
-            // A callback Map is URL Expression -> Path Item.
+			// A callback Map is URL Expression -> Path Item.
 
-            Object.entries(resolved).forEach(([urlExpression, pathItemObj]) => {
-                const callbackPathItem = pathItemObj as PathItem;
+			Object.entries(resolved).forEach(([urlExpression, pathItemObj]) => {
+				const callbackPathItem = pathItemObj as PathItem;
 
-                const subPaths = this.processCallbackPathItem(urlExpression, callbackPathItem);
+				const subPaths = this.processCallbackPathItem(
+					urlExpression,
+					callbackPathItem,
+				);
 
-                subPaths.forEach(sub => {
-                    const requestType = getRequestBodyType(
-                        sub.requestBody,
-                        this.parser.config,
+				subPaths.forEach((sub) => {
+					const requestType = getRequestBodyType(
+						sub.requestBody,
+						this.parser.config,
 
-                        this.parser.schemas.map(s => s.name),
-                    );
+						this.parser.schemas.map((s) => s.name),
+					);
 
-                    const responseKeys = Object.keys(sub.responses!);
+					const responseKeys = Object.keys(sub.responses!);
 
-                    const responseType = getResponseType(
-                        sub.responses![responseKeys[0]],
-                        this.parser.config,
+					const responseType = getResponseType(
+						sub.responses?.[responseKeys[0]],
+						this.parser.config,
 
-                        this.parser.schemas.map(s => s.name),
-                    );
+						this.parser.schemas.map((s) => s.name),
+					);
 
-                    registerModel(requestType);
+					registerModel(requestType);
 
-                    const interfaceName = `${pascalCase(callbackName)}${pascalCase(sub.method)}Payload`;
+					const interfaceName = `${pascalCase(callbackName)}${pascalCase(sub.method)}Payload`;
 
-                    callbacksFound.push({
-                        name: callbackName,
-                        method: sub.method,
-                        interfaceName,
-                        expression: urlExpression,
-                        pathItem: callbackPathItem,
-                        requestType,
-                        responseType,
-                        scope,
-                    });
+					callbacksFound.push({
+						name: callbackName,
+						method: sub.method,
+						interfaceName,
+						expression: urlExpression,
+						pathItem: callbackPathItem,
+						requestType,
+						responseType,
+						scope,
+					});
 
-                    addTypeAliasOnce(interfaceName, requestType, [
-                        `Payload definition for callback '${callbackName}' (${sub.method}).`,
-                    ]);
-                });
-            });
-        };
+					addTypeAliasOnce(interfaceName, requestType, [
+						`Payload definition for callback '${callbackName}' (${sub.method}).`,
+					]);
+				});
+			});
+		};
 
-        // Iterate all operations to find callbacks
+		// Iterate all operations to find callbacks
 
-        this.parser.operations.forEach(op => {
-            if (!op.callbacks) return;
+		this.parser.operations.forEach((op) => {
+			if (!op.callbacks) return;
 
-            Object.entries(op.callbacks).forEach(([callbackName, pathItemOrRef]) => {
-                processCallbackMap(callbackName, pathItemOrRef as PathItem, 'operation');
-            });
-        });
+			Object.entries(op.callbacks).forEach(([callbackName, pathItemOrRef]) => {
+				processCallbackMap(
+					callbackName,
+					pathItemOrRef as PathItem,
+					"operation",
+				);
+			});
+		});
 
-        // Include component-level callbacks (OAS 3.2)
+		// Include component-level callbacks (OAS 3.2)
 
-        const componentCallbacks = this.parser.spec.components?.callbacks ?? {};
+		const componentCallbacks = this.parser.spec.components?.callbacks ?? {};
 
-        Object.entries(componentCallbacks).forEach(([callbackName, callbackOrRef]) => {
-            processCallbackMap(callbackName, callbackOrRef as Record<string, PathItem>, 'component');
-        });
+		Object.entries(componentCallbacks).forEach(
+			([callbackName, callbackOrRef]) => {
+				processCallbackMap(
+					callbackName,
+					callbackOrRef as Record<string, PathItem>,
+					"component",
+				);
+			},
+		);
 
-        if (callbacksFound.length > 0) {
-            const modelsImport = Array.from(requiredModels);
+		if (callbacksFound.length > 0) {
+			const modelsImport = Array.from(requiredModels);
 
-            if (modelsImport.length > 0) {
-                sourceFile.addImportDeclaration({
-                    moduleSpecifier: './models',
-                    namedImports: modelsImport,
-                });
-            }
+			if (modelsImport.length > 0) {
+				sourceFile.addImportDeclaration({
+					moduleSpecifier: "./models",
+					namedImports: modelsImport,
+				});
+			}
 
-            sourceFile.addVariableStatement({
-                isExported: true,
-                declarationKind: VariableDeclarationKind.Const,
-                declarations: [
-                    {
-                        name: 'API_CALLBACKS',
-                        initializer: JSON.stringify(
-                            callbacksFound.map(c => ({
-                                name: c.name,
-                                method: c.method,
-                                interfaceName: c.interfaceName,
-                                expression: c.expression,
-                                pathItem: c.pathItem,
-                                ...(c.scope ? { scope: c.scope } : {}),
-                            })),
-                            null,
-                            2,
-                        ),
-                    },
-                ],
-                docs: ['Metadata registry for identified callbacks.'],
-            });
-        } else {
-            sourceFile.addStatements('export {};');
-        }
+			sourceFile.addVariableStatement({
+				isExported: true,
+				declarationKind: VariableDeclarationKind.Const,
+				declarations: [
+					{
+						name: "API_CALLBACKS",
+						initializer: JSON.stringify(
+							callbacksFound.map((c) => ({
+								name: c.name,
+								method: c.method,
+								interfaceName: c.interfaceName,
+								expression: c.expression,
+								pathItem: c.pathItem,
+								...(c.scope ? { scope: c.scope } : {}),
+							})),
+							null,
+							2,
+						),
+					},
+				],
+				docs: ["Metadata registry for identified callbacks."],
+			});
+		} else {
+			sourceFile.addStatements("export {};");
+		}
 
-        sourceFile.formatText();
+		sourceFile.formatText();
 
-        sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
-    }
+		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
+	}
 
-    private processCallbackPathItem(urlKey: string, pathItem: PathItem): PathInfo[] {
-        const tempMap = { [urlKey]: pathItem };
-        // Pass the main components to ensure security resolution logic within callbacks
-        // follows similar rules, although callbacks rarely define security schemes inline implicitly.
+	private processCallbackPathItem(
+		urlKey: string,
+		pathItem: PathItem,
+	): PathInfo[] {
+		const tempMap = { [urlKey]: pathItem };
+		// Pass the main components to ensure security resolution logic within callbacks
+		// follows similar rules, although callbacks rarely define security schemes inline implicitly.
 
-        const resolveRef = (ref: string) => this.parser.resolveReference(ref);
+		const resolveRef = (ref: string) => this.parser.resolveReference(ref);
 
-        const resolveObj = (obj: OpenApiValue) => this.parser.resolve(obj as OpenApiValue);
+		const resolveObj = (obj: OpenApiValue) =>
+			this.parser.resolve(obj as OpenApiValue);
 
-        return extractPaths(
-            tempMap,
-            resolveRef,
-            this.parser.spec.components,
-            {
-                isOpenApi3: !!this.parser.spec.openapi,
-            },
-            resolveObj,
-        );
-    }
+		return extractPaths(
+			tempMap,
+			resolveRef,
+			this.parser.spec.components,
+			{
+				isOpenApi3: !!this.parser.spec.openapi,
+			},
+			resolveObj,
+		);
+	}
 }

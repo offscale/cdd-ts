@@ -38,8 +38,8 @@ jobs:
             - name: Install requirements
               run: npm ci
 
-            - name: Run ESLint
+            - name: Run Biome lint
               run: npm run lint
 
-            - name: Run Prettier check
-              run: npx prettier --check 'src/**/*.ts' 'tests/**/*.ts'
+            - name: Run Biome format check
+              run: npx @biomejs/biome format .

@@ -1,50 +1,62 @@
-import { Project, VariableDeclarationKind } from 'ts-morph';
-import * as path from 'node:path';
-import { UTILITY_GENERATOR_HEADER_COMMENT } from '@src/core/constants.js';
+import { type Project, VariableDeclarationKind } from "ts-morph";
+import * as path from "node:path";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 
 export class DateTransformerGenerator {
-    constructor(private project: Project) {}
+	constructor(private project: Project) {}
 
-    public generate(outputDir: string): void {
-        const utilsDir = path.join(outputDir, 'utils');
+	public generate(outputDir: string): void {
+		const utilsDir = path.join(outputDir, "utils");
 
-        const filePath = path.join(utilsDir, 'date-transformer.ts');
+		const filePath = path.join(utilsDir, "date-transformer.ts");
 
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
+		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
-        sourceFile.addImportDeclarations([
-            {
-                namedImports: ['HttpEvent', 'HttpHandlerFn', 'HttpInterceptorFn', 'HttpRequest', 'HttpResponse'],
-                moduleSpecifier: '@angular/common/http',
-            },
-            {
-                namedImports: ['Observable', 'map'],
-                moduleSpecifier: 'rxjs',
-            },
-        ]);
+		sourceFile.addImportDeclarations([
+			{
+				namedImports: [
+					"HttpEvent",
+					"HttpHandlerFn",
+					"HttpInterceptorFn",
+					"HttpRequest",
+					"HttpResponse",
+				],
+				moduleSpecifier: "@angular/common/http",
+			},
+			{
+				namedImports: ["Observable", "map"],
+				moduleSpecifier: "rxjs",
+			},
+		]);
 
-        sourceFile.addVariableStatement({
-            isExported: true,
-            declarationKind: VariableDeclarationKind.Const,
-            declarations: [
-                {
-                    name: 'ISO_DATE_REGEX',
-                    initializer: `/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$/`,
-                },
-            ],
-            docs: ['A regex pattern to identify strings that are likely ISO 8601 date-time formats.'],
-        });
+		sourceFile.addVariableStatement({
+			isExported: true,
+			declarationKind: VariableDeclarationKind.Const,
+			declarations: [
+				{
+					name: "ISO_DATE_REGEX",
+					initializer: `/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$/`,
+				},
+			],
+			docs: [
+				"A regex pattern to identify strings that are likely ISO 8601 date-time formats.",
+			],
+		});
 
-        sourceFile.addFunction({
-            name: 'transformDates',
-            isExported: true,
-            typeParameters: ['T'],
-            parameters: [{ name: 'body', type: 'T' }],
-            returnType: 'T',
-            docs: ['Recursively traverses an object or array and converts ISO date strings to Date objects.'],
-            statements: `
+		sourceFile.addFunction({
+			name: "transformDates",
+			isExported: true,
+			typeParameters: ["T"],
+			parameters: [{ name: "body", type: "T" }],
+			returnType: "T",
+			docs: [
+				"Recursively traverses an object or array and converts ISO date strings to Date objects.",
+			],
+			statements: `
     if (body === null || body === undefined || typeof body !== 'object') { 
         return body; 
     } 
@@ -65,21 +77,23 @@ export class DateTransformerGenerator {
         } 
     } 
     return transformedBody as T;`,
-        });
+		});
 
-        sourceFile.addFunction({
-            name: 'dateInterceptor',
-            isExported: true,
-            parameters: [
-                {
-                    name: 'req',
-                    type: 'HttpRequest<unknown>',
-                },
-                { name: 'next', type: 'HttpHandlerFn' },
-            ],
-            returnType: 'Observable<HttpEvent<unknown>>',
-            docs: ['Intercepts HTTP responses and transforms ISO date strings to Date objects in the response body.'],
-            statements: `
+		sourceFile.addFunction({
+			name: "dateInterceptor",
+			isExported: true,
+			parameters: [
+				{
+					name: "req",
+					type: "HttpRequest<unknown>",
+				},
+				{ name: "next", type: "HttpHandlerFn" },
+			],
+			returnType: "Observable<HttpEvent<unknown>>",
+			docs: [
+				"Intercepts HTTP responses and transforms ISO date strings to Date objects in the response body.",
+			],
+			statements: `
     return next(req).pipe( 
         map(event => { 
             if (event instanceof HttpResponse && event.body) { 
@@ -88,8 +102,8 @@ export class DateTransformerGenerator {
             return event; 
         }) 
     );`,
-        });
+		});
 
-        sourceFile.formatText();
-    }
+		sourceFile.formatText();
+	}
 }

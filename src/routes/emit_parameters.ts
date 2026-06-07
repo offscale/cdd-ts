@@ -1,48 +1,52 @@
-import * as path from 'node:path';
-import { Project, VariableDeclarationKind } from 'ts-morph';
-import { UTILITY_GENERATOR_HEADER_COMMENT } from '../core/constants.js';
-import { SwaggerParser } from '@src/openapi/parse.js';
+import * as path from "node:path";
+import { type Project, VariableDeclarationKind } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
 
 /**
  * Generates the `parameters.ts` file.
  * Exposes reusable Parameter Objects from components.parameters.
  */
 export class ParametersGenerator {
-    constructor(
-        private readonly parser: SwaggerParser,
+	constructor(
+		private readonly parser: SwaggerParser,
 
-        private readonly project: Project,
-    ) {}
+		private readonly project: Project,
+	) {}
 
-    public generate(outputDir: string): void {
-        const filePath = path.join(outputDir, 'parameters.ts');
+	public generate(outputDir: string): void {
+		const filePath = path.join(outputDir, "parameters.ts");
 
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        const parameters = this.parser.spec.components?.parameters ?? {};
+		const parameters = this.parser.spec.components?.parameters ?? {};
 
-        const hasParameters = Object.keys(parameters).length > 0;
+		const hasParameters = Object.keys(parameters).length > 0;
 
-        if (!hasParameters) {
-            sourceFile.replaceWithText(`${UTILITY_GENERATOR_HEADER_COMMENT}export { };\n`);
+		if (!hasParameters) {
+			sourceFile.replaceWithText(
+				`${UTILITY_GENERATOR_HEADER_COMMENT}export { };\n`,
+			);
 
-            return;
-        }
+			return;
+		}
 
-        sourceFile.addVariableStatement({
-            isExported: true,
-            declarationKind: VariableDeclarationKind.Const,
-            declarations: [
-                {
-                    name: 'API_PARAMETERS',
-                    initializer: JSON.stringify(parameters, null, 2),
-                },
-            ],
-            docs: ['Reusable Parameter Objects from components.parameters.'],
-        });
+		sourceFile.addVariableStatement({
+			isExported: true,
+			declarationKind: VariableDeclarationKind.Const,
+			declarations: [
+				{
+					name: "API_PARAMETERS",
+					initializer: JSON.stringify(parameters, null, 2),
+				},
+			],
+			docs: ["Reusable Parameter Objects from components.parameters."],
+		});
 
-        sourceFile.formatText();
+		sourceFile.formatText();
 
-        sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
-    }
+		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
+	}
 }

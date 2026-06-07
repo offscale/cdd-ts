@@ -1,42 +1,44 @@
-import * as path from 'node:path';
-import { Project, Scope } from 'ts-morph';
-import { UTILITY_GENERATOR_HEADER_COMMENT } from '../core/constants.js';
+import * as path from "node:path";
+import { type Project, Scope } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 
 export class XmlParserGenerator {
-    constructor(private project: Project) {}
+	constructor(private project: Project) {}
 
-    public generate(outputDir: string): void {
-        const utilsDir = path.join(outputDir, 'utils');
+	public generate(outputDir: string): void {
+		const utilsDir = path.join(outputDir, "utils");
 
-        const filePath = path.join(utilsDir, 'xml-parser.ts');
+		const filePath = path.join(utilsDir, "xml-parser.ts");
 
-        const sourceFile = this.project.createSourceFile(filePath, '', { overwrite: true });
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-        sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
+		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
-        sourceFile.addImportDeclaration({
-            namedImports: ['XmlPropertyConfig'],
-            moduleSpecifier: './xml-builder',
-        });
+		sourceFile.addImportDeclaration({
+			namedImports: ["XmlPropertyConfig"],
+			moduleSpecifier: "./xml-builder",
+		});
 
-        const classDeclaration = sourceFile.addClass({
-            name: 'XmlParser',
-            isExported: true,
-            docs: [
-                'Utility to parse XML responses into typed objects based on OpenAPI metadata (including prefixItems ordering).',
-            ],
-        });
+		const classDeclaration = sourceFile.addClass({
+			name: "XmlParser",
+			isExported: true,
+			docs: [
+				"Utility to parse XML responses into typed objects based on OpenAPI metadata (including prefixItems ordering).",
+			],
+		});
 
-        classDeclaration.addMethod({
-            name: 'parse',
-            isStatic: true,
-            scope: Scope.Public,
-            parameters: [
-                { name: 'xml', type: 'string' },
-                { name: 'config', type: 'XmlPropertyConfig', hasQuestionToken: true },
-            ],
-            returnType: 'string | number | boolean | object | undefined | null',
-            statements: `
+		classDeclaration.addMethod({
+			name: "parse",
+			isStatic: true,
+			scope: Scope.Public,
+			parameters: [
+				{ name: "xml", type: "string" },
+				{ name: "config", type: "XmlPropertyConfig", hasQuestionToken: true },
+			],
+			returnType: "string | number | boolean | object | undefined | null",
+			statements: `
         if (!xml) return null; 
         const parser = new DOMParser(); 
         const doc = parser.parseFromString(xml, "text/xml"); 
@@ -49,18 +51,18 @@ export class XmlParserGenerator {
 
         const root = doc.documentElement; 
         return this.parseNode(root, config || {});`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'parseNode',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [
-                { name: 'node', type: 'Element' },
-                { name: 'config', type: 'XmlPropertyConfig' },
-            ],
-            returnType: 'string | number | boolean | object | undefined | null',
-            statements: `
+		classDeclaration.addMethod({
+			name: "parseNode",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [
+				{ name: "node", type: "Element" },
+				{ name: "config", type: "XmlPropertyConfig" },
+			],
+			returnType: "string | number | boolean | object | undefined | null",
+			statements: `
         if (node.hasAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'nil') && 
             node.getAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'nil') === 'true') { 
             return null; 
@@ -161,15 +163,15 @@ export class XmlParserGenerator {
         } 
 
         return node.textContent;`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'collectArrayNodes',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [{ name: 'node', type: 'Element' }],
-            returnType: 'ChildNode[]',
-            statements: `
+		classDeclaration.addMethod({
+			name: "collectArrayNodes",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [{ name: "node", type: "Element" }],
+			returnType: "ChildNode[]",
+			statements: `
         const nodes = Array.from(node.childNodes);
         return nodes.filter(child => {
             if (child.nodeType === 1) return true; // Element
@@ -178,48 +180,48 @@ export class XmlParserGenerator {
             }
             return false;
         });`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'parseArrayNode',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [
-                { name: 'node', type: 'ChildNode' },
-                { name: 'config', type: 'XmlPropertyConfig' },
-            ],
-            returnType: 'string | number | boolean | object | undefined | null',
-            statements: `
+		classDeclaration.addMethod({
+			name: "parseArrayNode",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [
+				{ name: "node", type: "ChildNode" },
+				{ name: "config", type: "XmlPropertyConfig" },
+			],
+			returnType: "string | number | boolean | object | undefined | null",
+			statements: `
         if (node.nodeType === 3 || node.nodeType === 4) { 
             return node.textContent ?? ''; 
         } 
         return this.parseNode(node as Element, config);`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'nodeMatchesName',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [
-                { name: 'node', type: 'Element' },
-                { name: 'name', type: 'string' },
-            ],
-            returnType: 'boolean',
-            statements: `
+		classDeclaration.addMethod({
+			name: "nodeMatchesName",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [
+				{ name: "node", type: "Element" },
+				{ name: "name", type: "string" },
+			],
+			returnType: "boolean",
+			statements: `
         const local = node.tagName.split(':').pop() || node.tagName; 
         return local === name || node.tagName === name;`,
-        });
+		});
 
-        classDeclaration.addMethod({
-            name: 'findChild',
-            isStatic: true,
-            scope: Scope.Private,
-            parameters: [
-                { name: 'parent', type: 'Element' },
-                { name: 'tagName', type: 'string' },
-            ],
-            returnType: 'Element | undefined',
-            statements: `
+		classDeclaration.addMethod({
+			name: "findChild",
+			isStatic: true,
+			scope: Scope.Private,
+			parameters: [
+				{ name: "parent", type: "Element" },
+				{ name: "tagName", type: "string" },
+			],
+			returnType: "Element | undefined",
+			statements: `
         const children = parent.children; 
         for (let i = 0; i < children.length; i++) { 
             if (this.nodeMatchesName(children[i], tagName)) { 
@@ -227,8 +229,8 @@ export class XmlParserGenerator {
             } 
         } 
         return undefined;`,
-        });
+		});
 
-        sourceFile.formatText();
-    }
+		sourceFile.formatText();
+	}
 }

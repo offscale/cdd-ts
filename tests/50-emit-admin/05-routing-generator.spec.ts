@@ -1,67 +1,83 @@
 // @ts-nocheck
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from "vitest";
 
-import { Project } from 'ts-morph';
+import type { Project } from "ts-morph";
 
-import { RoutingGenerator } from '@src/vendors/angular/admin/routing.generator.js'; // Corrected Path
-import { discoverAdminResources } from '@src/vendors/angular/admin/resource-discovery.js'; // Corrected Path
-import { SwaggerParser } from '@src/openapi/parse.js';
+import { RoutingGenerator } from "@src/vendors/angular/admin/routing.generator.js"; // Corrected Path
+import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js"; // Corrected Path
+import { SwaggerParser } from "@src/openapi/parse.js";
 
-import { createTestProject } from '../shared/helpers.js';
-import { coverageSpec } from '../shared/specs.js';
+import { createTestProject } from "../shared/helpers.js";
+import { coverageSpec } from "../shared/specs.js";
 
-describe('Admin: RoutingGenerator', () => {
-    let project: Project;
-    let resources: ReturnType<typeof discoverAdminResources>;
+describe("Admin: RoutingGenerator", () => {
+	let project: Project;
+	let resources: ReturnType<typeof discoverAdminResources>;
 
-    beforeAll(() => {
-        project = createTestProject();
-        const parser = new SwaggerParser(
-            coverageSpec as string | number | boolean | object | undefined | null,
-            { options: { admin: true } } as string | number | boolean | object | undefined | null,
-        );
-        resources = discoverAdminResources(parser);
-        const routingGen = new RoutingGenerator(project);
+	beforeAll(() => {
+		project = createTestProject();
+		const parser = new SwaggerParser(
+			coverageSpec as string | number | boolean | object | undefined | null,
+			{ options: { admin: true } } as
+				| string
+				| number
+				| boolean
+				| object
+				| undefined
+				| null,
+		);
+		resources = discoverAdminResources(parser);
+		const routingGen = new RoutingGenerator(project);
 
-        for (const resource of resources) {
-            routingGen.generate(resource, '/admin');
-        }
-        routingGen.generateMaster(resources, '/admin');
-    });
+		for (const resource of resources) {
+			routingGen.generate(resource, "/admin");
+		}
+		routingGen.generateMaster(resources, "/admin");
+	});
 
-    it('should generate a master routes file with a default redirect', () => {
-        const fileContent = project.getSourceFileOrThrow('/admin/admin.routes.ts').getText();
-        expect(fileContent).toContain('export const adminRoutes: Routes = [');
-        expect(fileContent).toContain("{ path: '', pathMatch: 'full', redirectTo: 'users' }");
-    });
+	it("should generate a master routes file with a default redirect", () => {
+		const fileContent = project
+			.getSourceFileOrThrow("/admin/admin.routes.ts")
+			.getText();
+		expect(fileContent).toContain("export const adminRoutes: Routes = [");
+		expect(fileContent).toContain(
+			"{ path: '', pathMatch: 'full', redirectTo: 'users' }",
+		);
+	});
 
-    it('should generate routes for a full CRUD resource (Users)', () => {
-        const fileContent = project.getSourceFileOrThrow('/admin/users/users.routes.ts').getText();
-        expect(fileContent).toContain(`path: ''`);
-        expect(fileContent).toContain(`path: 'new'`);
-        expect(fileContent).toContain(`path: ':id/edit'`);
-    });
+	it("should generate routes for a full CRUD resource (Users)", () => {
+		const fileContent = project
+			.getSourceFileOrThrow("/admin/users/users.routes.ts")
+			.getText();
+		expect(fileContent).toContain(`path: ''`);
+		expect(fileContent).toContain(`path: 'new'`);
+		expect(fileContent).toContain(`path: ':id/edit'`);
+	});
 
-    it('should generate routes for a create-only resource (Publications)', () => {
-        const fileContent = project.getSourceFileOrThrow('/admin/publications/publications.routes.ts').getText();
-        expect(fileContent).not.toContain(`path: ''`);
-        expect(fileContent).toContain(`path: 'new'`);
-        expect(fileContent).not.toContain(`':id/edit'`);
-    });
+	it("should generate routes for a create-only resource (Publications)", () => {
+		const fileContent = project
+			.getSourceFileOrThrow("/admin/publications/publications.routes.ts")
+			.getText();
+		expect(fileContent).not.toContain(`path: ''`);
+		expect(fileContent).toContain(`path: 'new'`);
+		expect(fileContent).not.toContain(`':id/edit'`);
+	});
 
-    it('should generate routes for an update-only resource (Configs)', () => {
-        const fileContent = project.getSourceFileOrThrow('/admin/configs/configs.routes.ts').getText();
-        expect(fileContent).not.toContain(`path: ''`);
-        expect(fileContent).not.toContain(`path: 'new'`);
-        expect(fileContent).toContain(`path: ':id/edit'`);
-    });
+	it("should generate routes for an update-only resource (Configs)", () => {
+		const fileContent = project
+			.getSourceFileOrThrow("/admin/configs/configs.routes.ts")
+			.getText();
+		expect(fileContent).not.toContain(`path: ''`);
+		expect(fileContent).not.toContain(`path: 'new'`);
+		expect(fileContent).toContain(`path: ':id/edit'`);
+	});
 
-    it('should generate an empty master routes file if no resources are provided', () => {
-        const localProject = createTestProject();
-        new RoutingGenerator(localProject).generateMaster([], '/admin');
-        const varDecl = localProject
-            .getSourceFileOrThrow('/admin/admin.routes.ts')
-            .getVariableDeclarationOrThrow('adminRoutes');
-        expect(varDecl.getInitializer()?.getText()).toMatch(/\[\s*\]/);
-    });
+	it("should generate an empty master routes file if no resources are provided", () => {
+		const localProject = createTestProject();
+		new RoutingGenerator(localProject).generateMaster([], "/admin");
+		const varDecl = localProject
+			.getSourceFileOrThrow("/admin/admin.routes.ts")
+			.getVariableDeclarationOrThrow("adminRoutes");
+		expect(varDecl.getInitializer()?.getText()).toMatch(/\[\s*\]/);
+	});
 });

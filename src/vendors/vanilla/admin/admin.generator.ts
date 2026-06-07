@@ -1,62 +1,64 @@
-import { Project } from 'ts-morph';
-import * as path from 'node:path';
+import type { Project } from "ts-morph";
+import * as path from "node:path";
 
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { discoverAdminResources } from '@src/vendors/angular/admin/resource-discovery.js';
-import { Resource } from '@src/core/types/index.js';
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
+import type { Resource } from "@src/core/types/index.js";
 
-import { ListComponentGenerator } from './list-component.generator.js';
-import { FormComponentGenerator } from './form-component.generator.js';
-import { AppShellGenerator } from './app-shell.generator.js';
+import { ListComponentGenerator } from "./list-component.generator.js";
+import { FormComponentGenerator } from "./form-component.generator.js";
+import { AppShellGenerator } from "./app-shell.generator.js";
 
 export class VanillaAdminGenerator {
-    private allResources: Resource[] = [];
+	private allResources: Resource[] = [];
 
-    constructor(
-        private parser: SwaggerParser,
+	constructor(
+		private parser: SwaggerParser,
 
-        private project: Project,
-    ) {}
+		private project: Project,
+	) {}
 
-    public generate(outputRoot: string): void {
-        console.log('🚀 Generating Vanilla Web Components Admin UI...');
+	public generate(outputRoot: string): void {
+		console.log("🚀 Generating Vanilla Web Components Admin UI...");
 
-        this.allResources = discoverAdminResources(this.parser);
+		this.allResources = discoverAdminResources(this.parser);
 
-        if (this.allResources.length === 0) {
-            console.warn('⚠️ No resources suitable for admin UI generation were found. Skipping.');
+		if (this.allResources.length === 0) {
+			console.warn(
+				"⚠️ No resources suitable for admin UI generation were found. Skipping.",
+			);
 
-            return;
-        }
+			return;
+		}
 
-        const adminDir = path.join(outputRoot, 'admin');
+		const adminDir = path.join(outputRoot, "admin");
 
-        if (!this.project.getFileSystem().directoryExistsSync(adminDir)) {
-            this.project.getFileSystem().mkdirSync(adminDir);
-        }
+		if (!this.project.getFileSystem().directoryExistsSync(adminDir)) {
+			this.project.getFileSystem().mkdirSync(adminDir);
+		}
 
-        const listGen = new ListComponentGenerator(this.project);
+		const listGen = new ListComponentGenerator(this.project);
 
-        const formGen = new FormComponentGenerator(this.project);
+		const formGen = new FormComponentGenerator(this.project);
 
-        const appShellGen = new AppShellGenerator(this.project);
+		const appShellGen = new AppShellGenerator(this.project);
 
-        for (const resource of this.allResources) {
-            console.log(`  -> Generating for resource: ${resource.name}`);
+		for (const resource of this.allResources) {
+			console.log(`  -> Generating for resource: ${resource.name}`);
 
-            if (resource.operations.some(op => op.action === 'list')) {
-                listGen.generate(resource, adminDir);
-            }
+			if (resource.operations.some((op) => op.action === "list")) {
+				listGen.generate(resource, adminDir);
+			}
 
-            if (resource.isEditable) {
-                formGen.generate(resource, adminDir);
-            }
-        }
+			if (resource.isEditable) {
+				formGen.generate(resource, adminDir);
+			}
+		}
 
-        console.log('  -> Generating App Shell (Router & Layout)...');
+		console.log("  -> Generating App Shell (Router & Layout)...");
 
-        appShellGen.generate(this.allResources, adminDir);
+		appShellGen.generate(this.allResources, adminDir);
 
-        console.log('✅ Vanilla Admin UI generation complete.');
-    }
+		console.log("✅ Vanilla Admin UI generation complete.");
+	}
 }

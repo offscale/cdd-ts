@@ -1,288 +1,333 @@
-import { ClassDeclaration } from 'ts-morph';
-import { GeneratorConfig, PathInfo } from '@src/core/types/index.js';
-import { SwaggerParser } from '@src/openapi/parse.js';
-import { ServiceMethodAnalyzer } from '@src/functions/parse_analyzer.js';
-import { ParamSerialization, ServiceMethodModel } from '@src/functions/types.js';
-import { pascalCase, camelCase } from '@src/functions/utils.js';
+import type { ClassDeclaration } from "ts-morph";
+import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
+import type {
+	ParamSerialization,
+	ServiceMethodModel,
+} from "@src/functions/types.js";
+import { pascalCase, camelCase } from "@src/functions/utils.js";
 
 /**
  * Responsible for generating the specific content of individual operations inside a NodeService.
  * This class abstracts the logic to wrap endpoints in a standard Node.js `http`/`https` execution flow.
  */
 export class NodeServiceMethodGenerator {
-    private analyzer: ServiceMethodAnalyzer;
+	private analyzer: ServiceMethodAnalyzer;
 
-    /**
-     * Instantiates a new method generator.
-     * @param config The global code generator settings.
-     * @param parser A reference to the active OpenAPI parser.
-     */
-    constructor(
-        config: GeneratorConfig,
+	/**
+	 * Instantiates a new method generator.
+	 * @param config The global code generator settings.
+	 * @param parser A reference to the active OpenAPI parser.
+	 */
+	constructor(
+		config: GeneratorConfig,
 
-        readonly parser: SwaggerParser,
-    ) {
-        this.analyzer = new ServiceMethodAnalyzer(config, parser);
-    }
+		readonly parser: SwaggerParser,
+	) {
+		this.analyzer = new ServiceMethodAnalyzer(config, parser);
+	}
 
-    /**
-     * Evaluates a single OpenAPI path segment operation and translates it into a valid Node request method.
-     * @param classDeclaration The `ts-morph` AST element of the service class.
-     * @param operation The raw `PathInfo` representation of the endpoint.
-     */
-    public addServiceMethod(classDeclaration: ClassDeclaration, operation: PathInfo): void {
-        const model = this.analyzer.analyze(operation);
+	/**
+	 * Evaluates a single OpenAPI path segment operation and translates it into a valid Node request method.
+	 * @param classDeclaration The `ts-morph` AST element of the service class.
+	 * @param operation The raw `PathInfo` representation of the endpoint.
+	 */
+	public addServiceMethod(
+		classDeclaration: ClassDeclaration,
+		operation: PathInfo,
+	): void {
+		const model = this.analyzer.analyze(operation);
 
-        if (!model) return;
+		if (!model) return;
 
-        if (model.errorResponses.length > 0) {
-            const typeName = `${pascalCase(model.methodName)}Error`;
+		if (model.errorResponses.length > 0) {
+			const typeName = `${pascalCase(model.methodName)}Error`;
 
-            const union = [...new Set(model.errorResponses.map(e => e.type))].join(' | ');
+			const union = [...new Set(model.errorResponses.map((e) => e.type))].join(
+				" | ",
+			);
 
-            classDeclaration.getSourceFile().addTypeAlias({
-                name: typeName,
-                isExported: true,
-                type: union,
-            });
-        }
+			classDeclaration.getSourceFile().addTypeAlias({
+				name: typeName,
+				isExported: true,
+				type: union,
+			});
+		}
 
-        const distinctTypes = [...new Set(model.responseVariants.map(v => v.type))];
+		const distinctTypes = [
+			...new Set(model.responseVariants.map((v) => v.type)),
+		];
 
-        const returnType = distinctTypes.length > 1 ? distinctTypes.join(' | ') : model.responseType;
+		const returnType =
+			distinctTypes.length > 1 ? distinctTypes.join(" | ") : model.responseType;
 
-        const serverOptionType = '{ server?: number | string; serverVariables?: Record<string, string> }';
+		const serverOptionType =
+			"{ server?: number | string; serverVariables?: Record<string, string> }";
 
-        classDeclaration.addMethod({
-            name: model.methodName,
-            isAsync: true,
-            parameters: [
-                ...model.parameters,
-                {
-                    name: 'options',
-                    hasQuestionToken: true,
-                    type: `import('node:http').RequestOptions & ${serverOptionType}`,
-                },
-            ],
-            returnType: `Promise<${returnType}>`,
-            statements: this.emitMethodBody(model),
-        });
-    }
+		classDeclaration.addMethod({
+			name: model.methodName,
+			isAsync: true,
+			parameters: [
+				...model.parameters,
+				{
+					name: "options",
+					hasQuestionToken: true,
+					type: `import('node:http').RequestOptions & ${serverOptionType}`,
+				},
+			],
+			returnType: `Promise<${returnType}>`,
+			statements: this.emitMethodBody(model),
+		});
+	}
 
-    /**
-     * Translates the `ServiceMethodModel` into stringized valid TypeScript Node.js code.
-     * @param model An abstraction holding parameters, path values, query objects, headers, etc.
-     * @returns A string containing the entire method implementation body block.
-     */
-    private emitMethodBody(model: ServiceMethodModel): string {
-        const distinctTypes = [...new Set(model.responseVariants.map(v => v.type))];
+	/**
+	 * Translates the `ServiceMethodModel` into stringized valid TypeScript Node.js code.
+	 * @param model An abstraction holding parameters, path values, query objects, headers, etc.
+	 * @returns A string containing the entire method implementation body block.
+	 */
+	private emitMethodBody(model: ServiceMethodModel): string {
+		const distinctTypes = [
+			...new Set(model.responseVariants.map((v) => v.type)),
+		];
 
-        const returnType = distinctTypes.length > 1 ? distinctTypes.join(' | ') : model.responseType;
+		const returnType =
+			distinctTypes.length > 1 ? distinctTypes.join(" | ") : model.responseType;
 
-        const lines: string[] = [];
+		const lines: string[] = [];
 
-        let urlTemplate = model.urlTemplate;
+		let urlTemplate = model.urlTemplate;
 
-        model.pathParams.forEach((p: ParamSerialization) => {
-            const serializeCall = `ParameterSerializer.serializePathParam('${p.originalName}', ${p.paramName}, '${p.style}', ${p.explode}, ${p.allowReserved})`;
+		model.pathParams.forEach((p: ParamSerialization) => {
+			const serializeCall = `ParameterSerializer.serializePathParam('${p.originalName}', ${p.paramName}, '${p.style}', ${p.explode}, ${p.allowReserved})`;
 
-            urlTemplate = urlTemplate.replace(`{${p.originalName}}`, `\${${serializeCall}}`);
-        });
+			urlTemplate = urlTemplate.replace(
+				`{${p.originalName}}`,
+				`\${${serializeCall}}`,
+			);
+		});
 
-        if (model.operationServers?.length) {
-            lines.push(`const operationServers = ${JSON.stringify(model.operationServers, null, 2)};`);
+		if (model.operationServers?.length) {
+			lines.push(
+				`const operationServers = ${JSON.stringify(model.operationServers, null, 2)};`,
+			);
 
-            lines.push(
-                `const basePath = resolveServerUrl(operationServers, options?.server ?? 0, options?.serverVariables ?? {});`,
-            );
-        } else {
-            lines.push(
-                `const basePath = (options?.server !== undefined || options?.serverVariables !== undefined) ? getServerUrl(options?.server ?? 0, options?.serverVariables ?? {}) : this.basePath;`,
-            );
-        }
+			lines.push(
+				`const basePath = resolveServerUrl(operationServers, options?.server ?? 0, options?.serverVariables ?? {});`,
+			);
+		} else {
+			lines.push(
+				`const basePath = (options?.server !== undefined || options?.serverVariables !== undefined) ? getServerUrl(options?.server ?? 0, options?.serverVariables ?? {}) : this.basePath;`,
+			);
+		}
 
-        lines.push(`const url = new URL(\`\${basePath}${urlTemplate}\`);`);
+		lines.push(`const url = new URL(\`\${basePath}${urlTemplate}\`);`);
 
-        if (model.queryParams.length > 0) {
-            model.queryParams.forEach((p: ParamSerialization) => {
-                const configObj = JSON.stringify({
-                    name: p.originalName,
-                    in: 'query',
-                    style: p.style,
-                    explode: p.explode,
-                    allowReserved: p.allowReserved,
-                });
+		if (model.queryParams.length > 0) {
+			model.queryParams.forEach((p: ParamSerialization) => {
+				const configObj = JSON.stringify({
+					name: p.originalName,
+					in: "query",
+					style: p.style,
+					explode: p.explode,
+					allowReserved: p.allowReserved,
+				});
 
-                lines.push(
-                    `const serialized_${p.paramName} = ParameterSerializer.serializeQueryParam(${configObj}, ${p.paramName});`,
-                );
+				lines.push(
+					`const serialized_${p.paramName} = ParameterSerializer.serializeQueryParam(${configObj}, ${p.paramName});`,
+				);
 
-                lines.push(
-                    `serialized_${p.paramName}.forEach((entry: { key: string; value: string }) => url.searchParams.append(entry.key, entry.value));`,
-                );
-            });
-        }
+				lines.push(
+					`serialized_${p.paramName}.forEach((entry: { key: string; value: string }) => url.searchParams.append(entry.key, entry.value));`,
+				);
+			});
+		}
 
-        lines.push(`const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };`);
+		lines.push(
+			`const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };`,
+		);
 
-        model.headerParams.forEach((p: ParamSerialization) => {
-            lines.push(
-                `if (${p.paramName} != null) { headers['${p.originalName}'] = ParameterSerializer.serializeHeaderParam(${p.paramName}, ${p.explode}); }`,
-            );
-        });
+		model.headerParams.forEach((p: ParamSerialization) => {
+			lines.push(
+				`if (${p.paramName} != null) { headers['${p.originalName}'] = ParameterSerializer.serializeHeaderParam(${p.paramName}, ${p.explode}); }`,
+			);
+		});
 
-        let dataArgument = 'undefined';
+		let dataArgument = "undefined";
 
-        /* v8 ignore start - Paths/Ops exist by construction */
-        const rawPathItem = this.parser.spec.paths?.[model.urlTemplate];
-        const rawOp =
-            rawPathItem && typeof rawPathItem === 'object'
-                ? (
-                      rawPathItem as Record<
-                          string,
-                          { parameters?: { in?: string; name?: string }[]; consumes?: string[] }
-                      >
-                  )[model.httpMethod.toLowerCase()]
-                : undefined;
-        /* v8 ignore stop */
-        const legacyFormData = rawOp?.parameters?.filter(p => p.in === 'formData');
-        const isUrlEnc = rawOp?.consumes?.includes('application/x-www-form-urlencoded');
+		/* v8 ignore start - Paths/Ops exist by construction */
+		const rawPathItem = this.parser.spec.paths?.[model.urlTemplate];
+		const rawOp =
+			rawPathItem && typeof rawPathItem === "object"
+				? (
+						rawPathItem as Record<
+							string,
+							{
+								parameters?: { in?: string; name?: string }[];
+								consumes?: string[];
+							}
+						>
+					)[model.httpMethod.toLowerCase()]
+				: undefined;
+		/* v8 ignore stop */
+		const legacyFormData = rawOp?.parameters?.filter(
+			(p) => p.in === "formData",
+		);
+		const isUrlEnc = rawOp?.consumes?.includes(
+			"application/x-www-form-urlencoded",
+		);
 
-        /* v8 ignore start - Legacy formData is blocked by OAS3 parser validation, unreachable here */
-        if (legacyFormData && legacyFormData.length > 0) {
-            if (isUrlEnc) {
-                lines.push(`const formBody = new URLSearchParams();`);
-                legacyFormData.forEach(p => {
-                    const paramName = camelCase(p.name || '');
-                    lines.push(`if (${paramName} != null) { formBody.append('${p.name}', String(${paramName})); }`);
-                });
-                dataArgument = 'formBody.toString()';
-                lines.push(
-                    `if (!headers['Content-Type']) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; }`,
-                );
-            } else {
-                lines.push(`const formData = new FormData();`);
-                legacyFormData.forEach(p => {
-                    const paramName = camelCase(p.name || '');
-                    lines.push(
-                        `if (${paramName} != null) { formData.append('${p.name}', ${paramName} as unknown as string | Blob); }`,
-                    );
-                });
-                dataArgument = 'formData';
-            }
-        } /* v8 ignore stop */ else if (model.body) {
-            if (model.body.type === 'raw' || model.body.type === 'json') {
-                dataArgument = `JSON.stringify(${model.body.paramName})`;
-                lines.push(`if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }`);
-            } else if (model.body.type === 'urlencoded') {
-                lines.push(`const formBody = new URLSearchParams();`);
-                lines.push(
-                    `const urlParamEntries = ParameterSerializer.serializeUrlEncodedBody(${model.body.paramName}, ${JSON.stringify(model.body.config)});`,
-                );
-                lines.push(
-                    `urlParamEntries.forEach((entry: { key: string; value: string }) => formBody.append(entry.key, entry.value));`,
-                );
-                dataArgument = 'formBody.toString()';
-                lines.push(
-                    `if (!headers['Content-Type']) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; }`,
-                );
-                /* v8 ignore start - Blocked by OAS3 parser validation */
-            } else if (model.body.type === 'encoded-form-data') {
-                lines.push(`const formBody = new URLSearchParams();`);
-                model.parameters
-                    .filter(p => (p as unknown as { in?: string }).in === 'formData')
-                    .forEach(p => {
-                        const param = p as unknown as { paramName: string; originalName: string };
-                        lines.push(
-                            `if (${param.paramName} != null) { formBody.append('${param.originalName}', String(${param.paramName})); }`,
-                        );
-                    });
-                dataArgument = 'formBody.toString()';
-                lines.push(
-                    `if (!headers['Content-Type']) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; }`,
-                );
-                /* v8 ignore stop */
-                /* v8 ignore start */
-            } else if (model.body.type === 'multipart') {
-                lines.push(`const multipartConfig = ${JSON.stringify(model.body.config)};`);
-                lines.push(
-                    `const multipartResult = MultipartBuilder.serialize(${model.body.paramName}, multipartConfig);`,
-                );
-                lines.push(`if (multipartResult.headers) {`);
-                lines.push(
-                    `  Object.entries(multipartResult.headers).forEach(([k, v]) => { headers[k] = v as string; });`,
-                );
-                lines.push(`}`);
-                dataArgument = 'multipartResult.content';
-                /* v8 ignore stop */
-            } else {
-                /* v8 ignore next */
-                dataArgument = model.body.paramName;
-            }
-        }
+		/* v8 ignore start - Legacy formData is blocked by OAS3 parser validation, unreachable here */
+		if (legacyFormData && legacyFormData.length > 0) {
+			if (isUrlEnc) {
+				lines.push(`const formBody = new URLSearchParams();`);
+				legacyFormData.forEach((p) => {
+					const paramName = camelCase(p.name || "");
+					lines.push(
+						`if (${paramName} != null) { formBody.append('${p.name}', String(${paramName})); }`,
+					);
+				});
+				dataArgument = "formBody.toString()";
+				lines.push(
+					`if (!headers['Content-Type']) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; }`,
+				);
+			} else {
+				lines.push(`const formData = new FormData();`);
+				legacyFormData.forEach((p) => {
+					const paramName = camelCase(p.name || "");
+					lines.push(
+						`if (${paramName} != null) { formData.append('${p.name}', ${paramName} as unknown as string | Blob); }`,
+					);
+				});
+				dataArgument = "formData";
+			}
+		} /* v8 ignore stop */ else if (model.body) {
+			if (model.body.type === "raw" || model.body.type === "json") {
+				dataArgument = `JSON.stringify(${model.body.paramName})`;
+				lines.push(
+					`if (!headers['Content-Type']) { headers['Content-Type'] = 'application/json'; }`,
+				);
+			} else if (model.body.type === "urlencoded") {
+				lines.push(`const formBody = new URLSearchParams();`);
+				lines.push(
+					`const urlParamEntries = ParameterSerializer.serializeUrlEncodedBody(${model.body.paramName}, ${JSON.stringify(model.body.config)});`,
+				);
+				lines.push(
+					`urlParamEntries.forEach((entry: { key: string; value: string }) => formBody.append(entry.key, entry.value));`,
+				);
+				dataArgument = "formBody.toString()";
+				lines.push(
+					`if (!headers['Content-Type']) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; }`,
+				);
+				/* v8 ignore start - Blocked by OAS3 parser validation */
+			} else if (model.body.type === "encoded-form-data") {
+				lines.push(`const formBody = new URLSearchParams();`);
+				model.parameters
+					.filter((p) => (p as unknown as { in?: string }).in === "formData")
+					.forEach((p) => {
+						const param = p as unknown as {
+							paramName: string;
+							originalName: string;
+						};
+						lines.push(
+							`if (${param.paramName} != null) { formBody.append('${param.originalName}', String(${param.paramName})); }`,
+						);
+					});
+				dataArgument = "formBody.toString()";
+				lines.push(
+					`if (!headers['Content-Type']) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; }`,
+				);
+				/* v8 ignore stop */
+				/* v8 ignore start */
+			} else if (model.body.type === "multipart") {
+				lines.push(
+					`const multipartConfig = ${JSON.stringify(model.body.config)};`,
+				);
+				lines.push(
+					`const multipartResult = MultipartBuilder.serialize(${model.body.paramName}, multipartConfig);`,
+				);
+				lines.push(`if (multipartResult.headers) {`);
+				lines.push(
+					`  Object.entries(multipartResult.headers).forEach(([k, v]) => { headers[k] = v as string; });`,
+				);
+				lines.push(`}`);
+				dataArgument = "multipartResult.content";
+				/* v8 ignore stop */
+			} else {
+				/* v8 ignore next */
+				dataArgument = model.body.paramName;
+			}
+		}
 
-        lines.push(
-            `const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: '${model.httpMethod.toUpperCase()}', headers };`,
-        );
+		lines.push(
+			`const requestOptions: import('node:http').RequestOptions | import('node:https').RequestOptions = { ...options, method: '${model.httpMethod.toUpperCase()}', headers };`,
+		);
 
-        lines.push(`return new Promise((resolve, reject) => {`);
+		lines.push(`return new Promise((resolve, reject) => {`);
 
-        lines.push(`    const client = url.protocol === 'https:' ? https : http;`);
+		lines.push(`    const client = url.protocol === 'https:' ? https : http;`);
 
-        lines.push(`    const req = client.request(url, requestOptions, (res) => {`);
+		lines.push(
+			`    const req = client.request(url, requestOptions, (res) => {`,
+		);
 
-        lines.push(`        const chunks: Buffer[] = [];`);
+		lines.push(`        const chunks: Buffer[] = [];`);
 
-        lines.push(`        res.on('data', (chunk) => chunks.push(chunk));`);
+		lines.push(`        res.on('data', (chunk) => chunks.push(chunk));`);
 
-        lines.push(`        res.on('end', () => {`);
+		lines.push(`        res.on('end', () => {`);
 
-        lines.push(`            const buffer = Buffer.concat(chunks);`);
+		lines.push(`            const buffer = Buffer.concat(chunks);`);
 
-        lines.push(`            if (res.statusCode && res.statusCode >= 400) {`);
+		lines.push(`            if (res.statusCode && res.statusCode >= 400) {`);
 
-        lines.push(
-            `                return reject(new Error('Request failed: ' + res.statusCode + ' ' + res.statusMessage));`,
-        );
+		lines.push(
+			`                return reject(new Error('Request failed: ' + res.statusCode + ' ' + res.statusMessage));`,
+		);
 
-        lines.push(`            }`);
+		lines.push(`            }`);
 
-        if (model.responseSerialization === 'blob' || model.responseSerialization === 'arraybuffer') {
-            lines.push(
-                `            resolve(buffer as string | number | boolean | object | undefined | null as ${returnType});`,
-            );
-        } else if (model.responseSerialization === 'text') {
-            lines.push(
-                `            resolve(buffer.toString('utf-8') as string | number | boolean | object | undefined | null as ${returnType});`,
-            );
-        } else {
-            lines.push(`            try {`);
+		if (
+			model.responseSerialization === "blob" ||
+			model.responseSerialization === "arraybuffer"
+		) {
+			lines.push(
+				`            resolve(buffer as string | number | boolean | object | undefined | null as ${returnType});`,
+			);
+		} else if (model.responseSerialization === "text") {
+			lines.push(
+				`            resolve(buffer.toString('utf-8') as string | number | boolean | object | undefined | null as ${returnType});`,
+			);
+		} else {
+			lines.push(`            try {`);
 
-            lines.push(`                resolve(JSON.parse(buffer.toString('utf-8')));`);
+			lines.push(
+				`                resolve(JSON.parse(buffer.toString('utf-8')));`,
+			);
 
-            lines.push(`            } catch (e) {`);
+			lines.push(`            } catch (e) {`);
 
-            lines.push(
-                `                resolve(buffer.toString('utf-8') as string | number | boolean | object | undefined | null as ${returnType});`,
-            );
+			lines.push(
+				`                resolve(buffer.toString('utf-8') as string | number | boolean | object | undefined | null as ${returnType});`,
+			);
 
-            lines.push(`            }`);
-        }
+			lines.push(`            }`);
+		}
 
-        lines.push(`        });`);
+		lines.push(`        });`);
 
-        lines.push(`    });`);
+		lines.push(`    });`);
 
-        lines.push(`    req.on('error', reject);`);
+		lines.push(`    req.on('error', reject);`);
 
-        if (dataArgument !== 'undefined') {
-            lines.push(`    req.write(${dataArgument});`);
-        }
+		if (dataArgument !== "undefined") {
+			lines.push(`    req.write(${dataArgument});`);
+		}
 
-        lines.push(`    req.end();`);
+		lines.push(`    req.end();`);
 
-        lines.push(`});`);
+		lines.push(`});`);
 
-        return lines.join(String.fromCharCode(10));
-    }
+		return lines.join(String.fromCharCode(10));
+	}
 }
