@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { Project, Scope } from "ts-morph";
-import { SwaggerParser } from "@src/openapi/parse.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
+
 import { TypeGenerator } from "@src/classes/emit.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
 import { XmlBuilderGenerator } from "@src/openapi/emit_xml_builder.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
+import { Project, Scope } from "ts-morph";
+import { describe, expect, it } from "vitest";
 
 const negotiationSpec = {
 	openapi: "3.0.0",

@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
-import { Project } from "ts-morph";
+import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
+import { SecurityGenerator } from "@src/openapi/emit_security.js";
 
 import { SwaggerParser } from "@src/openapi/parse.js";
-import { SecurityGenerator } from "@src/openapi/emit_security.js";
-import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
+import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 
 describe("Emitter: SecurityGenerator", () => {
 	const runGenerator = (spec: Partial<SwaggerSpec>) => {

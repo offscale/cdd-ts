@@ -1,16 +1,39 @@
-import type { Project } from "ts-morph";
-
 import { posix as path } from "node:path";
-
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
-
-import { AbstractClientGenerator } from "../../core/generator.js";
-
 // Core Generators
 import { TypeGenerator } from "@src/classes/emit.js";
-
+import { DiscriminatorGenerator } from "@src/classes/emit_discriminator.js";
+import type { PathInfo } from "@src/core/types/analysis.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { CallbackGenerator } from "@src/functions/emit_callback.js";
+import { WebhookGenerator } from "@src/functions/emit_webhook.js";
+import { camelCase, pascalCase } from "@src/functions/utils.js";
+import { ExamplesGenerator } from "@src/mocks/emit.js";
+import { DocumentMetaGenerator } from "@src/openapi/emit_document_meta.js";
+import { HeadersGenerator } from "@src/openapi/emit_headers.js";
+import { LinkGenerator } from "@src/openapi/emit_link.js";
+import { MediaTypesGenerator } from "@src/openapi/emit_media_types.js";
+import { RequestBodiesGenerator } from "@src/openapi/emit_request_bodies.js";
+import { ResponsesGenerator } from "@src/openapi/emit_responses.js";
+import { SecurityGenerator } from "@src/openapi/emit_security.js";
+import { SpecSnapshotGenerator } from "@src/openapi/emit_snapshot.js";
+import { TagGenerator } from "@src/openapi/emit_tag.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import { PathsGenerator } from "@src/routes/emit.js";
+import { ParametersGenerator } from "@src/routes/emit_parameters.js";
+import { PathItemsGenerator } from "@src/routes/emit_path_items.js";
+import type { Project } from "ts-morph";
+import { AbstractClientGenerator } from "../../core/generator.js";
+import { MultipartBuilderGenerator } from "../../functions/emit_multipart.js";
+// Shared Utilities
+import { ParameterSerializerGenerator } from "../../functions/emit_parameter_serializer.js";
+import { ContentDecoderGenerator } from "../../openapi/emit_content_decoder.js";
+import { ContentEncoderGenerator } from "../../openapi/emit_content_encoder.js";
+import { InfoGenerator } from "../../openapi/emit_info.js";
+import { ResponseHeaderRegistryGenerator } from "../../openapi/emit_response_header_registry.js";
+import { XmlBuilderGenerator } from "../../openapi/emit_xml_builder.js";
+import { XmlParserGenerator } from "../../openapi/emit_xml_parser.js";
+import { ServerGenerator } from "../../routes/emit_server.js";
+import { ServerUrlGenerator } from "../../routes/emit_server_url.js";
 // Angular Generators
 import { AdminGenerator } from "./admin/admin.generator.js";
 import { AdminTestGenerator } from "./admin/admin-test.generator.js";
@@ -18,61 +41,30 @@ import { discoverAdminResources } from "./admin/resource-discovery.js";
 import { ServiceGenerator } from "./service/service.generator.js";
 import { IntegrationTestGenerator } from "./test/integration-test.generator.js";
 import { ServiceTestGenerator } from "./test/service-test-generator.js";
-
-// Angular Utilities
-import { TokenGenerator } from "./utils/token.generator.js";
-import { RequestContextGenerator } from "./utils/request-context.generator.js";
+import { AuthInterceptorGenerator } from "./utils/auth-interceptor.generator.js";
+import { AuthTokensGenerator } from "./utils/auth-tokens.generator.js";
+import { BaseInterceptorGenerator } from "./utils/base-interceptor.generator.js";
+import { DateTransformerGenerator } from "./utils/date-transformer.generator.js";
+import { ExtensionTokensGenerator } from "./utils/extension-tokens.generator.js";
+import { FileDownloadGenerator } from "./utils/file-download.generator.js";
 // NOTE: HttpParamsBuilderGenerator is replaced/gutted, ensuring only Codec generation if present,
 // but typically for full abstraction we assume logic moved to shared.
 // We keep it if it generates the ApiParameterCodec only.
 import { HttpParamsBuilderGenerator } from "./utils/http-params-builder.generator.js";
-
-import { FileDownloadGenerator } from "./utils/file-download.generator.js";
-import { DateTransformerGenerator } from "./utils/date-transformer.generator.js";
-import { AuthTokensGenerator } from "./utils/auth-tokens.generator.js";
-import { AuthInterceptorGenerator } from "./utils/auth-interceptor.generator.js";
-import { OAuthHelperGenerator } from "./utils/oauth-helper.generator.js";
-import { BaseInterceptorGenerator } from "./utils/base-interceptor.generator.js";
-import { ProviderGenerator } from "./utils/provider.generator.js";
 import {
 	MainIndexGenerator,
 	ServiceIndexGenerator,
 } from "./utils/index.generator.js";
 import { LinkServiceGenerator } from "./utils/link-service.generator.js";
-import { ResponseHeaderParserGenerator } from "./utils/response-header-parser.generator.js";
 import { LinkSetParserGenerator } from "./utils/link-set-parser.generator.js";
-import { ExtensionTokensGenerator } from "./utils/extension-tokens.generator.js";
+import { OAuthHelperGenerator } from "./utils/oauth-helper.generator.js";
+import { ProviderGenerator } from "./utils/provider.generator.js";
+import { RequestContextGenerator } from "./utils/request-context.generator.js";
+import { ResponseHeaderParserGenerator } from "./utils/response-header-parser.generator.js";
+// Angular Utilities
+import { TokenGenerator } from "./utils/token.generator.js";
 import { WebhookHelperGenerator } from "./utils/webhook-helper.generator.js";
 
-// Shared Utilities
-import { ParameterSerializerGenerator } from "../../functions/emit_parameter_serializer.js";
-import { ServerGenerator } from "../../routes/emit_server.js";
-import { ServerUrlGenerator } from "../../routes/emit_server_url.js";
-import { XmlBuilderGenerator } from "../../openapi/emit_xml_builder.js";
-import { XmlParserGenerator } from "../../openapi/emit_xml_parser.js";
-import { ContentDecoderGenerator } from "../../openapi/emit_content_decoder.js";
-import { ContentEncoderGenerator } from "../../openapi/emit_content_encoder.js";
-import { InfoGenerator } from "../../openapi/emit_info.js";
-import { MultipartBuilderGenerator } from "../../functions/emit_multipart.js";
-import { ResponseHeaderRegistryGenerator } from "../../openapi/emit_response_header_registry.js";
-import { CallbackGenerator } from "@src/functions/emit_callback.js";
-import { WebhookGenerator } from "@src/functions/emit_webhook.js";
-import { LinkGenerator } from "@src/openapi/emit_link.js";
-import { DiscriminatorGenerator } from "@src/classes/emit_discriminator.js";
-import { SecurityGenerator } from "@src/openapi/emit_security.js";
-import { TagGenerator } from "@src/openapi/emit_tag.js";
-import { ExamplesGenerator } from "@src/mocks/emit.js";
-import { MediaTypesGenerator } from "@src/openapi/emit_media_types.js";
-import { PathsGenerator } from "@src/routes/emit.js";
-import { PathItemsGenerator } from "@src/routes/emit_path_items.js";
-import { HeadersGenerator } from "@src/openapi/emit_headers.js";
-import { ParametersGenerator } from "@src/routes/emit_parameters.js";
-import { RequestBodiesGenerator } from "@src/openapi/emit_request_bodies.js";
-import { ResponsesGenerator } from "@src/openapi/emit_responses.js";
-import { SpecSnapshotGenerator } from "@src/openapi/emit_snapshot.js";
-import { DocumentMetaGenerator } from "@src/openapi/emit_document_meta.js";
-
-import type { PathInfo } from "@src/core/types/analysis.js";
 function getControllerCanonicalName(op: PathInfo): string {
 	if (Array.isArray(op.tags) && op.tags[0]) {
 		return pascalCase(op.tags[0].toString());

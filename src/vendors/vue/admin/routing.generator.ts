@@ -1,7 +1,7 @@
-import type { Project } from "ts-morph";
 import * as path from "node:path";
 import type { Resource } from "@src/core/types/index.js";
 import { pascalCase } from "@src/functions/utils.js";
+import type { Project } from "ts-morph";
 
 /**
  * Generates routing files for the Vue Admin Interface.

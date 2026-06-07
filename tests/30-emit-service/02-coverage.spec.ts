@@ -1,12 +1,13 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { type ImportDeclaration, Project } from "ts-morph";
-import { ServiceGenerator } from "@src/vendors/angular/service/service.generator.js";
-import { SwaggerParser } from "@src/openapi/parse.js";
+
 import type { GeneratorConfig } from "@src/core/types/index.js";
-import { branchCoverageSpec, coverageSpecPart2 } from "../shared/specs.js";
 import { groupPathsByController } from "@src/functions/utils.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { ServiceGenerator } from "@src/vendors/angular/service/service.generator.js";
+import { type ImportDeclaration, Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 import { createTestProject } from "../shared/helpers.js";
+import { branchCoverageSpec, coverageSpecPart2 } from "../shared/specs.js";
 
 describe("Generators (Angular): Service Generators (Coverage)", () => {
 	const ensureResponses = (

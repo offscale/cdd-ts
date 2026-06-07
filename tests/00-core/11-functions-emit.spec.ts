@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import * as functionEmitters from "../../src/functions/emit.js";
 
 describe("Functions Emitters Barrel", () => {

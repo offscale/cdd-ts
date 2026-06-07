@@ -1,4 +1,3 @@
-import type { Project } from "ts-morph";
 import * as path from "node:path";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 import {
@@ -7,6 +6,7 @@ import {
 	getInterceptorsTokenName,
 	pascalCase,
 } from "@src/functions/utils.js";
+import type { Project } from "ts-morph";
 
 export class BaseInterceptorGenerator {
 	private readonly clientName: string;

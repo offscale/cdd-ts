@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { VueClientGenerator } from "../../src/vendors/vue/vue-client.generator.js";
-import { FetchClientGenerator } from "../../src/vendors/fetch/fetch-client.generator.js";
 import { Project } from "ts-morph";
-import { SwaggerParser } from "../../src/openapi/parse.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GeneratorConfig } from "../../src/core/types/index.js";
+import { SwaggerParser } from "../../src/openapi/parse.js";
+import { FetchClientGenerator } from "../../src/vendors/fetch/fetch-client.generator.js";
+import { VueClientGenerator } from "../../src/vendors/vue/vue-client.generator.js";
 
 describe("Vue Implementation", () => {
 	beforeEach(() => {

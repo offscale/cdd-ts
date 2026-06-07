@@ -1,18 +1,18 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-	getGeneratorFactory,
-	generateFromConfigSync,
-} from "../../src/index.js";
-import { AngularClientGenerator } from "../../src/vendors/angular/angular-client.generator.js";
-import { ReactClientGenerator } from "../../src/vendors/react/react-client.generator.js";
-import { VueClientGenerator } from "../../src/vendors/vue/vue-client.generator.js";
-import { FetchClientGenerator } from "../../src/vendors/fetch/fetch-client.generator.js";
-import { AxiosClientGenerator } from "../../src/vendors/axios/axios-client.generator.js";
-import { NodeClientGenerator } from "../../src/vendors/node/node-client.generator.js";
 import { Project } from "ts-morph";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GeneratorConfig } from "../../src/core/types/index.js";
 import * as utils from "../../src/functions/utils.js";
+import {
+	generateFromConfigSync,
+	getGeneratorFactory,
+} from "../../src/index.js";
 import { SwaggerParser } from "../../src/openapi/parse.js";
+import { AngularClientGenerator } from "../../src/vendors/angular/angular-client.generator.js";
+import { AxiosClientGenerator } from "../../src/vendors/axios/axios-client.generator.js";
+import { FetchClientGenerator } from "../../src/vendors/fetch/fetch-client.generator.js";
+import { NodeClientGenerator } from "../../src/vendors/node/node-client.generator.js";
+import { ReactClientGenerator } from "../../src/vendors/react/react-client.generator.js";
+import { VueClientGenerator } from "../../src/vendors/vue/vue-client.generator.js";
 
 vi.mock("../../src/openapi/parse.js", () => {
 	const MockSwaggerParser = vi.fn();

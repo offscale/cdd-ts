@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { beforeAll, describe, expect, it } from "vitest";
 
-import { MockDataGenerator } from "@src/vendors/angular/test/mock-data.generator.js";
-import { SwaggerParser } from "@src/openapi/parse.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { MockDataGenerator } from "@src/vendors/angular/test/mock-data.generator.js";
+import { beforeAll, describe, expect, it } from "vitest";
 
 // Minimal mock config required by SwaggerParser
 const mockConfig: GeneratorConfig = {

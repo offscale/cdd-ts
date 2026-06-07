@@ -1,10 +1,10 @@
 import type {
 	GeneratorConfig,
 	MediaTypeObject,
+	OpenApiValue,
 	RequestBody,
 	SwaggerDefinition,
 	SwaggerResponse,
-	OpenApiValue,
 } from "../core/types/index.js";
 import { pascalCase } from "../functions/utils_string.js";
 

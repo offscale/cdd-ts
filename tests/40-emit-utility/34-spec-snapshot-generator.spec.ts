@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { SwaggerParser } from "@src/openapi/parse.js";
-import { SpecSnapshotGenerator } from "@src/openapi/emit_snapshot.js";
-import { createTestProject } from "../shared/helpers.js";
+
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
+import { SpecSnapshotGenerator } from "@src/openapi/emit_snapshot.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { describe, expect, it } from "vitest";
+import { createTestProject } from "../shared/helpers.js";
 
 const snapshotSpec: SwaggerSpec = {
 	openapi: "3.2.0",

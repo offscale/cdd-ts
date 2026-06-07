@@ -1,6 +1,6 @@
 import type { Resource } from "@src/core/types/index.js";
-import type { FormAnalysisResult } from "@src/vendors/angular/admin/analysis/form-types.js";
 import { pascalCase } from "@src/functions/utils.js";
+import type { FormAnalysisResult } from "@src/vendors/angular/admin/analysis/form-types.js";
 
 import { HtmlElementBuilder as _ } from "../html-element.builder.js";
 import { buildFormControl } from "./form-controls-html.builder.js";

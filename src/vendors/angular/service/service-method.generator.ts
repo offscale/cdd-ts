@@ -1,34 +1,34 @@
 // src/generators/angular/service/service-method.generator.ts
-import type {
-	ClassDeclaration,
-	MethodDeclarationOverloadStructure,
-	OptionalKind,
-	ParameterDeclarationStructure,
-} from "ts-morph";
 
 import type {
 	GeneratorConfig,
+	MediaTypeObject,
+	OpenApiValue,
 	Parameter,
 	PathInfo,
 	ReferenceLike,
 	RequestBody,
 	SwaggerDefinition,
 	SwaggerResponse,
-	MediaTypeObject,
-	OpenApiValue,
 } from "@src/core/types/index.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
 import type {
+	ParamSerialization,
 	ResponseVariant,
 	ServiceMethodModel,
-	ParamSerialization,
 } from "@src/functions/types.js";
 import {
 	camelCase,
 	pascalCase,
 	sanitizeComment,
 } from "@src/functions/utils.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type {
+	ClassDeclaration,
+	MethodDeclarationOverloadStructure,
+	OptionalKind,
+	ParameterDeclarationStructure,
+} from "ts-morph";
 
 export class ServiceMethodGenerator {
 	private analyzer: ServiceMethodAnalyzer;

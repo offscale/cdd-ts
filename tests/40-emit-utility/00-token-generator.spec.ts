@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { Project } from "ts-morph";
+
 import { TokenGenerator } from "@src/vendors/angular/utils/token.generator.js";
+import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 
 describe("Emitter: TokenGenerator", () => {
 	it("should generate uniquely named tokens for a given clientName", () => {

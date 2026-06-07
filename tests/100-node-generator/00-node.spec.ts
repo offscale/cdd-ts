@@ -1,12 +1,10 @@
 import * as os from "node:os";
 import * as path from "node:path";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { generateFromConfigSync } from "@src/index.js";
+import { Project } from "ts-morph";
 // @ts-nocheck
 import { describe, expect, it } from "vitest";
-import { generateFromConfigSync, TestGeneratorConfig } from "@src/index.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { Project } from "ts-morph";
-import { SwaggerParser } from "@src/openapi/parse.js";
-import { NodeClientGenerator } from "@src/vendors/node/node-client.generator.js";
 
 describe("Node Implementation", () => {
 	describe("Config Validation", () => {
@@ -64,7 +62,7 @@ describe("Node Implementation", () => {
 				"Promise<string>",
 			);
 			const statements = getTestMethod?.getStatements().map((s) => s.getText());
-			const methodBody = statements.join(String.fromCharCode(10));
+			const methodBody = statements?.join(String.fromCharCode(10));
 			expect(methodBody).toContain("requestOptions");
 		});
 

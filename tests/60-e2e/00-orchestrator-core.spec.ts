@@ -1,13 +1,14 @@
 // @ts-nocheck
-import { afterEach, describe, expect, it, vi } from "vitest";
+
+import type { GeneratorConfig } from "@src/core/types/index.js";
 import { generateFromConfigSync } from "@src/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { coverageSpec, emptySpec } from "../shared/specs.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	createTestProject,
 	runGeneratorWithConfig,
 } from "../shared/helpers.js";
+import { coverageSpec, emptySpec } from "../shared/specs.js";
 
 vi.mock("fs", async (importOriginal) => {
 	const original = await importOriginal<typeof import("fs")>();

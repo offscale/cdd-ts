@@ -1,5 +1,3 @@
-import { type ClassDeclaration, type Project, Scope } from "ts-morph";
-
 import type { Resource, SwaggerDefinition } from "@src/core/types/index.js";
 import { camelCase, pascalCase, singular } from "@src/functions/utils.js";
 import type { SwaggerParser } from "@src/openapi/parse.js";
@@ -8,11 +6,12 @@ import type {
 	FormAnalysisResult,
 	FormControlModel,
 } from "@src/vendors/angular/admin/analysis/form-types.js";
+import { type ClassDeclaration, type Project, Scope } from "ts-morph";
 
 import { commonStandaloneImports } from "./common-imports.js";
+import { FormInitializerRenderer } from "./form.renderer.js";
 import { generateFormComponentHtml } from "./html/form-component-html.builder.js";
 import { generateFormComponentScss } from "./html/form-component-scss.builder.js";
-import { FormInitializerRenderer } from "./form.renderer.js";
 
 /**
  * Orchestrates the generation of a complete Angular standalone form component.

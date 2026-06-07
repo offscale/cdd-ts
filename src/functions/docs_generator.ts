@@ -1,7 +1,7 @@
-import type { SwaggerParser } from "../openapi/parse.js";
-import type { GeneratorConfig } from "../core/types/index.js";
-import { pascalCase, camelCase } from "./utils.js";
 import type { PathInfo } from "../core/types/analysis.js";
+import type { GeneratorConfig } from "../core/types/index.js";
+import type { SwaggerParser } from "../openapi/parse.js";
+import { camelCase, pascalCase } from "./utils.js";
 
 /** Options for generating docs. */
 export interface DocsOptions {

@@ -1,13 +1,13 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
-import { buildFormControl } from "@src/vendors/angular/admin/html/form-controls-html.builder.js";
-import { generateFormComponentHtml } from "@src/vendors/angular/admin/html/form-component-html.builder.js";
+import type { Resource } from "@src/core/types/index.js";
 import type {
 	FormAnalysisResult,
 	FormControlModel,
 } from "@src/vendors/angular/admin/analysis/form-types.js";
-import type { Resource } from "@src/core/types/index.js";
+import { generateFormComponentHtml } from "@src/vendors/angular/admin/html/form-component-html.builder.js";
+import { buildFormControl } from "@src/vendors/angular/admin/html/form-controls-html.builder.js";
+import { describe, expect, it } from "vitest";
 
 describe("Admin: Form HTML Builders", () => {
 	const baseControl = {

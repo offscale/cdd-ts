@@ -1,10 +1,11 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
+
+import type { GeneratorConfig } from "@src/core/types/index.js";
 
 import { SwaggerParser } from "@src/openapi/parse.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
 import * as resourceDiscovery from "@src/vendors/angular/admin/resource-discovery.js";
 import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
+import { describe, expect, it } from "vitest";
 
 import {
 	branchCoverageSpec,

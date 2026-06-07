@@ -1,6 +1,6 @@
-import type { Project } from "ts-morph";
 import * as path from "node:path";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
+import type { Project } from "ts-morph";
 
 export class FileDownloadGenerator {
 	constructor(private project: Project) {}

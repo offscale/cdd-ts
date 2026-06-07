@@ -1,10 +1,11 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { WebhookHelperGenerator } from "@src/vendors/angular/utils/webhook-helper.generator.js";
+
 import { WebhookGenerator } from "@src/functions/emit_webhook.js";
-import { createTestProject } from "../shared/helpers.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
+import { WebhookHelperGenerator } from "@src/vendors/angular/utils/webhook-helper.generator.js";
 import ts from "typescript";
+import { describe, expect, it } from "vitest";
+import { createTestProject } from "../shared/helpers.js";
 
 describe("Emitter: WebhookHelperGenerator", () => {
 	const createParser = (

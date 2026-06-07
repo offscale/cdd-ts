@@ -1,14 +1,14 @@
 // src/generators/shared/response-header-registry.generator.ts
 import * as path from "node:path";
-import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type {
 	HeaderObject,
+	OpenApiValue,
 	PathInfo,
 	SwaggerDefinition,
-	OpenApiValue,
 } from "@src/core/types/index.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import { type Project, VariableDeclarationKind } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 
 export class ResponseHeaderRegistryGenerator {
 	constructor(

@@ -1,7 +1,7 @@
 import type {
+	OpenApiValue,
 	SwaggerDefinition,
 	SwaggerSpec,
-	OpenApiValue,
 } from "../core/types/index.js";
 
 interface RefObject {

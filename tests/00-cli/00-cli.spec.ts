@@ -1,16 +1,16 @@
+import * as fs from "node:fs";
+import * as http from "node:http";
+import * as path from "node:path";
 import {
-	describe,
-	it,
-	expect,
-	vi,
-	beforeEach,
+	afterAll,
 	afterEach,
 	beforeAll,
-	afterAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
 } from "vitest";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as http from "node:http";
 import { run } from "../../src/cli.js";
 
 vi.mock("../../src/index.js", () => ({

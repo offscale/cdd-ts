@@ -1,8 +1,9 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
+
 import { MultipartBuilderGenerator } from "@src/functions/emit_multipart.js";
-import { createTestProject } from "../shared/helpers.js";
 import ts from "typescript";
+import { describe, expect, it } from "vitest";
+import { createTestProject } from "../shared/helpers.js";
 
 function getMultipartBuilder() {
 	const project = createTestProject();

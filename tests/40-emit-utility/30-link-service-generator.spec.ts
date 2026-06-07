@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { LinkServiceGenerator } from "@src/vendors/angular/utils/link-service.generator.js";
-import { createTestProject } from "../shared/helpers.js";
+
 import { SwaggerParser } from "@src/openapi/parse.js";
+import { LinkServiceGenerator } from "@src/vendors/angular/utils/link-service.generator.js";
 import ts from "typescript";
+import { describe, expect, it } from "vitest";
+import { createTestProject } from "../shared/helpers.js";
 
 describe("Emitter: LinkServiceGenerator", () => {
 	const createParser = (

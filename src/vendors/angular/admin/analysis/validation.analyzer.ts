@@ -1,7 +1,7 @@
 // src/analysis/validation.analyzer.ts
 import type { SwaggerDefinition } from "@src/core/types/index.js";
-import type { ValidationRule } from "./validation-types.js";
 import type { JsonValue } from "./form-types.js";
+import type { ValidationRule } from "./validation-types.js";
 
 export function analyzeValidationRules(
 	schema: SwaggerDefinition | boolean,

@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
 import {
 	evaluateJsonPointer,
 	evaluateRuntimeExpression,
 	type RuntimeContext,
 } from "@src/core/runtime-expressions.js";
+import { describe, expect, it } from "vitest";
 
 describe("Core: Runtime Expression Evaluator", () => {
 	const mockContext: RuntimeContext = {

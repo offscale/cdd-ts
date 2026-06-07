@@ -1,6 +1,6 @@
-import type { Project, ClassDeclaration, PropertyDeclaration } from "ts-morph";
-import type { SwaggerDefinition } from "../../core/types/openapi.js";
+import type { ClassDeclaration, Project, PropertyDeclaration } from "ts-morph";
 import type { IOrmParser } from "../../core/orm/index.js";
+import type { SwaggerDefinition } from "../../core/types/openapi.js";
 
 /**
  * TypeORM parser implementation.

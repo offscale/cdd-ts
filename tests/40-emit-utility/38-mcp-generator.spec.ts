@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
 import { Project } from "ts-morph";
-import { McpGenerator } from "../../src/vendors/mcp/emit.js";
-import type { SwaggerParser } from "../../src/openapi/parse.js";
+import { describe, expect, it } from "vitest";
 import type { GeneratorConfig } from "../../src/core/types/index.js";
+import type { SwaggerParser } from "../../src/openapi/parse.js";
+import { McpGenerator } from "../../src/vendors/mcp/emit.js";
 
 describe("McpGenerator", () => {
 	it("should generate mcp server file based on parser operations", async () => {

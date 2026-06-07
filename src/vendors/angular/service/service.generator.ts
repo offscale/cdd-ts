@@ -1,16 +1,10 @@
 // src/generators/angular/service/service.generator.ts
-import {
-	type ClassDeclaration,
-	type Project,
-	Scope,
-	type SourceFile,
-} from "ts-morph";
-import type { SwaggerParser } from "@src/openapi/parse.js";
+
 import type {
 	GeneratorConfig,
+	OpenApiValue,
 	PathInfo,
 	SwaggerDefinition,
-	OpenApiValue,
 } from "@src/core/types/index.js";
 import {
 	getBasePathTokenName,
@@ -20,8 +14,15 @@ import {
 	isDataTypeInterface,
 	pascalCase,
 } from "@src/functions/utils.js";
-import { ServiceMethodGenerator } from "./service-method.generator.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import {
+	type ClassDeclaration,
+	type Project,
+	Scope,
+	type SourceFile,
+} from "ts-morph";
 import { AbstractServiceGenerator } from "../../../functions/emit_service.js";
+import { ServiceMethodGenerator } from "./service-method.generator.js";
 
 export class ServiceGenerator extends AbstractServiceGenerator {
 	private methodGenerator: ServiceMethodGenerator;

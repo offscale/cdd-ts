@@ -1,7 +1,7 @@
 import * as path from "node:path";
+import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 
 /**
  * Generates the `request-bodies.ts` file.

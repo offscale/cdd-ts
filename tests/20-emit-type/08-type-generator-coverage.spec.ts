@@ -1,11 +1,10 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-
-import { Project } from "ts-morph";
 
 import { TypeGenerator } from "@src/classes/emit.js";
-import { SwaggerParser } from "@src/openapi/parse.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 
 describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 	it("should emit schema identifier JSDoc tags for round-trip", () => {

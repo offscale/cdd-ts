@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
+
+import type { FormControlModel } from "@src/vendors/angular/admin/analysis/form-types.js";
+import type { ValidationRule } from "@src/vendors/angular/admin/analysis/validation-types.js";
 import {
 	FormInitializerRenderer,
 	ValidationRenderer,
 } from "@src/vendors/angular/admin/form.renderer.js";
-import type { ValidationRule } from "@src/vendors/angular/admin/analysis/validation-types.js";
-import type { FormControlModel } from "@src/vendors/angular/admin/analysis/form-types.js";
+import { describe, expect, it } from "vitest";
 
 describe("Admin: FormRenderer", () => {
 	describe("ValidationRenderer", () => {

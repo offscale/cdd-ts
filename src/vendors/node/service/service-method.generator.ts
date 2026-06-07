@@ -1,12 +1,12 @@
-import type { ClassDeclaration } from "ts-morph";
 import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
 import type {
 	ParamSerialization,
 	ServiceMethodModel,
 } from "@src/functions/types.js";
-import { pascalCase, camelCase } from "@src/functions/utils.js";
+import { camelCase, pascalCase } from "@src/functions/utils.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type { ClassDeclaration } from "ts-morph";
 
 /**
  * Responsible for generating the specific content of individual operations inside a NodeService.

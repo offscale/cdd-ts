@@ -1,6 +1,20 @@
 // src/generators/shared/type.generator.ts
 import * as path from "node:path";
 import type {
+	GeneratorConfig,
+	HeaderObject,
+	OpenApiValue,
+	PathItem,
+	SwaggerDefinition,
+} from "@src/core/types/index.js";
+import {
+	extractPaths,
+	getTypeScriptType,
+	pascalCase,
+	sanitizeComment,
+} from "@src/functions/utils.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type {
 	InterfaceDeclaration,
 	JSDocStructure,
 	JSDocTagStructure,
@@ -9,20 +23,6 @@ import type {
 	PropertySignatureStructure,
 	SourceFile,
 } from "ts-morph";
-import type {
-	GeneratorConfig,
-	HeaderObject,
-	PathItem,
-	SwaggerDefinition,
-	OpenApiValue,
-} from "@src/core/types/index.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import {
-	extractPaths,
-	getTypeScriptType,
-	pascalCase,
-	sanitizeComment,
-} from "@src/functions/utils.js";
 
 export class TypeGenerator {
 	constructor(

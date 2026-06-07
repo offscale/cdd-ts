@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
 import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 import { ExpressServerGenerator } from "../../src/vendors/express/express-server.generator.js";
 
 describe("ExpressServerGenerator", () => {
@@ -176,7 +176,7 @@ describe("ExpressServerGenerator", () => {
 				},
 			],
 		};
-		generator.generateMcpRoutes(project, parser, "/output");
+		generator.generateMcpRoutes(project, parser as any, "/output");
 
 		const mcpFile = project.getSourceFile("/output/mcp.routes.ts");
 		expect(mcpFile).toBeDefined();
@@ -200,7 +200,7 @@ describe("ExpressServerGenerator", () => {
 			spec: { info: {} },
 			operations: [],
 		};
-		generator.generateMcpRoutes(project, parser, "/output2");
+		generator.generateMcpRoutes(project, parser as any, "/output2");
 		const mcpFile = project.getSourceFile("/output2/mcp.routes.ts");
 		const text = mcpFile?.getFullText();
 		expect(text).toContain("name: 'api-mcp'");

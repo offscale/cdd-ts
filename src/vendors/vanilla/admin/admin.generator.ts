@@ -1,13 +1,12 @@
-import type { Project } from "ts-morph";
 import * as path from "node:path";
+import type { Resource } from "@src/core/types/index.js";
 
 import type { SwaggerParser } from "@src/openapi/parse.js";
 import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
-import type { Resource } from "@src/core/types/index.js";
-
-import { ListComponentGenerator } from "./list-component.generator.js";
-import { FormComponentGenerator } from "./form-component.generator.js";
+import type { Project } from "ts-morph";
 import { AppShellGenerator } from "./app-shell.generator.js";
+import { FormComponentGenerator } from "./form-component.generator.js";
+import { ListComponentGenerator } from "./list-component.generator.js";
 
 export class VanillaAdminGenerator {
 	private allResources: Resource[] = [];

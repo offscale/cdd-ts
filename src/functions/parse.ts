@@ -1,17 +1,23 @@
 // src/core/utils/openapi-ast-scanner.ts
 import path from "node:path";
-import { Node, Project, SyntaxKind } from "ts-morph";
 import type {
 	CallExpression,
 	Expression,
 	SourceFile,
 	TypeNode,
 } from "ts-morph";
-import { camelCase } from "./utils_string.js";
+import { Node, Project, SyntaxKind } from "ts-morph";
+import {
+	parseGeneratedModelSource,
+	type ReverseSchemaMap,
+	schemaFromTypeNode,
+} from "../classes/parse.js";
+import { OAS_3_1_DIALECT } from "../core/constants.js";
 import type {
-	ExternalDocumentationObject,
 	ExampleObject,
+	ExternalDocumentationObject,
 	InfoObject,
+	OpenApiValue,
 	Parameter,
 	RequestBody,
 	ServerObject,
@@ -19,14 +25,8 @@ import type {
 	SwaggerResponse,
 	SwaggerSpec,
 	TagObject,
-	OpenApiValue,
 } from "../core/types/index.js";
-import {
-	parseGeneratedModelSource,
-	type ReverseSchemaMap,
-	schemaFromTypeNode,
-} from "../classes/parse.js";
-import { OAS_3_1_DIALECT } from "../core/constants.js";
+import { camelCase } from "./utils_string.js";
 
 const STANDARD_HTTP_METHODS = new Set([
 	"get",

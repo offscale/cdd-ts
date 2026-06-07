@@ -1,20 +1,18 @@
 // @ts-nocheck
-import { beforeAll, describe, expect, it } from "vitest";
 
-import type { Project } from "ts-morph";
-
+import type { Resource } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import type { ListActionKind } from "@src/vendors/angular/admin/analysis/list-types.js";
 import { ListComponentGenerator } from "@src/vendors/angular/admin/list-component.generator.js";
 import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
-import { SwaggerParser } from "@src/openapi/parse.js";
-
+import type { Project } from "ts-morph";
+import { beforeAll, describe, expect, it } from "vitest";
 import { createTestProject } from "../shared/helpers.js";
 import {
 	branchCoverageSpec,
 	coverageSpec,
 	listComponentSpec,
 } from "../shared/specs.js";
-import type { ListActionKind } from "@src/vendors/angular/admin/analysis/list-types.js";
-import type { Resource } from "@src/core/types/index.js";
 
 describe("Generators (Angular): ListComponentGenerator", () => {
 	let project: Project;

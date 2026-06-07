@@ -5,17 +5,18 @@
  * parsing, and providing a unified interface to OpenAPI (3.x) and Swagger (2.x) specifications.
  */
 
+import { OAS_3_1_DIALECT } from "../core/constants.js";
 import type {
 	GeneratorConfig,
 	LinkObject,
+	OpenApiValue,
 	PathInfo,
 	PathItem,
 	SecurityScheme,
 	ServerObject,
+	SpecOperation,
 	SwaggerDefinition,
 	SwaggerSpec,
-	SpecOperation,
-	OpenApiValue,
 } from "../core/types/index.js";
 import {
 	extractPaths,
@@ -23,10 +24,9 @@ import {
 	normalizeSecurityKey,
 	pascalCase,
 } from "../functions/utils.js";
-import { SpecValidationError, validateSpec } from "./parse_validator.js";
-import { OAS_3_1_DIALECT } from "../core/constants.js";
-import { SpecLoader } from "./parse_spec_loader.js";
 import { ReferenceResolver } from "./parse_reference_resolver.js";
+import { SpecLoader } from "./parse_spec_loader.js";
+import { SpecValidationError, validateSpec } from "./parse_validator.js";
 
 export interface PolymorphicOption {
 	name: string;

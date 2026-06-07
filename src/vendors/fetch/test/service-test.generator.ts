@@ -1,12 +1,12 @@
-import type { Project } from "ts-morph";
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type {
 	GeneratorConfig,
 	PathInfo,
 	SwaggerDefinition,
 } from "@src/core/types/index.js";
 import { camelCase, pascalCase } from "@src/functions/utils.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project } from "ts-morph";
 import { MockDataGenerator } from "../../angular/test/mock-data.generator.js";
 
 export class FetchServiceTestGenerator {

@@ -1,11 +1,11 @@
 // src/core/validator.ts
 
 import type {
+	OpenApiValue,
 	Parameter,
 	ServerObject,
 	SwaggerSpec,
 	TagObject,
-	OpenApiValue,
 } from "@src/core/types/index.js";
 import { isUrl } from "@src/functions/utils.js";
 

@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import https from "https";
 import http from "http";
+import https from "https";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PetService } from "./pet.service.js";
+
 describe("PetService", () => {
 	let service: PetService;
 

@@ -1,9 +1,9 @@
-import type { Project } from "ts-morph";
-import type { SwaggerParser } from "../../openapi/parse.js";
-import type { GeneratorConfig, PathInfo } from "../../core/types/index.js";
 import { posix as path } from "node:path";
+import type { Project } from "ts-morph";
+import type { GeneratorConfig, PathInfo } from "../../core/types/index.js";
 import type { Parameter, SecurityScheme } from "../../core/types/openapi.js";
 import { snakeCase } from "../../functions/utils_string.js";
+import type { SwaggerParser } from "../../openapi/parse.js";
 
 export class CliGenerator {
 	/**

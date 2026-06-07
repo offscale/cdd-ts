@@ -1,15 +1,15 @@
-import type { Project, SourceFile } from "ts-morph";
 import * as path from "node:path";
+import { PROVIDER_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import {
+	camelCase,
 	getBasePathTokenName,
 	getInterceptorsTokenName,
 	getServerVariablesTokenName,
 	pascalCase,
-	camelCase,
 } from "@src/functions/utils.js";
-import { PROVIDER_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project, SourceFile } from "ts-morph";
 
 export class ProviderGenerator {
 	private readonly clientName: string;

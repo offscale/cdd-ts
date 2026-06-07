@@ -1,7 +1,6 @@
 import type { Project } from "ts-morph";
-
-import type { GeneratorConfig } from "./types/config.js";
 import type { SwaggerParser } from "../openapi/parse.js";
+import type { GeneratorConfig } from "./types/config.js";
 
 /**
  * Abstract contracts for framework-specific generators.

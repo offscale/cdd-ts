@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
+
+import type { PathInfo } from "@src/core/types/analysis.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
 import { generateDocsJson } from "@src/functions/docs_generator.js";
 import type { SwaggerParser } from "@src/openapi/parse.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import type { PathInfo } from "@src/core/types/analysis.js";
+import { describe, expect, it } from "vitest";
 
 describe("generateDocsJson", () => {
 	it("should generate concise documentation correctly without imports or wrapping", () => {

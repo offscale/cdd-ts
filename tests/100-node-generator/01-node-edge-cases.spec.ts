@@ -1,11 +1,11 @@
 import * as os from "node:os";
 import * as path from "node:path";
-// @ts-nocheck
-import { describe, expect, it, vi, afterEach } from "vitest";
-import { generateFromConfigSync } from "@src/index.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { Project } from "ts-morph";
+import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
 import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
+import { generateFromConfigSync } from "@src/index.js";
+import { Project } from "ts-morph";
+// @ts-nocheck
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("Node Implementation Edge Cases", () => {
 	afterEach(() => {

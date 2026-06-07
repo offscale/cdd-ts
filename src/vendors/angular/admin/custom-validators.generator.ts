@@ -1,3 +1,5 @@
+import { posix as path } from "node:path";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 import {
 	type ClassDeclaration,
 	type MethodDeclarationStructure,
@@ -5,8 +7,6 @@ import {
 	type Project,
 	Scope,
 } from "ts-morph";
-import { posix as path } from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 
 /**
  * Generates the custom-validators.ts file using ts-morph for robust AST manipulation.

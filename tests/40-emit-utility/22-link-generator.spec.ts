@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { describe, expect, it, vi } from "vitest";
-import type { Project } from "ts-morph";
-import { SwaggerParser } from "@src/openapi/parse.js";
-import { LinkGenerator } from "@src/openapi/emit_link.js";
-import { createTestProject } from "../shared/helpers.js";
+
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
+import { LinkGenerator } from "@src/openapi/emit_link.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project } from "ts-morph";
 import ts from "typescript";
+import { describe, expect, it, vi } from "vitest";
+import { createTestProject } from "../shared/helpers.js";
 
 const linksSpec: SwaggerSpec = {
 	openapi: "3.0.0",

@@ -1,19 +1,18 @@
-import { Command, Option } from "commander";
 import * as fs from "node:fs";
+import * as http from "node:http";
 import * as path from "node:path";
+import { Command, Option } from "commander";
 import yaml from "js-yaml";
-import { generateFromConfigSync } from "./index.js";
-import { SwaggerParser } from "./openapi/parse.js";
-import { generateDocsJson as generateDocsJsonImpl } from "./functions/docs_generator.js";
 import type {
 	GeneratorConfig,
 	GeneratorConfigOptions,
 	OpenApiValue,
 } from "./core/types/index.js";
+import { generateDocsJson as generateDocsJsonImpl } from "./functions/docs_generator.js";
 import {
 	applyReverseMetadata,
-	buildOpenApiSpecFromServices,
 	buildOpenApiSpecFromScan,
+	buildOpenApiSpecFromServices,
 	isUrl,
 	parseGeneratedMetadata,
 	parseGeneratedModels,
@@ -21,7 +20,8 @@ import {
 	readOpenApiSnapshot,
 	scanTypeScriptProject,
 } from "./functions/utils.js";
-import * as http from "node:http";
+import { generateFromConfigSync } from "./index.js";
+import { SwaggerParser } from "./openapi/parse.js";
 
 let packageJson = { version: "1.0.0" };
 try {

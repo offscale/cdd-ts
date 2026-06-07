@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { beforeAll, describe, expect, it } from "vitest";
 
-import type { Project } from "ts-morph";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js"; // Corrected Path
 
 import { RoutingGenerator } from "@src/vendors/angular/admin/routing.generator.js"; // Corrected Path
-import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js"; // Corrected Path
-import { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project } from "ts-morph";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { createTestProject } from "../shared/helpers.js";
 import { coverageSpec } from "../shared/specs.js";

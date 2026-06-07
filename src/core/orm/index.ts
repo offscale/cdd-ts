@@ -1,7 +1,7 @@
 import type { Project } from "ts-morph";
-import type { SwaggerDefinition } from "../types/openapi.js";
 import type { SwaggerParser } from "../../openapi/parse.js";
 import type { GeneratorConfig } from "../types/config.js";
+import type { SwaggerDefinition } from "../types/openapi.js";
 
 /**
  * Interface representing an ORM Parser.

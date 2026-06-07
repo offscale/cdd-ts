@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
+
 import { SwaggerParser } from "@src/openapi/parse.js";
+import { OAuthHelperGenerator } from "@src/vendors/angular/utils/oauth-helper.generator.js";
+import { describe, expect, it } from "vitest";
 import { createTestProject } from "../shared/helpers.js";
 import { securitySpec } from "../shared/specs.js";
-import { OAuthHelperGenerator } from "@src/vendors/angular/utils/oauth-helper.generator.js";
 
 describe("Emitter: OAuthHelperGenerator", () => {
 	const runGenerator = (spec: object) => {

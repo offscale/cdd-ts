@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
-import * as utils from "@src/openapi/parse_spec_extractor.js";
 import type { SwaggerDefinition } from "@src/core/types/index.js";
 import { ReferenceResolver } from "@src/openapi/parse_reference_resolver.js";
+import * as utils from "@src/openapi/parse_spec_extractor.js";
+import { describe, expect, it } from "vitest";
 
 describe("Core Utils: Spec Extractor", () => {
 	describe("extractPaths", () => {

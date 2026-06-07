@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-
-import { Project } from "ts-morph";
 
 import { BaseInterceptorGenerator } from "@src/vendors/angular/utils/base-interceptor.generator.js";
+
+import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 
 describe("Emitter: BaseInterceptorGenerator", () => {
 	const runGenerator = (clientName?: string) => {

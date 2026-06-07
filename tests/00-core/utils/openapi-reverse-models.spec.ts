@@ -1,16 +1,15 @@
 // @ts-nocheck
 // tests/00-core/utils/openapi-reverse-models.spec.ts
-import { afterEach, describe, expect, it } from "vitest";
+
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-
 import {
 	parseGeneratedModelSource,
 	parseGeneratedModels,
 } from "@src/classes/parse.js";
-
 import { EnumMember } from "ts-morph";
+import { afterEach, describe, expect, it } from "vitest";
 
 const tempDirs: string[] = [];
 

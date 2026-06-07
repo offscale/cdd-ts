@@ -1,7 +1,7 @@
-import type { Project, SourceFile } from "ts-morph";
 import * as path from "node:path";
 import type { Resource } from "@src/core/types/index.js";
 import { pascalCase } from "@src/functions/utils.js";
+import type { Project, SourceFile } from "ts-morph";
 import { ReactElementBuilder } from "./html-element.builder.js";
 
 /**

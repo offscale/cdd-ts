@@ -1,9 +1,9 @@
-import { Project, SyntaxKind, type CallExpression } from "ts-morph";
+import { type CallExpression, Project, SyntaxKind } from "ts-morph";
 import type {
-	SwaggerSpec,
+	Parameter,
 	PathItem,
 	SpecOperation,
-	Parameter,
+	SwaggerSpec,
 } from "../../core/types/index.js";
 
 export function parseGeneratedCliSource(

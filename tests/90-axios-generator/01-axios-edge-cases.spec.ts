@@ -1,14 +1,13 @@
 import * as os from "node:os";
 import * as path from "node:path";
-// @ts-nocheck
-import { describe, expect, it, vi, afterEach } from "vitest";
-import { generateFromConfigSync } from "@src/index.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { Project } from "ts-morph";
+import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
 import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
-
-import { AxiosServiceTestGenerator } from "@src/vendors/axios/test/service-test.generator.js";
+import { generateFromConfigSync } from "@src/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
+import { AxiosServiceTestGenerator } from "@src/vendors/axios/test/service-test.generator.js";
+import { Project } from "ts-morph";
+// @ts-nocheck
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("Axios Implementation Edge Cases", () => {
 	afterEach(() => {
@@ -456,7 +455,6 @@ it("should handle operation with invalid analyzer state explicitly mocked (retur
 		},
 	};
 
-	const _originalAnalyze = ServiceMethodAnalyzer.prototype.analyze;
 	vi.spyOn(ServiceMethodAnalyzer.prototype, "analyze").mockImplementation(
 		function (this: ServiceMethodAnalyzer, _op: PathInfo) {
 			return null;
@@ -476,31 +474,6 @@ it("should handle operation with invalid analyzer state explicitly mocked (retur
 	const serviceClass = serviceFile?.getClass("MockedService");
 	// Because analyze returned null, no method should be added to the class!
 	expect(serviceClass?.getMethods().length).toBe(0);
-});
-
-it("should hit branch conditions for test mock string evaluation and parameter sort in axios-test-generator", () => {
-	const _spec = {
-		openapi: "3.0.0",
-		info: { title: "Test API", version: "1.0" },
-		paths: {
-			"/mocked": {
-				get: {
-					responses: { "200": { description: "OK" } },
-				},
-				post: {
-					operationId: "postMocked",
-					responses: { "200": { description: "OK" } },
-				},
-			},
-		},
-	};
-	const _config = {
-		input: "dummy",
-		output: path.join(os.tmpdir(), "test-output-mocked"),
-		options: { implementation: "axios" as const },
-	};
-
-	// We can just use generateFromConfigSync which invokes all generators!
 });
 
 it("should generate composable tests when config.options.composableTests is true", async () => {
@@ -577,5 +550,5 @@ it("should cover missing branches in AxiosServiceTestGenerator when isComposable
 		),
 	);
 	expect(testFile).toBeDefined();
-	const _text = testFile?.getText();
+	testFile?.getText();
 });

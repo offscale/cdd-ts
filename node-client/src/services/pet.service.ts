@@ -5,10 +5,10 @@
 import * as http from "node:http";
 import * as https from "node:https";
 import { URL } from "node:url";
-import { ParameterSerializer } from "../utils/parameter-serializer";
-import { getServerUrl, resolveServerUrl } from "../utils/server-url";
 import type { ApiResponse, Pet } from "../models";
 import { MultipartBuilder } from "../utils/multipart-builder";
+import { ParameterSerializer } from "../utils/parameter-serializer";
+import { getServerUrl, resolveServerUrl } from "../utils/server-url";
 
 export class PetService {
 	private basePath = "";

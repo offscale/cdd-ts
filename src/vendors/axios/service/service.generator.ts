@@ -1,10 +1,3 @@
-import {
-	type ClassDeclaration,
-	type Project,
-	Scope,
-	type SourceFile,
-} from "ts-morph";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type {
 	GeneratorConfig,
 	PathInfo,
@@ -15,6 +8,13 @@ import {
 	isDataTypeInterface,
 	pascalCase,
 } from "@src/functions/utils.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import {
+	type ClassDeclaration,
+	type Project,
+	Scope,
+	type SourceFile,
+} from "ts-morph";
 import { AbstractServiceGenerator } from "../../../functions/emit_service.js";
 import { AxiosServiceMethodGenerator } from "./service-method.generator.js";
 

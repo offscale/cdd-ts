@@ -1,6 +1,7 @@
 // src/generators/angular/admin/form.renderer.ts
-import type { ValidationRule } from "@src/vendors/angular/admin/analysis/validation-types.js";
+
 import type { FormControlModel } from "@src/vendors/angular/admin/analysis/form-types.js";
+import type { ValidationRule } from "@src/vendors/angular/admin/analysis/validation-types.js";
 
 export class ValidationRenderer {
 	public static render(rules: ValidationRule[]): string {

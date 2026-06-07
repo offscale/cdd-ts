@@ -1,5 +1,5 @@
-import type { Project, SourceFile } from "ts-morph";
 import * as path from "node:path";
+import type { Project, SourceFile } from "ts-morph";
 
 /**
  * Generates custom validation logic (e.g. Yup or Zod schemas) for React forms.

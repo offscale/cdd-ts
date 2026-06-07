@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
 import * as utils from "@src/classes/parse_type_converter.js";
 import type {
 	GeneratorConfig,
 	SwaggerDefinition,
 } from "@src/core/types/index.js";
+import { describe, expect, it } from "vitest";
 
 describe("Core Utils: Type Converter", () => {
 	const config: GeneratorConfig = {

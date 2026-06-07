@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { analyzeValidationRules } from "@src/vendors/angular/admin/analysis/validation.analyzer.js";
+
 import type { SwaggerDefinition } from "@src/core/types/index.js";
+import { analyzeValidationRules } from "@src/vendors/angular/admin/analysis/validation.analyzer.js";
+import { describe, expect, it } from "vitest";
 
 describe("Analysis: validation.analyzer", () => {
 	it("should return empty array for readOnly properties", () => {

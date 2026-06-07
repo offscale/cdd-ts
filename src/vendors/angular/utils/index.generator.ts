@@ -1,11 +1,11 @@
-import type { Project } from "ts-morph";
 import * as path from "node:path";
-import type { GeneratorConfig } from "@src/core/types/index.js";
 import {
 	MAIN_INDEX_GENERATOR_HEADER_COMMENT,
 	SERVICE_INDEX_GENERATOR_HEADER_COMMENT,
 } from "@src/core/constants.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
 import type { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project } from "ts-morph";
 
 export class MainIndexGenerator {
 	constructor(

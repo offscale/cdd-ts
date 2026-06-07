@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { describe, it, expect } from "vitest";
+
 import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 import { CliGenerator } from "../../src/vendors/cli/emit.js";
 
 describe("CliGenerator", () => {

@@ -1,11 +1,11 @@
-import type { Project } from "ts-morph";
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
+import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
+import { camelCase, pascalCase } from "@src/functions/utils.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project } from "ts-morph";
 import { AbstractClientGenerator } from "../../core/generator.js";
 import { FetchClientGenerator } from "../fetch/fetch-client.generator.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
-import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
 import { ReactAdminGenerator } from "./admin/admin.generator.js";
 import { ReactHookTestGenerator } from "./test/hook-test.generator.js";
 

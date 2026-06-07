@@ -1,12 +1,12 @@
 // @ts-nocheck
 // tests/30-emit-service/03-service-method-precedence.spec.ts
 
-import { describe, expect, it } from "vitest";
-import { Project } from "ts-morph";
-import { SwaggerParser } from "@src/openapi/parse.js";
-import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
 import { TypeGenerator } from "@src/classes/emit.js";
+import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
+import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 
 describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 	const createTestEnv = () => {

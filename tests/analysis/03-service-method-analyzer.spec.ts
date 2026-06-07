@@ -1,8 +1,9 @@
 // @ts-nocheck
-import { describe, expect, it, vi } from "vitest";
+
+import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
 import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
-import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
+import { describe, expect, it, vi } from "vitest";
 
 describe("Analysis: ServiceMethodAnalyzer", () => {
 	const setupAnalyzer = (

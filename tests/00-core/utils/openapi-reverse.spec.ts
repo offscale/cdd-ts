@@ -1,11 +1,12 @@
 // @ts-nocheck
 // tests/00-core/utils/openapi-reverse.spec.ts
-import { afterEach, describe, expect, it } from "vitest";
+
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-
+import { OAS_3_1_DIALECT } from "@src/core/constants.js";
+import type { ReverseMetadata } from "@src/openapi/emit.js";
 import {
 	applyReverseMetadata,
 	buildOpenApiSpecFromServices,
@@ -13,8 +14,7 @@ import {
 	parseGeneratedServiceSource,
 	parseGeneratedServices,
 } from "@src/openapi/emit.js";
-import { OAS_3_1_DIALECT } from "@src/core/constants.js";
-import type { ReverseMetadata } from "@src/openapi/emit.js";
+import { afterEach, describe, expect, it } from "vitest";
 
 const tempDirs: string[] = [];
 

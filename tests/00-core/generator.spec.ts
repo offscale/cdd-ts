@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { AbstractClientGenerator } from "../../src/core/generator.js";
 import type { Project } from "ts-morph";
-import type { SwaggerParser } from "../../src/openapi/parse.js";
+import { describe, expect, it } from "vitest";
+import { AbstractClientGenerator } from "../../src/core/generator.js";
 import type { GeneratorConfig } from "../../src/core/types/config.js";
+import type { SwaggerParser } from "../../src/openapi/parse.js";
 
 class MockGenerator extends AbstractClientGenerator {
 	async generate(

@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { Project } from "ts-morph";
+
+import { TypeGenerator } from "@src/classes/emit.js";
+import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ReferenceResolver } from "@src/openapi/parse_reference_resolver.js";
-import { TypeGenerator } from "@src/classes/emit.js";
-import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
+import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 import { info } from "../fixtures/common.js";
 
 describe("Emitter: TypeGenerator (External Schemas)", () => {

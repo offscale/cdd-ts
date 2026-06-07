@@ -1,6 +1,6 @@
-import { type Project, VariableDeclarationKind } from "ts-morph";
 import * as path from "node:path";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
+import { type Project, VariableDeclarationKind } from "ts-morph";
 
 export class DateTransformerGenerator {
 	constructor(private project: Project) {}

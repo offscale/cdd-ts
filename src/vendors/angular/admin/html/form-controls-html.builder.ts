@@ -1,11 +1,12 @@
 // src/generators/angular/admin/html/form-controls-html.builder.ts
-import type { FormControlModel } from "@src/vendors/angular/admin/analysis/form-types.js";
+
 import type { SwaggerDefinition } from "@src/core/types/index.js";
 import { camelCase, pascalCase, singular } from "@src/functions/utils.js";
+import type { FormControlModel } from "@src/vendors/angular/admin/analysis/form-types.js";
 
 import {
-	type HtmlElementBuilder,
 	HtmlElementBuilder as _,
+	type HtmlElementBuilder,
 } from "../html-element.builder.js";
 
 export function buildErrorMessages(

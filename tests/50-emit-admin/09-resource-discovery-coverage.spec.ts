@@ -1,8 +1,5 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
-import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
-import { SwaggerParser } from "@src/openapi/parse.js";
 import type {
 	FormProperty,
 	GeneratorConfig,
@@ -10,6 +7,9 @@ import type {
 	ResourceOperation,
 	SwaggerDefinition,
 } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
+import { describe, expect, it } from "vitest";
 
 import { branchCoverageSpec } from "../shared/specs.js";
 

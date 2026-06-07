@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { afterEach, describe, expect, it, vi } from "vitest";
+
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
-import { SwaggerParser } from "@src/openapi/parse.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
 import { MockDataGenerator } from "@src/vendors/angular/test/mock-data.generator.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("node:fs");
 

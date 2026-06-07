@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
 import type { SwaggerDefinition, SwaggerSpec } from "@src/core/types/index.js";
+import { describe, expect, it } from "vitest";
 
 describe("Core: Types & Interfaces Coverage", () => {
 	it("should support SPDX identifier in LicenseObject", () => {

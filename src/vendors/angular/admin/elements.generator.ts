@@ -1,6 +1,6 @@
-import type { Project } from "ts-morph";
 import type { Resource } from "@src/core/types/index.js";
 import { camelCase, pascalCase } from "@src/functions/utils.js";
+import type { Project } from "ts-morph";
 
 export class ElementsGenerator {
 	constructor(private readonly project: Project) {}

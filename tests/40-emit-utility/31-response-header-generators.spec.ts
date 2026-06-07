@@ -1,10 +1,11 @@
 // @ts-nocheck
-import { describe, expect, it, vi } from "vitest";
+
 import { ResponseHeaderRegistryGenerator } from "@src/openapi/emit_response_header_registry.js";
-import { ResponseHeaderParserGenerator } from "@src/vendors/angular/utils/response-header-parser.generator.js";
-import { createTestProject } from "../shared/helpers.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
+import { ResponseHeaderParserGenerator } from "@src/vendors/angular/utils/response-header-parser.generator.js";
 import ts from "typescript";
+import { describe, expect, it, vi } from "vitest";
+import { createTestProject } from "../shared/helpers.js";
 
 describe("Emitter: Response Header Utilities", () => {
 	const createParser = (

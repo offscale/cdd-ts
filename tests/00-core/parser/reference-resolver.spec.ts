@@ -1,8 +1,9 @@
 // @ts-nocheck
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { SwaggerSpec } from "@src/core/types/index.js";
 
 import { ReferenceResolver } from "@src/openapi/parse_reference_resolver.js";
-import type { SwaggerSpec } from "@src/core/types/index.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("Core: ReferenceResolver", () => {
 	let cache: Map<string, SwaggerSpec>;

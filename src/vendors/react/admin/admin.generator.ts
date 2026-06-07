@@ -1,18 +1,16 @@
-import type { Project } from "ts-morph";
 import * as path from "node:path";
-
+import type { GeneratorConfig } from "@src/core/types/config.js";
+import type { Resource } from "@src/core/types/index.js";
 import type { SwaggerParser } from "@src/openapi/parse.js";
 import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
-import type { Resource } from "@src/core/types/index.js";
-
-import { ListComponentGenerator } from "./list-component.generator.js";
-import { FormComponentGenerator } from "./form-component.generator.js";
-import { RoutingGenerator } from "./routing.generator.js";
-import { CustomValidatorsGenerator } from "./custom-validators.generator.js";
-import { StylingBuilder } from "./styling.builder.js";
+import type { Project } from "ts-morph";
 import { AdminTestGenerator } from "./admin-test.generator.js";
+import { CustomValidatorsGenerator } from "./custom-validators.generator.js";
+import { FormComponentGenerator } from "./form-component.generator.js";
 import { I18nGenerator } from "./i18n.generator.js";
-import type { GeneratorConfig } from "@src/core/types/config.js";
+import { ListComponentGenerator } from "./list-component.generator.js";
+import { RoutingGenerator } from "./routing.generator.js";
+import { StylingBuilder } from "./styling.builder.js";
 
 /**
  * Main coordinator for generating the React Admin Interface.

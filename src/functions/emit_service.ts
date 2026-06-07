@@ -1,9 +1,9 @@
-import type { Project, SourceFile } from "ts-morph";
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
+import { SERVICE_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
 import { camelCase } from "@src/functions/utils.js";
-import { SERVICE_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project, SourceFile } from "ts-morph";
 
 function toTsIdentifier(name: string): string {
 	return camelCase(name.replace(/[^\w]/g, " "));

@@ -1,17 +1,14 @@
 // src/generators/angular/test/service-test-generator.ts
-import type { Project, SourceFile } from "ts-morph";
 
 import * as path from "node:path";
-
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type {
+	ExampleObject,
 	GeneratorConfig,
+	OpenApiValue,
 	Parameter,
 	PathInfo,
-	SwaggerDefinition,
-	ExampleObject,
 	ReferenceLike,
-	OpenApiValue,
+	SwaggerDefinition,
 } from "@src/core/types/index.js";
 import {
 	camelCase,
@@ -20,6 +17,8 @@ import {
 	isDataTypeInterface,
 	pascalCase,
 } from "@src/functions/utils.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project, SourceFile } from "ts-morph";
 
 import { MockDataGenerator } from "./mock-data.generator.js";
 

@@ -1,15 +1,16 @@
 // src/generators/angular/admin/resource-discovery.ts
-import type { SwaggerParser } from "@src/openapi/parse.js";
+
 import type {
 	DiscriminatorObject,
 	FormProperty,
+	OpenApiValue,
 	PathInfo,
 	Resource,
 	ResourceOperation,
 	SwaggerDefinition,
-	OpenApiValue,
 } from "@src/core/types/index.js";
 import { camelCase, pascalCase, singular } from "@src/functions/utils.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
 
 function getMethodName(op: PathInfo): string {
 	const pathToMethodName = (path: string): string =>

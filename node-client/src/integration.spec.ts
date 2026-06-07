@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { PetService } from "./services/pet.service.js";
 import { StoreService } from "./services/store.service.js";
 import { UserService } from "./services/user.service.js";

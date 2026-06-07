@@ -1,16 +1,14 @@
 // @ts-nocheck
 // tests/00-core/06-input-validation.spec.ts
 
-import { describe, expect, it } from "vitest";
-
+import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
 import {
 	SpecValidationError,
 	validateSpec,
 } from "@src/openapi/parse_validator.js";
-import { SwaggerParser } from "@src/openapi/parse.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
+import { describe, expect, it } from "vitest";
 import { info } from "../fixtures/common.js";
-import type { SwaggerSpec } from "@src/core/types/index.js";
 
 describe("Core: Input Spec Validation", () => {
 	const validInfo = { title: "Valid API", version: "1.0.0" };

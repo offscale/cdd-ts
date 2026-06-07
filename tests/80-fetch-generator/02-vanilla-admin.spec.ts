@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
+
 import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 import { runGenerator } from "../shared/helpers.js";
 import { coverageSpec } from "../shared/specs.js";
 

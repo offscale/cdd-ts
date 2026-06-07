@@ -3,11 +3,11 @@ import type {
 	EncodingProperty,
 	GeneratorConfig,
 	MediaTypeObject,
+	OpenApiValue,
 	Parameter,
 	PathInfo,
 	SwaggerDefinition,
 	SwaggerResponse,
-	OpenApiValue,
 } from "@src/core/types/index.js";
 import {
 	camelCase,

@@ -3,9 +3,9 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import {
 	type CliOptions,
-	type ToActionOptions,
 	generateFromOpenApi,
 	generateToOpenApi,
+	type ToActionOptions,
 } from "./cli.js";
 
 /**

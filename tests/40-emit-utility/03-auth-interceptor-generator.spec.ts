@@ -1,10 +1,11 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
+
+import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
+import { AuthInterceptorGenerator } from "@src/vendors/angular/utils/auth-interceptor.generator.js";
+import { describe, expect, it } from "vitest";
 import { createTestProject } from "../shared/helpers.js";
 import { emptySpec, securitySpec } from "../shared/specs.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { AuthInterceptorGenerator } from "@src/vendors/angular/utils/auth-interceptor.generator.js";
 
 describe("Emitter: AuthInterceptorGenerator", () => {
 	const runGenerator = (spec: object) => {

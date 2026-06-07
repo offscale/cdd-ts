@@ -1,15 +1,16 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import type { Project } from "ts-morph";
-import { SwaggerParser } from "@src/openapi/parse.js";
-import { CallbackGenerator } from "@src/functions/emit_callback.js";
-import { createTestProject } from "../shared/helpers.js";
+
 import type {
 	GeneratorConfig,
 	SwaggerDefinition,
 	SwaggerSpec,
 } from "@src/core/types/index.js";
+import { CallbackGenerator } from "@src/functions/emit_callback.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project } from "ts-morph";
 import ts from "typescript";
+import { describe, expect, it } from "vitest";
+import { createTestProject } from "../shared/helpers.js";
 
 const mockSpec: SwaggerSpec = {
 	openapi: "3.0.0",

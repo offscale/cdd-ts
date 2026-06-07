@@ -5,21 +5,20 @@ import type {
 	Resource,
 	SwaggerDefinition,
 } from "@src/core/types/index.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import {
 	camelCase,
 	getTypeScriptType,
 	pascalCase,
 	singular,
 } from "@src/functions/utils.js";
-import { analyzeValidationRules } from "./validation.analyzer.js";
-
+import type { SwaggerParser } from "@src/openapi/parse.js";
 import type {
 	FormAnalysisResult,
 	FormControlModel,
-	PolymorphicPropertyConfig,
 	JsonValue,
+	PolymorphicPropertyConfig,
 } from "./form-types.js";
+import { analyzeValidationRules } from "./validation.analyzer.js";
 
 export class FormModelBuilder {
 	private parser: SwaggerParser;

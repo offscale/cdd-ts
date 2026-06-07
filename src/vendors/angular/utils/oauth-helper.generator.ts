@@ -1,8 +1,8 @@
 // src/generators/angular/utils/oauth-helper.generator.ts
 import * as path from "node:path";
-import { type ClassDeclaration, type Project, Scope } from "ts-morph";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import { type ClassDeclaration, type Project, Scope } from "ts-morph";
 
 interface OAuthFlowConfig {
 	type: "oauth2" | "openIdConnect";

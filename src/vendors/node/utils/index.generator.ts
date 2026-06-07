@@ -1,7 +1,7 @@
-import type { Project } from "ts-morph";
 import { posix as path } from "node:path";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import type { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project } from "ts-morph";
 
 /**
  * Discovers and writes an `index.ts` file aggregating the generated node services.

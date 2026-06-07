@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
 import { sanitizeComment } from "@src/functions/utils_sanitizer.js";
+import { describe, expect, it } from "vitest";
 
 describe("Core Utils: Sanitizer", () => {
 	it("should return empty string for undefined input", () => {

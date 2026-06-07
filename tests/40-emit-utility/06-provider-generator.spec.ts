@@ -1,16 +1,17 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { Project } from "ts-morph";
-import { SwaggerParser } from "@src/openapi/parse.js";
+
 import type { GeneratorConfig } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { AuthInterceptorGenerator } from "@src/vendors/angular/utils/auth-interceptor.generator.js";
+import { AuthTokensGenerator } from "@src/vendors/angular/utils/auth-tokens.generator.js";
+import { BaseInterceptorGenerator } from "@src/vendors/angular/utils/base-interceptor.generator.js";
+import { DateTransformerGenerator } from "@src/vendors/angular/utils/date-transformer.generator.js";
 import { ProviderGenerator } from "@src/vendors/angular/utils/provider.generator.js";
 import { TokenGenerator } from "@src/vendors/angular/utils/token.generator.js";
-import { BaseInterceptorGenerator } from "@src/vendors/angular/utils/base-interceptor.generator.js";
-import { AuthTokensGenerator } from "@src/vendors/angular/utils/auth-tokens.generator.js";
-import { AuthInterceptorGenerator } from "@src/vendors/angular/utils/auth-interceptor.generator.js";
-import { DateTransformerGenerator } from "@src/vendors/angular/utils/date-transformer.generator.js";
-import { emptySpec, securitySpec } from "../shared/specs.js";
+import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 import { createTestProject } from "../shared/helpers.js";
+import { emptySpec, securitySpec } from "../shared/specs.js";
 
 describe("Emitter: ProviderGenerator", () => {
 	const runGenerator = (

@@ -1,10 +1,10 @@
 // @ts-nocheck
 // tests/analysis/01-form-model-builder.spec.ts
 
-import { describe, expect, it, vi } from "vitest";
-import { FormModelBuilder } from "@src/vendors/angular/admin/analysis/form-model.builder.js";
-import { SwaggerParser } from "@src/openapi/parse.js";
 import type { GeneratorConfig, Resource } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { FormModelBuilder } from "@src/vendors/angular/admin/analysis/form-model.builder.js";
+import { describe, expect, it, vi } from "vitest";
 
 describe("Analysis: FormModelBuilder", () => {
 	const setup = (

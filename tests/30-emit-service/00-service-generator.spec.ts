@@ -1,17 +1,16 @@
 // @ts-nocheck
-import { describe, expect, it, vi } from "vitest";
 
-import { Project, Scope } from "ts-morph";
-
-import { ServiceGenerator } from "@src/vendors/angular/service/service.generator.js";
-import { SwaggerParser } from "@src/openapi/parse.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { groupPathsByController } from "@src/functions/utils.js";
 import { TypeGenerator } from "@src/classes/emit.js";
-import { TokenGenerator } from "@src/vendors/angular/utils/token.generator.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
 // Using ParameterSerializerGenerator instead of HttpParamsBuilderGenerator
 import { ParameterSerializerGenerator } from "@src/functions/emit_parameter_serializer.js";
+import { groupPathsByController } from "@src/functions/utils.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { ServiceGenerator } from "@src/vendors/angular/service/service.generator.js";
 import { AuthTokensGenerator } from "@src/vendors/angular/utils/auth-tokens.generator.js";
+import { TokenGenerator } from "@src/vendors/angular/utils/token.generator.js";
+import { Project, Scope } from "ts-morph";
+import { describe, expect, it, vi } from "vitest";
 
 import {
 	branchCoverageSpec,

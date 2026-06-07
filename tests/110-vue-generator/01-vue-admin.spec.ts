@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
+import { SwaggerParser } from "../../src/openapi/parse.js";
+import { VueAdminGenerator } from "../../src/vendors/vue/admin/admin.generator.js";
 import { runGeneratorWithConfig } from "../shared/helpers.js";
 import { coverageSpec, polymorphismSpec } from "../shared/specs.js";
-
-import { VueAdminGenerator } from "../../src/vendors/vue/admin/admin.generator.js";
-import { SwaggerParser } from "../../src/openapi/parse.js";
 
 describe("Vue Admin Generation", () => {
 	it("should create admin directory when missing", () => {

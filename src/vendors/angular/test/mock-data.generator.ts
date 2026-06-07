@@ -1,9 +1,9 @@
 // src/generators/angular/test/mock-data.generator.ts
 import * as fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type { SwaggerDefinition } from "@src/core/types/index.js";
 import { pascalCase } from "@src/functions/utils_string.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
 
 type JsonSchemaType =
 	| "object"

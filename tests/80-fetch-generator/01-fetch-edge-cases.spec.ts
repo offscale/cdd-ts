@@ -1,14 +1,13 @@
 import * as os from "node:os";
 import * as path from "node:path";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { generateFromConfigSync } from "@src/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { FetchServiceMethodGenerator } from "@src/vendors/fetch/service/service-method.generator.js";
+import { FetchServiceTestGenerator } from "@src/vendors/fetch/test/service-test.generator.js";
+import { Project } from "ts-morph";
 // @ts-nocheck
 import { describe, expect, it } from "vitest";
-import { generateFromConfigSync } from "@src/index.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { Project } from "ts-morph";
-import { FetchServiceMethodGenerator } from "@src/vendors/fetch/service/service-method.generator.js";
-
-import { FetchServiceTestGenerator } from "@src/vendors/fetch/test/service-test.generator.js";
-import { SwaggerParser } from "@src/openapi/parse.js";
 
 describe("Fetch Implementation Edge Cases", () => {
 	it("should generate .client.ts files when framework is vanilla", () => {
@@ -210,12 +209,12 @@ describe("Fetch Implementation Edge Cases", () => {
 
 	it("should handle analyzer returning null (e.g. invalid operation)", () => {
 		const generator = new FetchServiceMethodGenerator(
-			{} as string | number | boolean | object | undefined | null,
-			{ paths: {} } as string | number | boolean | object | undefined | null,
+			{} as any,
+			{ paths: {} } as any,
 		);
 		// We mock analyzer so we can force it to return null
 		(
-			generator as string | number | boolean | object | undefined | null as {
+			generator as any as {
 				analyzer: { analyze: () => null };
 			}
 		).analyzer = { analyze: () => null };
@@ -224,12 +223,7 @@ describe("Fetch Implementation Edge Cases", () => {
 		const cls = sf.getClass("Test")!;
 
 		// Should not throw, should just return early
-		expect(() =>
-			generator.addServiceMethod(
-				cls,
-				{} as string | number | boolean | object | undefined | null,
-			),
-		).not.toThrow();
+		expect(() => generator.addServiceMethod(cls, {} as any)).not.toThrow();
 		expect(cls.getMethods().length).toBe(0);
 	});
 });
@@ -303,7 +297,7 @@ it("should handle operation-level servers", async () => {
 	};
 	const project = new Project();
 	generateFromConfigSync(config, project, { spec });
-	const _sf = project
+	project
 		.getSourceFiles()
 		.find(
 			(f) =>
@@ -523,5 +517,5 @@ it("should cover missing branches in FetchServiceTestGenerator when isComposable
 		),
 	);
 	expect(testFile).toBeDefined();
-	const _text = testFile?.getText();
+	testFile?.getText();
 });

@@ -2,22 +2,19 @@ import * as path from "node:path";
 
 // src/index.ts
 
-import { ModuleKind, Project, ScriptTarget } from "ts-morph";
-
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { isUrl } from "@src/functions/utils.js";
-
+import { ModuleKind, Project, ScriptTarget } from "ts-morph";
+import type { IClientGenerator } from "./core/generator.js";
 import { SwaggerParser } from "./openapi/parse.js";
 import { AngularClientGenerator } from "./vendors/angular/angular-client.generator.js";
-import { FetchClientGenerator } from "./vendors/fetch/fetch-client.generator.js";
 import { AxiosClientGenerator } from "./vendors/axios/axios-client.generator.js";
-import { NodeClientGenerator } from "./vendors/node/node-client.generator.js";
-import type { IClientGenerator } from "./core/generator.js";
-
-import { ReactClientGenerator } from "./vendors/react/react-client.generator.js";
-import { VueClientGenerator } from "./vendors/vue/vue-client.generator.js";
-import { TypeOrmGenerator } from "./vendors/typeorm/emit.js";
 import { ExpressServerGenerator } from "./vendors/express/express-server.generator.js";
+import { FetchClientGenerator } from "./vendors/fetch/fetch-client.generator.js";
+import { NodeClientGenerator } from "./vendors/node/node-client.generator.js";
+import { ReactClientGenerator } from "./vendors/react/react-client.generator.js";
+import { TypeOrmGenerator } from "./vendors/typeorm/emit.js";
+import { VueClientGenerator } from "./vendors/vue/vue-client.generator.js";
 
 /**
  * For test environments, allows passing a pre-parsed OpenAPI specification object.
@@ -266,15 +263,15 @@ export function generateFromConfigSync(
 	}
 }
 
-/**
- * AST scanner utilities for reverse-generating OpenAPI specs from TypeScript.
- */
-export { parseGeneratedCliSource } from "./vendors/cli/parse.js";
-
+export {
+	generateDocsJson,
+	generateFromOpenApi,
+	generateToOpenApi,
+	serveJsonRpc,
+} from "./cli.js";
+export type { IOrmGenerator, IOrmParser } from "./core/orm/index.js";
 export {
 	buildOpenApiSpecFromScan,
-	scanTypeScriptProject,
-	scanTypeScriptSource,
 	type CodeScanFileSystem,
 	type CodeScanIr,
 	type CodeScanOperation,
@@ -283,15 +280,12 @@ export {
 	type CodeScanParamLocation,
 	type CodeScanRequestBody,
 	type CodeScanResponse,
+	scanTypeScriptProject,
+	scanTypeScriptSource,
 } from "./functions/parse.js";
-
-export type { IOrmParser, IOrmGenerator } from "./core/orm/index.js";
-export { TypeOrmParser } from "./vendors/typeorm/parse.js";
+/**
+ * AST scanner utilities for reverse-generating OpenAPI specs from TypeScript.
+ */
+export { parseGeneratedCliSource } from "./vendors/cli/parse.js";
 export { TypeOrmGenerator } from "./vendors/typeorm/emit.js";
-
-export {
-	generateFromOpenApi,
-	generateToOpenApi,
-	generateDocsJson,
-	serveJsonRpc,
-} from "./cli.js";
+export { TypeOrmParser } from "./vendors/typeorm/parse.js";

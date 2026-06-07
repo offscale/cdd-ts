@@ -1,6 +1,8 @@
 // src/core/utils/openapi-reverse.ts
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import type { ReverseSchemaMap } from "../classes/parse.js";
+import { OAS_3_1_DIALECT } from "../core/constants.js";
 import type {
 	ExampleObject,
 	ExternalDocumentationObject,
@@ -8,20 +10,18 @@ import type {
 	InfoObject,
 	LinkObject,
 	MediaTypeObject,
+	OpenApiValue,
 	Parameter,
 	PathItem,
 	RequestBody,
 	SecurityScheme,
 	ServerObject,
+	SpecOperation,
 	SwaggerResponse,
 	SwaggerSpec,
 	TagObject,
-	SpecOperation,
 	XmlObject,
-	OpenApiValue,
 } from "../core/types/index.js";
-import { OAS_3_1_DIALECT } from "../core/constants.js";
-import type { ReverseSchemaMap } from "../classes/parse.js";
 
 /** Reverse param location */
 export type ReverseParamLocation =

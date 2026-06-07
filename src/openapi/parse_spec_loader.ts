@@ -4,10 +4,10 @@ import { pathToFileURL } from "node:url";
 
 import yaml from "js-yaml";
 
-import type { SwaggerSpec, OpenApiValue } from "../core/types/index.js";
+import type { OpenApiValue, SwaggerSpec } from "../core/types/index.js";
 import { isUrl } from "../functions/utils.js";
-import { validateSpec } from "./parse_validator.js";
 import { ReferenceResolver } from "./parse_reference_resolver.js";
+import { validateSpec } from "./parse_validator.js";
 
 export class SpecLoader {
 	public static loadSync(inputPath: string): {

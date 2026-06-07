@@ -1,9 +1,9 @@
-import type { Project } from "ts-morph";
-import type { SwaggerParser } from "../../openapi/parse.js";
-import type { GeneratorConfig } from "../../core/types/index.js";
 import { posix as path } from "node:path";
-import { snakeCase } from "../../functions/utils_string.js";
+import type { Project } from "ts-morph";
+import type { GeneratorConfig } from "../../core/types/index.js";
 import type { Parameter } from "../../core/types/openapi.js";
+import { snakeCase } from "../../functions/utils_string.js";
+import type { SwaggerParser } from "../../openapi/parse.js";
 
 export class McpGenerator {
 	public generate(

@@ -1,12 +1,11 @@
 // @ts-nocheck
-import ts from "typescript";
 
-import { describe, expect, it } from "vitest";
-import type { Project } from "ts-morph";
-
-import { SwaggerParser } from "@src/openapi/parse.js";
-import { HeadersGenerator } from "@src/openapi/emit_headers.js";
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
+import { HeadersGenerator } from "@src/openapi/emit_headers.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project } from "ts-morph";
+import ts from "typescript";
+import { describe, expect, it } from "vitest";
 
 import { createTestProject } from "../shared/helpers.js";
 

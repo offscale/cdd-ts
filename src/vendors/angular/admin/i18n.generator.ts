@@ -1,5 +1,5 @@
-import type { Project, SourceFile } from "ts-morph";
 import * as path from "node:path";
+import type { Project, SourceFile } from "ts-morph";
 
 /**
  * Generates an i18n service scaffold for Angular components, preparing the app for localization.

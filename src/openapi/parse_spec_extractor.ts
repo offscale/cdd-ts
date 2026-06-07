@@ -1,13 +1,14 @@
 // src/core/utils/spec-extractor.ts
 import type {
 	BodyParameter,
-	Parameter as SwaggerOfficialParameter,
 	Response,
+	Parameter as SwaggerOfficialParameter,
 } from "swagger-schema-official";
 import type {
 	ExampleObject,
 	HeaderObject,
 	MediaTypeObject,
+	OpenApiValue,
 	Parameter,
 	PathInfo,
 	PathItem,
@@ -15,10 +16,9 @@ import type {
 	SpecOperation,
 	SwaggerDefinition,
 	SwaggerResponse,
-	OpenApiValue,
 } from "../core/types/index.js";
-import { isUriReference, pascalCase } from "../functions/utils_string.js";
 import { normalizeSecurityKey } from "../functions/utils_naming.js";
+import { isUriReference, pascalCase } from "../functions/utils_string.js";
 
 type UnifiedParameter = SwaggerOfficialParameter & {
 	schema?: SwaggerDefinition | { $ref: string } | boolean;

@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
 import { validateSpec } from "@src/openapi/parse_validator.js";
+import { describe, expect, it } from "vitest";
 
 describe("Input Validation: additionalOperations", () => {
 	it("should reject additionalOperations that reuse fixed HTTP methods", () => {

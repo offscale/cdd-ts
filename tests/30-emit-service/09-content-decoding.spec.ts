@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { Project, Scope } from "ts-morph";
-import { SwaggerParser } from "@src/openapi/parse.js";
-import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
-import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
+
 import { TypeGenerator } from "@src/classes/emit.js";
+import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
 import { ParameterSerializerGenerator } from "@src/functions/emit_parameter_serializer.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
+import { Project, Scope } from "ts-morph";
+import { describe, expect, it } from "vitest";
 
 const encodedContentSpec = {
 	openapi: "3.1.0",

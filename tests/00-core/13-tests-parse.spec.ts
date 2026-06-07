@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
 import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 import { parseTests } from "../../src/tests/parse.js";
 
 describe("parseTests", () => {

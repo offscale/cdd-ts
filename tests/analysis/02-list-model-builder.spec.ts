@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { ListModelBuilder } from "@src/vendors/angular/admin/analysis/list-model.builder.js";
+
 import type { Resource, SwaggerDefinition } from "@src/core/types/index.js";
+import { ListModelBuilder } from "@src/vendors/angular/admin/analysis/list-model.builder.js";
+import { describe, expect, it } from "vitest";
 
 describe("Analysis: ListModelBuilder", () => {
 	/**

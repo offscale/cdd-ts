@@ -1,12 +1,11 @@
 // @ts-nocheck
-import type { Project } from "ts-morph";
 
 import * as path from "node:path";
+import type { Project } from "ts-morph";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-
-import { runGeneratorWithConfig } from "../shared/helpers.js";
 import { coverageSpec } from "../fixtures/coverage.fixture.js";
+import { runGeneratorWithConfig } from "../shared/helpers.js";
 
 describe("E2E: Angular Generator Output", () => {
 	beforeAll(async () => {});

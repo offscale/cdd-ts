@@ -1,8 +1,9 @@
 // @ts-nocheck
+
+import { XmlParserGenerator } from "@src/openapi/emit_xml_parser.js";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { createTestProject } from "../shared/helpers.js";
-import ts from "typescript";
-import { XmlParserGenerator } from "@src/openapi/emit_xml_parser.js";
 
 /**
  * Helper to compile and return the XmlParser class from the generated code.

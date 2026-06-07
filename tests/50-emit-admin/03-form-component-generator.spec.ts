@@ -1,20 +1,19 @@
 // @ts-nocheck
-import { beforeEach, describe, expect, it } from "vitest";
 
-import { Project } from "ts-morph";
-
-import { SwaggerParser } from "@src/openapi/parse.js";
 import type {
 	GeneratorConfig,
 	Resource,
 	SwaggerDefinition,
 } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { FormModelBuilder } from "@src/vendors/angular/admin/analysis/form-model.builder.js";
 import type {
 	FormAnalysisResult,
 	FormControlModel,
 } from "@src/vendors/angular/admin/analysis/form-types.js";
-import { FormModelBuilder } from "@src/vendors/angular/admin/analysis/form-model.builder.js";
 import { FormComponentGenerator } from "@src/vendors/angular/admin/form-component.generator.js";
+import { Project } from "ts-morph";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { branchCoverageSpec } from "../fixtures/coverage.fixture.js";
 

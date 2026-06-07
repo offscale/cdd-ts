@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 describe("Core ORM Index", () => {
 	it("should export type definitions without error", async () => {

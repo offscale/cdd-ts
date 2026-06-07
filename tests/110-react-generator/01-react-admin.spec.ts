@@ -1,17 +1,17 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { Project } from "ts-morph";
-import { ReactAdminGenerator } from "@src/vendors/react/admin/admin.generator.js";
-import { ListComponentGenerator } from "@src/vendors/react/admin/list-component.generator.js";
-import { FormComponentGenerator } from "@src/vendors/react/admin/form-component.generator.js";
-import { RoutingGenerator } from "@src/vendors/react/admin/routing.generator.js";
+import type { Resource } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
-import { CustomValidatorsGenerator } from "@src/vendors/react/admin/custom-validators.generator.js";
-import { StylingBuilder } from "@src/vendors/react/admin/styling.builder.js";
+import { ReactAdminGenerator } from "@src/vendors/react/admin/admin.generator.js";
 import { AdminTestGenerator } from "@src/vendors/react/admin/admin-test.generator.js";
+import { CustomValidatorsGenerator } from "@src/vendors/react/admin/custom-validators.generator.js";
 import { FormRenderer } from "@src/vendors/react/admin/form.renderer.js";
+import { FormComponentGenerator } from "@src/vendors/react/admin/form-component.generator.js";
 import { ReactElementBuilder } from "@src/vendors/react/admin/html-element.builder.js";
 import { I18nGenerator } from "@src/vendors/react/admin/i18n.generator.js";
-import type { Resource } from "@src/core/types/index.js";
+import { ListComponentGenerator } from "@src/vendors/react/admin/list-component.generator.js";
+import { RoutingGenerator } from "@src/vendors/react/admin/routing.generator.js";
+import { StylingBuilder } from "@src/vendors/react/admin/styling.builder.js";
+import { Project } from "ts-morph";
+import { beforeEach, describe, expect, it } from "vitest";
 
 const mockDoc: any = {
 	openapi: "3.0.0",

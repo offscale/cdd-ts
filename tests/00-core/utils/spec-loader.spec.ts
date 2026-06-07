@@ -1,6 +1,11 @@
-import * as url from "node:url";
-import * as path from "node:path";
+import * as fs from "node:fs";
 import * as os from "node:os";
+import * as path from "node:path";
+import * as url from "node:url";
+import { ReferenceResolver } from "@src/openapi/parse_reference_resolver.js";
+
+import { SpecLoader } from "@src/openapi/parse_spec_loader.js";
+import { validateSpec } from "@src/openapi/parse_validator.js";
 // @ts-nocheck
 import {
 	afterEach,
@@ -11,12 +16,6 @@ import {
 	type Mock,
 	vi,
 } from "vitest";
-
-import * as fs from "node:fs";
-
-import { SpecLoader } from "@src/openapi/parse_spec_loader.js";
-import { ReferenceResolver } from "@src/openapi/parse_reference_resolver.js";
-import { validateSpec } from "@src/openapi/parse_validator.js";
 
 vi.mock("@src/openapi/parse_validator.js");
 vi.mock("node:fs");
@@ -167,38 +166,16 @@ properties:
 		const result = await SpecLoader.load("http://api.com/spec");
 		expect(result.entrySpec).toBeDefined();
 
-		expect(
-			(
-				result.entrySpec as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null
-			).type,
-		).toBe("object");
+		expect((result.entrySpec as any).type).toBe("object");
 
-		expect(
-			(
-				result.entrySpec as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null
-			).properties?.name?.type,
-		).toBe("string");
+		expect((result.entrySpec as any).properties?.name?.type).toBe("string");
 	});
 
 	it("should handle non-url paths when calling loadContent directly", async () => {
 		(fs.existsSync as Mock).mockReturnValue(true);
 		(fs.readFileSync as Mock).mockReturnValue('{"openapi":"3.0.0"}');
 
-		const content = await (
-			SpecLoader as string | number | boolean | object | undefined | null
-		).loadContent("plain.json");
+		const content = await (SpecLoader as any).loadContent("plain.json");
 
 		expect(content).toBe('{"openapi":"3.0.0"}');
 	});
@@ -532,9 +509,9 @@ properties:
 
 	it("should throw if load does not populate entry spec", async () => {
 		vi.spyOn(
-			SpecLoader as string | number | boolean | object | undefined | null,
+			SpecLoader as any,
 			"loadAndCacheSpecRecursive",
-		).mockResolvedValueOnce(undefined);
+		).mockResolvedValueOnce(undefined as never);
 		await expect(SpecLoader.load("http://empty.com/spec.json")).rejects.toThrow(
 			"Failed to load entry spec from http://empty.com/spec.json",
 		);

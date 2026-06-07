@@ -1,13 +1,11 @@
 // @ts-nocheck
-import ts from "typescript";
 
-import { describe, expect, it } from "vitest";
-
-import type { Project } from "ts-morph";
-
-import { SwaggerParser } from "@src/openapi/parse.js";
-import { MediaTypesGenerator } from "@src/openapi/emit_media_types.js";
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
+import { MediaTypesGenerator } from "@src/openapi/emit_media_types.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project } from "ts-morph";
+import ts from "typescript";
+import { describe, expect, it } from "vitest";
 
 import { createTestProject } from "../shared/helpers.js";
 

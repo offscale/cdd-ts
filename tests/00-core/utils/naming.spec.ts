@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-
-import type { MethodDeclaration } from "ts-morph";
 
 import * as naming from "@src/functions/utils_naming.js";
+
+import type { MethodDeclaration } from "ts-morph";
+import { describe, expect, it } from "vitest";
 
 describe("Core Utils: Naming", () => {
 	describe("Token Name Generation", () => {

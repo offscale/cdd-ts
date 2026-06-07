@@ -1,6 +1,7 @@
 // src/analysis/service-method-types.ts
+
+import type { OpenApiValue, ServerObject } from "@src/core/types/index.js";
 import type { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import type { ServerObject, OpenApiValue } from "@src/core/types/index.js";
 
 export interface ParamSerialization {
 	paramName: string;

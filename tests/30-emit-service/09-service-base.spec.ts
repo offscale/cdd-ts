@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
-import { Project } from "ts-morph";
-
-import { SwaggerParser } from "@src/openapi/parse.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { AbstractServiceGenerator } from "@src/functions/emit_service.js";
+
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
 
 class TestServiceGenerator extends AbstractServiceGenerator {
 	protected getFileName(controllerName: string): string {

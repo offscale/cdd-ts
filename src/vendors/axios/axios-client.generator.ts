@@ -1,43 +1,40 @@
-import type { Project } from "ts-morph";
 import { posix as path } from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { pascalCase } from "@src/functions/utils.js";
-
-import { AbstractClientGenerator } from "../../core/generator.js";
 import { TypeGenerator } from "@src/classes/emit.js";
-
-import { ParameterSerializerGenerator } from "../../functions/emit_parameter_serializer.js";
-import { ServerUrlGenerator } from "../../routes/emit_server_url.js";
-import { ServerGenerator } from "../../routes/emit_server.js";
-import { AxiosServiceGenerator } from "./service/service.generator.js";
-
-import { InfoGenerator } from "../../openapi/emit_info.js";
+import { DiscriminatorGenerator } from "@src/classes/emit_discriminator.js";
+import type { PathInfo } from "@src/core/types/analysis.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
 import { CallbackGenerator } from "@src/functions/emit_callback.js";
 import { WebhookGenerator } from "@src/functions/emit_webhook.js";
-import { LinkGenerator } from "@src/openapi/emit_link.js";
-import { DiscriminatorGenerator } from "@src/classes/emit_discriminator.js";
-import { SecurityGenerator } from "@src/openapi/emit_security.js";
-import { TagGenerator } from "@src/openapi/emit_tag.js";
+import { pascalCase } from "@src/functions/utils.js";
 import { ExamplesGenerator } from "@src/mocks/emit.js";
-import { MediaTypesGenerator } from "@src/openapi/emit_media_types.js";
-import { PathsGenerator } from "@src/routes/emit.js";
-import { PathItemsGenerator } from "@src/routes/emit_path_items.js";
+import { DocumentMetaGenerator } from "@src/openapi/emit_document_meta.js";
 import { HeadersGenerator } from "@src/openapi/emit_headers.js";
-import { ParametersGenerator } from "@src/routes/emit_parameters.js";
+import { LinkGenerator } from "@src/openapi/emit_link.js";
+import { MediaTypesGenerator } from "@src/openapi/emit_media_types.js";
 import { RequestBodiesGenerator } from "@src/openapi/emit_request_bodies.js";
 import { ResponsesGenerator } from "@src/openapi/emit_responses.js";
+import { SecurityGenerator } from "@src/openapi/emit_security.js";
 import { SpecSnapshotGenerator } from "@src/openapi/emit_snapshot.js";
-import { DocumentMetaGenerator } from "@src/openapi/emit_document_meta.js";
-import {
-	AxiosServiceIndexGenerator,
-	AxiosMainIndexGenerator,
-} from "./utils/index.generator.js";
+import { TagGenerator } from "@src/openapi/emit_tag.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
+import { PathsGenerator } from "@src/routes/emit.js";
+import { ParametersGenerator } from "@src/routes/emit_parameters.js";
+import { PathItemsGenerator } from "@src/routes/emit_path_items.js";
+import type { Project } from "ts-morph";
+import { AbstractClientGenerator } from "../../core/generator.js";
+import { ParameterSerializerGenerator } from "../../functions/emit_parameter_serializer.js";
+import { InfoGenerator } from "../../openapi/emit_info.js";
+import { ServerGenerator } from "../../routes/emit_server.js";
+import { ServerUrlGenerator } from "../../routes/emit_server_url.js";
 import { VanillaAdminGenerator } from "../vanilla/admin/admin.generator.js";
+import { AxiosServiceGenerator } from "./service/service.generator.js";
 
 import { AxiosServiceTestGenerator } from "./test/service-test.generator.js";
+import {
+	AxiosMainIndexGenerator,
+	AxiosServiceIndexGenerator,
+} from "./utils/index.generator.js";
 
-import type { PathInfo } from "@src/core/types/analysis.js";
 /**
  * Determines the canonical controller name for an operation to group it in a service.
  * @param op The parsed PathInfo operation.

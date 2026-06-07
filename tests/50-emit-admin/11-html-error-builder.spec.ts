@@ -1,8 +1,9 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import { buildErrorMessages } from "@src/vendors/angular/admin/html/form-controls-html.builder.js";
+
 import type { FormControlModel } from "@src/vendors/angular/admin/analysis/form-types.js";
 import type { ValidationRule } from "@src/vendors/angular/admin/analysis/validation-types.js";
+import { buildErrorMessages } from "@src/vendors/angular/admin/html/form-controls-html.builder.js";
+import { describe, expect, it } from "vitest";
 
 describe("Admin: buildErrorMessages (from IR)", () => {
 	const run = (rules: ValidationRule[]) => {

@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
 import { groupPathsByController } from "@src/functions/utils.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
+import { describe, expect, it } from "vitest";
 
 describe("Service Parser: groupPathsByController", () => {
 	const createParser = (spec: object) =>

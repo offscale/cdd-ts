@@ -1,5 +1,5 @@
-import type { Project, SourceFile } from "ts-morph";
 import * as path from "node:path";
+import type { Project, SourceFile } from "ts-morph";
 
 /**
  * Generates unit tests for generated React components using Vitest/React Testing Library.

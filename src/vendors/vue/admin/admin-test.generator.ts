@@ -1,5 +1,5 @@
-import type { Project } from "ts-morph";
 import * as path from "node:path";
+import type { Project } from "ts-morph";
 
 /**
  * Generates unit tests for the Vue Admin components.

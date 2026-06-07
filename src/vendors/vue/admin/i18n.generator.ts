@@ -1,5 +1,5 @@
-import type { Project } from "ts-morph";
 import * as path from "node:path";
+import type { Project } from "ts-morph";
 
 /**
  * Generates an internal i18n composable for the Vue Admin Interface.

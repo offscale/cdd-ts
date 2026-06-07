@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
+
 import { HtmlElementBuilder as _ } from "@src/vendors/angular/admin/html-element.builder.js";
+import { describe, expect, it } from "vitest";
 
 describe("Admin: HtmlElementBuilder", () => {
 	it("should create a simple element with text content", () => {

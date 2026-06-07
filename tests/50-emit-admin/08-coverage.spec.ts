@@ -1,19 +1,17 @@
 // @ts-nocheck
-import { beforeAll, describe, expect, it } from "vitest";
 
-import type { Project } from "ts-morph";
-
+import type { Resource, SwaggerDefinition } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { FormComponentGenerator } from "@src/vendors/angular/admin/form-component.generator.js";
+import { ListComponentGenerator } from "@src/vendors/angular/admin/list-component.generator.js";
 import {
 	discoverAdminResources,
 	getFormProperties,
 } from "@src/vendors/angular/admin/resource-discovery.js";
-import { SwaggerParser } from "@src/openapi/parse.js";
-import type { Resource, SwaggerDefinition } from "@src/core/types/index.js";
-import { ListComponentGenerator } from "@src/vendors/angular/admin/list-component.generator.js";
-import { FormComponentGenerator } from "@src/vendors/angular/admin/form-component.generator.js";
-
-import { coverageSpecPart2 } from "../shared/specs.js";
+import type { Project } from "ts-morph";
+import { beforeAll, describe, expect, it } from "vitest";
 import { createTestProject } from "../shared/helpers.js";
+import { coverageSpecPart2 } from "../shared/specs.js";
 
 /**
  * @fileoverview

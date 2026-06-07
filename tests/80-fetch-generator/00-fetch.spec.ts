@@ -1,12 +1,10 @@
 import * as os from "node:os";
 import * as path from "node:path";
+import type { GeneratorConfig } from "@src/core/types/index.js";
+import { generateFromConfigSync } from "@src/index.js";
+import { Project } from "ts-morph";
 // @ts-nocheck
 import { describe, expect, it } from "vitest";
-import { generateFromConfigSync, TestGeneratorConfig } from "@src/index.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { Project } from "ts-morph";
-import { SwaggerParser } from "@src/openapi/parse.js";
-import { FetchClientGenerator } from "@src/vendors/fetch/fetch-client.generator.js";
 
 describe("Fetch Implementation", () => {
 	describe("Config Validation", () => {
@@ -85,7 +83,7 @@ describe("Fetch Implementation", () => {
 				"Promise<string>",
 			);
 			const statements = getTestMethod?.getStatements().map((s) => s.getText());
-			const methodBody = statements.join(String.fromCharCode(10));
+			const methodBody = statements?.join(String.fromCharCode(10));
 			expect(methodBody).toContain("fetch(");
 		});
 	});

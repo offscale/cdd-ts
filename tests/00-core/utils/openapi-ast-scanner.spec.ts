@@ -1,15 +1,16 @@
 // @ts-nocheck
-import { afterEach, describe, expect, it } from "vitest";
+
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { OAS_3_1_DIALECT } from "@src/core/constants.js";
 
 import {
 	buildOpenApiSpecFromScan,
 	scanTypeScriptProject,
 	scanTypeScriptSource,
 } from "@src/functions/parse.js";
-import { OAS_3_1_DIALECT } from "@src/core/constants.js";
+import { afterEach, describe, expect, it } from "vitest";
 
 const tempDirs: string[] = [];
 

@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { describe, expect, it, vi } from "vitest";
-import { Project, Scope } from "ts-morph";
-import { SwaggerParser } from "@src/openapi/parse.js";
+
 import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
+import { Project, Scope } from "ts-morph";
+import { describe, expect, it, vi } from "vitest";
 
 const specEdgeTests = {
 	openapi: "3.0.0",

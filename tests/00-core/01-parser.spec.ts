@@ -1,4 +1,21 @@
 // @ts-nocheck
+
+import * as fs from "node:fs";
+import * as path from "node:path";
+import {
+	JSON_SCHEMA_2020_12_DIALECT,
+	OAS_3_1_DIALECT,
+} from "@src/core/constants.js";
+import type {
+	GeneratorConfig,
+	SwaggerDefinition,
+	SwaggerSpec,
+} from "@src/core/types/index.js";
+
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { ReferenceResolver } from "@src/openapi/parse_reference_resolver.js";
+import * as validator from "@src/openapi/parse_validator.js";
+import * as yaml from "js-yaml";
 import {
 	afterEach,
 	beforeAll,
@@ -9,24 +26,6 @@ import {
 	type Mock,
 	vi,
 } from "vitest";
-
-import * as fs from "node:fs";
-import * as path from "node:path";
-
-import * as yaml from "js-yaml";
-
-import { SwaggerParser } from "@src/openapi/parse.js";
-import type {
-	GeneratorConfig,
-	SwaggerDefinition,
-	SwaggerSpec,
-} from "@src/core/types/index.js";
-import {
-	JSON_SCHEMA_2020_12_DIALECT,
-	OAS_3_1_DIALECT,
-} from "@src/core/constants.js";
-import * as validator from "@src/openapi/parse_validator.js";
-import { ReferenceResolver } from "@src/openapi/parse_reference_resolver.js";
 
 import { parserCoverageSpec } from "../shared/specs.js";
 

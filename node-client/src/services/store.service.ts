@@ -5,9 +5,9 @@
 import * as http from "node:http";
 import * as https from "node:https";
 import { URL } from "node:url";
+import type { Order } from "../models";
 import { ParameterSerializer } from "../utils/parameter-serializer";
 import { getServerUrl, resolveServerUrl } from "../utils/server-url";
-import type { Order } from "../models";
 
 export class StoreService {
 	private basePath = "";

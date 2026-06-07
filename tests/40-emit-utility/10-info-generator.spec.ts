@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
-import type { Project } from "ts-morph";
-import { SwaggerParser } from "@src/openapi/parse.js";
+
 import { InfoGenerator } from "@src/openapi/emit_info.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import type { Project } from "ts-morph";
+import ts from "typescript";
+import { describe, expect, it } from "vitest";
 import { createTestProject } from "../shared/helpers.js";
 import { emptySpec } from "../shared/specs.js";
-import ts from "typescript";
 
 describe("Emitter: InfoGenerator", () => {
 	const runGenerator = (spec: object) => {

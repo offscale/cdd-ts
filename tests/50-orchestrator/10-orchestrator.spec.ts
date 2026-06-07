@@ -1,15 +1,14 @@
 // @ts-nocheck
-import { afterAll, describe, expect, it, vi } from "vitest";
-
-import { Project } from "ts-morph";
 
 import fs from "node:fs";
 import path from "node:path";
-
-import { AngularClientGenerator } from "@src/vendors/angular/angular-client.generator.js";
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
+
+import { AngularClientGenerator } from "@src/vendors/angular/angular-client.generator.js";
 import { AuthInterceptorGenerator } from "@src/vendors/angular/utils/auth-interceptor.generator.js";
+import { Project } from "ts-morph";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 // Mock the sub-generators to focus on orchestration wiring
 vi.mock("@src/service/emit/type/type.generator.js", () => {

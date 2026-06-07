@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
 import { Project } from "ts-morph";
-import { TypeOrmGenerator } from "../../src/vendors/typeorm/emit.js";
+import { describe, expect, it } from "vitest";
 import type { SwaggerParser } from "../../src/openapi/parse.js";
+import { TypeOrmGenerator } from "../../src/vendors/typeorm/emit.js";
 
 describe("TypeOrmGenerator", () => {
 	it("should generate an entity file correctly with explicit types and JSDoc", async () => {

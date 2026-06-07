@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { describe, expect, it } from "vitest";
 
 import * as utils from "@src/functions/utils.js";
+import { describe, expect, it } from "vitest";
 
 /**
  * @fileoverview

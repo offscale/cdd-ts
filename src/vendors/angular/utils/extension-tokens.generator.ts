@@ -1,6 +1,6 @@
 import * as path from "node:path";
-import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
+import { type Project, VariableDeclarationKind } from "ts-morph";
 
 export class ExtensionTokensGenerator {
 	constructor(private project: Project) {}

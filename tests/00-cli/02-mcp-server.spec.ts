@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { serveMcp } from "../../src/mcp_server.js";
+import { describe, expect, it, vi } from "vitest";
 import * as cli from "../../src/cli.js";
+import { serveMcp } from "../../src/mcp_server.js";
 
 const mockTool = vi.fn();
 const mockPrompt = vi.fn();
@@ -26,10 +26,10 @@ describe("serveMcp", () => {
 	it("should initialize McpServer and register tools", async () => {
 		const spyGenerateFromOpenApi = vi
 			.spyOn(cli, "generateFromOpenApi")
-			.mockResolvedValue(undefined);
+			.mockResolvedValue("");
 		const spyGenerateToOpenApi = vi
 			.spyOn(cli, "generateToOpenApi")
-			.mockResolvedValue(undefined);
+			.mockResolvedValue("");
 
 		await serveMcp();
 

@@ -10,7 +10,7 @@ import {
 	type TypeAliasDeclaration,
 	type TypeNode,
 } from "ts-morph";
-import type { SwaggerDefinition, OpenApiValue } from "../core/types/index.js";
+import type { OpenApiValue, SwaggerDefinition } from "../core/types/index.js";
 
 /** Map of schema names to reconstructed schema definitions. */
 export type ReverseSchemaMap = Record<string, SwaggerDefinition | boolean>;

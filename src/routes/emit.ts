@@ -1,8 +1,8 @@
 import * as path from "node:path";
+import type { OpenApiValue, PathItem } from "@src/core/types/index.js";
+import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import type { PathItem, OpenApiValue } from "@src/core/types/index.js";
 
 /**
  * Generates the `paths.ts` file.

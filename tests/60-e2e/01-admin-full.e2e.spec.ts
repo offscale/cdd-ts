@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { beforeAll, describe, expect, it } from "vitest";
+
 import type { ClassDeclaration, Project, SourceFile } from "ts-morph";
+import { beforeAll, describe, expect, it } from "vitest";
 import { runGenerator } from "../shared/helpers.js";
 import { coverageSpec, polymorphismSpec } from "../shared/specs.js";
 

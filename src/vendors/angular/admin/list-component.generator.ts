@@ -1,5 +1,3 @@
-import { type ClassDeclaration, type Project, Scope } from "ts-morph";
-
 import type { Resource } from "@src/core/types/index.js";
 import { camelCase, pascalCase } from "@src/functions/utils.js";
 import { ListModelBuilder } from "@src/vendors/angular/admin/analysis/list-model.builder.js";
@@ -7,10 +5,10 @@ import type {
 	ListActionKind,
 	ListViewModel,
 } from "@src/vendors/angular/admin/analysis/list-types.js";
-
+import { type ClassDeclaration, type Project, Scope } from "ts-morph";
+import { commonStandaloneImports } from "./common-imports.js";
 import { generateListComponentHtml } from "./html/list-component-html.builder.js";
 import { generateListComponentScss } from "./html/list-component-scss.builder.js";
-import { commonStandaloneImports } from "./common-imports.js";
 
 /**
  * Generates the list component for a given administrative resource.

@@ -1,8 +1,6 @@
 // @ts-nocheck
 // tests/00-core/07-extensions.spec.ts
-import { describe, expect, it } from "vitest";
 
-import { SwaggerParser } from "@src/openapi/parse.js";
 import type {
 	GeneratorConfig,
 	InfoObject,
@@ -10,6 +8,8 @@ import type {
 	TagObject,
 } from "@src/core/types/index.js";
 import { extractPaths } from "@src/functions/utils.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import { describe, expect, it } from "vitest";
 
 /**
  * Tests for the Specification Extensions (`x-*`) feature support.

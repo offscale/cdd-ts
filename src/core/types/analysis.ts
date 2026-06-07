@@ -1,6 +1,6 @@
-import type { OpenApiValue } from "./openapi.js";
 import type {
 	ExternalDocumentationObject,
+	OpenApiValue,
 	Parameter,
 	PathItem,
 	RequestBody,

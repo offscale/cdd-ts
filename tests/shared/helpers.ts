@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { IndentationText, ModuleKind, Project, ScriptTarget } from "ts-morph";
-import { generateFromConfigSync } from "@src/index.js";
+
 import type { GeneratorConfig } from "@src/core/types/index.js";
+import { generateFromConfigSync } from "@src/index.js";
+import { IndentationText, ModuleKind, Project, ScriptTarget } from "ts-morph";
 
 /**
  * Creates a standard ts-morph project instance for use in tests.

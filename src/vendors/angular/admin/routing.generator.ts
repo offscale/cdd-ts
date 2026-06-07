@@ -1,7 +1,7 @@
-import { type Project, VariableDeclarationKind } from "ts-morph";
+import * as path from "node:path";
 import type { Resource } from "@src/core/types/index.js";
 import { camelCase, pascalCase } from "@src/functions/utils.js";
-import * as path from "node:path";
+import { type Project, VariableDeclarationKind } from "ts-morph";
 
 /**
  * The Angular Admin UI Routing Generator.
