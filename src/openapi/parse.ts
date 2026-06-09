@@ -76,9 +76,18 @@ export class SwaggerParser {
 			specCache || new Map<string, SwaggerSpec>([[this.documentUri, spec]]);
 
 		if (!specCache) {
-			const baseUri = spec.$self
-				? new URL(spec.$self, documentUri).href
-				: documentUri;
+			let baseUri = documentUri;
+			if (spec.$self) {
+				if (typeof URL !== "undefined") {
+					try {
+						baseUri = new URL(spec.$self, documentUri).href;
+					} catch {
+						baseUri = spec.$self;
+					}
+				} else {
+					baseUri = spec.$self; // WASM Fallback: minimal resolution
+				}
+			}
 
 			if (baseUri !== documentUri) {
 				this.specCache.set(baseUri, spec);
@@ -204,7 +213,10 @@ export class SwaggerParser {
 				const serverBaseUri =
 					ReferenceResolver.getDocumentUri(server as object) ?? baseUri;
 
-				const resolvedUrl = new URL(rawUrl, serverBaseUri).href;
+				let resolvedUrl = rawUrl;
+				if (typeof URL !== "undefined") {
+					resolvedUrl = new URL(rawUrl, serverBaseUri).href;
+				}
 
 				const decodedUrl = resolvedUrl
 					.replace(/%7B/g, "{")
@@ -260,6 +272,7 @@ export class SwaggerParser {
 	}
 
 	private getHttpDocumentUrl(): URL | undefined {
+		if (typeof URL === "undefined") return undefined;
 		try {
 			const url = new URL(this.documentUri);
 

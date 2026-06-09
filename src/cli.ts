@@ -48,6 +48,7 @@ export interface CliOptions {
 	generateServices?: boolean;
 	testsForService?: boolean;
 	testsForAdmin?: boolean;
+	mcp?: boolean;
 	tests?: boolean;
 	testGen?: boolean;
 	githubActions?: boolean;
@@ -577,6 +578,12 @@ const addCommonOptions = (cmd: Command) => {
 			new Option("--tests", "Generate integration tests and mocks.").env(
 				"CDD_TESTS",
 			),
+		)
+		.addOption(
+			new Option(
+				"--mcp",
+				"Generate Model Context Protocol (MCP) server and adapter.",
+			).env("CDD_MCP"),
 		)
 		.addOption(
 			new Option(

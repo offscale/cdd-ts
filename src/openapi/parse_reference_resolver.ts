@@ -88,13 +88,16 @@ export class ReferenceResolver {
 
 			if ("$id" in objRec && typeof objRec.$id === "string") {
 				try {
-					nextBase = new URL(objRec.$id, currentBase).href;
+					nextBase =
+						typeof URL !== "undefined"
+							? new URL(objRec.$id, currentBase).href
+							: objRec.$id;
 
 					if (!cache.has(nextBase)) {
 						cache.set(nextBase, obj as SwaggerSpec);
 					}
 				} catch (_e) {
-					/* Ignore invalid $id */
+					// Ignore invalid $id
 				}
 			}
 
@@ -225,13 +228,31 @@ export class ReferenceResolver {
 
 		const currentDocSpec = this.specCache.get(currentDocUri);
 
-		const logicalBaseUri = currentDocSpec?.$self
-			? new URL(currentDocSpec.$self, currentDocUri).href
-			: currentDocUri;
+		let logicalBaseUri = currentDocUri;
+		if (currentDocSpec?.$self) {
+			if (typeof URL !== "undefined") {
+				try {
+					logicalBaseUri = new URL(currentDocSpec.$self, currentDocUri).href;
+				} catch {
+					logicalBaseUri = currentDocSpec.$self;
+				}
+			} else {
+				logicalBaseUri = currentDocSpec.$self;
+			}
+		}
 
-		const targetUri = filePath
-			? new URL(filePath, logicalBaseUri).href
-			: logicalBaseUri;
+		let targetUri = logicalBaseUri;
+		if (filePath) {
+			if (typeof URL !== "undefined") {
+				try {
+					targetUri = new URL(filePath, logicalBaseUri).href;
+				} catch {
+					targetUri = filePath;
+				}
+			} else {
+				targetUri = filePath;
+			}
+		}
 
 		if (fragment && !fragment.startsWith("/")) {
 			for (const scopeUri of resolutionStack) {

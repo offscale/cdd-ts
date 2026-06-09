@@ -108,7 +108,7 @@ jobs:
                   path: ./coverage
 
             - name: Upload coverage reports to Codecov with GitHub Action
-              uses: codecov/codecov-action@v6
+              uses: codecov/codecov-action@v7
               with:
                   files: ./coverage/lcov.info
               env:

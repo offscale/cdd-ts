@@ -93,13 +93,19 @@ export function kebabCase(str: string): string {
  * Checks if a string is a valid URL.
  */
 export function isUrl(input: string): boolean {
-	try {
-		new URL(input);
-
-		return true;
-	} catch {
-		return false;
+	if (typeof URL !== "undefined") {
+		try {
+			new URL(input);
+			return true;
+		} catch {
+			return false;
+		}
 	}
+
+	// WASM / QuickJS Fallback
+	return /^[a-zA-Z][a-zA-Z\d+\-.]*:(?:\/\/)?(?:[\w\-.~!$&'()*+,;=:@]+)?(?:[\w\-.~!$&'()*+,;=:@/?#]+)?$/i.test(
+		input,
+	);
 }
 
 /**

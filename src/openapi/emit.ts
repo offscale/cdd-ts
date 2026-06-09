@@ -1879,7 +1879,7 @@ export function applyReverseMetadata(
 				let parsedUrl: URL;
 				if (serverUrl.startsWith("/")) {
 					out.basePath = serverUrl;
-				} else {
+				} else if (typeof URL !== "undefined") {
 					parsedUrl = new URL(serverUrl);
 					out.host = parsedUrl.host;
 					out.basePath = parsedUrl.pathname !== "/" ? parsedUrl.pathname : "/";

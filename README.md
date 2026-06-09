@@ -22,7 +22,7 @@ The CLI—at a minimum—has:
 
 - `cdd-ts --help`
 - `cdd-ts --version`
-- `cdd-ts from_openapi to_sdk_cli -i spec.json`
+- `cdd-ts from_openapi to_sdk_cli --mcp -i spec.json`
 - `cdd-ts from_openapi to_sdk -i spec.json`
 - `cdd-ts from_openapi to_server -i spec.json`
 - `cdd-ts to_openapi -f path/to/code`

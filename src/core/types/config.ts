@@ -41,6 +41,7 @@ export interface GeneratorConfigOptions {
 	/** If true, generates composable tests and mocks, useful for e2e and edge case bugs. Defaults to false. */
 	composableTests?: boolean;
 	/** If true, generates tests based on the selected framework or implementation. Maps to the Tests checkbox in the UI. */
+	mcp?: boolean;
 	tests?: boolean;
 	/** A record of static headers to be added to every generated service request. */
 	customHeaders?: Record<string, string>;

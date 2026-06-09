@@ -938,22 +938,27 @@ function validateHttpsUrl(
 		);
 	}
 
-	try {
-		const parsed = new URL(value);
-		const proto = (parsed.protocol || "").replace(/:$/, "").toLowerCase();
-		if (proto !== "https") {
-			throw new SpecValidationError(
-				`${fieldName} must use https (TLS required) at ${location}. Value: "${value}"`,
-			);
+	if (typeof URL !== "undefined") {
+		try {
+			const parsed = new URL(value);
+			const proto = (parsed.protocol || "").replace(/:$/, "").toLowerCase();
+			if (proto !== "https") {
+				throw new SpecValidationError(
+					`${fieldName} must use https (TLS required) at ${location}. Value: "${value}"`,
+				);
+			}
+			return;
+		} catch (e) {
+			if (e instanceof SpecValidationError) throw e;
+			// URL parsing failed; fall through to string check
 		}
-	} catch (e) {
-		if (e instanceof SpecValidationError) throw e;
-		// URL parsing failed in this runtime; fall back to string check
-		if (!value.toLowerCase().startsWith("https://")) {
-			throw new SpecValidationError(
-				`${fieldName} must use https (TLS required) at ${location}. Value: "${value}"`,
-			);
-		}
+	}
+
+	// WASM / QuickJS Fallback
+	if (!value.toLowerCase().startsWith("https://")) {
+		throw new SpecValidationError(
+			`${fieldName} must use https (TLS required) at ${location}. Value: "${value}"`,
+		);
 	}
 }
 
