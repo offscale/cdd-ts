@@ -35,16 +35,64 @@ echo "Running OpenAPI 3.2.0 Petstore test..."
 node dist/cli.js from_openapi to_sdk -i ../petstore_oas3.json -o .test_out_openapi || { echo "OpenAPI 3.2.0 Petstore test failed"; exit 1; }
 (cd .test_out_openapi && npm install && npm run build) || { echo "OpenAPI 3.2.0 SDK build failed"; exit 1; }
 
-echo "Starting Prism mock servers (fallback non-JVM version) due to upstream/Docker issues..."
-npx @stoplight/prism-cli mock ../petstore.json -p 4010 -d >/dev/null 2>&1 &
-PRISM_SWAGGER=$!
+DOCKER_PORT=8080
+USE_PRISM=0
 
-npx @stoplight/prism-cli mock ../petstore_oas3.json -p 4011 -d >/dev/null 2>&1 &
-PRISM_OAS3=$!
+if command -v docker >/dev/null 2>&1; then
+    echo "Starting JVM official petstore server in Docker..."
+    docker run --rm -d -p $DOCKER_PORT:8080 --name petstore_server_precommit swaggerapi/petstore >/dev/null 2>&1 || USE_PRISM=1
+else
+    USE_PRISM=1
+fi
 
-sleep 5
+if [ "$USE_PRISM" -eq 0 ]; then
+    echo "Waiting for JVM Petstore server to be ready..."
+    READY=0
+    for i in {1..30}; do
+        if curl -s -f http://127.0.0.1:$DOCKER_PORT/api/pet/findByStatus?status=available > /dev/null; then
+            READY=1
+            break
+        fi
+        sleep 2
+    done
 
-cat << 'EOF' > test-sdks.ts
+    if [ "$READY" -eq 1 ]; then
+        echo "JVM server is ready."
+        cat << EOF > test-sdks.ts
+import { StoreClient as SwaggerStoreClient } from './.test_out_swagger/dist/services/store.client.js';
+import { StoreClient as OpenApiStoreClient } from './.test_out_openapi/dist/services/store.client.js';
+
+async function run() {
+    console.log("Testing Swagger 2.0 SDK against JVM Server...");
+    const swaggerClient = new SwaggerStoreClient('http://127.0.0.1:$DOCKER_PORT/api');
+    await swaggerClient.getInventory({ headers: { api_key: 'special-key' } });
+    console.log("Swagger 2.0 OK");
+
+    console.log("Testing OpenAPI 3.0 SDK against JVM Server...");
+    const openapiClient = new OpenApiStoreClient('http://127.0.0.1:$DOCKER_PORT/api');
+    await openapiClient.getInventory({ headers: { api_key: 'special-key' } });
+    console.log("OpenAPI 3.0 OK");
+}
+run().catch(e => { console.error(e); process.exit(1); });
+EOF
+    else
+        echo "JVM server failed to become ready. Falling back to Prism."
+        docker stop petstore_server_precommit >/dev/null 2>&1 || true
+        USE_PRISM=1
+    fi
+fi
+
+if [ "$USE_PRISM" -eq 1 ]; then
+    echo "Starting Prism mock servers (fallback non-JVM version) due to upstream/Docker issues..."
+    npx @stoplight/prism-cli mock ../petstore.json -p 4010 -d >/dev/null 2>&1 &
+    PRISM_SWAGGER=$!
+
+    npx @stoplight/prism-cli mock ../petstore_oas3.json -p 4011 -d >/dev/null 2>&1 &
+    PRISM_OAS3=$!
+
+    sleep 5
+
+    cat << 'EOF' > test-sdks.ts
 import { StoreClient as SwaggerStoreClient } from './.test_out_swagger/dist/services/store.client.js';
 import { StoreClient as OpenApiStoreClient } from './.test_out_openapi/dist/services/store.client.js';
 
@@ -61,12 +109,17 @@ async function run() {
 }
 run().catch(e => { console.error(e); process.exit(1); });
 EOF
+fi
 
 npx tsc test-sdks.ts --module NodeNext --moduleResolution NodeNext || { echo "test-sdks compilation failed"; exit 1; }
 node test-sdks.js || { echo "test-sdks execution failed"; exit 1; }
 
-kill $PRISM_SWAGGER
-kill $PRISM_OAS3
+if [ "$USE_PRISM" -eq 0 ]; then
+    docker stop petstore_server_precommit >/dev/null 2>&1 || true
+else
+    kill $PRISM_SWAGGER || true
+    kill $PRISM_OAS3 || true
+fi
 
 rm -rf .test_out_swagger
 rm -rf .test_out_openapi

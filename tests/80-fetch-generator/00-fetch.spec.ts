@@ -8,13 +8,14 @@ import { describe, expect, it } from "vitest";
 
 describe("Fetch Implementation", () => {
 	describe("Config Validation", () => {
-		it("should execute fetch client generator and attempt admin UI generation when requested", async () => {
+		it("should execute fetch client generator and attempt admin UI and MCP generation when requested", async () => {
 			const config: GeneratorConfig = {
 				input: "dummy",
 				output: "dummy",
 				options: {
 					implementation: "fetch",
 					admin: true,
+					mcp: true,
 				},
 			};
 

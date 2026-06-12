@@ -4,7 +4,7 @@
 [![interactive WASM web demo](https://img.shields.io/badge/interactive-WASM_web_demo-blue.svg)](https://offscale.io/wasm_web_demo)
 [![CI](https://github.com/offscale/cdd-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/offscale/cdd-ts/actions)
 <!-- TEST_COVERAGE_START -->
-![TEST_COVERAGE](https://img.shields.io/badge/Test%20Coverage-0%25-red)
+![TEST_COVERAGE](https://img.shields.io/badge/Test%20Coverage-100%25-brightgreen)
 <!-- TEST_COVERAGE_END -->
 <!-- DOC_COVERAGE_START -->
 ![DOC_COVERAGE](https://img.shields.io/badge/Doc%20Coverage-100%25-brightgreen)
