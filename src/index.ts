@@ -237,12 +237,14 @@ export function generateFromConfigSync(
 				config,
 				codeOutputRoot,
 			);
-			new McpGenerator().generate(
-				activeProject,
-				swaggerParser,
-				config,
-				codeOutputRoot,
-			);
+			if (config.options.mcp) {
+				new McpGenerator().generate(
+					activeProject,
+					swaggerParser,
+					config,
+					codeOutputRoot,
+				);
+			}
 		}
 
 		// ... This block is reachable when isTestEnv is true ...

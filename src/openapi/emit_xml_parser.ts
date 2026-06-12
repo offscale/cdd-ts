@@ -117,7 +117,7 @@ export class XmlParserGenerator {
         if (config.properties) { 
             const result: Record<string, string | number | boolean | object | undefined | null> = {}; 
             
-            Object.entries(config.properties).forEach(([key, propConfig]) => { 
+            Object.entries(config.properties as Record<string, XmlPropertyConfig>).forEach(([key, propConfig]) => { 
                 const nodeType = propConfig.nodeType; 
                 
                 // OAS 3.2 Support: nodeType 'none' implies the property uses the current node 

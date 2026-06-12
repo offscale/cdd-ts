@@ -80,22 +80,22 @@ describe("McpGenerator", () => {
 		expect(text).toContain(
 			"body: z.any().optional().describe('JSON request body')",
 		);
-		expect(text).toContain("const client = new services.TestTagService()");
+		expect(text).toContain("const client = new services.TestTagClient()");
 		expect(text).toContain("const res = await client.testOp(args as any)");
 
 		// Check fallback tool
 		expect(text).toContain("'fallback'");
-		expect(text).toContain("const client = new services.DefaultService()");
+		expect(text).toContain("const client = new services.DefaultClient()");
 		expect(text).toContain("const res = await client.fallback(args as any)");
 
 		// Check object tag tool
 		expect(text).toContain("'obj'");
-		expect(text).toContain("const client = new services.ObjTagService()");
+		expect(text).toContain("const client = new services.ObjTagClient()");
 
 		// Check object tag tool without name
 		expect(text).toContain("'objnoname'");
 		expect(text).toContain(
-			"const client = new services.[object Object]Service()",
+			"const client = new services.[object Object]Client()",
 		);
 
 		const adapterFile = project.getSourceFile("/out/mcp-adapter.ts");
@@ -113,7 +113,7 @@ describe("McpGenerator", () => {
 		);
 		expect(adapterText).toContain("case 'test_op': {");
 		expect(adapterText).toContain(
-			"const client = new services.TestTagService()",
+			"const client = new services.TestTagClient()",
 		);
 		expect(adapterText).toContain(
 			"return { content: [{ type: 'text', text: JSON.stringify(res, null, 2) }] };",

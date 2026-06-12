@@ -30,6 +30,7 @@ export class McpGenerator {
 			moduleSpecifier: "@modelcontextprotocol/sdk/server/sse.js",
 			namedImports: ["SSEServerTransport"],
 		});
+		mcpFile.addStatements("// @ts-ignore");
 		mcpFile.addImportDeclaration({
 			moduleSpecifier: "express",
 			defaultImport: "express",
@@ -56,7 +57,7 @@ export function createMcpServer() {
         'openapi_spec',
         'openapi://spec',
         { mimeType: 'application/json', description: 'The complete OpenAPI specification' },
-        async (uri) => ({
+        async (uri: URL) => ({
             contents: [{
                 uri: uri.href,
                 mimeType: 'application/json',
@@ -85,13 +86,16 @@ export function createMcpServer() {
 `;
 
 		for (const op of parser.operations) {
-			const group = op.tags?.[0]
+			const groupName = op.tags?.[0]
 				? typeof op.tags[0] === "string"
 					? op.tags[0]
 					: (op.tags[0] as object as { name?: string }).name ||
 						String(op.tags[0])
 				: "Default";
-			const serviceName = `${group}Service`;
+			const groupPascal = String(groupName).replace(/(^\w|-\w)/g, (m) =>
+				m.replace("-", "").toUpperCase(),
+			);
+			const serviceName = `${groupPascal}Client`;
 			const methodName =
 				op.operationId || op.path.replace(/\//g, "_").replace(/^_/, "");
 			const toolName = snakeCase(methodName);
@@ -100,9 +104,9 @@ export function createMcpServer() {
 			statements += `
     server.resource(
         'openapi_operation_${toolName}',
-        new ResourceTemplate('openapi://operations/${toolName}'),
-        { mimeType: 'application/json', description: 'Operation details for ${toolName}', annotations: { audience: ["developer"], priority: 0 } },
-        async (uri) => ({
+        new ResourceTemplate('openapi://operations/${toolName}', { listCallback: undefined }),
+        { mimeType: 'application/json', description: 'Operation details for ${toolName}', annotations: { audience: ["user"], priority: 0 } },
+        async (uri: URL) => ({
             contents: [{
                 uri: uri.href,
                 mimeType: 'application/json',
@@ -165,12 +169,12 @@ export function serveMcpSse(port = 3001) {
     const server = createMcpServer();
     let transport: SSEServerTransport;
 
-    app.get("/mcp/sse", async (req, res) => {
+    app.get("/mcp/sse", async (req: any, res: any) => {
         transport = new SSEServerTransport("/mcp/messages", res);
         await server.connect(transport);
     });
 
-    app.post("/mcp/messages", async (req, res) => {
+    app.post("/mcp/messages", async (req: any, res: any) => {
         if (transport) {
             await transport.handlePostMessage(req, res);
         } else {
@@ -242,11 +246,7 @@ export class McpClient {
             },
             {
                 capabilities: {
-                    tools: {},
-                    prompts: {},
-                    resources: { subscribe: true },
                     roots: { listChanged: true },
-                    sampling: {},
                     experimental: {}
                 },
             }
@@ -284,7 +284,7 @@ export class McpClient {
         await this.client.ping();
     }
 
-    async executeTool(name: string, args: Record<string, any>): Promise<CallToolResult> {
+    async executeTool(name: string, args: Record<string, any>) {
         return await this.client.callTool({
             name,
             arguments: args
@@ -334,7 +334,7 @@ export class McpClient {
     }
 
     async setLoggingLevel(level: any): Promise<void> {
-        await this.client.setLoggingLevel({ level });
+        await this.client.setLoggingLevel(level);
     }
 
     async sendRootsListChanged(): Promise<void> {
@@ -398,13 +398,16 @@ export class McpClient {
 		switch (name) {`;
 
 		for (const op of parser.operations) {
-			const group = op.tags?.[0]
+			const groupName = op.tags?.[0]
 				? typeof op.tags[0] === "string"
 					? op.tags[0]
 					: (op.tags[0] as object as { name?: string }).name ||
 						String(op.tags[0])
 				: "Default";
-			const serviceName = `${group}Service`;
+			const groupPascal = String(groupName).replace(/(^\w|-\w)/g, (m) =>
+				m.replace("-", "").toUpperCase(),
+			);
+			const serviceName = `${groupPascal}Client`;
 			const methodName =
 				op.operationId || op.path.replace(/\//g, "_").replace(/^_/, "");
 			const toolName = snakeCase(methodName);

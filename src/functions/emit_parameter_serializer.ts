@@ -604,7 +604,7 @@ export class ParameterSerializerGenerator {
 
             Object.entries(body).forEach(([key, value]) => {
                 if (value === undefined || value === null) return;
-                const config = encodings[key] || {};
+                const config: Partial<SerializeQueryParamConfig> = encodings[key] || {};
                 const hasSerializationHints =
                     config.style !== undefined || config.explode !== undefined || config.allowReserved !== undefined;
                 const contentType = normalizeContentType(config.contentType);

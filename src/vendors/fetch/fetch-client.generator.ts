@@ -20,6 +20,7 @@ import { SecurityGenerator } from "@src/openapi/emit_security.js";
 import { SpecSnapshotGenerator } from "@src/openapi/emit_snapshot.js";
 import { TagGenerator } from "@src/openapi/emit_tag.js";
 import { XmlParserGenerator } from "@src/openapi/emit_xml_parser.js";
+import { XmlBuilderGenerator } from "@src/openapi/emit_xml_builder.js";
 import type { SwaggerParser } from "@src/openapi/parse.js";
 import { PathsGenerator } from "@src/routes/emit.js";
 import { ParametersGenerator } from "@src/routes/emit_parameters.js";
@@ -137,6 +138,7 @@ export class FetchClientGenerator extends AbstractClientGenerator {
 
 		new ContentDecoderGenerator(project).generate(outputRoot);
 
+		new XmlBuilderGenerator(project).generate(outputRoot);
 		new XmlParserGenerator(project).generate(outputRoot);
 
 		new MultipartBuilderGenerator(project).generate(outputRoot);
@@ -183,7 +185,9 @@ export class FetchClientGenerator extends AbstractClientGenerator {
 				new VanillaAdminGenerator(parser, project).generate(outputRoot);
 			}
 
-			new McpGenerator().generate(project, parser, config, outputRoot);
+			if (config.options.mcp) {
+				new McpGenerator().generate(project, parser, config, outputRoot);
+			}
 		}
 
 		new FetchMainIndexGenerator(project, config, parser).generateMainIndex(
