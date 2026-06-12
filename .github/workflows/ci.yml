@@ -101,30 +101,6 @@ jobs:
                   make build_with_ts_go
                   make build_with_ts_go_assemblyscript
 
-            - name: Upload coverage report artifact
-              uses: actions/upload-artifact@v7
-              with:
-                  name: coverage-report
-                  path: ./coverage
-
-            - name: Upload coverage reports to Codecov with GitHub Action
-              uses: codecov/codecov-action@v7
-              with:
-                  files: ./coverage/lcov.info
-              env:
-                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-            - name: Upload test results to Codecov
-              if: ${{ !cancelled() }}
-              uses: codecov/test-results-action@v1
-              with:
-                  token: ${{ secrets.CODECOV_TOKEN }}
-                  #          flags: report-type="test_results"
-                  flags: unittests
-                  files: ./coverage/junit.xml
-                  disable_search: true
-                  verbose: true
-
             - name: Archive build
               if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
               run: tar -czvf dist.tar.gz dist/
@@ -156,9 +132,3 @@ jobs:
                   artifacts: "dist.tar.gz,bin/cdd-ts.js,bin/cdd-ts.wasm,bin/typescript-go.wasm,bin/cdd-ts-javy.wasm,bin/cdd-ts-go-javy.wasm"
                   allowUpdates: true
                   replacesArtifacts: true
-
-            - name: Publish to npmjs
-              if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-              run: npm publish --provenance --access public
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
