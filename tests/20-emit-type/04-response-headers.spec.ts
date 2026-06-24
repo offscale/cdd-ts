@@ -68,7 +68,15 @@ describe("Emitter: Response Header Type Generation", () => {
 		};
 		const parser = new SwaggerParser(spec, config);
 		new TypeGenerator(parser, project, config).generate("/out");
-		return project.getSourceFileOrThrow("/out/models/index.ts");
+		return project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 	};
 
 	it("should generate interface for response headers", () => {

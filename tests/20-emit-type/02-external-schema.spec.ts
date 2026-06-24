@@ -65,7 +65,15 @@ describe("Emitter: TypeGenerator (External Schemas)", () => {
 		const generator = new TypeGenerator(parser, project, config);
 		generator.generate("/out");
 
-		const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+		const sourceFile = project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 		expect(sourceFile.getInterface("User")).toBeDefined();
 
 		const wrapper = sourceFile.getInterfaceOrThrow("Wrapper");

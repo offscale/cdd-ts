@@ -26,6 +26,9 @@ describe("TypeOrmGenerator", () => {
 							skippedProp: true, // Testing the boolean fallback exclusion
 							price: { type: "number" },
 							publishDate: { type: "string", format: "date" },
+							phoneNumber: { type: "string" }, // to test propName.includes("phone")
+							isVerified: { type: "boolean" }, // to test faker.datatype.boolean()
+							categoryId: { type: "integer" }, // to test foreign key (propName.endsWith("Id"))
 						},
 					},
 				},
@@ -59,20 +62,20 @@ describe("TypeOrmGenerator", () => {
 		expect(text).toContain("@Column({ type: 'varchar' })");
 		expect(text).toContain("email!: string;");
 
-		expect(text).toContain("@Column({ type: 'timestamp' })");
-		expect(text).toContain("createdAt?: Date;");
+		expect(text).toContain("@Column({ type: 'varchar', nullable: true })");
+		expect(text).toContain("createdAt?: string;");
 
 		expect(text).toContain("@Column({ type: 'boolean' })");
 		expect(text).toContain("isActive!: boolean;");
 
-		expect(text).toContain("@Column({ type: 'json' })");
+		expect(text).toContain("@Column({ type: 'json', nullable: true })");
 		expect(text).toContain("metadata?: any;");
 
-		expect(text).toContain("@Column({ type: 'float' })");
+		expect(text).toContain("@Column({ type: 'float', nullable: true })");
 		expect(text).toContain("price?: number;");
 
-		expect(text).toContain("@Column({ type: 'timestamp' })");
-		expect(text).toContain("publishDate?: Date;");
+		expect(text).toContain("@Column({ type: 'varchar', nullable: true })");
+		expect(text).toContain("publishDate?: string;");
 
 		expect(text).not.toContain("skippedProp");
 

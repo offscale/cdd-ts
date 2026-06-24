@@ -20,6 +20,7 @@ export interface IServerFrameworkGenerator {
 		outputDir: string,
 		orm?: string,
 		config?: GeneratorConfig,
+		parser?: import("../../openapi/parse.js").SwaggerParser,
 	): void;
 
 	/**
@@ -34,5 +35,18 @@ export interface IServerFrameworkGenerator {
 		parser: import("../../openapi/parse.js").SwaggerParser,
 		outputDir: string,
 		config?: GeneratorConfig,
+	): void;
+
+	/**
+	 * Generates the main server entrypoint and CLI handler.
+	 * @param project The active ts-morph project where the files will be written.
+	 * @param schemas The list of schemas.
+	 * @param outputDir The directory where the server code should be saved.
+	 */
+	generateServerEntrypoint?(
+		project: Project,
+		schemas: string[],
+		outputDir: string,
+		parser?: import("../../openapi/parse.js").SwaggerParser,
 	): void;
 }

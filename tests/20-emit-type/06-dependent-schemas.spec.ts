@@ -24,7 +24,15 @@ describe("Emitter: TypeGenerator (dependentSchemas)", () => {
 			config,
 		);
 		new TypeGenerator(parser, project, config).generate("/out");
-		return project.getSourceFileOrThrow("/out/models/index.ts");
+		return project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 	};
 
 	it("should generate an intersection type for dependentSchemas", () => {
@@ -120,7 +128,15 @@ describe("Emitter: TypeGenerator (dependentRequired)", () => {
 			config,
 		);
 		new TypeGenerator(parser, project, config).generate("/out");
-		return project.getSourceFileOrThrow("/out/models/index.ts");
+		return project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 	};
 
 	it("should generate an intersection type for dependentRequired", () => {

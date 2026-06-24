@@ -22,9 +22,9 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
             - name: Checkout ts-morph fork
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
               with:
                   repository: SamuelMarks/ts-morph
                   ref: wasm-typescript-go
@@ -32,7 +32,7 @@ jobs:
                   path: ts-morph-tmp
 
             - name: Checkout typescript-go fork
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
               with:
                   repository: SamuelMarks/typescript-go
                   ref: wasm

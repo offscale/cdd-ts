@@ -35,22 +35,32 @@ export class TypeGenerator {
 
 	public generate(outputDir: string): void {
 		const modelsDir = path.join(outputDir, "models");
-
-		const filePath = path.join(modelsDir, "index.ts");
-
-		const sourceFile = this.project.createSourceFile(filePath, "", {
+		const indexFilePath = path.join(modelsDir, "index.ts");
+		const indexSourceFile = this.project.createSourceFile(indexFilePath, "", {
 			overwrite: true,
 		});
 
 		const definitions = this.parser.schemas;
+		const generatedFileNames = new Set<string>();
+
+		const getFile = (name: string) => {
+			const safeName = pascalCase(name);
+			const filePath = path.join(modelsDir, `${safeName}.ts`);
+			let sf = this.project.getSourceFile(filePath);
+			if (!sf) {
+				sf = this.project.createSourceFile(filePath, "", { overwrite: true });
+				generatedFileNames.add(safeName);
+			}
+			return sf;
+		};
 
 		const processDefinition = (
 			name: string,
 			def: SwaggerDefinition | boolean,
 		) => {
+			const sourceFile = getFile(name);
 			if (typeof def === "boolean") {
 				this.generateTypeAlias(sourceFile, name, def);
-
 				return;
 			}
 
@@ -64,17 +74,13 @@ export class TypeGenerator {
 		};
 
 		// 1. Type Definitions
-
 		definitions.forEach((def) => processDefinition(def.name, def.definition));
 
 		// 2. Webhooks (treated as models for payload typing)
-
 		const spec = this.parser.getSpec();
-
 		if (spec.webhooks) {
 			Object.entries(spec.webhooks).forEach(([name, pathItem]) => {
 				const postOp = (pathItem as PathItem).post;
-
 				if (postOp?.requestBody) {
 					const content =
 						(
@@ -83,12 +89,9 @@ export class TypeGenerator {
 								Record<string, { schema?: OpenApiValue }>
 							>
 						).content || {};
-
 					const jsonContent = content["application/json"] || content["*/*"];
-
 					if (jsonContent?.schema) {
 						const modelName = `${pascalCase(name)}Webhook`;
-
 						processDefinition(
 							modelName,
 							jsonContent.schema as SwaggerDefinition,
@@ -99,10 +102,7 @@ export class TypeGenerator {
 		}
 
 		// 3. Callbacks
-		// Pass components to extractPaths to ensure consistent behavior
-
 		const allPaths = extractPaths(spec.paths, undefined, spec.components);
-
 		allPaths.forEach((op) => {
 			if (op.callbacks) {
 				Object.entries(op.callbacks).forEach(([callbackName, callbackObj]) => {
@@ -110,13 +110,10 @@ export class TypeGenerator {
 						string,
 						PathItem
 					>;
-
 					if (!resolvedCallback) return;
-
 					Object.values(resolvedCallback).forEach((pathItem: PathItem) => {
 						(["post", "put", "patch"] as const).forEach((method) => {
 							const operation = pathItem[method];
-
 							if (operation?.requestBody) {
 								const content =
 									(
@@ -125,17 +122,13 @@ export class TypeGenerator {
 											Record<string, { schema?: OpenApiValue }>
 										>
 									).content || {};
-
 								const jsonContent =
 									content["application/json"] || content["*/*"];
-
 								if (jsonContent?.schema) {
 									const opIdBase = op.operationId
 										? pascalCase(op.operationId)
 										: pascalCase(op.method + op.path);
-
 									const modelName = `${opIdBase}${pascalCase(callbackName)}Request`;
-
 									processDefinition(
 										modelName,
 										jsonContent.schema as SwaggerDefinition,
@@ -149,13 +142,11 @@ export class TypeGenerator {
 		});
 
 		// 4. Links
-
 		const links = this.parser.links;
-
 		Object.entries(links).forEach(([linkName, linkObj]) => {
 			if (linkObj.parameters) {
 				const paramsName = `${pascalCase(linkName)}LinkParameters`;
-
+				const sourceFile = getFile(paramsName);
 				const properties: OptionalKind<PropertySignatureStructure>[] =
 					Object.keys(linkObj.parameters).map((key) => ({
 						name: key,
@@ -178,45 +169,32 @@ export class TypeGenerator {
 		});
 
 		// 5. Response Headers
-
 		allPaths.forEach((op) => {
 			Object.entries(op.responses!).forEach(([code, resp]) => {
 				if (resp.headers) {
 					const opIdBase = op.operationId
 						? pascalCase(op.operationId)
 						: pascalCase(op.method + op.path);
-
 					const interfaceName = `${opIdBase}${code}Headers`;
-
+					const sourceFile = getFile(interfaceName);
 					const properties: OptionalKind<PropertySignatureStructure>[] = [];
 
 					for (const [headerName, headerObj] of Object.entries(resp.headers)) {
-						if (headerName.toLowerCase() === "content-type") {
-							// OAS 3.2: Response header definitions named "Content-Type" are ignored.
-
-							continue;
-						}
+						if (headerName.toLowerCase() === "content-type") continue;
 
 						const resolvedHeader = this.parser.resolve(
 							headerObj,
 						) as HeaderObject;
-
 						if (!resolvedHeader) continue;
 
 						const isSetCookie = headerName.toLowerCase() === "set-cookie";
-
-						// Logic updated to support 'content' map in Header Object (OAS 3.x)
-
 						let schema = resolvedHeader.schema as
 							| SwaggerDefinition
 							| boolean
 							| undefined;
 
 						if (schema === undefined && resolvedHeader.content) {
-							// Headers usually have one content-type defined if using 'content'
-
 							const firstContentType = Object.keys(resolvedHeader.content)[0];
-
 							if (
 								firstContentType &&
 								resolvedHeader.content[firstContentType].schema !== undefined
@@ -225,8 +203,6 @@ export class TypeGenerator {
 									.schema as SwaggerDefinition;
 							}
 						}
-
-						// Fallback to Swagger 2.0 style flat properties if no schema found
 
 						if (schema === undefined) {
 							schema = {
@@ -243,7 +219,6 @@ export class TypeGenerator {
 							: getTypeScriptType(
 									schema,
 									this.config,
-
 									this.parser.schemas.map((s) => s.name),
 								);
 
@@ -251,19 +226,13 @@ export class TypeGenerator {
 							? headerName
 							: `'${headerName}'`;
 
-						// Updated logic: Build JSDoc structure explicitly
-
 						const jsDocs: OptionalKind<JSDocStructure>[] = [];
-
 						if (resolvedHeader.description || resolvedHeader.deprecated) {
 							const doc: OptionalKind<JSDocStructure> = {};
-
 							if (resolvedHeader.description)
 								doc.description = sanitizeComment(resolvedHeader.description);
-
 							if (resolvedHeader.deprecated)
 								doc.tags = [{ tagName: "deprecated" }];
-
 							jsDocs.push(doc);
 						}
 
@@ -289,9 +258,25 @@ export class TypeGenerator {
 			});
 		});
 
-		sourceFile.formatText();
+		// Finalize files: format them and add cross-imports
+		const allNames = Array.from(generatedFileNames);
+		allNames.forEach((name) => {
+			indexSourceFile.addExportDeclaration({ moduleSpecifier: `./${name}.js` });
+			const sf = this.project.getSourceFile(path.join(modelsDir, `${name}.ts`));
+			if (sf) {
+				const otherNames = allNames.filter((n) => n !== name);
+				if (otherNames.length > 0) {
+					sf.insertImportDeclaration(0, {
+						isTypeOnly: true,
+						moduleSpecifier: "./index.js",
+						namedImports: otherNames,
+					});
+				}
+				sf.formatText();
+			}
+		});
+		indexSourceFile.formatText();
 	}
-
 	private shouldGenerateInterface(def: SwaggerDefinition | boolean): boolean {
 		if (typeof def === "boolean") return false;
 

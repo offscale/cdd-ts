@@ -33,7 +33,15 @@ describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 		);
 		new TypeGenerator(parser, project, config).generate("/out");
 
-		const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+		const sourceFile = project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 		const iface = sourceFile.getInterfaceOrThrow("Identified");
 		const tags = iface
 			.getJsDocs()
@@ -187,7 +195,15 @@ describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 		);
 		new TypeGenerator(parser, project, config).generate("/out");
 
-		const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+		const sourceFile = project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 
 		const enumDecl = sourceFile.getEnumOrThrow("EnumWithNumber");
 		expect(enumDecl.getMember("_1ST")).toBeDefined();

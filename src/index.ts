@@ -10,6 +10,7 @@ import { SwaggerParser } from "./openapi/parse.js";
 import { AngularClientGenerator } from "./vendors/angular/angular-client.generator.js";
 import { AxiosClientGenerator } from "./vendors/axios/axios-client.generator.js";
 import { ExpressServerGenerator } from "./vendors/express/express-server.generator.js";
+import { TypeGenerator } from "./classes/emit.js";
 import { FetchClientGenerator } from "./vendors/fetch/fetch-client.generator.js";
 import { NodeClientGenerator } from "./vendors/node/node-client.generator.js";
 import { ReactClientGenerator } from "./vendors/react/react-client.generator.js";
@@ -81,6 +82,12 @@ export function generateFromConfigSync(
 	testConfig?: TestGeneratorConfig,
 	targetScope?: "to_sdk" | "to_sdk_cli" | "to_server" | "to_orm",
 ): void {
+	if (targetScope === "to_server" || targetScope === "to_orm") {
+		if (config.options) {
+			config.options.generateServices = false;
+		}
+	}
+
 	const isTestEnv = !!testConfig;
 
 	const isJavy: boolean =
@@ -188,22 +195,30 @@ export function generateFromConfigSync(
 			const serverFramework = config.options.serverFramework || "express";
 			if (serverFramework === "express") {
 				const serverGenerator = new ExpressServerGenerator();
-				const schemas = swaggerParser.schemas;
 
+				// Generate models using TypeGenerator
+				new TypeGenerator(swaggerParser, activeProject, config).generate(
+					codeOutputRoot,
+				);
+
+				const schemas = swaggerParser.schemas;
 				if (schemas && schemas.length > 0) {
-					const entitiesDir = path.join(codeOutputRoot, "entities");
+					const routesDir = path.join(codeOutputRoot, "routes");
+					const schemaNamesList = [];
 					for (const schema of schemas) {
 						if (
 							schema.definition &&
 							typeof schema.definition === "object" &&
 							schema.definition.type === "object"
 						) {
+							schemaNamesList.push(schema.name);
 							serverGenerator.generateEntityRoutes(
 								activeProject,
 								schema.name,
-								entitiesDir,
+								routesDir,
 								config.options.orm,
 								config,
+								swaggerParser,
 							);
 						}
 					}
@@ -211,8 +226,16 @@ export function generateFromConfigSync(
 						serverGenerator.generateMcpRoutes(
 							activeProject,
 							swaggerParser,
-							entitiesDir,
+							routesDir,
 							config,
+						);
+					}
+					if (serverGenerator.generateServerEntrypoint) {
+						serverGenerator.generateServerEntrypoint(
+							activeProject,
+							schemaNamesList,
+							codeOutputRoot,
+							swaggerParser,
 						);
 					}
 				}

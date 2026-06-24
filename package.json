@@ -1,88 +1,92 @@
 {
-    "name": "cdd-ts",
-    "version": "0.0.2",
-    "description": "OpenAPI ↔ TypeScript",
-    "keywords": [
-        "openapi",
-        "cdd",
-        "angular",
-        "codegen",
-        "parser",
-        "emitter",
-        "compiler"
-    ],
-    "homepage": "https://github.com/offscale/cdd-ts#readme",
-    "bugs": {
-        "url": "https://github.com/offscale/cdd-ts/issues"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/offscale/cdd-ts.git"
-    },
-    "license": "MIT",
-    "author": "Samuel Marks <807580+SamuelMarks@users.noreply.github.com>",
-    "type": "module",
-    "bin": {
-        "cdd-ts": "./dist/cli.js"
-    },
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "files": [
-        "dist",
-        "bin",
-        "package.json",
-        "README.md"
-    ],
-    "scripts": {
-        "check:types": "type-coverage --project ./tsconfig.json --detail --ignore-files \"tests/**/*.ts\"",
-        "clean": "rm -rf dist docs coverage .vitest-cache node_modules/.vite",
-        "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && chmod +x dist/cli.js",
-        "docs": "typedoc",
-        "lint": "biome lint .",
-        "prepublishOnly": "npm run build",
-        "start": "node dist/cli.js",
-        "test": "vitest run --run",
-        "test:coverage": "vitest run --run --coverage",
-        "prepare": "husky",
-        "format": "biome format --write ."
-    },
-    "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.29.0",
-        "@ts-morph/common": "file:../ts-morph/packages/common",
-        "@typescript/native-preview": "^7.0.0-dev.20260505.1",
-        "as-wasi": "^0.6.0",
-        "code-block-writer": "^13.0.3",
-        "commander": "^14",
-        "js-yaml": "^4.1.1",
-        "path-browserify": "^1.0.1",
-        "ts-morph": "file:../ts-morph/packages/ts-morph",
-        "zod": "^4.4.3"
-    },
-    "devDependencies": {
-        "@angular/common": "^21.2.11",
-        "@angular/compiler": "^21.2.11",
-        "@biomejs/biome": "^2.4.16",
-        "@swc/cli": "^0.8.1",
-        "@swc/core": "^1.15.40",
-        "@swc/helpers": "^0.5.23",
-        "@types/js-yaml": "^4.0.9",
-        "@types/node": "^25",
-        "@types/swagger-schema-official": "^2.0.25",
-        "@vitest/coverage-istanbul": "^4.1.5",
-        "@vitest/coverage-v8": "^4.1.5",
-        "esbuild": "^0.28.0",
-        "glob": "^13.0",
-        "husky": "^9.1.7",
-        "rolldown": "^1.1.0",
-        "swagger-schema-official": "^2.0.0-bab6bed",
-        "swc-node": "^1.0.0",
-        "tsc-alias": "^1.8.17",
-        "tsx": "^4.22.4",
-        "type-coverage": "^2.29.7",
-        "typedoc": "^0.28.19",
-        "vitest": "^4.1"
-    },
-    "engines": {
-        "node": ">=18.0.0"
-    }
+  "name": "cdd-ts",
+  "version": "0.0.3",
+  "description": "OpenAPI ↔ TypeScript",
+  "keywords": [
+    "openapi",
+    "cdd",
+    "angular",
+    "codegen",
+    "parser",
+    "emitter",
+    "compiler"
+  ],
+  "homepage": "https://github.com/offscale/cdd-ts#readme",
+  "bugs": {
+    "url": "https://github.com/offscale/cdd-ts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/offscale/cdd-ts.git"
+  },
+  "license": "MIT",
+  "author": "Samuel Marks <807580+SamuelMarks@users.noreply.github.com>",
+  "type": "module",
+  "bin": {
+    "cdd-ts": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "bin",
+    "package.json",
+    "README.md"
+  ],
+  "scripts": {
+    "check:types": "type-coverage --project ./tsconfig.json --detail --ignore-files \"tests/**/*.ts\"",
+    "clean": "rm -rf dist docs coverage .vitest-cache node_modules/.vite",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && chmod +x dist/cli.js",
+    "docs": "typedoc",
+    "lint": "biome lint .",
+    "prepublishOnly": "npm run build",
+    "start": "node dist/cli.js",
+    "test": "vitest run --run",
+    "test:coverage": "vitest run --run --coverage",
+    "prepare": "husky",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@ts-morph/common": "file:../ts-morph/packages/common",
+    "@typescript/native-preview": "^7.0.0-dev.20260505.1",
+    "as-wasi": "^0.6.0",
+    "code-block-writer": "^13.0.3",
+    "commander": "^14",
+    "js-yaml": "^4.1.1",
+    "path-browserify": "^1.0.1",
+    "ts-morph": "file:../ts-morph/packages/ts-morph",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@angular/common": "^21.2.11",
+    "@angular/compiler": "^21.2.11",
+    "@biomejs/biome": "^2.4.16",
+    "@faker-js/faker": "^10.5.0",
+    "@swc/cli": "^0.8.1",
+    "@swc/core": "^1.15.40",
+    "@swc/helpers": "^0.5.23",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25",
+    "@types/swagger-schema-official": "^2.0.25",
+    "@vitest/coverage-istanbul": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.5",
+    "esbuild": "^0.28.0",
+    "glob": "^13.0",
+    "husky": "^9.1.7",
+    "pg": "^8.22.0",
+    "rolldown": "^1.1.0",
+    "sqlite3": "^6.0.1",
+    "swagger-schema-official": "^2.0.0-bab6bed",
+    "swc-node": "^1.0.0",
+    "tsc-alias": "^1.8.17",
+    "tsx": "^4.22.4",
+    "type-coverage": "^2.29.7",
+    "typedoc": "^0.28.19",
+    "typeorm": "^1.0.0",
+    "vitest": "^4.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

@@ -114,7 +114,15 @@ describe("Emitter: TypeGenerator", () => {
 	it("should generate basic interface with description", () => {
 		const { generator, project } = createEnvironment();
 		generator.generate("/out");
-		const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+		const sourceFile = project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 		const iface = sourceFile.getInterfaceOrThrow("Simple");
 		expect(iface.getJsDocs()[0].getText()).toContain("A simple model.");
 		expect(iface.getPropertyOrThrow("name").getJsDocs()[0].getText()).toContain(
@@ -125,7 +133,15 @@ describe("Emitter: TypeGenerator", () => {
 	it("should split models with readOnly properties", () => {
 		const { generator, project } = createEnvironment();
 		generator.generate("/out");
-		const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+		const sourceFile = project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 
 		const responseModel = sourceFile.getInterfaceOrThrow("SplitModel");
 		expect(responseModel.getProperty("id")).toBeDefined();
@@ -141,7 +157,15 @@ describe("Emitter: TypeGenerator", () => {
 	it("should generate rich JSDoc annotations", () => {
 		const { generator, project } = createEnvironment();
 		generator.generate("/out");
-		const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+		const sourceFile = project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 		const model = sourceFile.getInterfaceOrThrow("Documented");
 		const prop = model.getPropertyOrThrow("prop");
 
@@ -158,7 +182,15 @@ describe("Emitter: TypeGenerator", () => {
 	it("should handle multiline object examples", () => {
 		const { generator, project } = createEnvironment();
 		generator.generate("/out");
-		const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+		const sourceFile = project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 		const model = sourceFile.getInterfaceOrThrow("ExampleObj");
 		const doc = model.getJsDocs()[0].getText();
 		expect(doc).toContain("@example");
@@ -168,7 +200,15 @@ describe("Emitter: TypeGenerator", () => {
 	it("should generate multiple @example tags for OAS 3.1+ examples array", () => {
 		const { generator, project } = createEnvironment();
 		generator.generate("/out");
-		const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+		const sourceFile = project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 		const model = sourceFile.getInterfaceOrThrow("WithMultipleExamples");
 		const doc = model.getJsDocs()[0].getText();
 
@@ -182,7 +222,15 @@ describe("Emitter: TypeGenerator", () => {
 	it("should generate index signature for patternProperties", () => {
 		const { generator, project } = createEnvironment();
 		generator.generate("/out");
-		const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+		const sourceFile = project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 		const iface = sourceFile.getInterfaceOrThrow("WithPatternProps");
 		const indexSig = iface.getIndexSignatures()[0];
 
@@ -194,7 +242,15 @@ describe("Emitter: TypeGenerator", () => {
 	it("should merge patternProperties and additionalProperties into index signature", () => {
 		const { generator, project } = createEnvironment();
 		generator.generate("/out");
-		const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+		const sourceFile = project.createSourceFile(
+			"/out/combined.ts",
+			project
+				.getSourceFiles()
+				.filter((f) => f.getFilePath().includes("/out/models/"))
+				.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+				.join("\n"),
+			{ overwrite: true },
+		);
 		const iface = sourceFile.getInterfaceOrThrow("WithPatternsAndAdditional");
 		const indexSig = iface.getIndexSignatures()[0];
 
@@ -206,7 +262,15 @@ describe("Emitter: TypeGenerator", () => {
 		it('should generate "string | number | boolean | object | undefined | null" index signature if unevaluatedProperties is true', () => {
 			const { generator, project } = createEnvironment();
 			generator.generate("/out");
-			const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+			const sourceFile = project.createSourceFile(
+				"/out/combined.ts",
+				project
+					.getSourceFiles()
+					.filter((f) => f.getFilePath().includes("/out/models/"))
+					.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+					.join("\n"),
+				{ overwrite: true },
+			);
 			const iface = sourceFile.getInterfaceOrThrow("UnevaluatedTrue");
 
 			const indexSig = iface.getIndexSignatures()[0];
@@ -219,7 +283,15 @@ describe("Emitter: TypeGenerator", () => {
 		it("should generate specific index signature if unevaluatedProperties has schema", () => {
 			const { generator, project } = createEnvironment();
 			generator.generate("/out");
-			const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+			const sourceFile = project.createSourceFile(
+				"/out/combined.ts",
+				project
+					.getSourceFiles()
+					.filter((f) => f.getFilePath().includes("/out/models/"))
+					.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+					.join("\n"),
+				{ overwrite: true },
+			);
 			const iface = sourceFile.getInterfaceOrThrow("UnevaluatedType");
 
 			const indexSig = iface.getIndexSignatures()[0];
@@ -232,7 +304,15 @@ describe("Emitter: TypeGenerator", () => {
 		it("should NOT generate index signature if both additionalProperties & unevaluatedProperties are false", () => {
 			const { generator, project } = createEnvironment();
 			generator.generate("/out");
-			const sourceFile = project.getSourceFileOrThrow("/out/models/index.ts");
+			const sourceFile = project.createSourceFile(
+				"/out/combined.ts",
+				project
+					.getSourceFiles()
+					.filter((f) => f.getFilePath().includes("/out/models/"))
+					.map((f) => f.getFullText().replace(/import type .+\n/g, ""))
+					.join("\n"),
+				{ overwrite: true },
+			);
 			const iface = sourceFile.getInterfaceOrThrow("UnevaluatedFalse");
 
 			const indexSigs = iface.getIndexSignatures();

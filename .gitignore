@@ -253,3 +253,9 @@ temp/
 __pycache__/
 *.cjs
 *.mjs
+test-*.ts
+test-*.js
+test-sdks.ts
+test-sdks.js
+test-generated-servers.ts
+test-generated-servers.js

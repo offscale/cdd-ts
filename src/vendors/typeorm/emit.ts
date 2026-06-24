@@ -4,6 +4,10 @@ import type { IOrmGenerator } from "../../core/orm/index.js";
 import type { GeneratorConfig } from "../../core/types/config.js";
 import type { SwaggerDefinition } from "../../core/types/openapi.js";
 import type { SwaggerParser } from "../../openapi/parse.js";
+import { generateDao, generateDaoFactory } from "./dao.js";
+import { generateDatabaseConnection } from "./db.js";
+import { generateSeeder } from "./seeder.js";
+import { generateIntegrationTests } from "./tests.js";
 
 /**
  * TypeORM generator implementation.
@@ -32,6 +36,8 @@ export class TypeOrmGenerator implements IOrmGenerator {
 		const entitiesDir = path.join(outputDir, "entities");
 
 		const shouldGenerateTests = _config.options?.tests ?? false;
+		const schemaNames: string[] = [];
+		const schemaObjects: { name: string; definition: SwaggerDefinition }[] = [];
 
 		for (const schema of schemas) {
 			if (
@@ -39,15 +45,30 @@ export class TypeOrmGenerator implements IOrmGenerator {
 				typeof schema.definition === "object" &&
 				schema.definition.type === "object"
 			) {
+				schemaNames.push(schema.name);
+				schemaObjects.push({
+					name: schema.name,
+					definition: schema.definition,
+				});
 				this.generateEntity(
 					project,
 					schema.name,
 					schema.definition,
 					entitiesDir,
 				);
+				generateDao(project, schema.name, outputDir);
 				if (shouldGenerateTests) {
 					this.generateEntityTest(project, schema.name, entitiesDir);
 				}
+			}
+		}
+
+		if (schemaNames.length > 0) {
+			generateDaoFactory(project, schemaNames, outputDir);
+			generateDatabaseConnection(project, schemaNames, outputDir);
+			generateSeeder(project, schemaObjects, outputDir);
+			if (shouldGenerateTests) {
+				generateIntegrationTests(project, schemaObjects, outputDir);
 			}
 		}
 	}
@@ -93,6 +114,8 @@ export class TypeOrmGenerator implements IOrmGenerator {
 			arguments: [],
 		});
 
+		let hasPrimary = false;
+
 		if (definition.properties) {
 			for (const [propName, propDef] of Object.entries(definition.properties)) {
 				if (typeof propDef === "boolean") continue;
@@ -101,7 +124,10 @@ export class TypeOrmGenerator implements IOrmGenerator {
 					? definition.required.includes(propName)
 					: false;
 				const tsType = this.mapDefinitionToType(propDef);
-				const colOptions = this.mapDefinitionToColumnOptions(propDef);
+				const colOptions = this.mapDefinitionToColumnOptions(
+					propDef,
+					isRequired,
+				);
 
 				const prop = cls.addProperty({
 					name: propName,
@@ -115,6 +141,7 @@ export class TypeOrmGenerator implements IOrmGenerator {
 				});
 
 				if (propName === "id" || propName === "uuid") {
+					hasPrimary = true;
 					prop.addDecorator({
 						name: "PrimaryGeneratedColumn",
 						arguments: propName === "uuid" ? ["'uuid'"] : [],
@@ -126,6 +153,16 @@ export class TypeOrmGenerator implements IOrmGenerator {
 					});
 				}
 			}
+		}
+
+		if (!hasPrimary) {
+			const prop = cls.addProperty({
+				name: "id",
+				type: "number",
+				hasExclamationToken: true,
+			});
+			prop.addJsDoc({ description: "Auto-generated primary key." });
+			prop.addDecorator({ name: "PrimaryGeneratedColumn", arguments: [] });
 		}
 
 		sourceFile.formatText();
@@ -180,7 +217,7 @@ describe('${schemaName} Entity', () => {
 	private mapDefinitionToType(definition: SwaggerDefinition): string {
 		if (definition.type === "string") {
 			if (definition.format === "date-time" || definition.format === "date") {
-				return "Date";
+				return "string"; // changed from Date for cross-db compatibility
 			}
 			return "string";
 		}
@@ -196,18 +233,27 @@ describe('${schemaName} Entity', () => {
 	/**
 	 * Maps an OpenAPI schema definition to TypeORM Column options.
 	 * @param definition The OpenAPI schema definition.
+	 * @param isRequired Whether the property is required.
 	 * @returns A string representation of the TypeORM column options object.
 	 */
-	private mapDefinitionToColumnOptions(definition: SwaggerDefinition): string {
+	private mapDefinitionToColumnOptions(
+		definition: SwaggerDefinition,
+		isRequired: boolean,
+	): string {
+		let typeStr = "'json'";
 		if (definition.type === "string") {
-			if (definition.format === "date-time" || definition.format === "date") {
-				return "{ type: 'timestamp' }";
-			}
-			return "{ type: 'varchar' }";
+			typeStr = "'varchar'";
+		} else if (definition.type === "integer") {
+			typeStr = "'int'";
+		} else if (definition.type === "number") {
+			typeStr = "'float'";
+		} else if (definition.type === "boolean") {
+			typeStr = "'boolean'";
 		}
-		if (definition.type === "integer") return "{ type: 'int' }";
-		if (definition.type === "number") return "{ type: 'float' }";
-		if (definition.type === "boolean") return "{ type: 'boolean' }";
-		return "{ type: 'json' }";
+
+		if (!isRequired) {
+			return `{ type: ${typeStr}, nullable: true }`;
+		}
+		return `{ type: ${typeStr} }`;
 	}
 }

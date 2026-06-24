@@ -7,19 +7,13 @@ describe("ExpressServerGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
 
-		generator.generateEntityRoutes(
-			project,
-			"User",
-			"/out/entities",
-			"typeorm",
-			{
-				options: { tests: true },
-			} as any,
-		);
+		generator.generateEntityRoutes(project, "User", "/out/routes", "typeorm", {
+			options: { tests: true },
+		} as any);
 
 		// Check router file generation
 		const routeFile = project.getSourceFileOrThrow(
-			"/out/entities/user.routes.ts",
+			"/out/routes/user.routes.ts",
 		);
 		const routeText = routeFile.getFullText();
 		expect(routeText).toContain(
@@ -31,7 +25,7 @@ describe("ExpressServerGenerator", () => {
 
 		// Check route unit test file generation
 		const routeTestFile = project.getSourceFileOrThrow(
-			"/out/entities/user.routes.spec.ts",
+			"/out/routes/user.routes.spec.ts",
 		);
 		const routeTestText = routeTestFile.getFullText();
 		expect(routeTestText).toContain("describe('User Routes (Unit)', () => {");
@@ -41,7 +35,7 @@ describe("ExpressServerGenerator", () => {
 
 		// Check E2E test file generation
 		const e2eTestFile = project.getSourceFileOrThrow(
-			"/out/entities/user.e2e.spec.ts",
+			"/out/routes/user.e2e.spec.ts",
 		);
 		const e2eTestText = e2eTestFile.getFullText();
 		expect(e2eTestText).toContain(
@@ -55,27 +49,69 @@ describe("ExpressServerGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
 
+		const mockParser = {
+			schemas: [
+				{
+					name: "User",
+					definition: {
+						type: "object",
+						properties: {
+							id: { type: "integer" },
+							uuid: { type: "string" },
+							name: { type: "string" },
+							email: { type: "string" },
+							first: { type: "string" },
+							last: { type: "string" },
+							description: { type: "string" },
+							age: { type: "integer" },
+							createdAt: { type: "string", format: "date-time" },
+							isActive: { type: "boolean" },
+							tags: { type: "array" },
+							metadata: { type: "object" },
+							skippedProp: true,
+						},
+					},
+				},
+			],
+		} as any;
+
 		generator.generateEntityRoutes(
 			project,
 			"User",
-			"/out/entities",
+			"/out/routes",
 			undefined,
 			{
 				options: { tests: true },
 			} as any,
+			mockParser,
 		);
+
+		// Check mock file generation
+		const mockFile = project.getSourceFileOrThrow("/out/mocks/user.mock.ts");
+		const mockText = mockFile.getFullText();
+		expect(mockText).toContain("name: faker.person.firstName() as any,");
+		expect(mockText).toContain("email: faker.internet.email() as any,");
+		expect(mockText).toContain(
+			"age: faker.number.int({ min: 1, max: 1000 }) as any,",
+		);
+		expect(mockText).toContain(
+			"createdAt: faker.date.past().toISOString() as any,",
+		);
+		expect(mockText).toContain("isActive: faker.datatype.boolean() as any,");
+		expect(mockText).toContain("tags: [] as any,");
+		expect(mockText).toContain("metadata: {} as any,");
 
 		// Check router file generation
 		const routeFile = project.getSourceFileOrThrow(
-			"/out/entities/user.routes.ts",
+			"/out/routes/user.routes.ts",
 		);
 		const routeText = routeFile.getFullText();
 		expect(routeText).toContain("export function createUserRouter(): Router {");
-		expect(routeText).toContain("res.json([]);");
+		expect(routeText).toContain("res.json([fakeUser()]);");
 
 		// Check route unit test file generation
 		const routeTestFile = project.getSourceFileOrThrow(
-			"/out/entities/user.routes.spec.ts",
+			"/out/routes/user.routes.spec.ts",
 		);
 		const routeTestText = routeTestFile.getFullText();
 		expect(routeTestText).toContain("describe('User Routes (Unit)', () => {");
@@ -83,7 +119,7 @@ describe("ExpressServerGenerator", () => {
 
 		// Check E2E test file generation
 		const e2eTestFile = project.getSourceFileOrThrow(
-			"/out/entities/user.e2e.spec.ts",
+			"/out/routes/user.e2e.spec.ts",
 		);
 		const e2eTestText = e2eTestFile.getFullText();
 		expect(e2eTestText).toContain("describe('User E2E (Routes)', () => {");
@@ -98,20 +134,20 @@ describe("ExpressServerGenerator", () => {
 		generator.generateEntityRoutes(
 			project,
 			"User",
-			"/out/entities",
+			"/out/routes",
 			undefined,
 			config,
 		);
 
 		// route file generated
-		expect(project.getSourceFile("/out/entities/user.routes.ts")).toBeDefined();
+		expect(project.getSourceFile("/out/routes/user.routes.ts")).toBeDefined();
 
 		// test files omitted
 		expect(
-			project.getSourceFile("/out/entities/user.routes.spec.ts"),
+			project.getSourceFile("/out/routes/user.routes.spec.ts"),
 		).toBeUndefined();
 		expect(
-			project.getSourceFile("/out/entities/user.e2e.spec.ts"),
+			project.getSourceFile("/out/routes/user.e2e.spec.ts"),
 		).toBeUndefined();
 	});
 
@@ -119,17 +155,17 @@ describe("ExpressServerGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
 
-		generator.generateEntityRoutes(project, "User", "/out/entities", undefined);
+		generator.generateEntityRoutes(project, "User", "/out/routes", undefined);
 
 		// route file generated
-		expect(project.getSourceFile("/out/entities/user.routes.ts")).toBeDefined();
+		expect(project.getSourceFile("/out/routes/user.routes.ts")).toBeDefined();
 
 		// test files omitted
 		expect(
-			project.getSourceFile("/out/entities/user.routes.spec.ts"),
+			project.getSourceFile("/out/routes/user.routes.spec.ts"),
 		).toBeUndefined();
 		expect(
-			project.getSourceFile("/out/entities/user.e2e.spec.ts"),
+			project.getSourceFile("/out/routes/user.e2e.spec.ts"),
 		).toBeUndefined();
 	});
 
@@ -211,10 +247,70 @@ describe("ExpressServerGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
 		const parser = {
-			operations: [],
+			operations: [{ operationId: "getSomeData" }],
 		};
-		generator.generateMcpRoutes(project, parser as any, "/output3");
+		generator.generateMcpRoutes(project, parser as any, "/output3", {
+			options: { generateServices: true },
+		} as any);
 		const mcpFile = project.getSourceFile("/output3/mcp.routes.ts");
-		expect(mcpFile?.getFullText()).toContain("name: 'api-mcp'");
+		expect(mcpFile?.getFullText()).toContain(
+			'import * as services from "../services/index.js";',
+		);
+	});
+
+	it("should generate the server entrypoint with CLI options and imports", () => {
+		const project = new Project({ useInMemoryFileSystem: true });
+		const generator = new ExpressServerGenerator();
+		const dummyParser = {
+			spec: {
+				info: { title: "Test", version: "1.0" },
+				openapi: "3.0",
+				paths: {},
+			},
+			schemas: [],
+			operations: [],
+		} as any;
+		generator.generateServerEntrypoint(
+			project,
+			["User", "Post"],
+			"/out",
+			dummyParser,
+		);
+
+		const entrypointFile = project.getSourceFileOrThrow("/out/server.ts");
+		const text = entrypointFile.getFullText();
+
+		expect(text).toContain('import { Command } from "commander";');
+		expect(text).toContain(
+			'import { createDatabaseConnection } from "./db/connection.js";',
+		);
+		expect(text).toContain(
+			'import { DatabaseSeeder } from "./seeder/index.js";',
+		);
+		expect(text).toContain('import { DaoFactory } from "./dao/factory.js";');
+		expect(text).toContain(
+			'import { createUserRouter } from "./routes/user.routes.js";',
+		);
+		expect(text).toContain(
+			'import { createPostRouter } from "./routes/post.routes.js";',
+		);
+		expect(text).toContain('.option("--ephemeral",');
+		expect(text).toContain('.option("--seed",');
+		expect(text).toContain("app.use('/user', createUserRouter(dataSource));");
+		expect(text).toContain("app.use('/post', createPostRouter(dataSource));");
+
+		const testFile = project.getSourceFileOrThrow("/out/server.spec.ts");
+		const testText = testFile.getFullText();
+		expect(testText).toContain("describe('Server Entrypoint'");
+	});
+
+	it("should generate the server entrypoint without parser", () => {
+		const project = new Project({ useInMemoryFileSystem: true });
+		const generator = new ExpressServerGenerator();
+		generator.generateServerEntrypoint(project, ["User", "Post"], "/out2");
+		const entrypointFile = project.getSourceFileOrThrow("/out2/server.ts");
+		expect(entrypointFile.getFullText()).toContain(
+			'import { Command } from "commander";',
+		);
 	});
 });

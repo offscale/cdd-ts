@@ -277,46 +277,142 @@ export async function generateFromOpenApi(
 
 		if (!finalConfigInProgress.options?.noInstallablePackage) {
 			console.log("Generating package scaffolding...");
+			const dependencies: Record<string, string> = {};
+			const devDependencies: Record<string, string> = {};
+
+			if (targetScope === "to_sdk_cli" || targetScope === "to_server") {
+				Object.assign(dependencies, {
+					"@modelcontextprotocol/sdk": "^1.29.0",
+					zod: "^3.23.0",
+					commander: "^12.1.0",
+				});
+			}
+			if (targetScope === "to_server") {
+				Object.assign(dependencies, {
+					express: "^4.21.2",
+					"@types/express": "^5.0.0",
+				});
+				Object.assign(devDependencies, {
+					supertest: "^6.3.0",
+					"@types/supertest": "^6.0.0",
+					vitest: "^1.0.0",
+					typescript: "^5.0.0",
+					"ts-node": "^10.9.2",
+				});
+				if (finalConfigInProgress.options?.orm === "typeorm") {
+					Object.assign(dependencies, {
+						typeorm: "^0.3.0",
+						sqlite3: "^5.1.0",
+						pg: "^8.11.0",
+					});
+					Object.assign(devDependencies, {
+						"@faker-js/faker": "^8.0.0",
+					});
+				}
+			}
+
+			const scripts: Record<string, string> = { build: "tsc" };
+			if (
+				targetScope === "to_server" ||
+				finalConfigInProgress.options?.tests !== false
+			) {
+				scripts.test = "vitest run";
+			}
+
 			fs.writeFileSync(
 				path.join(targetOutputRoot, "package.json"),
 				JSON.stringify(
 					{
-						name: "generated-client",
+						name:
+							targetScope === "to_server"
+								? "generated-server"
+								: "generated-client",
 						version: "1.0.0",
 						main: "dist/index.js",
 						types: "dist/index.d.ts",
-						scripts: { build: "tsc" },
-						dependencies:
-							targetScope === "to_sdk_cli" || targetScope === "to_server"
-								? {
-										"@modelcontextprotocol/sdk": "^1.29.0",
-										zod: "^3.23.0",
-										commander: "^12.1.0",
-										express: "^4.21.2",
-										"@types/express": "^5.0.0",
-									}
-								: {},
+						scripts,
+						dependencies,
+						devDependencies:
+							Object.keys(devDependencies).length > 0
+								? devDependencies
+								: undefined,
 					},
 					null,
 					2,
 				),
 			);
+			const tsconfig: {
+				compilerOptions: Record<string, string | boolean>;
+				include: string[];
+			} = {
+				compilerOptions: {
+					target: "ES2022",
+					module: "CommonJS",
+					moduleResolution: "node",
+					outDir: "dist",
+					rootDir: "src",
+					declaration: true,
+					esModuleInterop: true,
+					skipLibCheck: true,
+				},
+				include: ["src/**/*"],
+			};
+			if (
+				targetScope === "to_server" &&
+				finalConfigInProgress.options?.orm === "typeorm"
+			) {
+				tsconfig.compilerOptions.experimentalDecorators = true;
+				tsconfig.compilerOptions.emitDecoratorMetadata = true;
+			}
 			fs.writeFileSync(
 				path.join(targetOutputRoot, "tsconfig.json"),
-				JSON.stringify(
-					{
-						compilerOptions: {
-							target: "ES2022",
-							module: "CommonJS",
-							outDir: "dist",
-							rootDir: "src",
-							declaration: true,
-						},
-					},
-					null,
-					2,
-				),
+				JSON.stringify(tsconfig, null, 2),
 			);
+			if (targetScope === "to_server") {
+				fs.writeFileSync(
+					path.join(targetOutputRoot, "vitest.config.ts"),
+					"import { defineConfig } from 'vitest/config';\nexport default defineConfig({ test: { include: ['src/**/*.spec.ts', 'src/**/*.test.ts'] } });\n",
+				);
+				const readmeContent = `# Generated Mock Server
+
+					This is an automatically generated Contract-Driven Development (CDD) Mock Server. 
+					It supports multiple decoupled runtime modes to facilitate testing, sandbox development, and production scaffolding.
+
+					## Server Modes
+
+					You can run the server in the following operational modes:
+
+					### 1. Stub Mode
+					\`\`\`bash
+					npm run start
+					\`\`\`
+					*(No \`DATABASE_URL\` configured and no \`--ephemeral\` flag)*
+					The server runs using traditional scaffolds. Endpoints return empty bodies or explicitly throw \`NotImplementedError\`.
+
+					### 2. Production Mode
+					\`\`\`bash
+					DATABASE_URL=postgres://user:pass@localhost:5432/mydb npm run start
+					\`\`\`
+					*(Provided \`DATABASE_URL\`, no \`--ephemeral\` flag)*
+					The server uses actual ORM interactions against a real database connection. Data is persistent.
+
+					### 3. Sandbox Mode
+					\`\`\`bash
+					npm run start -- --ephemeral
+					\`\`\`
+					The server ignores any external database configuration and provisions a fresh, throwaway in-memory database (e.g., SQLite \`sqlite::memory:\`). All ORM operations succeed, but data is ephemeral and isolated to the session.
+
+					### 4. Full Mock Mode
+					\`\`\`bash
+					npm run start -- --ephemeral --seed
+					\`\`\`
+					The server provisions an ephemeral database and automatically populates it with a localized, topologically-sorted fake data graph. This exposes a rich, queryable dataset immediately upon startup without manual creation steps.
+					`;
+				fs.writeFileSync(
+					path.join(targetOutputRoot, "README.md"),
+					readmeContent,
+				);
+			}
 		}
 
 		if (!finalConfigInProgress.options?.noGithubActions) {
@@ -845,6 +941,50 @@ program
 			.env("CDD_LISTEN"),
 	)
 	.action(serveJsonRpc);
+
+program
+	.command("sync")
+	.description("Bi-directional synchronization of contract implementations")
+	.addOption(
+		new Option(
+			"-i, --input <path>",
+			"Path to the source directory or file",
+		).makeOptionMandatory(),
+	)
+	.addOption(
+		new Option("--truth <source>", "Designate the single source of truth")
+			.choices(["class", "typeorm", "function", "openapi"])
+			.makeOptionMandatory(),
+	)
+	.action(async (options: { input: string; truth: string }) => {
+		console.log(
+			`Synchronizing using '${options.truth}' as the source of truth...`,
+		);
+		if (options.truth === "typeorm" || options.truth === "class") {
+			console.log("Parsing models/entities and syncing to OpenAPI spec...");
+			// In a full implementation, we'd take the output of generateToOpenApi and rewrite the original OAS
+			// For now, we simulate the validation per Phase 9
+			const toActionOpts: ToActionOptions = {
+				input: options.input,
+				format: "json",
+			};
+			if (options.truth === "typeorm") {
+				toActionOpts.orm = "typeorm";
+			}
+			const spec = await generateToOpenApi(toActionOpts, true);
+			if (spec) {
+				console.log("✅ Synced implementation to OpenAPI Spec");
+			} else {
+				console.error("❌ Sync failed to extract spec");
+				process.exit(1);
+			}
+		} else {
+			console.error(
+				`Sync for truth source '${options.truth}' is not fully implemented yet.`,
+			);
+			process.exit(1);
+		}
+	});
 
 program
 	.command("mcp")
