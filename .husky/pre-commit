@@ -27,6 +27,14 @@ npm run docs
 echo "Building WASM..."
 make build_wasm
 
+echo "Fetching Petstore JSONs if missing..."
+if [ ! -f ../petstore.json ]; then
+    curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore.json -o ../petstore.json
+fi
+if [ ! -f ../petstore_oas3.json ]; then
+    curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore_oas3.json -o ../petstore_oas3.json
+fi
+
 echo "Running Swagger 2.0 Petstore test..."
 node dist/cli.js from_openapi to_sdk -i ../petstore.json -o .test_out_swagger || { echo "Swagger 2.0 Petstore test failed"; exit 1; }
 (cd .test_out_swagger && npm install && npm run build) || { echo "Swagger 2.0 SDK build failed"; exit 1; }

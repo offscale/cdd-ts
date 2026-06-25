@@ -14,6 +14,13 @@ describe("Core Utils: String", () => {
 			expect(utils.camelCase("123")).toBe("api123");
 		});
 
+		it("should handle various strings for snakeCase", () => {
+			expect(utils.snakeCase("hello world")).toBe("hello_world");
+			expect(utils.snakeCase("Hello-World")).toBe("hello_world");
+			expect(utils.snakeCase("__FOO_BAR__")).toBe("foo_bar");
+			expect(utils.snakeCase("")).toBe("");
+		});
+
 		it("should handle various strings for pascalCase", () => {
 			expect(utils.pascalCase("hello world")).toBe("HelloWorld");
 			expect(utils.pascalCase("hello-world")).toBe("HelloWorld");
@@ -44,6 +51,8 @@ describe("Core Utils: String", () => {
 		});
 
 		it("should detect URI references", () => {
+			expect(utils.isUriReference("")).toBe(false);
+			expect(utils.isUriReference("   ")).toBe(false);
 			expect(utils.isUriReference("#/components/securitySchemes/ApiKey")).toBe(
 				true,
 			);
