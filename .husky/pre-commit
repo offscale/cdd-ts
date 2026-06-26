@@ -3,11 +3,11 @@ set -e
 
 echo "Running Auto-Code-Format Fix..."
 npm run format || true
-npx @biomejs/biome format --write .
+npx @biomejs/biome ci .-write .
 git add -u
 
 echo "Checking Code Formatting..."
-npx @biomejs/biome format .
+npx @biomejs/biome ci .
 
 echo "Running Lint..."
 npm run lint

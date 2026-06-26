@@ -42,4 +42,4 @@ jobs:
               run: npm run lint
 
             - name: Run Biome format check
-              run: npx @biomejs/biome format .
+              run: npx @biomejs/biome ci .

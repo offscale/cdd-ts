@@ -1,7 +1,7 @@
+import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { CallbackGenerator } from "../../src/functions/emit_callback.js";
 import { SwaggerParser } from "../../src/openapi/parse.js";
-import { Project } from "ts-morph";
 
 describe("CallbackGenerator", () => {
 	it("should handle duplicate type aliases and unresolvable paths", () => {

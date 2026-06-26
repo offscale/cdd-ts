@@ -54,7 +54,7 @@ jobs:
               run: npm ci
 
             - name: Check Code Formatting
-              run: npx @biomejs/biome format .
+              run: npx @biomejs/biome ci .
 
             - name: Run Lint
               run: npm run lint
@@ -74,7 +74,7 @@ jobs:
             - name: Setup Go
               uses: actions/setup-go@v6
               with:
-                  go-version: '>=1.26.0'
+                  go-version: '>=1.22.0'
                   cache: true
 
             - name: Build WASM
