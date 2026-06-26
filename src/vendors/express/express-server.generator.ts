@@ -298,7 +298,8 @@ export function createMcpRouter() {
 	}
 
 	// 3. Resolve DAOs
-	const factory = new DaoFactory();
+	app.locals.dataSource = dataSource;
+    const factory = new DaoFactory();
 
 	// In a full DI implementation, the DAO factory would be passed to routers or services.
 	// For now, we pass dataSource directly to the generated TypeORM routes if it exists,
@@ -357,16 +358,19 @@ export function createMcpRouter() {
 	it('should initialize stub mode when no DB args are provided', async () => {
 	const app = await startServer(['node', 'script.js']);
 	expect(app).toBeDefined();
+        if ((app as any).locals && (app as any).locals.dataSource) await (app as any).locals.dataSource.destroy();
 	});
 
 	it('should initialize ephemeral mode with --ephemeral', async () => {
 	const app = await startServer(['node', 'script.js', '--ephemeral']);
 	expect(app).toBeDefined();
+        if ((app as any).locals && (app as any).locals.dataSource) await (app as any).locals.dataSource.destroy();
 	});
 
 	it('should seed data when --seed and --ephemeral are provided', async () => {
 	const app = await startServer(['node', 'script.js', '--ephemeral', '--seed']);
 	expect(app).toBeDefined();
+        if ((app as any).locals && (app as any).locals.dataSource) await (app as any).locals.dataSource.destroy();
 	});
 	});
 	`);

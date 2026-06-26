@@ -54,6 +54,11 @@ describe('Mock Server Integration Tests', () => {
             // No args = Stub mode
             app = await startServer(['node', 'script.js']);
         });
+        afterAll(async () => {
+            if (app && app.locals && app.locals.dataSource) {
+                await app.locals.dataSource.destroy();
+            }
+        });
 
         ${schemas
 					.map(
@@ -72,6 +77,11 @@ describe('Mock Server Integration Tests', () => {
         let app: Application;
         beforeAll(async () => {
             app = await startServer(['node', 'script.js', '--ephemeral']);
+        });
+        afterAll(async () => {
+            if (app && app.locals && app.locals.dataSource) {
+                await app.locals.dataSource.destroy();
+            }
         });
 
         ${schemas
@@ -95,6 +105,11 @@ describe('Mock Server Integration Tests', () => {
         let app: Application;
         beforeAll(async () => {
             app = await startServer(['node', 'script.js', '--ephemeral', '--seed']);
+        });
+        afterAll(async () => {
+            if (app && app.locals && app.locals.dataSource) {
+                await app.locals.dataSource.destroy();
+            }
         });
 
         ${schemas
