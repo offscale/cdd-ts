@@ -192,7 +192,7 @@ export class CallbackGenerator {
 								interfaceName: c.interfaceName,
 								expression: c.expression,
 								pathItem: c.pathItem,
-								...(c.scope ? { scope: c.scope } : {}),
+								scope: c.scope,
 							})),
 							null,
 							2,
@@ -218,10 +218,11 @@ export class CallbackGenerator {
 		// Pass the main components to ensure security resolution logic within callbacks
 		// follows similar rules, although callbacks rarely define security schemes inline implicitly.
 
-		const resolveRef = (ref: string) => this.parser.resolveReference(ref);
+		const resolveRef = this.parser.resolveReference.bind(this.parser);
 
-		const resolveObj = (obj: OpenApiValue) =>
-			this.parser.resolve(obj as OpenApiValue);
+		const resolveObj = this.parser.resolve.bind(this.parser) as (
+			obj: OpenApiValue,
+		) => OpenApiValue;
 
 		return extractPaths(
 			tempMap,

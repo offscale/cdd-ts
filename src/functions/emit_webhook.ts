@@ -163,7 +163,7 @@ export class WebhookGenerator {
 								method: c.method,
 								interfaceName: c.interfaceName,
 								pathItem: c.pathItem,
-								...(c.scope ? { scope: c.scope } : {}),
+								scope: c.scope,
 							})),
 							null,
 							2,
@@ -185,10 +185,11 @@ export class WebhookGenerator {
 		const tempMap = { [name]: pathItem };
 		// Pass the main components to ensure strict resolution if webhooks define security
 
-		const resolveRef = (ref: string) => this.parser.resolveReference(ref);
+		const resolveRef = this.parser.resolveReference.bind(this.parser);
 
-		const resolveObj = (obj: OpenApiValue) =>
-			this.parser.resolve(obj as OpenApiValue);
+		const resolveObj = this.parser.resolve.bind(this.parser) as (
+			obj: OpenApiValue,
+		) => OpenApiValue;
 
 		return extractPaths(
 			tempMap,

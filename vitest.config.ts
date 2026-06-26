@@ -34,9 +34,6 @@ export default defineConfig({
 				"src/vendors/cli/**",
 				"src/index.ts",
 				"src/classes/**",
-                                "src/functions/emit_callback.ts",
-                                "src/functions/emit_webhook.ts",
-                                "src/functions/emit.ts",
                                 "src/functions/parse_analyzer.ts",
                                 "src/functions/parse.ts",
                                 "src/openapi/**",
@@ -70,3 +67,4 @@ export default defineConfig({
 		},
 	],
 });
+ 
