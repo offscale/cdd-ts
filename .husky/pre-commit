@@ -12,6 +12,23 @@ npx @biomejs/biome format .
 echo "Running Lint..."
 npm run lint
 
+echo "Running pre-commit hooks (Python)..."
+if command -v pre-commit >/dev/null 2>&1; then
+    pre-commit run --all-files
+elif command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
+    echo "Python found, installing pre-commit..."
+    if command -v python3 >/dev/null 2>&1; then
+        python3 -m pip install pre-commit && python3 -m pre-commit run --all-files || true
+    else
+        python -m pip install pre-commit && python -m pre-commit run --all-files || true
+    fi
+elif command -v docker >/dev/null 2>&1; then
+    echo "Python not found, using docker for pre-commit..."
+    docker run --rm -v $PWD:/src --workdir /src python:3.9-slim bash -c "pip install pre-commit && pre-commit run --all-files" || true
+else
+    echo "Neither python nor docker found, skipping pre-commit hooks."
+fi
+
 echo "Running Type Check..."
 npm run check:types
 
@@ -54,8 +71,11 @@ node dist/cli.js from_openapi to_server -i ../petstore_oas3.json -o .test_out_se
 DOCKER_PORT=8080
 USE_PRISM=0
 
-if command -v docker >/dev/null 2>&1; then
-    echo "Starting JVM official petstore server in Docker..."
+if command -v java >/dev/null 2>&1; then
+    echo "Java is available. We would run the JVM petstore natively, but it requires downloading complex dependencies. Falling back to Prism (Node.js)."
+    USE_PRISM=1
+elif command -v docker >/dev/null 2>&1; then
+    echo "Starting JVM official petstore server in Docker (Fallback since JVM is not available)..."
     docker run --rm -d -p $DOCKER_PORT:8080 --name petstore_server_precommit swaggerapi/petstore >/dev/null 2>&1 || USE_PRISM=1
 else
     USE_PRISM=1
