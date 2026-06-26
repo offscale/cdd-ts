@@ -41,7 +41,7 @@ describe("ExpressServerGenerator", () => {
 		expect(e2eTestText).toContain(
 			"describe('User E2E (Routes + Storage)', () => {",
 		);
-		expect(e2eTestText).toContain("type: 'sqlite',");
+		expect(e2eTestText).toContain("type: 'better-sqlite3',");
 		expect(e2eTestText).toContain("entities: [User],");
 	});
 

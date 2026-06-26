@@ -283,8 +283,8 @@ export async function generateFromOpenApi(
 			if (targetScope === "to_sdk_cli" || targetScope === "to_server") {
 				Object.assign(dependencies, {
 					"@modelcontextprotocol/sdk": "^1.29.0",
-					zod: "^3.23.0",
-					commander: "^12.1.0",
+					zod: "^4.4.3",
+					commander: "^14.0.0",
 				});
 			}
 			if (targetScope === "to_server") {
@@ -293,20 +293,21 @@ export async function generateFromOpenApi(
 					"@types/express": "^5.0.0",
 				});
 				Object.assign(devDependencies, {
-					supertest: "^6.3.0",
-					"@types/supertest": "^6.0.0",
-					vitest: "^1.0.0",
+					supertest: "^7.2.2",
+					"@types/supertest": "^7.2.0",
+					vitest: "^4.1.0",
 					typescript: "^5.0.0",
 					"ts-node": "^10.9.2",
 				});
 				if (finalConfigInProgress.options?.orm === "typeorm") {
 					Object.assign(dependencies, {
-						typeorm: "^0.3.0",
-						sqlite3: "^5.1.0",
-						pg: "^8.11.0",
+						typeorm: "^1.0.0",
+						"better-sqlite3": "^12.0.0",
+						pg: "^8.22.0",
 					});
 					Object.assign(devDependencies, {
-						"@faker-js/faker": "^8.0.0",
+						"@faker-js/faker": "^10.5.0",
+						"@types/better-sqlite3": "^7.6.10",
 					});
 				}
 			}

@@ -3,7 +3,6 @@ set -e
 
 echo "Running Auto-Code-Format Fix..."
 npm run format || true
-npx @biomejs/biome ci .-write .
 git add -u
 
 echo "Checking Code Formatting..."
@@ -126,7 +125,13 @@ if [ "$USE_PRISM" -eq 1 ]; then
     npx @stoplight/prism-cli mock ../petstore_oas3.json -p 4011 -d >/dev/null 2>&1 &
     PRISM_OAS3=$!
 
-    sleep 5
+    echo "Waiting for Prism servers to start..."
+    for i in {1..30}; do
+        if curl -s http://127.0.0.1:4010 > /dev/null && curl -s http://127.0.0.1:4011 > /dev/null; then
+            break
+        fi
+        sleep 1
+    done
 
     cat << 'EOF' > test-sdks.ts
 import { StoreClient as SwaggerStoreClient } from './.test_out_swagger/dist/services/store.client.js';
@@ -157,7 +162,14 @@ SERVER_SWAGGER_PID=$!
 (cd .test_out_server_openapi && PORT=4021 node dist/server.js --ephemeral --seed) >/dev/null 2>&1 &
 SERVER_OAS3_PID=$!
 
-sleep 5
+echo "Waiting for generated servers to start..."
+for i in {1..30}; do
+    if curl -s http://127.0.0.1:4020/user > /dev/null && curl -s http://127.0.0.1:4021/user > /dev/null; then
+        echo "Servers are up!"
+        break
+    fi
+    sleep 1
+done
 
 cat << 'EOF' > test-generated-servers.ts
 import { UserClient as SwaggerUserClient } from './.test_out_swagger/dist/services/user.client.js';

@@ -171,7 +171,7 @@ describe('Fake Data Seeder', () => {
 
     beforeAll(async () => {
         dataSource = new DataSource({
-            type: 'sqlite',
+            type: 'better-sqlite3',
             database: ':memory:',
             entities: [${schemas.map((s) => s.name).join(", ")}],
             synchronize: true,

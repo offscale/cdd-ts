@@ -112,7 +112,14 @@ jobs:
                   (cd .test_out_server_openapi && PORT=4021 node dist/server.js --ephemeral --seed) >/dev/null 2>&1 &
                   SERVER_OAS3_PID=$!
                   
-                  sleep 5
+                  echo "Waiting for generated servers to start..."
+                  for i in {1..30}; do
+                      if curl -s http://127.0.0.1:4020/user > /dev/null && curl -s http://127.0.0.1:4021/user > /dev/null; then
+                          echo "Servers are up!"
+                          break
+                      fi
+                      sleep 1
+                  done
                   
                   cat << 'EOF' > test-generated-servers.ts
                   import { UserClient as SwaggerUserClient } from './.test_out_swagger/dist/services/user.client.js';

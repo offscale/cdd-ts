@@ -80,7 +80,7 @@ export function generateDatabaseConnection(
 
             if (config.ephemeral) {
                 options = {
-                    type: 'sqlite',
+                    type: 'better-sqlite3',
                     database: ':memory:',
                     entities: ${entitiesList},
                     synchronize: true,
@@ -140,14 +140,14 @@ describe('Database Connection Factory', () => {
         activeDataSource = await createDatabaseConnection({ ephemeral: true });
         expect(activeDataSource).toBeDefined();
         expect(activeDataSource?.isInitialized).toBe(true);
-        expect(activeDataSource?.options.type).toBe('sqlite');
+        expect(activeDataSource?.options.type).toBe('better-sqlite3');
         expect(activeDataSource?.options.database).toBe(':memory:');
     });
 
     it('should provision an ephemeral DB even if databaseUrl is provided when ephemeral is true', async () => {
         activeDataSource = await createDatabaseConnection({ databaseUrl: 'postgres://localhost/test', ephemeral: true });
         expect(activeDataSource).toBeDefined();
-        expect(activeDataSource?.options.type).toBe('sqlite');
+        expect(activeDataSource?.options.type).toBe('better-sqlite3');
     });
 });
     `);
