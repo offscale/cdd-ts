@@ -103,7 +103,7 @@ export class ServiceMethodAnalyzer {
 				explode: explode,
 				allowReserved: p.allowReserved ?? false,
 				serializationLink,
-				...(p.style != null && { style: p.style }),
+				style: effectiveStyle,
 				...(contentType ? { contentType } : {}),
 				...(encoding ? { encoding } : {}),
 				...(hasEncoderConfig ? { contentEncoderConfig: encoderConfig } : {}),

@@ -82,10 +82,10 @@ node test-generated-servers.js || { echo "test-generated-servers execution faile
 kill $SERVER_SWAGGER_PID || true
 kill $SERVER_OAS3_PID || true
 
-rm -rf .test_out_swagger
-rm -rf .test_out_openapi
-rm -rf .test_out_server_swagger
-rm -rf .test_out_server_openapi
+#rm -rf .test_out_swagger
+#rm -rf .test_out_openapi
+#rm -rf .test_out_server_swagger
+#rm -rf .test_out_server_openapi
 rm -f test-generated-servers.ts test-generated-servers.js
 
 echo "CI Local checks passed."

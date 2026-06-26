@@ -32,6 +32,7 @@ describe("WASM URL fallback", () => {
 			const parser = new SwaggerParser(spec as any, {
 				input: "memory://spec.json",
 				output: "dummy",
+				options: { framework: "vanilla" },
 			});
 			expect(parser).toBeDefined();
 		} finally {

@@ -92,7 +92,7 @@ export class FetchServiceMethodGenerator {
 		let urlTemplate = model.urlTemplate;
 
 		model.pathParams.forEach((p: ParamSerialization) => {
-			const serializeCall = `ParameterSerializer.serializePathParam('${p.originalName}', ${p.paramName}, '${p.style || "simple"}', ${p.explode}, ${p.allowReserved})`;
+			const serializeCall = `ParameterSerializer.serializePathParam('${p.originalName}', ${p.paramName}, '${p.style}', ${p.explode}, ${p.allowReserved})`;
 
 			urlTemplate = urlTemplate.replace(
 				`{${p.originalName}}`,

@@ -41,13 +41,13 @@ export default defineConfig({
                                 "src/functions/parse.ts",
                                 "src/openapi/**",
 				"src/routes/**",
-				
-				
+				"src/core/runtime-expressions.ts",
+				"src/core/generator.ts",
 				"src/core/types/**",
 				"src/vendors/angular/admin/**",
 				"src/vendors/angular/service/service-method.generator.ts",
 				"src/vendors/angular/utils/**",
-				"src/vendors/fetch/service/service-method.generator.ts",
+				
 				"src/vendors/vanilla/admin/**",
 				"src/vendors/node/test/**",
 				"tests/**",

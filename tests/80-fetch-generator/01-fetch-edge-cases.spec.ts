@@ -226,6 +226,41 @@ describe("Fetch Implementation Edge Cases", () => {
 		expect(() => generator.addServiceMethod(cls, {} as any)).not.toThrow();
 		expect(cls.getMethods().length).toBe(0);
 	});
+
+	it("should handle path params without explicit style", async () => {
+		const config: GeneratorConfig = {
+			input: "dummy",
+			output: path.join(os.tmpdir(), "test-params-nostyle"),
+			options: { implementation: "fetch" },
+		};
+		const spec = {
+			openapi: "3.0.0",
+			info: { title: "Test", version: "1.0" },
+			paths: {
+				"/test/{id}": {
+					get: {
+						operationId: "getNoStyle",
+						parameters: [
+							{
+								name: "id",
+								in: "path",
+								required: true,
+								schema: { type: "string" },
+							},
+						],
+						responses: { "200": { description: "OK" } },
+					},
+				},
+			},
+		};
+		const project = new Project();
+		generateFromConfigSync(config, project, { spec });
+		const sf = project
+			.getSourceFiles()
+			.find((f) => f.getFilePath().includes("test.service.ts"));
+		const m = sf?.getClasses()[0]?.getMethod("getNoStyle");
+		expect(m?.getText()).toContain("'simple'");
+	});
 });
 
 it("should assign root paths to Default controller", async () => {
