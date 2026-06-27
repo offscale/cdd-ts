@@ -273,7 +273,7 @@ export class ServiceTestGenerator {
 			);
 
 			tests.push(
-				`        next: () => { throw new Error('should have failed with a 404 error'); },`,
+				`        next: () => { throw new globalThis.Error('should have failed with a 404 error'); },`,
 			);
 
 			tests.push(`        error: error => expect(error.status).toBe(404),`);

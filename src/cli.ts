@@ -372,7 +372,7 @@ export async function generateFromOpenApi(
 			if (targetScope === "to_server") {
 				fs.writeFileSync(
 					path.join(targetOutputRoot, "vitest.config.ts"),
-					"import { defineConfig } from 'vitest/config';\nexport default defineConfig({ test: { include: ['src/**/*.spec.ts', 'src/**/*.test.ts'] } });\n",
+					"import { defineConfig } from 'vitest/config';\nexport default defineConfig({ test: { pool: 'forks', include: ['src/**/*.spec.ts', 'src/**/*.test.ts'] } });\n",
 				);
 				const readmeContent = `# Generated Mock Server
 

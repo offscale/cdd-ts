@@ -209,7 +209,9 @@ export function generateFromConfigSync(
 						if (
 							schema.definition &&
 							typeof schema.definition === "object" &&
-							schema.definition.type === "object"
+							(schema.definition.type === "object" ||
+								(schema.definition.properties &&
+									Object.keys(schema.definition.properties).length > 0))
 						) {
 							schemaNamesList.push(schema.name);
 							serverGenerator.generateEntityRoutes(

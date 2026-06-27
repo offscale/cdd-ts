@@ -185,7 +185,7 @@ export class FetchServiceMethodGenerator {
 		lines.push(`const response = await fetch(url.toString(), fetchOptions);`);
 
 		lines.push(
-			`if (!response.ok) { throw new Error('Request failed: ' + response.statusText); }`,
+			`if (!response.ok) { throw new globalThis.Error('Request failed: ' + response.statusText); }`,
 		);
 
 		// Basic parsing for now

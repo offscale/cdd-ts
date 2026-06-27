@@ -312,11 +312,10 @@ export function createMcpRouter() {
 		.map((schema) => {
 			return `
 	if (dataSource) {
-	app.use('/${schema.toLowerCase()}', create${schema}Router(dataSource));
+	    app.use('/${schema.toLowerCase()}', create${schema}Router(dataSource));
 	} else {
-	// Fallback to stub routes or no-op if no DB (the default routes without DB)
-	// Note: For full stub mode, your router generator should output stub DAOs.
-	app.use('/${schema.toLowerCase()}', create${schema}Router(null as any)); 
+	    // Fallback to stub routes or no-op if no DB
+	    app.use('/${schema.toLowerCase()}', express.Router().use((req, res) => res.status(501).json({ error: "Not Implemented (No DB)" })));
 	}`;
 		})
 		.join("\n")}

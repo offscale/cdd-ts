@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 set -e
 
+unset DATABASE_URL
+
 echo "Running Auto-Code-Format Fix..."
 npm run format || true
 git add -u
@@ -95,7 +97,7 @@ if [ "$USE_PRISM" -eq 0 ]; then
         echo "JVM server is ready."
         cat << 'EOF' > test-sdks.ts
 import { StoreClient as SwaggerStoreClient } from './.test_out_swagger/dist/services/store.client.js';
-import { StoreClient as OpenApiStoreClient } from './.test_out_openapi/dist/services/store.client.js';
+import { PetsClient as OpenApiPetsClient } from './.test_out_openapi/dist/services/pets.client.js';
 
 async function run() {
     console.log("Testing Swagger 2.0 SDK against JVM Server...");
@@ -104,8 +106,8 @@ async function run() {
     console.log("Swagger 2.0 OK");
 
     console.log("Testing OpenAPI 3.0 SDK against JVM Server...");
-    const openapiClient = new OpenApiStoreClient('http://127.0.0.1:8080/api');
-    await openapiClient.getInventory({ headers: { api_key: 'special-key' } });
+    const openapiClient = new OpenApiPetsClient('http://127.0.0.1:8080/v1');
+    await openapiClient.listPets();
     console.log("OpenAPI 3.0 OK");
 }
 run().catch(e => { console.error(e); process.exit(1); });
@@ -135,7 +137,7 @@ if [ "$USE_PRISM" -eq 1 ]; then
 
     cat << 'EOF' > test-sdks.ts
 import { StoreClient as SwaggerStoreClient } from './.test_out_swagger/dist/services/store.client.js';
-import { StoreClient as OpenApiStoreClient } from './.test_out_openapi/dist/services/store.client.js';
+import { PetsClient as OpenApiPetsClient } from './.test_out_openapi/dist/services/pets.client.js';
 
 async function run() {
     console.log("Testing Swagger 2.0 SDK against fallback mock...");
@@ -144,8 +146,8 @@ async function run() {
     console.log("Swagger 2.0 OK");
 
     console.log("Testing OpenAPI 3.0 SDK against fallback mock...");
-    const openapiClient = new OpenApiStoreClient('http://127.0.0.1:4011');
-    await openapiClient.getInventory({ headers: { api_key: 'special-key' } });
+    const openapiClient = new OpenApiPetsClient('http://127.0.0.1:4011');
+    await openapiClient.listPets();
     console.log("OpenAPI 3.0 OK");
 }
 run().catch(e => { console.error(e); process.exit(1); });
@@ -164,7 +166,7 @@ SERVER_OAS3_PID=$!
 
 echo "Waiting for generated servers to start..."
 for i in {1..30}; do
-    if curl -s http://127.0.0.1:4020/user > /dev/null && curl -s http://127.0.0.1:4021/user > /dev/null; then
+    if curl -s http://127.0.0.1:4020/user > /dev/null && curl -s http://127.0.0.1:4021/pet > /dev/null; then
         echo "Servers are up!"
         break
     fi
@@ -173,7 +175,6 @@ done
 
 cat << 'EOF' > test-generated-servers.ts
 import { UserClient as SwaggerUserClient } from './.test_out_swagger/dist/services/user.client.js';
-import { UserClient as OpenApiUserClient } from './.test_out_openapi/dist/services/user.client.js';
 
 async function run() {
     console.log("Testing Swagger 2.0 SDK against Generated Swagger Server...");
@@ -197,8 +198,8 @@ async function run() {
 
     console.log("Testing OpenAPI 3.0 SDK against Generated OpenAPI Server...");
     // Fallback to fetch just to prove the DB and routing are alive if the SDK mismatches
-    const res = await fetch('http://127.0.0.1:4021/user');
-    if (!res.ok) throw new Error("Generated OpenAPI server failed to respond to GET /user");
+    const res = await fetch('http://127.0.0.1:4021/pet');
+    if (!res.ok) throw new Error("Generated OpenAPI server failed to respond to GET /pet");
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) throw new Error("Generated OpenAPI server did not seed data");
     console.log("OpenAPI 3.0 Generated Server OK (Seeded " + data.length + " users)");

@@ -65,8 +65,8 @@ describe('Mock Server Integration Tests', () => {
 						(schema) => `
         it('should return empty/501 for ${schema.name} GET', async () => {
             const res = await request(app).get('/${schema.name.toLowerCase()}');
-            expect(res.status).toBe(200);
-            expect(res.body).toEqual([]);
+            expect(res.status).toBe(501);
+            expect(res.body).toEqual({ error: "Not Implemented (No DB)" });
         });
         `,
 					)

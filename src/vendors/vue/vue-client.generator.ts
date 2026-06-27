@@ -127,7 +127,7 @@ export class VueClientGenerator extends AbstractClientGenerator {
 					`export function ${hookName}(): ${serviceName} {`,
 					`    const service = inject(${injectionKeyName});`,
 					`    if (!service) {`,
-					`        throw new Error('API Client not installed. Please use the ApiClientPlugin in your Vue app.');`,
+					`        throw new globalThis.Error('API Client not installed. Please use the ApiClientPlugin in your Vue app.');`,
 					`    }`,
 					`    return service;`,
 					`}`,

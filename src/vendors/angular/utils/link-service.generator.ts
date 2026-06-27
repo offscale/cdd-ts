@@ -199,7 +199,7 @@ export class LinkServiceGenerator {
                 const value = variable.default || '';
 
                 if (variable.enum && Array.isArray(variable.enum) && !variable.enum.includes(value)) {
-                     throw new Error(\`Value "\${value}" for variable "\${key}" is not in the allowed enum: \${variable.enum.join(', ')}\`);
+                     throw new globalThis.Error(\`Value "\${value}" for variable "\${key}" is not in the allowed enum: \${variable.enum.join(', ')}\`);
                 }
 
                 url = url.replace(new RegExp('{' + key + '}', 'g'), value); 

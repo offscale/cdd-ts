@@ -124,7 +124,7 @@ export class ServerUrlGenerator {
 					.writeLine("if (!server) {")
 					.indent(() => {
 						writer.writeLine(
-							"throw new Error(`Server not found: ${indexOrDescription}`);",
+							"throw new globalThis.Error(`Server not found: ${indexOrDescription}`);",
 						);
 					})
 					.writeLine("}");
@@ -149,7 +149,7 @@ export class ServerUrlGenerator {
 									)
 									.indent(() => {
 										writer.writeLine(
-											'throw new Error(`Value "${value}" for variable "${key}" is not in the allowed enum: ${config.enum.join(\', \')}`);',
+											'throw new globalThis.Error(`Value "${value}" for variable "${key}" is not in the allowed enum: ${config.enum.join(\', \')}`);',
 										);
 									})
 									.writeLine("}");

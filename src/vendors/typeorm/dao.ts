@@ -90,7 +90,7 @@ function generateStub(project: Project, schemaName: string, daoDir: string) {
 		parameters: [{ name: "data", type: `Partial<${schemaName}>` }],
 		returnType: `Promise<${schemaName}>`,
 		docs: [{ description: `Creates a new ${schemaName} record.` }],
-		statements: `throw new Error("NotImplementedError");`,
+		statements: `throw new globalThis.Error("NotImplementedError");`,
 	});
 
 	sourceFile.formatText();

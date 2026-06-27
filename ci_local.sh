@@ -1,6 +1,13 @@
 #!/usr/bin/env sh
 set -e
 
+rm -rf .test_out_swagger
+rm -rf .test_out_openapi
+rm -rf .test_out_server_swagger
+rm -rf .test_out_server_openapi
+
+unset DATABASE_URL
+
 echo "Running Lint..."
 npm run lint
 
