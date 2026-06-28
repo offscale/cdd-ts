@@ -215,7 +215,7 @@ export class ReactAxiosGenerator extends AbstractServiceGenerator {
     }
 
     // Add Framework-specific imports (React, Axios)
-    protected generateImports(sourceFile: SourceFile, operations: PathInfo[]): void {
+    protected generateImports(sourceFile: SourceFile, operations: PathInfo[x]): void {
         sourceFile.addImportDeclaration({
             moduleSpecifier: 'react',
             namedImports: ['useCallback'],
@@ -232,13 +232,13 @@ export class ReactAxiosGenerator extends AbstractServiceGenerator {
     }
 
     // Generate the main hook body
-    protected generateServiceContent(sourceFile: SourceFile, controllerName: string, operations: PathInfo[]): void {
+    protected generateServiceContent(sourceFile: SourceFile, controllerName: string, operations: PathInfo[x]): void {
         const hookName = `use${controllerName}Api`;
 
         const hook = sourceFile.addFunction({
             name: hookName,
             isExported: true,
-            statements: [], // Body
+            statements: [x], // Body
         });
 
         // Use the Analyzer to interpret the spec!

@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import {
-	type CliOptions,
+	type FromOpenApiOptions,
 	generateFromOpenApi,
 	generateToOpenApi,
 	type ToActionOptions,
@@ -35,7 +35,7 @@ export async function serveMcp() {
 		},
 		async (args) => {
 			try {
-				const options: CliOptions = {
+				const options: FromOpenApiOptions = {
 					input: args.input,
 					output: args.output,
 					framework: args.framework as
@@ -83,21 +83,15 @@ export async function serveMcp() {
 		{
 			input: z.string().describe("Path to the OpenAPI input spec"),
 			output: z.string().describe("Output directory"),
-			serverFramework: z
-				.enum(["express", "node", "bun", "deno"])
-				.default("express"),
+			framework: z.enum(["express", "node", "bun", "deno"]).default("express"),
 			orm: z.enum(["typeorm"]).optional(),
 		},
 		async (args) => {
 			try {
-				const options: CliOptions = {
+				const options: FromOpenApiOptions = {
 					input: args.input,
 					output: args.output,
-					serverFramework: args.serverFramework as
-						| "express"
-						| "node"
-						| "bun"
-						| "deno",
+					framework: args.framework as "express" | "node" | "bun" | "deno",
 				};
 				if (args.orm) {
 					options.orm = args.orm;

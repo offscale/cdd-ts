@@ -11,6 +11,14 @@ on:
 jobs:
     ci:
         runs-on: ubuntu-latest
+        services:
+            petstore_server:
+                image: swaggerapi/petstore
+                ports:
+                    - '8080:8080'
+                env:
+                    SWAGGER_HOST: 'http://localhost:8080'
+                    SWAGGER_BASE_PATH: '/v2'
         permissions:
             contents: write
             id-token: write
@@ -95,6 +103,9 @@ jobs:
               run: |
                   node dist/cli.js from_openapi to_sdk -i ../petstore_oas3.json -o .test_out_openapi || { echo "OpenAPI 3.2.0 Petstore test failed"; exit 1; }
                   (cd .test_out_openapi && npm install && npm run build) || { echo "OpenAPI 3.2.0 SDK build failed"; exit 1; }
+
+            - name: Test SDKs against JVM Mock Server
+              run: ./scripts/test-jvm-mock.sh
 
             - name: Generate Servers
               run: |

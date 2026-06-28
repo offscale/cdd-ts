@@ -45,135 +45,50 @@ npm run docs
 echo "Building WASM..."
 make build_wasm
 
-echo "Fetching Petstore JSONs if missing..."
-if [ ! -f ../petstore.json ]; then
-    curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore.json -o ../petstore.json
-fi
-if [ ! -f ../petstore_oas3.json ]; then
-    curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore_oas3.json -o ../petstore_oas3.json
-fi
-
-echo "Running Swagger 2.0 Petstore test..."
-node dist/cli.js from_openapi to_sdk -i ../petstore.json -o .test_out_swagger || { echo "Swagger 2.0 Petstore test failed"; exit 1; }
-(cd .test_out_swagger && npm install && npm run build) || { echo "Swagger 2.0 SDK build failed"; exit 1; }
-
-echo "Running OpenAPI 3.2.0 Petstore test..."
-node dist/cli.js from_openapi to_sdk -i ../petstore_oas3.json -o .test_out_openapi || { echo "OpenAPI 3.2.0 Petstore test failed"; exit 1; }
-(cd .test_out_openapi && npm install && npm run build) || { echo "OpenAPI 3.2.0 SDK build failed"; exit 1; }
-
-echo "Generating Server for Swagger 2.0..."
-node dist/cli.js from_openapi to_server -i ../petstore.json -o .test_out_server_swagger --orm typeorm --tests || { echo "Swagger 2.0 Server generation failed"; exit 1; }
-(cd .test_out_server_swagger && npm install && npm run build && npm run test) || { echo "Swagger 2.0 Server build/test failed"; exit 1; }
-
-echo "Generating Server for OpenAPI 3.2.0..."
-node dist/cli.js from_openapi to_server -i ../petstore_oas3.json -o .test_out_server_openapi --orm typeorm --tests || { echo "OpenAPI 3.2.0 Server generation failed"; exit 1; }
-(cd .test_out_server_openapi && npm install && npm run build && npm run test) || { echo "OpenAPI 3.2.0 Server build/test failed"; exit 1; }
-
-DOCKER_PORT=8080
-USE_PRISM=0
-
-if command -v java >/dev/null 2>&1; then
-    echo "Java is available. We would run the JVM petstore natively, but it requires downloading complex dependencies. Falling back to Prism (Node.js)."
-    USE_PRISM=1
-elif command -v docker >/dev/null 2>&1; then
-    echo "Starting JVM official petstore server in Docker (Fallback since JVM is not available)..."
-    docker run --rm -d -p $DOCKER_PORT:8080 --name petstore_server_precommit swaggerapi/petstore >/dev/null 2>&1 || USE_PRISM=1
-else
-    USE_PRISM=1
-fi
-
-if [ "$USE_PRISM" -eq 0 ]; then
-    echo "Waiting for JVM Petstore server to be ready..."
-    READY=0
-    for i in {1..30}; do
-        if curl -s -f http://127.0.0.1:$DOCKER_PORT/api/pet/findByStatus?status=available > /dev/null; then
-            READY=1
-            break
-        fi
-        sleep 2
-    done
-
-    if [ "$READY" -eq 1 ]; then
-        echo "JVM server is ready."
-        cat << 'EOF' > test-sdks.ts
-import { StoreClient as SwaggerStoreClient } from './.test_out_swagger/dist/services/store.client.js';
-import { PetsClient as OpenApiPetsClient } from './.test_out_openapi/dist/services/pets.client.js';
-
-async function run() {
-    console.log("Testing Swagger 2.0 SDK against JVM Server...");
-    const swaggerClient = new SwaggerStoreClient('http://127.0.0.1:8080/api');
-    await swaggerClient.getInventory({ headers: { api_key: 'special-key' } });
-    console.log("Swagger 2.0 OK");
-
-    console.log("Testing OpenAPI 3.0 SDK against JVM Server...");
-    const openapiClient = new OpenApiPetsClient('http://127.0.0.1:8080/v1');
-    await openapiClient.listPets();
-    console.log("OpenAPI 3.0 OK");
-}
-run().catch(e => { console.error(e); process.exit(1); });
-EOF
-    else
-        echo "JVM server failed to become ready. Falling back to Prism."
-        docker stop petstore_server_precommit >/dev/null 2>&1 || true
-        USE_PRISM=1
+if [ "$RUN_SLOW_TESTS" = "1" ]; then
+    echo "Fetching Petstore JSONs if missing..."
+    if [ ! -f ../petstore.json ]; then
+        curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore.json -o ../petstore.json
     fi
-fi
+    if [ ! -f ../petstore_oas3.json ]; then
+        curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore_oas3.json -o ../petstore_oas3.json
+    fi
 
-if [ "$USE_PRISM" -eq 1 ]; then
-    echo "Starting Prism mock servers (fallback non-JVM version) due to upstream/Docker issues..."
-    npx @stoplight/prism-cli mock ../petstore.json -p 4010 -d >/dev/null 2>&1 &
-    PRISM_SWAGGER=$!
+    echo "Running Swagger 2.0 Petstore test..."
+    node dist/cli.js from_openapi to_sdk -i ../petstore.json -o .test_out_swagger || { echo "Swagger 2.0 Petstore test failed"; exit 1; }
+    (cd .test_out_swagger && npm install && npm run build) || { echo "Swagger 2.0 SDK build failed"; exit 1; }
 
-    npx @stoplight/prism-cli mock ../petstore_oas3.json -p 4011 -d >/dev/null 2>&1 &
-    PRISM_OAS3=$!
+    echo "Running OpenAPI 3.2.0 Petstore test..."
+    node dist/cli.js from_openapi to_sdk -i ../petstore_oas3.json -o .test_out_openapi || { echo "OpenAPI 3.2.0 Petstore test failed"; exit 1; }
+    (cd .test_out_openapi && npm install && npm run build) || { echo "OpenAPI 3.2.0 SDK build failed"; exit 1; }
 
-    echo "Waiting for Prism servers to start..."
+    echo "Generating Server for Swagger 2.0..."
+    node dist/cli.js from_openapi to_server -i ../petstore.json -o .test_out_server_swagger --orm typeorm --tests || { echo "Swagger 2.0 Server generation failed"; exit 1; }
+    (cd .test_out_server_swagger && npm install && npm run build && npm run test) || { echo "Swagger 2.0 Server build/test failed"; exit 1; }
+
+    echo "Generating Server for OpenAPI 3.2.0..."
+    node dist/cli.js from_openapi to_server -i ../petstore_oas3.json -o .test_out_server_openapi --orm typeorm --tests || { echo "OpenAPI 3.2.0 Server generation failed"; exit 1; }
+    (cd .test_out_server_openapi && npm install && npm run build && npm run test) || { echo "OpenAPI 3.2.0 Server build/test failed"; exit 1; }
+
+    ./scripts/test-jvm-mock.sh
+
+    echo "Starting Generated Servers..."
+    (cd .test_out_server_swagger && PORT=4020 node dist/server.js --ephemeral --seed) >/dev/null 2>&1 &
+    SERVER_SWAGGER_PID=$!
+
+    (cd .test_out_server_openapi && PORT=4021 node dist/server.js --ephemeral --seed) >/dev/null 2>&1 &
+    SERVER_OAS3_PID=$!
+
+    echo "Waiting for generated servers to start..."
     for i in {1..30}; do
-        if curl -s http://127.0.0.1:4010 > /dev/null && curl -s http://127.0.0.1:4011 > /dev/null; then
+        if curl -s http://127.0.0.1:4020/user > /dev/null && curl -s http://127.0.0.1:4021/pet > /dev/null; then
+            echo "Servers are up!"
             break
         fi
         sleep 1
     done
 
-    cat << 'EOF' > test-sdks.ts
-import { StoreClient as SwaggerStoreClient } from './.test_out_swagger/dist/services/store.client.js';
-import { PetsClient as OpenApiPetsClient } from './.test_out_openapi/dist/services/pets.client.js';
-
-async function run() {
-    console.log("Testing Swagger 2.0 SDK against fallback mock...");
-    const swaggerClient = new SwaggerStoreClient('http://127.0.0.1:4010');
-    await swaggerClient.getInventory({ headers: { api_key: 'special-key' } });
-    console.log("Swagger 2.0 OK");
-
-    console.log("Testing OpenAPI 3.0 SDK against fallback mock...");
-    const openapiClient = new OpenApiPetsClient('http://127.0.0.1:4011');
-    await openapiClient.listPets();
-    console.log("OpenAPI 3.0 OK");
-}
-run().catch(e => { console.error(e); process.exit(1); });
-EOF
-fi
-
-npx tsc test-sdks.ts --module NodeNext --moduleResolution NodeNext || { echo "test-sdks compilation failed"; exit 1; }
-node test-sdks.js || { echo "test-sdks execution failed"; exit 1; }
-
-echo "Starting Generated Servers..."
-(cd .test_out_server_swagger && PORT=4020 node dist/server.js --ephemeral --seed) >/dev/null 2>&1 &
-SERVER_SWAGGER_PID=$!
-
-(cd .test_out_server_openapi && PORT=4021 node dist/server.js --ephemeral --seed) >/dev/null 2>&1 &
-SERVER_OAS3_PID=$!
-
-echo "Waiting for generated servers to start..."
-for i in {1..30}; do
-    if curl -s http://127.0.0.1:4020/user > /dev/null && curl -s http://127.0.0.1:4021/pet > /dev/null; then
-        echo "Servers are up!"
-        break
-    fi
-    sleep 1
-done
-
-cat << 'EOF' > test-generated-servers.ts
+    cat << 'EOF2' > test-generated-servers.ts
 import { UserClient as SwaggerUserClient } from './.test_out_swagger/dist/services/user.client.js';
 
 async function run() {
@@ -191,13 +106,10 @@ async function run() {
         });
         console.log("Swagger 2.0 Generated Server OK");
     } catch (e) {
-        // As long as the server responds (even if there are subtle schema validation differences in the mock), 
-        // we consider the networking/routing layer validated.
         console.log("Swagger 2.0 Generated Server responded.");
     }
 
     console.log("Testing OpenAPI 3.0 SDK against Generated OpenAPI Server...");
-    // Fallback to fetch just to prove the DB and routing are alive if the SDK mismatches
     const res = await fetch('http://127.0.0.1:4021/pet');
     if (!res.ok) throw new Error("Generated OpenAPI server failed to respond to GET /pet");
     const data = await res.json();
@@ -205,27 +117,22 @@ async function run() {
     console.log("OpenAPI 3.0 Generated Server OK (Seeded " + data.length + " users)");
 }
 run().catch(e => { console.error(e); process.exit(1); });
-EOF
+EOF2
 
-npx tsc test-generated-servers.ts --module NodeNext --moduleResolution NodeNext || { echo "test-generated-servers compilation failed"; exit 1; }
-node test-generated-servers.js || { echo "test-generated-servers execution failed"; exit 1; }
+    npx tsc test-generated-servers.ts --module NodeNext --moduleResolution NodeNext || { echo "test-generated-servers compilation failed"; exit 1; }
+    node test-generated-servers.js || { echo "test-generated-servers execution failed"; exit 1; }
 
-if [ "$USE_PRISM" -eq 0 ]; then
-    docker stop petstore_server_precommit >/dev/null 2>&1 || true
+    kill $SERVER_SWAGGER_PID || true
+    kill $SERVER_OAS3_PID || true
+
+    rm -rf .test_out_swagger
+    rm -rf .test_out_openapi
+    rm -rf .test_out_server_swagger
+    rm -rf .test_out_server_openapi
+    rm -f test-generated-servers.ts test-generated-servers.js
 else
-    kill $PRISM_SWAGGER || true
-    kill $PRISM_OAS3 || true
+    echo "Skipping slow tests (server builds, JVM runs) because RUN_SLOW_TESTS!=1"
 fi
-
-kill $SERVER_SWAGGER_PID || true
-kill $SERVER_OAS3_PID || true
-
-rm -rf .test_out_swagger
-rm -rf .test_out_openapi
-rm -rf .test_out_server_swagger
-rm -rf .test_out_server_openapi
-rm -f test-sdks.ts test-sdks.js
-rm -f test-generated-servers.ts test-generated-servers.js
 
 echo "Updating Badges in README.md..."
 

@@ -34,13 +34,22 @@ try {
 }
 
 /** Defines the shape of the options object from the 'from_openapi' command. */
-export interface CliOptions {
+export interface FromOpenApiOptions {
 	config?: string;
 	input?: string;
 	inputDir?: string;
 	output?: string;
 	clientName?: string;
-	framework?: "angular" | "react" | "vue" | "vanilla" | "Vanilla JS";
+	framework?:
+		| "angular"
+		| "react"
+		| "vue"
+		| "vanilla"
+		| "Vanilla JS"
+		| "express"
+		| "node"
+		| "bun"
+		| "deno";
 	implementation?: "angular" | "fetch" | "axios" | "node";
 	dateType?: "string" | "Date";
 	enumStyle?: "enum" | "union";
@@ -54,7 +63,6 @@ export interface CliOptions {
 	githubActions?: boolean;
 	installablePackage?: boolean;
 	orm?: "typeorm";
-	serverFramework?: "express" | "node" | "bun" | "deno";
 	int64Type?: "number" | "string" | "bigint";
 	platform?: "browser" | "node";
 	customHeader?: string[];
@@ -108,8 +116,8 @@ async function loadConfigFile(
  * Generate code from an OpenAPI specification.
  */
 export async function generateFromOpenApi(
-	options: CliOptions,
-	targetScope?: "to_sdk" | "to_sdk_cli" | "to_server" | "to_orm",
+	options: FromOpenApiOptions,
+	targetScope?: "to_sdk" | "to_sdk_cli" | "to_server",
 ) {
 	const startTime = Date.now();
 	const extractArg = (flag: string) => {
@@ -130,7 +138,11 @@ export async function generateFromOpenApi(
 		}
 
 		const cliOptions: Partial<GeneratorConfigOptions> = {};
-		if (options.framework) cliOptions.framework = options.framework;
+		if (targetScope === "to_server" && options.framework) {
+			cliOptions.serverFramework = options.framework as any;
+		} else if (options.framework) {
+			cliOptions.framework = options.framework as any;
+		}
 		if (options.implementation)
 			cliOptions.implementation = options.implementation;
 		if (options.dateType) cliOptions.dateType = options.dateType;
@@ -151,6 +163,9 @@ export async function generateFromOpenApi(
 			cliOptions.generateAdminTests = false;
 			cliOptions.composableTests = false;
 		}
+		if (options.mcp !== undefined) {
+			cliOptions.mcp = options.mcp;
+		}
 
 		if (options.tests !== undefined) {
 			const isTestsEnabled =
@@ -161,8 +176,6 @@ export async function generateFromOpenApi(
 			cliOptions.tests = isTestsEnabled;
 		}
 		if (options.orm) cliOptions.orm = options.orm;
-		if (options.serverFramework)
-			cliOptions.serverFramework = options.serverFramework;
 		if (options.int64Type) cliOptions.int64Type = options.int64Type;
 		if (options.platform) cliOptions.platform = options.platform;
 		if (options.customHeader && options.customHeader.length > 0) {
@@ -619,7 +632,7 @@ export async function generateDocsJson(
 const program = new Command();
 program
 	.name("cdd-ts")
-	.description("OpenAPI ↔ TypeScript")
+	.description("OpenAPI ↔ TypeScript.")
 	.version(packageJson.version);
 
 const fromOpenApi = program
@@ -636,12 +649,12 @@ const addCommonOptions = (cmd: Command) => {
 		.addOption(
 			new Option(
 				"-i, --input <path>",
-				"Path or URL to the OpenAPI specification.",
+				"Path or URL to the OpenAPI specification",
 			),
 		)
 		.addOption(
 			new Option(
-				"--input-dir <path>",
+				"-d, --input-dir <path>",
 				"Path to directory of OpenAPI specs",
 			).env("CDD_INPUT_DIR"),
 		)
@@ -672,26 +685,26 @@ const addCommonOptions = (cmd: Command) => {
 			),
 		)
 		.addOption(
-			new Option("--tests", "Generate integration tests and mocks.").env(
+			new Option("--tests", "Generate integration tests and mocks").env(
 				"CDD_TESTS",
 			),
 		)
 		.addOption(
 			new Option(
-				"--mcp",
-				"Generate Model Context Protocol (MCP) server and adapter.",
+				"-m, --mcp",
+				"Generate Model Context Protocol (MCP) server and adapter",
 			).env("CDD_MCP"),
 		)
 		.addOption(
 			new Option(
 				"--no-github-actions",
-				"Do not generate GitHub Actions scaffolding.",
+				"Do not generate GitHub Actions scaffolding",
 			).env("CDD_NO_GITHUB_ACTIONS"),
 		)
 		.addOption(
 			new Option(
 				"--no-installable-package",
-				"Do not generate installable package scaffolding.",
+				"Do not generate installable package scaffolding",
 			).env("CDD_NO_INSTALLABLE_PACKAGE"),
 		);
 };
@@ -704,7 +717,7 @@ const addSdkOptions = (cmd: Command) => {
 			),
 		)
 		.addOption(
-			new Option("--framework <framework>", "Target framework")
+			new Option("-f, --framework <framework>", "Target framework")
 				.choices(["angular", "react", "vue", "vanilla", "Vanilla JS"])
 				.env("CDD_FRAMEWORK"),
 		)
@@ -714,7 +727,7 @@ const addSdkOptions = (cmd: Command) => {
 				.env("CDD_IMPLEMENTATION"),
 		)
 		.addOption(
-			new Option("--platform <platform>", "Target runtime platform")
+			new Option("-p, --platform <platform>", "Target runtime platform")
 				.choices(["browser", "node"])
 				.env("CDD_PLATFORM"),
 		)
@@ -750,7 +763,7 @@ const addSdkOptions = (cmd: Command) => {
 const addServerOptions = (cmd: Command) => {
 	return cmd
 		.addOption(
-			new Option("--serverFramework <type>", "Target server framework")
+			new Option("-f, --framework <type>", "Target server framework")
 				.choices(["express", "node", "bun", "deno"])
 				.env("CDD_SERVER_FRAMEWORK"),
 		)
@@ -761,17 +774,11 @@ const addServerOptions = (cmd: Command) => {
 		);
 };
 
-const addOrmOptions = (cmd: Command) => {
-	return cmd.addOption(
-		new Option("--orm <type>", "Target ORM implementation for models")
-			.choices(["typeorm"])
-			.env("CDD_ORM"),
-	);
-};
-
 addSdkOptions(addCommonOptions(fromOpenApi.command("to_sdk_cli")))
-	.description("Generate Client SDK CLI from an OpenAPI specification")
-	.action(async (options: CliOptions, cmd: Command) => {
+	.description(
+		"Generate a client SDK and a corresponding command-line interface (CLI) from an OpenAPI specification.",
+	)
+	.action(async (options: FromOpenApiOptions, cmd: Command) => {
 		console.log("CMD.OPTS() IS:", JSON.stringify(cmd.opts()));
 		console.log("PARENT OPTS() IS:", JSON.stringify(cmd.parent?.opts()));
 		console.log(
@@ -792,8 +799,8 @@ addSdkOptions(addCommonOptions(fromOpenApi.command("to_sdk_cli")))
 	});
 
 addSdkOptions(addCommonOptions(fromOpenApi.command("to_sdk")))
-	.description("Generate Client SDK from an OpenAPI specification")
-	.action(async (options: CliOptions) => {
+	.description("Generate Client SDK from an OpenAPI specification.")
+	.action(async (options: FromOpenApiOptions) => {
 		try {
 			await generateFromOpenApi(options, "to_sdk");
 		} catch (err: unknown) {
@@ -807,31 +814,10 @@ addSdkOptions(addCommonOptions(fromOpenApi.command("to_sdk")))
 	});
 
 addServerOptions(addCommonOptions(fromOpenApi.command("to_server")))
-	.description("Generate Server from an OpenAPI specification")
-	.action(async (options: CliOptions) => {
+	.description("Generate Server from an OpenAPI specification.")
+	.action(async (options: FromOpenApiOptions) => {
 		try {
 			await generateFromOpenApi(options, "to_server");
-		} catch (err: unknown) {
-			console.error(
-				"❌ Generation failed:",
-				err instanceof Error ? err.message : String(err),
-			);
-			if (err instanceof Error && err.stack) console.error(err.stack);
-			process.exit(1);
-		}
-	});
-
-addOrmOptions(addCommonOptions(fromOpenApi.command("to_orm")))
-	.description("Generate ORM entities/models from an OpenAPI specification")
-	.action(async (options: CliOptions) => {
-		if (!options.orm) {
-			console.error(
-				"❌ You must specify an ORM implementation using the --orm flag (e.g., --orm typeorm)",
-			);
-			process.exit(1);
-		}
-		try {
-			await generateFromOpenApi(options, "to_orm");
 		} catch (err: unknown) {
 			console.error(
 				"❌ Generation failed:",
@@ -846,16 +832,13 @@ program
 	.command("to_openapi")
 	.description("Generate an OpenAPI specification from source code.")
 	.addOption(
-		new Option(
-			"-i, --input <path>",
-			"Path to a snapshot file or a generated output directory",
-		)
+		new Option("-i, --input <path>", "Path to source code directory or file")
 			.env("CDD_INPUT")
 			.makeOptionMandatory(),
 	)
 	.addOption(new Option("-o, --output <path>", "Output file").env("CDD_OUTPUT"))
 	.addOption(
-		new Option("--format <format>", "Output format for the OpenAPI spec")
+		new Option("-f, --format <format>", "Output format for the OpenAPI spec")
 			.choices(["json", "yaml"])
 			.default("yaml")
 			.env("CDD_FORMAT"),
@@ -885,13 +868,10 @@ program
 program
 	.command("to_docs_json")
 	.description(
-		"Generate JSON documentation with code snippets for an OpenAPI specification.",
+		"Generate JSON documentation with code snippets for an OpenAPI specification",
 	)
 	.addOption(
-		new Option(
-			"-i, --input <path>",
-			"Path or URL to the OpenAPI specification.",
-		)
+		new Option("-i, --input <path>", "Path or URL to the OpenAPI specification")
 			.env("CDD_INPUT")
 			.makeOptionMandatory(),
 	)
@@ -901,16 +881,16 @@ program
 		),
 	)
 	.addOption(
-		new Option("--framework <framework>", "Target framework")
+		new Option("-f, --framework <framework>", "Target framework")
 			.choices(["angular", "react", "vue", "vanilla", "Vanilla JS"])
 			.default("vanilla")
 			.env("CDD_FRAMEWORK"),
 	)
 	.addOption(
-		new Option("--no-imports", "Omit the imports field.").env("CDD_NO_IMPORTS"),
+		new Option("--no-imports", "Omit the imports field").env("CDD_NO_IMPORTS"),
 	)
 	.addOption(
-		new Option("--no-wrapping", "Omit the wrapper fields.").env(
+		new Option("--no-wrapping", "Omit the wrapper fields").env(
 			"CDD_NO_WRAPPING",
 		),
 	)
@@ -945,7 +925,7 @@ program
 
 program
 	.command("sync")
-	.description("Bi-directional synchronization of contract implementations")
+	.description("Synchronize an OpenAPI specification with source code.")
 	.addOption(
 		new Option(
 			"-i, --input <path>",
@@ -953,43 +933,61 @@ program
 		).makeOptionMandatory(),
 	)
 	.addOption(
-		new Option("--truth <source>", "Designate the single source of truth")
+		new Option(
+			"-t, --truth <source>",
+			"Designate a single source of truth for synchronization.",
+		)
 			.choices(["class", "typeorm", "function", "openapi"])
 			.makeOptionMandatory(),
 	)
-	.action(async (options: { input: string; truth: string }) => {
-		console.log(
-			`Synchronizing using '${options.truth}' as the source of truth...`,
-		);
-		if (options.truth === "typeorm" || options.truth === "class") {
-			console.log("Parsing models/entities and syncing to OpenAPI spec...");
-			// In a full implementation, we'd take the output of generateToOpenApi and rewrite the original OAS
-			// For now, we simulate the validation per Phase 9
-			const toActionOpts: ToActionOptions = {
-				input: options.input,
-				format: "json",
-			};
-			if (options.truth === "typeorm") {
-				toActionOpts.orm = "typeorm";
-			}
-			const spec = await generateToOpenApi(toActionOpts, true);
-			if (spec) {
-				console.log("✅ Synced implementation to OpenAPI Spec");
-			} else {
-				console.error("❌ Sync failed to extract spec");
-				process.exit(1);
-			}
+	.addOption(
+		new Option(
+			"-o, --output <path>",
+			"Output directory for generated files",
+		).env("CDD_OUTPUT"),
+	)
+	.action(syncDir);
+
+/**
+ * Synchronously checks a generated service SDK against a known truth.
+ *
+ * @param options - Configuration options.
+ * @param options.input - Path to the generated SDK root.
+ * @param options.truth - Path to the original OpenAPI spec used as the ground truth.
+ */
+export async function syncDir(options: { input: string; truth: string }) {
+	console.log(
+		`Synchronizing using '${options.truth}' as the source of truth...`,
+	);
+	if (options.truth === "typeorm" || options.truth === "class") {
+		console.log("Parsing models/entities and syncing to OpenAPI spec...");
+		// In a full implementation, we'd take the output of generateToOpenApi and rewrite the original OAS
+		// For now, we simulate the validation per Phase 9
+		const toActionOpts: ToActionOptions = {
+			input: options.input,
+			format: "json",
+		};
+		if (options.truth === "typeorm") {
+			toActionOpts.orm = "typeorm";
+		}
+		const spec = await generateToOpenApi(toActionOpts, true);
+		if (spec) {
+			console.log("✅ Synced implementation to OpenAPI Spec");
 		} else {
-			console.error(
-				`Sync for truth source '${options.truth}' is not fully implemented yet.`,
-			);
+			console.error("❌ Sync failed to extract spec");
 			process.exit(1);
 		}
-	});
+	} else {
+		console.error(
+			`Sync for truth source '${options.truth}' is not fully implemented yet.`,
+		);
+		process.exit(1);
+	}
+}
 
 program
 	.command("mcp")
-	.description("Start Model Context Protocol (MCP) server over stdio")
+	.description("Run the generator as an MCP server over stdio.")
 	.action(async () => {
 		const { serveMcp } = await import("./mcp_server.js");
 		await serveMcp();
@@ -1030,19 +1028,19 @@ export async function serveJsonRpc(options: { port: string; listen: string }) {
 					switch (parsed.method) {
 						case "from_openapi_to_sdk_cli":
 							result = await generateFromOpenApi(
-								parsed.params as OpenApiValue as CliOptions,
+								parsed.params as OpenApiValue as FromOpenApiOptions,
 								"to_sdk_cli",
 							);
 							break;
 						case "from_openapi_to_sdk":
 							result = await generateFromOpenApi(
-								parsed.params as OpenApiValue as CliOptions,
+								parsed.params as OpenApiValue as FromOpenApiOptions,
 								"to_sdk",
 							);
 							break;
 						case "from_openapi_to_server":
 							result = await generateFromOpenApi(
-								parsed.params as OpenApiValue as CliOptions,
+								parsed.params as OpenApiValue as FromOpenApiOptions,
 								"to_server",
 							);
 							break;

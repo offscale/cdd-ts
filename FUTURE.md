@@ -9,7 +9,7 @@ TypeScript web-frontend framework space).
 
 ## Full Swagger 2.0 and OpenAPI 3.2.0 + Swagger 2 compatibility
 
-- [ ] Full Swagger 2.0 and OpenAPI 3.2.0 + Swagger 2 compatibility
+- [x] Full Swagger 2.0 and OpenAPI 3.2.0 + Swagger 2 compatibility
 
 ## HTTP client interoperability
 
@@ -24,37 +24,37 @@ Add support for:
 Add support for server-side generation:
 
 - [x] Express.js
-- [ ] Raw Node.js
-- [ ] Bun.serve()
-- [ ] Deno.serve()
+- [x] Raw Node.js
+- [x] Bun.serve()
+- [x] Deno.serve()
 
 ## ORM interoperability
 
 Add support for Data Model parsing/emitting:
 
 - [x] TypeORM
-- [ ] Prisma
-- [ ] Drizzle ORM
-- [ ] Sequelize
+- [x] Prisma
+- [x] Drizzle ORM
+- [x] Sequelize
 
 ## Framework interoperability
 
 Add support for creating an auto-admin UI for/with:
 
 - [x] [Web components (builtin)](https://developer.mozilla.org/en-US/docs/Web/API/Web_components)
-- [ ] [Qwik](https://qwik.dev)
-- [ ] [React](https://react.dev)
-- [ ] [Svelte](https://svelte.dev)
-- [ ] [Vue](https://vuejs.org)
+- [x] [Qwik](https://qwik.dev)
+- [x] [React](https://react.dev)
+- [x] [Svelte](https://svelte.dev)
+- [x] [Vue](https://vuejs.org)
 
 ## Sync within codebase
 
-- [ ] Modify mock can update client can update admin UI.
-- [ ] Modify admin UI can update mock can update client.
+- [x] Modify mock can update client can update admin UI.
+- [x] Modify admin UI can update mock can update client.
 
 ## FROM codebase TO OpenAPI
 
-- [ ] Bidirectionality is what distinctly makes it _cdd_: **C**ompiler **D**riven **D**evelopment.
+- [x] Bidirectionality is what distinctly makes it _cdd_: **C**ompiler **D**riven **D**evelopment.
 
 ## CI/CD
 

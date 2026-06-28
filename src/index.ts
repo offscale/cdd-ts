@@ -80,9 +80,9 @@ export function generateFromConfigSync(
 	config: GeneratorConfig,
 	project?: Project,
 	testConfig?: TestGeneratorConfig,
-	targetScope?: "to_sdk" | "to_sdk_cli" | "to_server" | "to_orm",
+	targetScope?: "to_sdk" | "to_sdk_cli" | "to_server",
 ): void {
-	if (targetScope === "to_server" || targetScope === "to_orm") {
+	if (targetScope === "to_server") {
 		if (config.options) {
 			config.options.generateServices = false;
 		}
@@ -177,10 +177,7 @@ export function generateFromConfigSync(
 			activeProject.getFileSystem().mkdirSync(codeOutputRoot);
 		}
 
-		if (
-			targetScope === "to_orm" ||
-			(targetScope === "to_server" && config.options.orm)
-		) {
+		if (targetScope === "to_server" && config.options.orm) {
 			if (config.options.orm === "typeorm") {
 				new TypeOrmGenerator().generate(
 					activeProject,
@@ -244,7 +241,7 @@ export function generateFromConfigSync(
 			}
 		}
 
-		if (targetScope !== "to_orm" && targetScope !== "to_server") {
+		if (targetScope !== "to_server") {
 			const generator = getGeneratorFactory(framework, implementation);
 			console.log("==> TRACE: Before generator");
 			console.log("==> TRACE: Before generator");
@@ -295,6 +292,7 @@ export {
 	generateFromOpenApi,
 	generateToOpenApi,
 	serveJsonRpc,
+	syncDir,
 } from "./cli.js";
 export type { IOrmGenerator, IOrmParser } from "./core/orm/index.js";
 export {
@@ -310,6 +308,7 @@ export {
 	scanTypeScriptProject,
 	scanTypeScriptSource,
 } from "./functions/parse.js";
+export { serveMcp } from "./mcp_server.js";
 /**
  * AST scanner utilities for reverse-generating OpenAPI specs from TypeScript.
  */
