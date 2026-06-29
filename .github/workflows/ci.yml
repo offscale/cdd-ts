@@ -105,7 +105,7 @@ jobs:
                   (cd .test_out_openapi && npm install && npm run build) || { echo "OpenAPI 3.2.0 SDK build failed"; exit 1; }
 
             - name: Test SDKs against JVM Mock Server
-              run: ./scripts/test-jvm-mock.sh
+              run: ./scripts/test-jvm-mock.py
 
             - name: Generate Servers
               run: |
@@ -123,14 +123,23 @@ jobs:
                   (cd .test_out_server_openapi && PORT=4021 node dist/server.js --ephemeral --seed) >/dev/null 2>&1 &
                   SERVER_OAS3_PID=$!
                   
+                  trap 'kill $SERVER_SWAGGER_PID 2>/dev/null || true; kill $SERVER_OAS3_PID 2>/dev/null || true' EXIT
+                  
                   echo "Waiting for generated servers to start..."
+                  READY=0
                   for i in {1..30}; do
-                      if curl -s http://127.0.0.1:4020/user > /dev/null && curl -s http://127.0.0.1:4021/user > /dev/null; then
+                      if curl -s -f http://127.0.0.1:4020/user > /dev/null && curl -s -f http://127.0.0.1:4021/user > /dev/null; then
                           echo "Servers are up!"
+                          READY=1
                           break
                       fi
                       sleep 1
                   done
+                  
+                  if [ "$READY" -eq 0 ]; then
+                      echo "Timed out waiting for generated servers to start."
+                      exit 1
+                  fi
                   
                   cat << 'EOF' > test-generated-servers.ts
                   import { UserClient as SwaggerUserClient } from './.test_out_swagger/dist/services/user.client.js';
@@ -166,9 +175,6 @@ jobs:
                   
                   npx tsc test-generated-servers.ts --module NodeNext --moduleResolution NodeNext || { echo "test-generated-servers compilation failed"; exit 1; }
                   node test-generated-servers.js || { echo "test-generated-servers execution failed"; exit 1; }
-                  
-                  kill $SERVER_SWAGGER_PID || true
-                  kill $SERVER_OAS3_PID || true
                   
                   rm -rf .test_out_swagger
                   rm -rf .test_out_openapi
