@@ -1,6 +1,17 @@
+/**
+ * Module for db in vendors/typeorm/db.
+ *
+ * @module vendors/typeorm/db
+ */
 import path from "node:path";
 import type { Project } from "ts-morph";
 
+/**
+ * Executes `generateDatabaseConnection`.
+ * @param project - Target `ts-morph` project instance.
+ * @param schemas - Parameter `schemas` (string[]).
+ * @param outputDir - Target output directory path.
+ */
 export function generateDatabaseConnection(
 	project: Project,
 	schemas: string[],

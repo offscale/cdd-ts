@@ -1,9 +1,7 @@
-// @ts-nocheck
-
 import { ContentDecoderGenerator } from "@src/openapi/emit_content_decoder.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 
 function getContentDecoder() {
 	const project = createTestProject();
@@ -20,11 +18,11 @@ function getContentDecoder() {
 	});
 
 	const moduleScope = {
-		exports: {} as string | number | boolean | object | undefined | null,
+		exports: testCast({}),
 	};
 	const finalCode = `const XmlParser = { parse: (xml) => ({ xml }) }; ${jsCode}; exports.ContentDecoder = ContentDecoder;`;
 
-	new Function("exports", finalCode)(moduleScope.exports);
+	testCast(new Function("exports", finalCode)(moduleScope.exports));
 
 	return moduleScope.exports.ContentDecoder;
 }

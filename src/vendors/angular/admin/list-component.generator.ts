@@ -1,11 +1,13 @@
-import type { Resource } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
-import { ListModelBuilder } from "@src/vendors/angular/admin/analysis/list-model.builder.js";
-import type {
-	ListActionKind,
-	ListViewModel,
-} from "@src/vendors/angular/admin/analysis/list-types.js";
+/**
+ * Module for list component generator in vendors/angular/admin/list-component.generator.
+ *
+ * @module vendors/angular/admin/list-component.generator
+ */
 import { type ClassDeclaration, type Project, Scope } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import { camelCase, pascalCase } from "../../../functions/utils.js";
+import { ListModelBuilder } from "./analysis/list-model.builder.js";
+import type { ListActionKind, ListViewModel } from "./analysis/list-types.js";
 import { commonStandaloneImports } from "./common-imports.js";
 import { generateListComponentHtml } from "./html/list-component-html.builder.js";
 import { generateListComponentScss } from "./html/list-component-scss.builder.js";
@@ -27,10 +29,11 @@ export class ListComponentGenerator {
 	/**
 	 * Maps an abstract action kind to a specific Angular Material icon name.
 	 * This is where framework-specific UI knowledge is centralized.
-	 * @param kind The abstract action kind from the IR.
+	 * @param actionName - Action method name.
+	 * @param kind - The abstract action kind from the IR.
 	 * @returns A string representing a Material Icon.
 	 */
-	private mapKindToIcon(actionName: string, kind: ListActionKind): string {
+	public mapKindToIcon(actionName: string, kind: ListActionKind): string {
 		const lowerAction = actionName.toLowerCase();
 		// Specific overrides take precedence over general kind
 

@@ -1,6 +1,17 @@
+/**
+ * Module for dao in vendors/typeorm/dao.
+ *
+ * @module vendors/typeorm/dao
+ */
 import path from "node:path";
 import type { Project } from "ts-morph";
 
+/**
+ * Executes `generateDao`.
+ * @param project - Target `ts-morph` project instance.
+ * @param schemaName - Parameter `schemaName` (string).
+ * @param outputDir - Target output directory path.
+ */
 export function generateDao(
 	project: Project,
 	schemaName: string,
@@ -255,6 +266,12 @@ function generateDaoTests(
 	sourceFile.formatText();
 }
 
+/**
+ * Executes `generateDaoFactory`.
+ * @param project - Target `ts-morph` project instance.
+ * @param schemas - Parameter `schemas` (string[]).
+ * @param outputDir - Target output directory path.
+ */
 export function generateDaoFactory(
 	project: Project,
 	schemas: string[],
@@ -357,7 +374,7 @@ describe('DaoFactory', () => {
 
     it('should return concrete DAO when dataSource is provided', () => {
         const factory = new DaoFactory();
-        const mockDataSource = { getRepository: () => ({}) } as unknown as DataSource;
+        const mockDataSource = { getRepository: () => ({}) } as Partial<DataSource> as DataSource;
         ${schemas.map((s) => `expect(factory.get${s}Dao(false, mockDataSource)).toBeInstanceOf(${s}ConcreteDao);`).join("\n        ")}
     });
 });

@@ -1,5 +1,10 @@
-import type { Resource } from "@src/core/types/index.js";
-import { pascalCase } from "@src/functions/utils.js";
+/**
+ * Module for list model builder in vendors/angular/admin/analysis/list-model.builder.
+ *
+ * @module vendors/angular/admin/analysis/list-model.builder
+ */
+import type { Resource } from "../../../../core/types/index.js";
+import { pascalCase } from "../../../../functions/utils.js";
 
 import type {
 	ListAction,
@@ -8,6 +13,7 @@ import type {
 	ListViewModel,
 } from "./list-types.js";
 
+/** Generator/utility class `ListModelBuilder`. */
 export class ListModelBuilder {
 	/**
 	 * Builds the intermediate representation (IR) for a list view model.

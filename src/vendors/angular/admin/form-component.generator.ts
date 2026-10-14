@@ -1,17 +1,28 @@
-import type { Resource, SwaggerDefinition } from "@src/core/types/index.js";
-import { camelCase, pascalCase, singular } from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import { FormModelBuilder } from "@src/vendors/angular/admin/analysis/form-model.builder.js";
+/**
+ * Module for form component generator in vendors/angular/admin/form-component.generator.
+ *
+ * @module vendors/angular/admin/form-component.generator
+ */
+import { type ClassDeclaration, type Project, Scope } from "ts-morph";
+import type { Resource, SwaggerDefinition } from "../../../core/types/index.js";
+import { camelCase, pascalCase, singular } from "../../../functions/utils.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
+import { FormModelBuilder } from "./analysis/form-model.builder.js";
 import type {
 	FormAnalysisResult,
 	FormControlModel,
-} from "@src/vendors/angular/admin/analysis/form-types.js";
-import { type ClassDeclaration, type Project, Scope } from "ts-morph";
+} from "./analysis/form-types.js";
 
 import { commonStandaloneImports } from "./common-imports.js";
 import { FormInitializerRenderer } from "./form.renderer.js";
 import { generateFormComponentHtml } from "./html/form-component-html.builder.js";
 import { generateFormComponentScss } from "./html/form-component-scss.builder.js";
+
+/** Result returned by `FormComponentGenerator.generate`. */
+export interface FormComponentGenerateResult {
+	/** True when the generated form component requires `CustomValidators`. */
+	usesCustomValidators: boolean;
+}
 
 /**
  * Orchestrates the generation of a complete Angular standalone form component.
@@ -19,8 +30,10 @@ import { generateFormComponentScss } from "./html/form-component-scss.builder.js
  */
 export class FormComponentGenerator {
 	/**
-	 * @param project The ts-morph Project instance.
-	 * @param parser The SwaggerParser instance.
+	 * Creates a new `FormComponentGenerator`.
+	 *
+	 * @param project - The `ts-morph` `Project` instance.
+	 * @param parser - The `SwaggerParser` instance.
 	 */
 	constructor(
 		private readonly project: Project,
@@ -28,10 +41,17 @@ export class FormComponentGenerator {
 		private readonly parser: SwaggerParser,
 	) {}
 
+	/**
+	 * Generates the TypeScript, HTML, and SCSS files for an Angular resource form component.
+	 *
+	 * @param resource - Analyzed resource model.
+	 * @param outDir - Base admin output directory.
+	 * @returns Object indicating whether custom validators were used.
+	 */
 	public generate(
 		resource: Resource,
 		outDir: string,
-	): { usesCustomValidators: boolean } {
+	): FormComponentGenerateResult {
 		const formDir = `${outDir}/${resource.name}/${resource.name}-form`;
 
 		this.project.getFileSystem().mkdirSync(formDir);
@@ -54,13 +74,18 @@ export class FormComponentGenerator {
 		return { usesCustomValidators: tsResult.usesCustomValidators };
 	}
 
-	private generateFormComponentTs(
+	/**
+	 * Executes `generateFormComponentTs`.
+	 * @param resource - Parameter `resource`.
+	 * @param outDir - Parameter `outDir`.
+	 * @param analysis - Parameter `analysis`.
+	 * @returns Result of `generateFormComponentTs`.
+	 */
+	public generateFormComponentTs(
 		resource: Resource,
 		outDir: string,
 		analysis: FormAnalysisResult,
-	): {
-		usesCustomValidators: boolean;
-	} {
+	): FormComponentGenerateResult {
 		const componentName = `${pascalCase(resource.modelName)}FormComponent`;
 
 		const serviceName = `${pascalCase(resource.name)}Service`;
@@ -682,7 +707,14 @@ export class FormComponentGenerator {
 		});
 	}
 
-	private addOnSubmit(
+	/**
+	 * Executes `addOnSubmit`.
+	 * @param classDeclaration - Parameter `classDeclaration`.
+	 * @param resource - Parameter `resource`.
+	 * @param serviceName - Parameter `serviceName`.
+	 * @param needsPayloadTransform - Parameter `needsPayloadTransform`.
+	 */
+	public addOnSubmit(
 		classDeclaration: ClassDeclaration,
 		resource: Resource,
 		serviceName: string,
@@ -733,7 +765,13 @@ export class FormComponentGenerator {
 		});
 	}
 
-	private addPatchForm(
+	/**
+	 * Executes `addPatchForm`.
+	 * @param classDeclaration - Parameter `classDeclaration`.
+	 * @param resource - Parameter `resource`.
+	 * @param analysis - Parameter `analysis`.
+	 */
+	public addPatchForm(
 		classDeclaration: ClassDeclaration,
 		resource: Resource,
 		analysis: FormAnalysisResult,

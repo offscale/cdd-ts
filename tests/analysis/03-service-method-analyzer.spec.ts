@@ -1,30 +1,31 @@
-// @ts-nocheck
-
 import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
 import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { describe, expect, it, vi } from "vitest";
+import { type TestValue, testCast } from "../shared/helpers.js";
 
 describe("Analysis: ServiceMethodAnalyzer", () => {
-	const setupAnalyzer = (
-		spec: string | number | boolean | object | undefined | null,
-	) => {
+	const setupAnalyzer = (spec: TestValue) => {
 		const config: GeneratorConfig = { input: "", output: "", options: {} };
-		const parser = new SwaggerParser(spec, config);
+		const parser = new SwaggerParser(testCast(spec), config);
 		const analyzer = new ServiceMethodAnalyzer(config, parser);
 		return { analyzer, parser };
 	};
 
 	it("should return null if operation has no methodName", () => {
-		const { analyzer } = setupAnalyzer({
-			openapi: "3.0.0",
-			info: { title: "T", version: "1" },
-			paths: {},
-		});
-		const model = analyzer.analyze({
-			method: "get",
-			path: "/test",
-		} as unknown as SpecOperation);
+		const { analyzer } = setupAnalyzer(
+			testCast({
+				openapi: testCast("3.0.0"),
+				info: testCast({ title: testCast("T"), version: testCast("1") }),
+				paths: testCast({}),
+			}),
+		);
+		const model = analyzer.analyze(
+			testCast<PathInfo>({
+				method: "get",
+				path: "/test",
+			}),
+		);
 		expect(model).toBeNull();
 	});
 
@@ -49,7 +50,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const operation: PathInfo = {
 			...spec.paths["/test"].get,
 			path: "/test",
@@ -79,7 +80,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const operation: PathInfo = {
 			...spec.paths["/old"].get,
 			path: "/old",
@@ -108,7 +109,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const operation: PathInfo = {
 			...spec.paths["/tagged"].get,
 			path: "/tagged",
@@ -145,7 +146,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const operation: PathInfo = {
 			...spec.paths["/secure"].get,
 			path: "/secure",
@@ -192,7 +193,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const operation = {
 			...spec.paths["/xml"].post,
 			path: "/xml",
@@ -209,15 +210,9 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			expect(config.nodeType).toBe("none");
 			// Should exist for a few levels deep
 
-			expect(
-				(config as string | number | boolean | object | undefined | null)
-					.properties.child,
-			).toBeDefined();
+			expect(testCast(config).properties.child).toBeDefined();
 
-			expect(
-				(config as string | number | boolean | object | undefined | null)
-					.properties.child.properties.child,
-			).toBeDefined();
+			expect(testCast(config).properties.child.properties.child).toBeDefined();
 		}
 	});
 
@@ -256,7 +251,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const operation = {
 			...spec.paths["/report"].get,
 			path: "/report",
@@ -267,29 +262,13 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 		const model = analyzer.analyze(operation);
 		expect(model?.responseXmlConfig?.prefixItems).toBeDefined();
 
-		expect(
-			(
-				model?.responseXmlConfig?.prefixItems as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null
-			)?.[0]?.name,
-		).toBe("One");
+		expect(testCast(model?.responseXmlConfig?.prefixItems)?.[0]?.name).toBe(
+			"One",
+		);
 
-		expect(
-			(
-				model?.responseXmlConfig?.prefixItems as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null
-			)?.[1]?.name,
-		).toBe("Two");
+		expect(testCast(model?.responseXmlConfig?.prefixItems)?.[1]?.name).toBe(
+			"Two",
+		);
 	});
 
 	it("should handle various JSON content types detection", () => {
@@ -314,7 +293,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const op = {
 			...spec.paths["/test"].get,
 			method: "GET",
@@ -360,7 +339,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const op = {
 			...spec.paths["/test"].get,
 			method: "GET",
@@ -420,7 +399,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const operation = {
 			...spec.paths["/xml-allof"].post,
 			path: "/xml-allof",
@@ -435,21 +414,12 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			const config = model.body.config;
 			// Should include properties from Base (via allOf)
 
-			expect(
-				(config as string | number | boolean | object | undefined | null)
-					.properties.id,
-			).toBeDefined();
+			expect(testCast(config).properties.id).toBeDefined();
 
-			expect(
-				(config as string | number | boolean | object | undefined | null)
-					.properties.id.attribute,
-			).toBe(true);
+			expect(testCast(config).properties.id.attribute).toBe(true);
 			// Should include local properties
 
-			expect(
-				(config as string | number | boolean | object | undefined | null)
-					.properties.name,
-			).toBeDefined();
+			expect(testCast(config).properties.name).toBeDefined();
 		}
 	});
 
@@ -502,7 +472,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
 		const textOp = {
 			...spec.paths["/text"].post,
@@ -561,15 +531,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const op = {
+		const op = testCast({
 			...spec.paths["/wildcard"].post,
 			path: "/wildcard",
 			method: "POST",
 			methodName: "postWildcard",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(op);
+		});
+		const model = analyzer.analyze(testCast(op));
 
 		expect(model?.requestContentType).toBe("text/plain");
 		expect(model?.body?.type).toBe("raw");
@@ -600,16 +570,14 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const op = { ...spec.paths["/echo"].post, path: "/echo", method: "POST" } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
-		const model = analyzer.analyze(op);
+		const op = testCast({
+			...spec.paths["/echo"].post,
+			path: "/echo",
+			method: "POST",
+		});
+		const model = analyzer.analyze(testCast(op));
 
 		// The fallback logic sees no valid response code, checks requestBody schema, sees 'string'.
 		expect(model?.responseType).toBe("string");
@@ -636,16 +604,14 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const op = { ...spec.paths["/post"].post, path: "/post", method: "POST" } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
-		const model = analyzer.analyze(op);
+		const op = testCast({
+			...spec.paths["/post"].post,
+			path: "/post",
+			method: "POST",
+		});
+		const model = analyzer.analyze(testCast(op));
 
 		// Should pick up the integer schema from the custom content type
 		const bodyParam = model?.parameters.find((p) => p.name === "body");
@@ -680,7 +646,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer, parser } = setupAnalyzer(spec);
+		const { analyzer, parser } = setupAnalyzer(testCast(spec));
 		const op = parser.operations[0];
 		op.methodName = "getItems";
 		const model = analyzer.analyze(op);
@@ -713,7 +679,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer, parser } = setupAnalyzer(spec);
+		const { analyzer, parser } = setupAnalyzer(testCast(spec));
 		const op = parser.operations[0];
 		op.methodName = "getMulti";
 		const model = analyzer.analyze(op);
@@ -741,20 +707,18 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const schema = spec.components.schemas.List;
 
 		// Public analyze() would trigger this via post/response, testing logic directly here
 
-		const config = (
-			analyzer as string | number | boolean | object | undefined | null
-		).getXmlConfig(schema, 5);
+		const config = analyzer.getXmlConfig(schema, 5);
 
 		expect(config.wrapped).toBe(true);
 
 		expect(config.items).toBeDefined();
 
-		expect(config.items.name).toBe("Item");
+		expect(testCast<TestValue>(config.items).name).toBe("Item");
 	});
 
 	// Test for XML extended fields (namespace, prefix, etc)
@@ -776,11 +740,9 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const config = (
-			analyzer as string | number | boolean | object | undefined | null
-		).getXmlConfig(spec.components.schemas.Adv, 5);
+		const config = analyzer.getXmlConfig(spec.components.schemas.Adv, 5);
 
 		expect(config.prefix).toBe("ex");
 
@@ -810,38 +772,42 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
 		// 1. Reference Wrapper -> Should default to 'none'
 		// We pass the wrapper directly (mimicking usage in a property or root)
 
-		const refConfig = (
-			analyzer as string | number | boolean | object | undefined | null
-		).getXmlConfig({ $ref: "#/components/schemas/Target" }, 5);
+		const refConfig = analyzer.getXmlConfig(
+			{ $ref: "#/components/schemas/Target" },
+			5,
+		);
 
 		expect(refConfig.nodeType).toBe("none");
 
 		// 2. Array -> Should default to 'none'
 
-		const arrayConfig = (
-			analyzer as string | number | boolean | object | undefined | null
-		).getXmlConfig(spec.components.schemas.ArrayWrapper, 5);
+		const arrayConfig = analyzer.getXmlConfig(
+			spec.components.schemas.ArrayWrapper,
+			5,
+		);
 
 		expect(arrayConfig.nodeType).toBe("none");
 
 		// 3. Standard Object -> Should default to 'element'
 
-		const objConfig = (
-			analyzer as string | number | boolean | object | undefined | null
-		).getXmlConfig(spec.components.schemas.StandardObject, 5);
+		const objConfig = analyzer.getXmlConfig(
+			spec.components.schemas.StandardObject,
+			5,
+		);
 
 		expect(objConfig.nodeType).toBe("element");
 
 		// 4. Legacy Wrapped Array -> Should default to 'element'
 
-		const wrappedConfig = (
-			analyzer as string | number | boolean | object | undefined | null
-		).getXmlConfig(spec.components.schemas.LegacyWrapped, 5);
+		const wrappedConfig = analyzer.getXmlConfig(
+			spec.components.schemas.LegacyWrapped,
+			5,
+		);
 
 		expect(wrappedConfig.nodeType).toBe("element");
 	});
@@ -863,7 +829,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const operation = {
 			...spec.paths["/doc"].get,
 			path: "/doc",
@@ -907,15 +873,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const operation = {
+		const operation = testCast({
 			...spec.paths["/multi"].get,
 			path: "/multi",
 			method: "GET",
 			methodName: "getMulti",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(operation)!;
+		});
+		const model = analyzer.analyze(testCast(operation))!;
 
 		expect(
 			model.responseVariants.some((v) => v.serialization === "json-seq"),
@@ -962,15 +928,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const operation = {
+		const operation = testCast({
 			...spec.paths["/geo"].get,
 			path: "/geo",
 			method: "GET",
 			methodName: "getGeoSeq",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(operation)!;
+		});
+		const model = analyzer.analyze(testCast(operation))!;
 
 		expect(
 			model.responseVariants.some((v) => v.serialization === "json-seq"),
@@ -1007,15 +973,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const operation = {
+		const operation = testCast({
 			...spec.paths["/err"].get,
 			path: "/err",
 			method: "GET",
 			methodName: "getErr",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(operation)!;
+		});
+		const model = analyzer.analyze(testCast(operation))!;
 
 		const types = model.errorResponses.map((e) => e.type);
 		expect(types).toContain("string"); // xml string + json/text
@@ -1043,15 +1009,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const operation = {
+		const operation = testCast({
 			...spec.paths["/err"].get,
 			path: "/err",
 			method: "GET",
 			methodName: "getErr",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(operation)!;
+		});
+		const model = analyzer.analyze(testCast(operation))!;
 
 		const types = model.errorResponses.map((e) => e.type);
 		expect(types).toContain("string");
@@ -1073,15 +1039,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const op = {
+		const op = testCast({
 			...spec.paths["/err"].get,
 			path: "/err",
 			method: "GET",
 			methodName: "getErr",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(op)!;
+		});
+		const model = analyzer.analyze(testCast(op))!;
 		expect(model.errorResponses[0].type).toBe("string");
 	});
 
@@ -1105,15 +1071,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const op = {
+		const op = testCast({
 			...spec.paths["/items"].post,
 			path: "/items",
 			method: "POST",
 			methodName: "postItems",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(op)!;
+		});
+		const model = analyzer.analyze(testCast(op))!;
 		const bodyParam = model.parameters.find(
 			(p) => p.type === "string[]" || p.type === "(string)[]",
 		);
@@ -1141,15 +1107,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const op = {
+		const op = testCast({
 			...spec.paths["/custom-seq"].post,
 			path: "/custom-seq",
 			method: "POST",
 			methodName: "postCustomSeq",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(op)!;
+		});
+		const model = analyzer.analyze(testCast(op))!;
 		expect(model.requestContentType).toBe("application/vnd.acme+json");
 		expect(model.body?.type).toBe("json-lines");
 	});
@@ -1172,15 +1138,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const op = {
+		const op = testCast({
 			...spec.paths["/upload"].post,
 			path: "/upload",
 			method: "POST",
 			methodName: "upload",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(op)!;
+		});
+		const model = analyzer.analyze(testCast(op))!;
 		const bodyParam = model.parameters.find((p) => p.name === "body");
 		expect(bodyParam?.type).toBe("FormData | OpenApiValue[] | OpenApiValue");
 	});
@@ -1216,15 +1182,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const op = {
+		const op = testCast({
 			...spec.paths["/multi"].post,
 			path: "/multi",
 			method: "POST",
 			methodName: "postMulti",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(op)!;
+		});
+		const model = analyzer.analyze(testCast(op))!;
 		expect(model.body?.type).toBe("multipart");
 	});
 
@@ -1254,16 +1220,14 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const config = (
-			analyzer as string | number | boolean | object | undefined | null
-		).getDecodingConfig(spec.components.schemas.Encoded, 5);
+		const config = analyzer.getDecodingConfig(
+			spec.components.schemas.Encoded,
+			5,
+		);
 
-		expect(
-			(config as string | number | boolean | object | undefined | null)
-				.properties.payload,
-		).toBeDefined();
+		expect(testCast(config).properties.payload).toBeDefined();
 	});
 
 	it("should merge encoding config from allOf", () => {
@@ -1289,16 +1253,14 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const config = (
-			analyzer as string | number | boolean | object | undefined | null
-		).getEncodingConfig(spec.components.schemas.Encoded, 5);
+		const config = analyzer.getEncodingConfig(
+			spec.components.schemas.Encoded,
+			5,
+		);
 
-		expect(
-			(config as string | number | boolean | object | undefined | null)
-				.properties.payload,
-		).toBeDefined();
+		expect(testCast(config).properties.payload).toBeDefined();
 	});
 
 	it("should mark json serialization when contentMediaType is resolved via ref", () => {
@@ -1326,15 +1288,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const op = {
+		const op = testCast({
 			...spec.paths["/query"].get,
 			path: "/query",
 			method: "GET",
 			methodName: "getQuery",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(op)!;
+		});
+		const model = analyzer.analyze(testCast(op))!;
 		expect(model.queryParams[0].serializationLink).toBe("json");
 	});
 
@@ -1366,15 +1328,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const op = {
+		const op = testCast({
 			...spec.paths["/encoded"].get,
 			path: "/encoded",
 			method: "GET",
 			methodName: "getEncoded",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(op)!;
+		});
+		const model = analyzer.analyze(testCast(op))!;
 
 		const binParam = model.queryParams.find((p) => p.originalName === "bin");
 		expect(binParam?.contentEncoderConfig?.contentEncoding).toBe("base64");
@@ -1422,15 +1384,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			},
 		};
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 
-		const op = {
+		const op = testCast({
 			...spec.paths["/xml/{soapId}"].get,
 			path: "/xml/{soapId}",
 			method: "GET",
 			methodName: "getXmlParams",
-		} as string | number | boolean | object | undefined | null;
-		const model = analyzer.analyze(op)!;
+		});
+		const model = analyzer.analyze(testCast(op))!;
 
 		expect(model.pathParams[0].paramName).toBe("soapIdSerialized");
 		expect(model.queryParams[0].paramName).toBe("filterSerialized");
@@ -1457,15 +1419,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/empty"].get,
 				path: "/empty",
 				method: "GET",
 				methodName: "getEmpty",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.responseVariants).toHaveLength(0);
 			expect(model.responseType).toBe(
 				"string | number | boolean | object | undefined | null",
@@ -1492,15 +1454,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/items"].get,
 				path: "/items",
 				method: "GET",
 				methodName: "getItems",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.responseVariants[0].type).toBe("(string)[]");
 		});
 
@@ -1526,15 +1488,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/custom"].get,
 				path: "/custom",
 				method: "GET",
 				methodName: "getCustom",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.responseVariants[0].serialization).toBe("json-lines");
 			expect(model.responseVariants[0].type).toBe("(number)[]");
 		});
@@ -1559,15 +1521,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/vendor"].get,
 				path: "/vendor",
 				method: "GET",
 				methodName: "getVendor",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.responseVariants[0].mediaType).toBe(
 				"application/vnd.api+json",
 			);
@@ -1595,15 +1557,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/xml"].get,
 				path: "/xml",
 				method: "GET",
 				methodName: "getXml",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(
 				model.responseVariants.some((v) => v.serialization === "xml"),
 			).toBe(false);
@@ -1629,15 +1591,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/sse"].get,
 				path: "/sse",
 				method: "GET",
 				methodName: "getSse",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.responseVariants[0].type).toBe("string");
 			expect(model.responseVariants[0].sseMode).toBe("data");
 		});
@@ -1670,15 +1632,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/sse-event"].get,
 				path: "/sse-event",
 				method: "GET",
 				methodName: "getSseEvent",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.responseVariants[0].sseMode).toBe("event");
 			expect(model.sseMode).toBe("event");
 		});
@@ -1702,15 +1664,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/err"].get,
 				path: "/err",
 				method: "GET",
 				methodName: "getErr",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.errorResponses[0].type).toBe("Blob");
 		});
 
@@ -1728,15 +1690,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/body"].post,
 				path: "/body",
 				method: "POST",
 				methodName: "postBody",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.body?.type).toBe("json");
 			expect(model.requestEncodingConfig).toBeUndefined();
 		});
@@ -1755,15 +1717,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/raw"].post,
 				path: "/raw",
 				method: "POST",
 				methodName: "postRaw",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.body?.type).toBe("raw");
 		});
 
@@ -1789,15 +1751,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/params"].get,
 				path: "/params",
 				method: "GET",
 				methodName: "getParams",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.parameters[0].name).toBe("req");
 			expect(model.parameters[1].name).toBe("opt");
 		});
@@ -1834,19 +1796,17 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/multi"].post,
 				path: "/multi",
 				method: "POST",
 				methodName: "postMulti",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 
-			const config = (
-				model.body as string | number | boolean | object | undefined | null
-			)?.config as string | number | boolean | object | undefined | null;
+			const config = testCast(testCast(model.body)?.config);
 
 			expect(config.prefixEncoding).toBeDefined();
 
@@ -1885,20 +1845,18 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/form"].post,
 				path: "/form",
 				method: "POST",
 				methodName: "postForm",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.body?.type).toBe("urlencoded");
 
-			const config = (
-				model.body as string | number | boolean | object | undefined | null
-			).config as string | number | boolean | object | undefined | null;
+			const config = testCast(testCast(model.body).config);
 
 			expect(config.meta.contentType).toBe("application/json");
 
@@ -1915,14 +1873,11 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				info: { title: "Enc", version: "1.0" },
 				paths: {},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const configMap: string | number | boolean | object | undefined | null =
-				{};
+			const configMap: TestValue = testCast({});
 
-			(
-				analyzer as string | number | boolean | object | undefined | null
-			).enrichEncodingConfig(
+			analyzer.enrichEncodingConfig(
 				{ type: "string", contentEncoding: "base64" },
 				configMap,
 				"field",
@@ -1939,15 +1894,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				info: { title: "Enc", version: "1.0" },
 				paths: {},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const configMap: string | number | boolean | object | undefined | null = {
-				field: { headers: { "content-transfer-encoding": "gzip" } },
-			};
+			const configMap: TestValue = testCast({
+				field: testCast({
+					headers: testCast({ "content-transfer-encoding": testCast("gzip") }),
+				}),
+			});
 
-			(
-				analyzer as string | number | boolean | object | undefined | null
-			).enrichEncodingConfig(
+			analyzer.enrichEncodingConfig(
 				{ type: "string", contentEncoding: "base64" },
 				configMap,
 				"field",
@@ -1962,7 +1917,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				info: { title: "Xml", version: "1.0" },
 				paths: {},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 			const schema = {
 				allOf: [
 					{
@@ -1974,11 +1929,9 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				],
 			};
 
-			const cfg = (
-				analyzer as string | number | boolean | object | undefined | null
-			).getXmlConfig(schema, 5);
+			const cfg = analyzer.getXmlConfig(schema, 5);
 
-			expect(cfg.properties?.node).toBeDefined();
+			expect(testCast<TestValue>(cfg.properties)?.node).toBeDefined();
 		});
 
 		it("should build decoding config for array items and allOf properties", () => {
@@ -1987,7 +1940,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				info: { title: "Dec", version: "1.0" },
 				paths: {},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 			const schema = {
 				type: "array",
 				items: {
@@ -1999,9 +1952,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			};
 
-			const cfg = (
-				analyzer as string | number | boolean | object | undefined | null
-			).getDecodingConfig(schema, 5);
+			const cfg = analyzer.getDecodingConfig(schema, 5);
 
 			expect(cfg.items).toBeDefined();
 
@@ -2022,11 +1973,9 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				],
 			};
 
-			const cfg2 = (
-				analyzer as string | number | boolean | object | undefined | null
-			).getDecodingConfig(allOfSchema, 5);
+			const cfg2 = analyzer.getDecodingConfig(allOfSchema, 5);
 
-			expect(cfg2.properties?.payload).toBeDefined();
+			expect(testCast<TestValue>(cfg2.properties)?.payload).toBeDefined();
 		});
 
 		it("should build encoding config for arrays and allOf properties", () => {
@@ -2035,7 +1984,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				info: { title: "Enc", version: "1.0" },
 				paths: {},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 			const schema = {
 				type: "object",
 				properties: {
@@ -2051,13 +2000,11 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				],
 			};
 
-			const cfg = (
-				analyzer as string | number | boolean | object | undefined | null
-			).getEncodingConfig(schema, 5);
+			const cfg = analyzer.getEncodingConfig(schema, 5);
 
-			expect(cfg.properties?.payload).toBeDefined();
+			expect(testCast<TestValue>(cfg.properties)?.payload).toBeDefined();
 
-			expect(cfg.properties?.extra).toBeDefined();
+			expect(testCast<TestValue>(cfg.properties)?.extra).toBeDefined();
 		});
 
 		it('should return "string | number | boolean | object | undefined | null" when resolveType receives undefined schema', () => {
@@ -2066,13 +2013,11 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				info: { title: "Resolve", version: "1.0" },
 				paths: {},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			expect(
-				(
-					analyzer as string | number | boolean | object | undefined | null
-				).resolveType(undefined, []),
-			).toBe("string | number | boolean | object | undefined | null");
+			expect(analyzer.resolveType(undefined, [])).toBe(
+				"string | number | boolean | object | undefined | null",
+			);
 		});
 
 		it("should avoid requestEncodingConfig when body is forced to json with no content", () => {
@@ -2089,22 +2034,21 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
-			vi.spyOn(
-				analyzer as string | number | boolean | object | undefined | null,
-				"analyzeBody",
-			).mockReturnValue({
-				type: "json",
-				paramName: "body",
-			});
+			const { analyzer } = setupAnalyzer(testCast(spec));
+			vi.spyOn(testCast(analyzer), "analyzeBody").mockReturnValue(
+				testCast({
+					type: testCast("json"),
+					paramName: testCast("body"),
+				}),
+			);
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/enc"].post,
 				path: "/enc",
 				method: "POST",
 				methodName: "postEnc",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.requestEncodingConfig).toBeUndefined();
 		});
 
@@ -2128,15 +2072,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/jsonl"].get,
 				path: "/jsonl",
 				method: "GET",
 				methodName: "getJsonl",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.responseVariants[0].type).toBe("(number)[]");
 		});
 
@@ -2146,11 +2090,10 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				info: { title: "Weird", version: "1.0" },
 				paths: {},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 			let readCount = 0;
 
-			const mediaObj: string | number | boolean | object | undefined | null =
-				{};
+			const mediaObj: TestValue = testCast({});
 
 			Object.defineProperty(mediaObj, "schema", {
 				get() {
@@ -2159,7 +2102,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				},
 			});
 
-			const op = {
+			const op = testCast({
 				methodName: "getWeird",
 				method: "GET",
 				path: "/weird",
@@ -2170,8 +2113,8 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 						content: { "text/event-stream": mediaObj },
 					},
 				},
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.responseVariants[0].type).toBe(
 				"string | number | boolean | object | undefined | null",
 			);
@@ -2200,15 +2143,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/tuple"].post,
 				path: "/tuple",
 				method: "POST",
 				methodName: "postTuple",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.body?.type).toBe("multipart");
 		});
 
@@ -2218,23 +2161,23 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 				info: { title: "Skip", version: "1.0" },
 				paths: {},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const xmlCfg = (
-				analyzer as string | number | boolean | object | undefined | null
-			).getXmlConfig({ allOf: [{ type: "object" }] }, 5);
+			const xmlCfg = analyzer.getXmlConfig({ allOf: [{ type: "object" }] }, 5);
 
 			expect(xmlCfg.properties).toBeUndefined();
 
-			const decCfg = (
-				analyzer as string | number | boolean | object | undefined | null
-			).getDecodingConfig({ allOf: [{ type: "object" }] }, 5);
+			const decCfg = analyzer.getDecodingConfig(
+				{ allOf: [{ type: "object" }] },
+				5,
+			);
 
 			expect(decCfg.properties).toBeUndefined();
 
-			const encCfg = (
-				analyzer as string | number | boolean | object | undefined | null
-			).getEncodingConfig({ allOf: [{ type: "object" }] }, 5);
+			const encCfg = analyzer.getEncodingConfig(
+				{ allOf: [{ type: "object" }] },
+				5,
+			);
 
 			expect(encCfg.properties).toBeUndefined();
 		});
@@ -2252,15 +2195,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/fallback"].get,
 				path: "/fallback",
 				method: "GET",
 				methodName: "getFallback",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.docs).toContain("Performs a GET request to /fallback.");
 		});
 
@@ -2279,15 +2222,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/desc"].get,
 				path: "/desc",
 				method: "GET",
 				methodName: "getDesc",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.docs).toContain("Short summary");
 			expect(model.docs).toContain("Detailed description");
 		});
@@ -2306,15 +2249,15 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 					},
 				},
 			};
-			const { analyzer } = setupAnalyzer(spec);
+			const { analyzer } = setupAnalyzer(testCast(spec));
 
-			const op = {
+			const op = testCast({
 				...spec.paths["/ext"].get,
 				path: "/ext",
 				method: "GET",
 				methodName: "getExt",
-			} as string | number | boolean | object | undefined | null;
-			const model = analyzer.analyze(op)!;
+			});
+			const model = analyzer.analyze(testCast(op))!;
 			expect(model.docs).toContain("@see https://example.com");
 		});
 	});
@@ -2348,7 +2291,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const operation: PathInfo = {
 			...spec.paths["/logs"].post,
 			path: "/logs",
@@ -2383,7 +2326,7 @@ describe("Analysis: ServiceMethodAnalyzer", () => {
 			},
 		};
 
-		const { analyzer } = setupAnalyzer(spec);
+		const { analyzer } = setupAnalyzer(testCast(spec));
 		const operation: PathInfo = {
 			...spec.paths["/download"].get,
 			path: "/download",

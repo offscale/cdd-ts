@@ -1,17 +1,22 @@
+/**
+ * Module for form model builder in vendors/angular/admin/analysis/form-model.builder.
+ *
+ * @module vendors/angular/admin/analysis/form-model.builder
+ */
 // src/analysis/form-model.builder.ts
 import type {
 	FormProperty,
 	GeneratorConfig,
 	Resource,
 	SwaggerDefinition,
-} from "@src/core/types/index.js";
+} from "../../../../core/types/index.js";
 import {
 	camelCase,
 	getTypeScriptType,
 	pascalCase,
 	singular,
-} from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
+} from "../../../../functions/utils.js";
+import type { SwaggerParser } from "../../../../openapi/parse.js";
 import type {
 	FormAnalysisResult,
 	FormControlModel,
@@ -20,10 +25,12 @@ import type {
 } from "./form-types.js";
 import { analyzeValidationRules } from "./validation.analyzer.js";
 
+/** Generator/utility class `FormModelBuilder`. */
 export class FormModelBuilder {
 	private parser: SwaggerParser;
 
-	private result: FormAnalysisResult = {
+	/** Property `result`. */
+	public result: FormAnalysisResult = {
 		interfaces: [],
 		topLevelControls: [],
 		usesCustomValidators: false,
@@ -35,10 +42,19 @@ export class FormModelBuilder {
 		dependencyRules: [],
 	};
 
+	/**
+	 * Creates a new `FormModelBuilder` instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 */
 	constructor(parser: SwaggerParser) {
 		this.parser = parser;
 	}
 
+	/**
+	 * Executes `build` on `FormModelBuilder`.
+	 * @param resource - Analyzed API resource descriptor.
+	 * @returns Generated result (FormAnalysisResult).
+	 */
 	public build(resource: Resource): FormAnalysisResult {
 		const formInterfaceName = `${pascalCase(resource.modelName)}Form`;
 
@@ -90,7 +106,12 @@ export class FormModelBuilder {
 		return this.result;
 	}
 
-	private analyzeDependentSchemas(modelSchema: SwaggerDefinition) {
+	/**
+	 * Executes `analyzeDependentSchemas`.
+	 * @param modelSchema - Parameter `modelSchema`.
+	 * @returns Result of `analyzeDependentSchemas`.
+	 */
+	public analyzeDependentSchemas(modelSchema: SwaggerDefinition) {
 		if (!modelSchema.dependentSchemas) return;
 
 		Object.entries(modelSchema.dependentSchemas).forEach(
@@ -377,7 +398,12 @@ export class FormModelBuilder {
 		return controls;
 	}
 
-	private analyzePolymorphism(
+	/**
+	 * Executes `analyzePolymorphism`.
+	 * @param prop - Parameter `prop`.
+	 * @returns Result of `analyzePolymorphism`.
+	 */
+	public analyzePolymorphism(
 		prop: FormProperty,
 	): PolymorphicPropertyConfig | null {
 		if (
@@ -508,9 +534,12 @@ export class FormModelBuilder {
 		return config;
 	}
 
-	private getFormControlTypeString(
-		schema: SwaggerDefinition | boolean,
-	): string {
+	/**
+	 * Executes `getFormControlTypeString`.
+	 * @param schema - Parameter `schema`.
+	 * @returns Result of `getFormControlTypeString`.
+	 */
+	public getFormControlTypeString(schema: SwaggerDefinition | boolean): string {
 		const knownTypes = this.parser.schemas.map((s) => s.name);
 
 		const dummyConfig: GeneratorConfig = {

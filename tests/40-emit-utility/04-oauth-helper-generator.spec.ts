@@ -1,23 +1,15 @@
-// @ts-nocheck
-
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { OAuthHelperGenerator } from "@src/vendors/angular/utils/oauth-helper.generator.js";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 import { securitySpec } from "../shared/specs.js";
 
 describe("Emitter: OAuthHelperGenerator", () => {
 	const runGenerator = (spec: object) => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			{ output: "/out" } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast(spec),
+			testCast({ output: "/out" }),
 		);
 		new OAuthHelperGenerator(parser, project).generate("/out");
 		return project;

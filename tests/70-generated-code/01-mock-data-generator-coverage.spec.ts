@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -7,6 +5,7 @@ import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { MockDataGenerator } from "@src/vendors/angular/test/mock-data.generator.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { type TestValue, testCast } from "../shared/helpers.js";
 
 vi.mock("node:fs");
 
@@ -155,7 +154,7 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 			path.resolve(process.cwd(), "spec.json"),
 		).href;
 		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
+			testCast(spec),
 			config,
 			undefined,
 			documentUri,
@@ -169,35 +168,29 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 	});
 
 	it("should handle externalValue by resolving local files", () => {
-		(
-			fs.existsSync as string | number | boolean | object | undefined | null
-		).mockReturnValue(true);
+		(fs.existsSync as import("vitest").Mock).mockReturnValue(true);
 
-		(
-			fs.readFileSync as string | number | boolean | object | undefined | null
-		).mockReturnValue(JSON.stringify({ foo: "bar" }));
+		(fs.readFileSync as import("vitest").Mock).mockReturnValue(
+			JSON.stringify({ foo: "bar" }),
+		);
 
 		const mockString = generator.generate("WithExternalValue");
 		// MockDataGenerator returns JSON stringified value, so parsing it should give original object
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toEqual({ foo: "bar" });
 		expect(fs.readFileSync).toHaveBeenCalled();
 	});
 
 	it("should return raw file content when externalValue is not JSON", () => {
-		(
-			fs.existsSync as string | number | boolean | object | undefined | null
-		).mockReturnValue(true);
+		(fs.existsSync as import("vitest").Mock).mockReturnValue(true);
 
-		(
-			fs.readFileSync as string | number | boolean | object | undefined | null
-		).mockReturnValue("plain text");
+		(fs.readFileSync as import("vitest").Mock).mockReturnValue("plain text");
 
 		const mockString = generator.generate("WithExternalValue");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toBe("plain text");
 	});
@@ -205,31 +198,35 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 	it("should handle externalValue with remote URL by referencing content URL", () => {
 		const mockString = generator.generate("WithExternalUrl");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toContain("URL Content: http://example.com/data.json");
 		expect(fs.readFileSync).not.toHaveBeenCalled();
 	});
 
 	it("should prioritize dataValue, value, and serializedValue in that order", () => {
-		expect(JSON.parse(generator.generate("DataValueSchema"))).toEqual({
-			id: 1,
-		});
-		expect(JSON.parse(generator.generate("ValueSchema"))).toBe("raw-value");
-		expect(JSON.parse(generator.generate("SerializedValueSchema"))).toBe(
-			"serialized-value",
+		expect(testCast(JSON.parse(generator.generate("DataValueSchema")))).toEqual(
+			{
+				id: 1,
+			},
 		);
+		expect(testCast(JSON.parse(generator.generate("ValueSchema")))).toBe(
+			"raw-value",
+		);
+		expect(
+			testCast(JSON.parse(generator.generate("SerializedValueSchema"))),
+		).toBe("serialized-value");
 	});
 
 	it("should return empty object for string | number | boolean | object | undefined | null types without oneOf/anyOf", () => {
 		const mockString = generator.generate("UnknownTypeSchema");
-		expect(JSON.parse(mockString)).toEqual({});
+		expect(testCast(JSON.parse(mockString))).toEqual({});
 	});
 
 	it("should handle allOf containing a null type by ignoring it", () => {
 		const mockString = generator.generate("AllOfWithNull");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toEqual({ name: "string-value" });
 	});
@@ -238,7 +235,7 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const mockString = generator.generate("WithBadRef");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toEqual({ id: "string-value" });
 		warnSpy.mockRestore();
@@ -247,7 +244,7 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 	it("should handle allOf with a primitive type by returning an empty object", () => {
 		const mockString = generator.generate("AllOfWithPrimitive");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toEqual({});
 	});
@@ -255,7 +252,7 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 	it("should handle a schema that is just a ref", () => {
 		const mockString = generator.generate("JustARef");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toEqual({ id: "string-value" });
 	});
@@ -271,7 +268,7 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 		// This tests the `resolve()` fallback logic within `generateValue()`
 		const mockString = generator.generate("UnresolvableRefWrapper");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toEqual({ badProp: null });
 		warnSpy.mockRestore();
@@ -279,81 +276,81 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 
 	it("should generate a boolean value", () => {
 		const mockString = generator.generate("BooleanSchema");
-		expect(JSON.parse(mockString)).toBe(true);
+		expect(testCast(JSON.parse(mockString))).toBe(true);
 	});
 
 	it("should use the default for a boolean", () => {
 		const mockString = generator.generate("BooleanWithDefault");
-		expect(JSON.parse(mockString)).toBe(false);
+		expect(testCast(JSON.parse(mockString))).toBe(false);
 	});
 
 	it("should generate an empty array for array with no items", () => {
 		const mockString = generator.generate("ArrayNoItems");
-		expect(JSON.parse(mockString)).toEqual([]);
+		expect(testCast(JSON.parse(mockString))).toEqual([]);
 	});
 
 	it("should generate an empty object for object with no properties", () => {
 		const mockString = generator.generate("ObjectNoProps");
-		expect(JSON.parse(mockString)).toEqual({});
+		expect(testCast(JSON.parse(mockString))).toEqual({});
 	});
 
 	it("should return null for a null type schema", () => {
 		const mockString = generator.generate("NullType");
-		expect(JSON.parse(mockString)).toBeNull();
+		expect(testCast(JSON.parse(mockString))).toBeNull();
 	});
 
 	it("should use example property if present", () => {
 		const mockString = generator.generate("WithExample");
-		expect(JSON.parse(mockString)).toBe("hello from example");
+		expect(testCast(JSON.parse(mockString))).toBe("hello from example");
 	});
 
 	it("should check examples array if example property is missing (e.g. OAS 3.1)", () => {
 		const mockString = generator.generate("WithExamplesFallback");
-		expect(JSON.parse(mockString)).toBe("fallback example 1");
+		expect(testCast(JSON.parse(mockString))).toBe("fallback example 1");
 	});
 
 	it("should handle circular references gracefully", () => {
 		const mockString = generator.generate("CircularA");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toEqual({ b: { a: {} } });
 	});
 
 	it("should handle oneOf", () => {
 		const mockString = generator.generate("OneOfNoType");
-		expect(JSON.parse(mockString)).toBe("string-value");
+		expect(testCast(JSON.parse(mockString))).toBe("string-value");
 	});
 
 	it("should handle anyOf by picking the first option", () => {
 		const mockString = generator.generate("AnyOfSchema");
-		expect(JSON.parse(mockString)).toBe(true); // first option is boolean
+		expect(testCast(JSON.parse(mockString))).toBe(true); // first option is boolean
 	});
 
 	it("should handle tuple arrays by returning an empty array", () => {
 		const mockString = generator.generate("TupleArray");
-		expect(JSON.parse(mockString)).toEqual([]);
+		expect(testCast(JSON.parse(mockString))).toEqual([]);
 	});
 
 	it("should use the default value for a number", () => {
 		const mockString = generator.generate("NumberWithDefault");
-		expect(JSON.parse(mockString)).toBe(42);
+		expect(testCast(JSON.parse(mockString))).toBe(42);
 	});
 
 	it("should use the minimum value for a number", () => {
 		const mockString = generator.generate("NumberWithMin");
-		expect(JSON.parse(mockString)).toBe(55.5);
+		expect(testCast(JSON.parse(mockString))).toBe(55.5);
 	});
 
 	it("should fall back to a default number if default is not a number", () => {
 		const mockString = generator.generate("NumberWithNonNumberDefault");
-		expect(JSON.parse(mockString)).toBe(123.45);
+		expect(testCast(JSON.parse(mockString))).toBe(123.45);
 	});
 
 	it("should handle various string formats including contentEncoding", () => {
 		const mockString = generator.generate("StringFormats");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toHaveProperty("myDate");
 
@@ -373,28 +370,28 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 
 	it("should fall back to default string if default value is not a string", () => {
 		const mockString = generator.generate("StringWithNonStringDefault");
-		expect(JSON.parse(mockString)).toBe("string-value");
+		expect(testCast(JSON.parse(mockString))).toBe("string-value");
 	});
 
 	it("should use the default value for a string if it is a string", () => {
 		const mockString = generator.generate("StringWithStringDefault");
-		expect(JSON.parse(mockString)).toBe("my-default");
+		expect(testCast(JSON.parse(mockString))).toBe("my-default");
 	});
 
 	it("should fall back to a default integer if default is not a number", () => {
 		const mockString = generator.generate("IntegerWithNonNumberDefault");
-		expect(JSON.parse(mockString)).toBe(123);
+		expect(testCast(JSON.parse(mockString))).toBe(123);
 	});
 
 	it("should handle `type` as array", () => {
 		const mockString = generator.generate("StringArrayType");
-		expect(JSON.parse(mockString)).toBe("string-value");
+		expect(testCast(JSON.parse(mockString))).toBe("string-value");
 	});
 
 	it("should handle inferred object type", () => {
 		const mockString = generator.generate("InferredObjectType");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toEqual({ name: "string-value" });
 	});
@@ -407,12 +404,12 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 
 	it("should return an empty array for an array of unsupported items", () => {
 		const mockString = generator.generate("ArrayWithUnsupportedItems");
-		expect(JSON.parse(mockString)).toEqual([]);
+		expect(testCast(JSON.parse(mockString))).toEqual([]);
 	});
 
 	it("should return empty array when array items resolve to undefined", () => {
 		const mockString = generator.generate("ArrayWithUnknownItem");
-		expect(JSON.parse(mockString)).toEqual([]);
+		expect(testCast(JSON.parse(mockString))).toEqual([]);
 	});
 
 	it("should resolve externalValue relative to an http base", () => {
@@ -422,7 +419,7 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 			options: { dateType: "string", enumStyle: "enum" },
 		};
 		const parser = new SwaggerParser(
-			mockDataGenSpec as string | number | boolean | object | undefined | null,
+			testCast(mockDataGenSpec),
 			config,
 			undefined,
 			"https://example.com/spec.json",
@@ -431,7 +428,7 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 
 		const mockString = customGenerator.generate("ExternalRelativeHttp");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toContain("URL Content: https://example.com/relative.json");
 	});
@@ -443,7 +440,7 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 			options: { dateType: "string", enumStyle: "enum" },
 		};
 		const parser = new SwaggerParser(
-			mockDataGenSpec as string | number | boolean | object | undefined | null,
+			testCast(mockDataGenSpec),
 			config,
 			undefined,
 			"ftp://example.com/spec.json",
@@ -452,7 +449,7 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 
 		const mockString = customGenerator.generate("ExternalRelativeHttp");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		expect(mock).toContain("External Content: relative.json");
 	});
@@ -465,34 +462,29 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 			options: { dateType: "string", enumStyle: "enum" },
 		};
 		const invalidBaseParser = new SwaggerParser(
-			mockDataGenSpec as string | number | boolean | object | undefined | null,
+			testCast(mockDataGenSpec),
 			config,
 			undefined,
 			"http://[invalid",
 		);
 		const invalidBaseGenerator = new MockDataGenerator(invalidBaseParser);
 
-		const invalid = JSON.parse(
-			invalidBaseGenerator.generate("ExternalRelativeHttp"),
+		const invalid = testCast(
+			JSON.parse(invalidBaseGenerator.generate("ExternalRelativeHttp")),
 		);
 
 		expect(invalid).toContain("External Content: relative.json");
 
-		const parser = new SwaggerParser(
-			mockDataGenSpec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(mockDataGenSpec), config);
 
-		(
-			parser as string | number | boolean | object | undefined | null
-		).documentUri = "";
+		testCast<TestValue>(parser).documentUri = testCast("");
 		const customGenerator = new MockDataGenerator(parser);
 
-		(
-			fs.existsSync as string | number | boolean | object | undefined | null
-		).mockReturnValue(false);
+		(fs.existsSync as import("vitest").Mock).mockReturnValue(false);
 
-		const missing = JSON.parse(customGenerator.generate("ExternalMissingFile"));
+		const missing = testCast(
+			JSON.parse(customGenerator.generate("ExternalMissingFile")),
+		);
 
 		expect(missing).toContain("External Content: missing.json");
 
@@ -502,7 +494,7 @@ describe("Generated Code: MockDataGenerator (Coverage)", () => {
 	it("should return undefined for deep recursion to hit maxDepth", () => {
 		const mockString = generator.generate("DeepNest1");
 
-		const mock = JSON.parse(mockString);
+		const mock = testCast(JSON.parse(mockString));
 
 		const nest5 = mock.nest2.nest3.nest4.nest5;
 

@@ -1,21 +1,26 @@
-import type {
-	GeneratorConfig,
-	PathInfo,
-	SwaggerDefinition,
-} from "@src/core/types/index.js";
-import {
-	getTypeScriptType,
-	isDataTypeInterface,
-	pascalCase,
-} from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
+/**
+ * Module for service generator in vendors/fetch/service/service.generator.
+ *
+ * @module vendors/fetch/service/service.generator
+ */
 import {
 	type ClassDeclaration,
 	type Project,
 	Scope,
 	type SourceFile,
 } from "ts-morph";
+import type {
+	GeneratorConfig,
+	PathInfo,
+	SwaggerDefinition,
+} from "../../../core/types/index.js";
 import { AbstractServiceGenerator } from "../../../functions/emit_service.js";
+import {
+	getTypeScriptType,
+	isDataTypeInterface,
+	pascalCase,
+} from "../../../functions/utils.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 import { FetchServiceMethodGenerator } from "./service-method.generator.js";
 
 /**

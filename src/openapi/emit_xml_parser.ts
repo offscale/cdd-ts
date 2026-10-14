@@ -1,10 +1,28 @@
+/**
+ * Generates `utils/xml-parser.ts` for parsing XML response payloads into typed JavaScript values.
+ *
+ * @module openapi/emit_xml_parser
+ */
 import * as path from "node:path";
 import { type Project, Scope } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 
+/**
+ * Generates the `utils/xml-parser.ts` utility file.
+ */
 export class XmlParserGenerator {
+	/**
+	 * Creates a new `XmlParserGenerator`.
+	 *
+	 * @param project - The `ts-morph` project to create `utils/xml-parser.ts` in.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Generates `utils/xml-parser.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const utilsDir = path.join(outputDir, "utils");
 
@@ -19,6 +37,12 @@ export class XmlParserGenerator {
 		sourceFile.addImportDeclaration({
 			namedImports: ["XmlPropertyConfig"],
 			moduleSpecifier: "./xml-builder",
+		});
+
+		sourceFile.addTypeAlias({
+			name: "XmlParsedValue",
+			isExported: true,
+			type: "string | number | boolean | null | undefined | XmlParsedValue[] | { [key: string]: XmlParsedValue }",
 		});
 
 		const classDeclaration = sourceFile.addClass({
@@ -37,7 +61,7 @@ export class XmlParserGenerator {
 				{ name: "xml", type: "string" },
 				{ name: "config", type: "XmlPropertyConfig", hasQuestionToken: true },
 			],
-			returnType: "string | number | boolean | object | undefined | null",
+			returnType: "XmlParsedValue",
 			statements: `
         if (!xml) return null; 
         const parser = new DOMParser(); 
@@ -61,7 +85,7 @@ export class XmlParserGenerator {
 				{ name: "node", type: "Element" },
 				{ name: "config", type: "XmlPropertyConfig" },
 			],
-			returnType: "string | number | boolean | object | undefined | null",
+			returnType: "XmlParsedValue",
 			statements: `
         if (node.hasAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'nil') && 
             node.getAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'nil') === 'true') { 
@@ -71,7 +95,7 @@ export class XmlParserGenerator {
         const prefixItems = Array.isArray(config.prefixItems) ? config.prefixItems : undefined; 
         if (prefixItems && prefixItems.length > 0) { 
             const nodes = this.collectArrayNodes(node); 
-            const result: Array<string | number | boolean | object | undefined | null> = []; 
+            const result: XmlParsedValue[] = []; 
             let cursor = 0; 
 
             for (let i = 0; i < prefixItems.length; i++) { 
@@ -102,7 +126,7 @@ export class XmlParserGenerator {
             const itemsConfig = config.items || {}; 
             const itemName = itemsConfig.name; 
             
-            const result: Array<string | number | boolean | object | undefined | null> = []; 
+            const result: XmlParsedValue[] = []; 
             const children = node.children; 
             
             for (let i = 0; i < children.length; i++) { 
@@ -115,7 +139,7 @@ export class XmlParserGenerator {
         } 
 
         if (config.properties) { 
-            const result: Record<string, string | number | boolean | object | undefined | null> = {}; 
+            const result: Record<string, XmlParsedValue> = {}; 
             
             Object.entries(config.properties as Record<string, XmlPropertyConfig>).forEach(([key, propConfig]) => { 
                 const nodeType = propConfig.nodeType; 
@@ -143,7 +167,7 @@ export class XmlParserGenerator {
                 const childTagName = propConfig.name || key; 
                 
                 if (propConfig.items && !propConfig.wrapped && propConfig.nodeType !== 'element') { 
-                     const items: Array<string | number | boolean | object | undefined | null> = []; 
+                     const items: XmlParsedValue[] = []; 
                      const children = node.children; 
                      for(let i=0; i<children.length; i++) { 
                          if (this.nodeMatchesName(children[i], childTagName)) { 
@@ -190,7 +214,7 @@ export class XmlParserGenerator {
 				{ name: "node", type: "ChildNode" },
 				{ name: "config", type: "XmlPropertyConfig" },
 			],
-			returnType: "string | number | boolean | object | undefined | null",
+			returnType: "XmlParsedValue",
 			statements: `
         if (node.nodeType === 3 || node.nodeType === 4) { 
             return node.textContent ?? ''; 

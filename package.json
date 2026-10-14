@@ -34,9 +34,9 @@
     "README.md"
   ],
   "scripts": {
-    "check:types": "type-coverage --project ./tsconfig.json --detail --ignore-files \"tests/**/*.ts\"",
+    "check:types": "tsc --noEmit && type-coverage --project ./tsconfig.json --detail --at-least 100",
     "clean": "rm -rf dist docs coverage .vitest-cache node_modules/.vite",
-    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && chmod +x dist/cli.js",
+    "build": "tsc -p tsconfig.build.json && chmod +x dist/cli.js",
     "docs": "typedoc",
     "lint": "biome lint .",
     "prepublishOnly": "npm run build",

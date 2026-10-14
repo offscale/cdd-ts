@@ -1,44 +1,33 @@
-// @ts-nocheck
 // tests/fixtures/ast/express.routes.ts
 
 const app = {
-	get: (..._args: string | number | boolean | object | undefined | null[]) => {
+	get: (..._args: unknown[]) => {
 		void _args;
 	},
-	post: (..._args: string | number | boolean | object | undefined | null[]) => {
+	post: (..._args: unknown[]) => {
 		void _args;
 	},
-	put: (..._args: string | number | boolean | object | undefined | null[]) => {
+	put: (..._args: unknown[]) => {
 		void _args;
 	},
-	patch: (
-		..._args: string | number | boolean | object | undefined | null[]
-	) => {
+	patch: (..._args: unknown[]) => {
 		void _args;
 	},
-	delete: (
-		..._args: string | number | boolean | object | undefined | null[]
-	) => {
+	delete: (..._args: unknown[]) => {
 		void _args;
 	},
-	query: (
-		..._args: string | number | boolean | object | undefined | null[]
-	) => {
+	query: (..._args: unknown[]) => {
 		void _args;
 	},
-	copy: (..._args: string | number | boolean | object | undefined | null[]) => {
+	copy: (..._args: unknown[]) => {
 		void _args;
 	},
 };
 const router = {
-	route: (
-		..._args: string | number | boolean | object | undefined | null[]
-	) => {
+	route: (..._args: unknown[]) => {
 		void _args;
 		return {
-			patch: (
-				..._routeArgs: string | number | boolean | object | undefined | null[]
-			) => {
+			patch: (..._routeArgs: unknown[]) => {
 				void _routeArgs;
 			},
 		};
@@ -46,10 +35,8 @@ const router = {
 };
 type Request<
 	Params = Record<string, string | undefined>,
-	_ResBody = string | number | boolean | object | undefined | null,
-	ReqBody =
-		| Record<string, string | number | boolean | object | undefined | null>
-		| undefined,
+	_ResBody = unknown,
+	ReqBody = Record<string, unknown> | undefined,
 	ReqQuery = Record<string, string | undefined>,
 > = {
 	params: Params;
@@ -61,16 +48,15 @@ type Request<
 	is: (type: string) => boolean;
 	url: string;
 };
-type Response<ResBody = string | number | boolean | object | undefined | null> =
-	{
-		json: (body: ResBody) => void;
-		send: (body?: ResBody) => void;
-		status: (code: number | string) => Response<ResBody>;
-		type: (type: string) => Response<ResBody>;
-		set: (name: string, value: string) => Response<ResBody>;
-		end: () => void;
-		sendStatus: (code: number) => void;
-	};
+type Response<ResBody = unknown> = {
+	json: (body: ResBody) => void;
+	send: (body?: ResBody) => void;
+	status: (code: number | string) => Response<ResBody>;
+	type: (type: string) => Response<ResBody>;
+	set: (name: string, value: string) => Response<ResBody>;
+	end: () => void;
+	sendStatus: (code: number) => void;
+};
 const config = { version: "v1" };
 const middleware = (_req: Request, _res: Response, next: () => void) => {
 	void _req;
@@ -90,8 +76,8 @@ const middleware = (_req: Request, _res: Response, next: () => void) => {
 export function getUser(
 	req: Request<
 		Record<string, string>,
-		string | number | boolean | object | undefined | null,
-		string | number | boolean | object | undefined | null,
+		unknown,
+		unknown,
 		Record<string, string>
 	>,
 	res: Response,
@@ -117,14 +103,7 @@ router.route("/projects/:projectId").patch(function updateProject(
 
 app.post(
 	"/messages",
-	(
-		req: Request<
-			string | number | boolean | object | undefined | null,
-			string | number | boolean | object | undefined | null,
-			Record<string, string | number | boolean | object | undefined | null>
-		>,
-		res: Response,
-	) => {
+	(req: Request<unknown, unknown, Record<string, unknown>>, res: Response) => {
 		const body = req.body;
 		const payload = req.body ? req.body.payload : undefined;
 		if (req.is("application/json")) {
@@ -149,11 +128,7 @@ export interface MessageReceipt {
 }
 
 export function typedMessages(
-	req: Request<
-		string | number | boolean | object | undefined | null,
-		MessageReceipt,
-		CreateMessageBody
-	>,
+	req: Request<unknown, MessageReceipt, CreateMessageBody>,
 	res: Response<MessageReceipt>,
 ) {
 	const message = req.body ? req.body.message : undefined;
@@ -184,8 +159,8 @@ app.get(
 			body,
 		}: Request<
 			Record<string, string>,
-			string | number | boolean | object | undefined | null,
-			Record<string, string | number | boolean | object | undefined | null>,
+			unknown,
+			Record<string, unknown>,
 			Record<string, string>
 		>,
 		res: Response,
@@ -237,12 +212,7 @@ app.get(`/literal`, (_req: Request, res: Response) => {
 app.query(
 	"/search",
 	(
-		req: Request<
-			string | number | boolean | object | undefined | null,
-			string | number | boolean | object | undefined | null,
-			string | number | boolean | object | undefined | null,
-			Record<string, string>
-		>,
+		req: Request<unknown, unknown, unknown, Record<string, string>>,
 		res: Response,
 	) => {
 		const q = req.query.q;

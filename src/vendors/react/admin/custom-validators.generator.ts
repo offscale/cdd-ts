@@ -1,3 +1,8 @@
+/**
+ * Module for custom validators generator in vendors/react/admin/custom-validators.generator.
+ *
+ * @module vendors/react/admin/custom-validators.generator
+ */
 import * as path from "node:path";
 import type { Project, SourceFile } from "ts-morph";
 

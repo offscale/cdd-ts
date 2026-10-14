@@ -1,10 +1,21 @@
+/**
+ * Abstract base generator for service client classes and hooks.
+ *
+ * @module functions/emit_service
+ */
 import * as path from "node:path";
-import { SERVICE_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
-import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
-import { camelCase } from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project, SourceFile } from "ts-morph";
+import { SERVICE_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { GeneratorConfig, PathInfo } from "../core/types/index.js";
+import type { SwaggerParser } from "../openapi/parse.js";
+import { camelCase } from "./utils.js";
 
+/**
+ * Converts a string into a valid camelCase TypeScript identifier.
+ *
+ * @param name - Raw input name.
+ * @returns Valid camelCase identifier.
+ */
 function toTsIdentifier(name: string): string {
 	return camelCase(name.replace(/[^\w]/g, " "));
 }
@@ -15,6 +26,13 @@ function toTsIdentifier(name: string): string {
  * Subclasses implement the actual code generation logic (Angular, React, etc).
  */
 export abstract class AbstractServiceGenerator {
+	/**
+	 * Creates a new `AbstractServiceGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The `ts-morph` project.
+	 * @param config - Generator configuration options.
+	 */
 	constructor(
 		protected parser: SwaggerParser,
 
@@ -25,6 +43,9 @@ export abstract class AbstractServiceGenerator {
 
 	/**
 	 * Main entry point. Loops through grouped paths and creates service files.
+	 *
+	 * @param outputDir - Target directory for generated service files.
+	 * @param groups - Operations grouped by controller name.
 	 */
 	public generate(outputDir: string, groups: Record<string, PathInfo[]>): void {
 		for (const [controllerName, operations] of Object.entries(groups)) {
@@ -34,6 +55,10 @@ export abstract class AbstractServiceGenerator {
 
 	/**
 	 * Generates a single service file/hook/class.
+	 *
+	 * @param controllerName - Name of the controller group.
+	 * @param operations - Operations belonging to the controller.
+	 * @param outputDir - Target directory for the generated file.
 	 */
 	protected generateServiceFile(
 		controllerName: string,
@@ -102,16 +127,32 @@ export abstract class AbstractServiceGenerator {
 		sourceFile.formatText();
 	}
 
-	/** Returns the filename (e.g. users.service.ts or useUsers.ts) */
+	/**
+	 * Returns the filename (e.g. `users.service.ts` or `useUsers.ts`).
+	 *
+	 * @param controllerName - Clean camelCase controller name.
+	 * @returns Relative file path for the generated service file.
+	 */
 	protected abstract getFileName(controllerName: string): string;
 
-	/** Implementation specific imports */
+	/**
+	 * Emits implementation-specific import declarations into the service source file.
+	 *
+	 * @param sourceFile - Target `SourceFile`.
+	 * @param operations - Operations belonging to the controller.
+	 */
 	protected abstract generateImports(
 		sourceFile: SourceFile,
 		operations: PathInfo[],
 	): void;
 
-	/** Implementation specific content (Class vs Function, Methods) */
+	/**
+	 * Emits implementation-specific class, function, or hook declarations into the service source file.
+	 *
+	 * @param sourceFile - Target `SourceFile`.
+	 * @param controllerName - Clean camelCase controller name.
+	 * @param operations - Operations belonging to the controller.
+	 */
 	protected abstract generateServiceContent(
 		sourceFile: SourceFile,
 		controllerName: string,

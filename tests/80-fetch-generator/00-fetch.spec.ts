@@ -3,15 +3,15 @@ import * as path from "node:path";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { generateFromConfigSync } from "@src/index.js";
 import { Project } from "ts-morph";
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 
 describe("Fetch Implementation", () => {
 	describe("Config Validation", () => {
 		it("should execute fetch client generator and attempt admin UI and MCP generation when requested", async () => {
+			const outDir = path.join(os.tmpdir(), "test-fetch-mcp-admin");
 			const config: GeneratorConfig = {
 				input: "dummy",
-				output: "dummy",
+				output: outDir,
 				options: {
 					implementation: "fetch",
 					admin: true,
@@ -19,15 +19,18 @@ describe("Fetch Implementation", () => {
 				},
 			};
 
-			expect(() =>
-				generateFromConfigSync(config, new Project(), {
-					spec: {
-						openapi: "3.0.0",
-						info: { title: "Test API", version: "1.0" },
-						paths: {},
-					},
-				}),
-			).not.toThrow();
+			const project = new Project({ useInMemoryFileSystem: true });
+			generateFromConfigSync(config, project, {
+				spec: {
+					openapi: "3.0.0",
+					info: { title: "Test API", version: "1.0" },
+					paths: {},
+				},
+			});
+			expect(project.getSourceFile(path.join(outDir, "mcp.ts"))).toBeDefined();
+			expect(
+				project.getSourceFile(path.join(outDir, "mcp-adapter.ts")),
+			).toBeDefined();
 		});
 
 		it("should execute FetchClientGenerator successfully when admin is false", async () => {
@@ -338,21 +341,21 @@ describe("Fetch Implementation", () => {
 					?.getMethod("getBlob")
 					?.getStatements()
 					.map((s) => s.getText())
-					.join("\\n"),
+					.join(String.fromCharCode(10)),
 			).toContain("response.blob()");
 			expect(
 				serviceClass
 					?.getMethod("getBuffer")
 					?.getStatements()
 					.map((s) => s.getText())
-					.join("\\n"),
+					.join(String.fromCharCode(10)),
 			).toContain("response.blob()"); // Octet/PDF translates to Blob by default parser mapping unless overriden, but wait, the parser logic dictates arraybuffer/blob.
 			expect(
 				serviceClass
 					?.getMethod("getText")
 					?.getStatements()
 					.map((s) => s.getText())
-					.join("\\n"),
+					.join(String.fromCharCode(10)),
 			).toContain("response.text()");
 		});
 

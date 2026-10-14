@@ -1,3 +1,8 @@
+/**
+ * Reverse-parses generated Commander CLI TypeScript source files back into partial OpenAPI specifications.
+ *
+ * @module vendors/cli/parse
+ */
 import { type CallExpression, Project, SyntaxKind } from "ts-morph";
 import type {
 	Parameter,
@@ -6,6 +11,13 @@ import type {
 	SwaggerSpec,
 } from "../../core/types/index.js";
 
+/**
+ * Parses a generated Commander CLI TypeScript source string into a partial `SwaggerSpec`.
+ *
+ * @param sourceText - TypeScript source code of `cli.ts`.
+ * @param filePath - Virtual file path used when creating the `ts-morph` source file.
+ * @returns Reconstructed partial `SwaggerSpec` containing info, servers, and paths.
+ */
 export function parseGeneratedCliSource(
 	sourceText: string,
 	filePath = "cli.ts",
@@ -141,6 +153,29 @@ export function parseGeneratedCliSource(
 							responses: { "200": { description: "Success" } },
 						};
 
+						let httpMethod:
+							| "get"
+							| "post"
+							| "put"
+							| "delete"
+							| "patch"
+							| "head"
+							| "options" = "post";
+						const lowerMethod = methodName.toLowerCase();
+						if (
+							lowerMethod.startsWith("delete") ||
+							lowerMethod.startsWith("remove")
+						) {
+							httpMethod = "delete";
+						} else if (
+							lowerMethod.startsWith("put") ||
+							lowerMethod.startsWith("update")
+						) {
+							httpMethod = "put";
+						} else if (lowerMethod.startsWith("patch")) {
+							httpMethod = "patch";
+						}
+
 						let parent = call.getParent();
 						while (
 							parent &&
@@ -185,7 +220,10 @@ export function parseGeneratedCliSource(
 							parent = pCall.getParent();
 						}
 
-						(spec.paths?.[pathKey] as PathItem).post = op;
+						(spec.paths?.[pathKey] as PathItem)[httpMethod] = op;
+						if (httpMethod !== "post") {
+							(spec.paths?.[pathKey] as PathItem).post = op;
+						}
 					}
 				}
 			}

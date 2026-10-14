@@ -1,7 +1,12 @@
+/**
+ * Module for form component generator in vendors/react/admin/form-component.generator.
+ *
+ * @module vendors/react/admin/form-component.generator
+ */
 import * as path from "node:path";
-import type { Resource } from "@src/core/types/index.js";
-import { pascalCase } from "@src/functions/utils.js";
 import type { Project, SourceFile } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import { pascalCase } from "../../../functions/utils.js";
 import { FormRenderer } from "./form.renderer.js";
 import { ReactElementBuilder } from "./html-element.builder.js";
 

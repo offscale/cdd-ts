@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { DiscriminatorGenerator } from "@src/classes/emit_discriminator.js";
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
@@ -7,7 +5,7 @@ import type { Project } from "ts-morph";
 import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
 
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 
 const oas3Spec: SwaggerSpec = {
 	openapi: "3.0.0",
@@ -50,7 +48,7 @@ const oas3Spec: SwaggerSpec = {
 	},
 };
 
-const swagger2Spec: SwaggerSpec = {
+const swagger2Spec: SwaggerSpec = testCast({
 	swagger: "2.0",
 	info: { title: "Legacy Test", version: "1.0" },
 	paths: {},
@@ -66,18 +64,12 @@ const swagger2Spec: SwaggerSpec = {
 			allOf: [{ $ref: "#/definitions/Animal" }],
 		},
 	},
-} as string | number | boolean | object | undefined | null;
+});
 
 describe("Emitter: DiscriminatorGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = { output: "/out", options: {} } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
+		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
 		const parser = new SwaggerParser(spec, config);
 
 		if (spec.components?.schemas) {
@@ -104,10 +96,10 @@ describe("Emitter: DiscriminatorGenerator", () => {
 		});
 
 		const moduleHelper = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		new Function("exports", jsCode)(moduleHelper.exports);
+		testCast(new Function("exports", jsCode)(moduleHelper.exports));
 
 		return moduleHelper.exports;
 	};
@@ -190,21 +182,18 @@ describe("Emitter: DiscriminatorGenerator", () => {
 		};
 
 		const project = createTestProject();
-		const config: GeneratorConfig = { output: "/out", options: {} } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
+		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
 		const parser = new SwaggerParser(uriSpec, config);
 
 		const externalDef = uriSpec.components?.schemas?.ExternalModel;
 		const contextDef = uriSpec.components?.schemas?.Context;
 
-		parser.schemas.push({ name: "ExternalModel", definition: externalDef });
+		parser.schemas.push({
+			name: testCast("ExternalModel"),
+			definition: testCast(externalDef),
+		});
 
-		parser.schemas.push({ name: "Context", definition: contextDef });
+		parser.schemas.push({ name: "Context", definition: testCast(contextDef) });
 
 		vi.spyOn(parser, "resolveReference").mockImplementation((ref) => {
 			if (ref === "https://schemas.example.com/models/ExternalModel")
@@ -226,7 +215,7 @@ describe("Emitter: DiscriminatorGenerator", () => {
 			paths: {},
 			components: {
 				schemas: {
-					BooleanDef: true as any,
+					BooleanDef: testCast(true),
 					NormalDef: {
 						discriminator: {
 							propertyName: "type",
@@ -270,7 +259,7 @@ describe("Emitter: DiscriminatorGenerator", () => {
 	});
 
 	it("should return empty string if candidate is empty", () => {
-		const fallbackSpec: SwaggerSpec = {
+		const fallbackSpec: SwaggerSpec = testCast({
 			openapi: "3.2.0",
 			info: { title: "Fallback", version: "1" },
 			paths: {},
@@ -290,7 +279,7 @@ describe("Emitter: DiscriminatorGenerator", () => {
 					},
 				},
 			},
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		const project = runGenerator(fallbackSpec);
 		const { API_DISCRIMINATORS } = compileGeneratedFile(project);
@@ -298,7 +287,7 @@ describe("Emitter: DiscriminatorGenerator", () => {
 	});
 
 	it("should use pascalCase fallback for unresolvable references", () => {
-		const fallbackSpec: SwaggerSpec = {
+		const fallbackSpec: SwaggerSpec = testCast({
 			openapi: "3.2.0",
 			info: { title: "Fallback", version: "1" },
 			paths: {},
@@ -318,7 +307,7 @@ describe("Emitter: DiscriminatorGenerator", () => {
 					},
 				},
 			},
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		const project = runGenerator(fallbackSpec);
 
@@ -328,7 +317,7 @@ describe("Emitter: DiscriminatorGenerator", () => {
 	});
 
 	it("should skip mapping entries when resolved name is empty", () => {
-		const spec: SwaggerSpec = {
+		const spec: SwaggerSpec = testCast({
 			openapi: "3.0.0",
 			info: { title: "Empty Mapping", version: "1" },
 			paths: {},
@@ -351,7 +340,7 @@ describe("Emitter: DiscriminatorGenerator", () => {
 					},
 				},
 			},
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		const project = runGenerator(spec);
 
@@ -361,7 +350,7 @@ describe("Emitter: DiscriminatorGenerator", () => {
 	});
 
 	it("should throw for discriminators without a propertyName", () => {
-		const spec: SwaggerSpec = {
+		const spec: SwaggerSpec = testCast({
 			openapi: "3.0.0",
 			info: { title: "No Property", version: "1" },
 			paths: {},
@@ -372,12 +361,12 @@ describe("Emitter: DiscriminatorGenerator", () => {
 					},
 				},
 			},
-		} as string | number | boolean | object | undefined | null;
+		});
 		expect(() => runGenerator(spec)).toThrow(/propertyName/i);
 	});
 
 	it("should fall back when resolved schema is not in parser.schemas", () => {
-		const spec: SwaggerSpec = {
+		const spec: SwaggerSpec = testCast({
 			openapi: "3.0.0",
 			info: { title: "Fallback", version: "1" },
 			paths: {},
@@ -397,25 +386,15 @@ describe("Emitter: DiscriminatorGenerator", () => {
 					},
 				},
 			},
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		const project = createTestProject();
-		const config: GeneratorConfig = { output: "/out", options: {} } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
+		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
 		const parser = new SwaggerParser(spec, config);
 
-		vi.spyOn(parser, "resolveReference").mockReturnValue({ type: "object" } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null);
+		vi.spyOn(parser, "resolveReference").mockReturnValue(
+			testCast({ type: "object" }),
+		);
 
 		new DiscriminatorGenerator(parser, project).generate("/out");
 

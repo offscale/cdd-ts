@@ -1,182 +1,43 @@
-import * as path from "node:path";
-import type {
-	GeneratorConfig,
-	PathInfo,
-	SwaggerDefinition,
-} from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import type { Project } from "ts-morph";
-import { MockDataGenerator } from "../../angular/test/mock-data.generator.js";
+/**
+ * Generates unit test files for Fetch-based API client services.
+ *
+ * @module vendors/fetch/test/service-test.generator
+ */
+import type { PathInfo } from "../../../core/types/index.js";
+import { PromiseServiceTestGenerator } from "../../../tests/emit_service_test.js";
 
-export class FetchServiceTestGenerator {
-	private mockDataGenerator: MockDataGenerator;
-
-	constructor(
-		private readonly parser: SwaggerParser,
-		private readonly project: Project,
-		private readonly config: GeneratorConfig,
-	) {
-		// Prevent unused warnings
-		this.parser;
-		this.config;
-		this.mockDataGenerator = new MockDataGenerator(parser);
+/**
+ * Generates unit tests for Fetch API services.
+ */
+export class FetchServiceTestGenerator extends PromiseServiceTestGenerator {
+	/**
+	 * Emits `globalThis.fetch` mock setup for each test case.
+	 *
+	 * @param _op - The operation being tested.
+	 * @param _serviceName - The generated service class name.
+	 * @returns Array of setup statements.
+	 */
+	protected override getTransportMockSetupLines(
+		_op: PathInfo,
+		_serviceName: string,
+	): string[] {
+		return [
+			`const mockResponse = {};`,
+			`const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200, headers: { 'Content-Type': 'application/json' } }));`,
+		];
 	}
 
-	public generateServiceTestFile(
-		controllerName: string,
-		operations: PathInfo[],
-		servicesDir: string,
-	): void {
-		const fw = (this.config.options.framework || "").toLowerCase();
-		const isVanilla =
-			fw === "vanilla js" || fw === "vanilla" || fw === "vanillajs";
-
-		const serviceName = isVanilla
-			? `${pascalCase(controllerName)}Client`
-			: `${pascalCase(controllerName)}Service`;
-		const fileName = isVanilla
-			? `${camelCase(controllerName)}.client.spec.ts`
-			: `${camelCase(controllerName)}.service.spec.ts`;
-		const importPath = isVanilla
-			? `./${camelCase(controllerName)}.client.js`
-			: `./${camelCase(controllerName)}.service.js`;
-		const filePath = path.join(servicesDir, fileName);
-
-		const sourceFile = this.project.createSourceFile(filePath, "", {
-			overwrite: true,
-		});
-		const isComposable =
-			this.config.options?.composableTests === true ||
-			this.config.options?.tests === true;
-
-		sourceFile.addImportDeclarations([
-			{
-				moduleSpecifier: "vitest",
-				namedImports: [
-					"describe",
-					"it",
-					"expect",
-					"vi",
-					"beforeEach",
-					"afterEach",
-				],
-			},
-			{
-				moduleSpecifier: importPath,
-				namedImports: [serviceName],
-			},
-		]);
-
-		const testLines: string[] = [];
-
-		/* v8 ignore next 2 */
-		if (isComposable) {
-			testLines.push(
-				`export const test${serviceName} = () => describe('${serviceName}', () => {`,
-			);
-		} else {
-			testLines.push(`describe('${serviceName}', () => {`);
-		}
-
-		testLines.push(`    let service: ${serviceName};`);
-		testLines.push(``);
-		testLines.push(`    beforeEach(() => {`);
-		testLines.push(
-			`        service = new ${serviceName}('http://localhost:8080/v2');`,
-		);
-		testLines.push(`    });`);
-		testLines.push(``);
-		testLines.push(`    afterEach(() => {`);
-		testLines.push(`        vi.restoreAllMocks();`);
-		testLines.push(`    });`);
-		testLines.push(``);
-
-		for (const op of operations) {
-			const methodName =
-				op.methodName ||
-				camelCase(
-					op.operationId ||
-						`${op.method}_${op.path.replace(/[^a-zA-Z0-9]/g, "_")}`,
-				);
-			testLines.push(`    describe('${methodName}', () => {`);
-			testLines.push(
-				`        it('should make a ${op.method.toUpperCase()} request to ${op.path}', async () => {`,
-			);
-
-			// Build simple params
-			const params: string[] = [];
-
-			if (op.parameters && op.parameters.length > 0) {
-				const requiredParams = op.parameters.filter(
-					(p) => !("in" in p) || p.required,
-				);
-				for (const p of requiredParams) {
-					let val = this.mockDataGenerator.generate(
-						((p.schema as SwaggerDefinition)?.name as string) || p.name,
-					);
-					/* v8 ignore next 7 */
-					if (
-						typeof val === "string" &&
-						!val.startsWith("'") &&
-						!val.startsWith('"') &&
-						!val.startsWith("{") &&
-						!val.startsWith("[")
-					) {
-						val = `'${val}'`;
-					}
-					params.push(String(val));
-				}
-			}
-			/* v8 ignore next 25 */
-			if (op.requestBody) {
-				if (op.requestBody.content) {
-					const contentTypes = Object.keys(op.requestBody.content);
-					/* v8 ignore next 14 */
-					if (contentTypes.length > 0) {
-						const schema = op.requestBody.content[contentTypes[0]].schema;
-						let val = this.mockDataGenerator.generate(
-							((schema as SwaggerDefinition)?.name as string) || "Unknown",
-						);
-						/* v8 ignore next 7 */
-						if (
-							typeof val === "string" &&
-							!val.startsWith("'") &&
-							!val.startsWith('"') &&
-							!val.startsWith("{") &&
-							!val.startsWith("[")
-						) {
-							val = `'${val}'`;
-						}
-						params.push(String(val));
-					} else {
-						params.push(`{}`);
-					}
-				} else {
-					/* v8 ignore next 2 */
-					params.push(`{}`);
-				}
-			}
-			const paramString = params.join(", ");
-
-			testLines.push(
-				`            const result = await service.${methodName}(${paramString});`,
-			);
-			testLines.push(`            expect(result).toBeDefined();`);
-			testLines.push(`        });`);
-			testLines.push(`    });`);
-			testLines.push(``);
-		}
-
-		testLines.push(`});`);
-
-		/* v8 ignore next 4 */
-		if (isComposable) {
-			testLines.push("");
-			testLines.push(`test${serviceName}();`);
-		}
-
-		sourceFile.addStatements(testLines.join("\n"));
-		sourceFile.formatText();
+	/**
+	 * Emits assertions verifying `globalThis.fetch` arguments and the parsed response value.
+	 *
+	 * @param op - The operation being tested.
+	 * @returns Array of assertion statements.
+	 */
+	protected override getTransportMockAssertionLines(op: PathInfo): string[] {
+		const pathPrefix = op.path.split("{")[0];
+		return [
+			`expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('${pathPrefix}'), expect.objectContaining({ method: '${op.method.toUpperCase()}' }));`,
+			`expect(result).toEqual(mockResponse);`,
+		];
 	}
 }

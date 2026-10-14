@@ -1,3 +1,8 @@
+/**
+ * Module for emit in vendors/typeorm/emit.
+ *
+ * @module vendors/typeorm/emit
+ */
 import path from "node:path";
 import type { Project } from "ts-morph";
 import type { IOrmGenerator } from "../../core/orm/index.js";

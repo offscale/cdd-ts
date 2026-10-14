@@ -1,5 +1,16 @@
+/**
+ * Module for service method generator in vendors/angular/service/service-method.generator.
+ *
+ * @module vendors/angular/service/service-method.generator
+ */
 // src/generators/angular/service/service-method.generator.ts
 
+import type {
+	ClassDeclaration,
+	MethodDeclarationOverloadStructure,
+	OptionalKind,
+	ParameterDeclarationStructure,
+} from "ts-morph";
 import type {
 	GeneratorConfig,
 	MediaTypeObject,
@@ -10,37 +21,48 @@ import type {
 	RequestBody,
 	SwaggerDefinition,
 	SwaggerResponse,
-} from "@src/core/types/index.js";
-import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
+} from "../../../core/types/index.js";
+import { ServiceMethodAnalyzer } from "../../../functions/parse_analyzer.js";
 import type {
 	ParamSerialization,
 	ResponseVariant,
 	ServiceMethodModel,
-} from "@src/functions/types.js";
+} from "../../../functions/types.js";
 import {
 	camelCase,
 	pascalCase,
 	sanitizeComment,
-} from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import type {
-	ClassDeclaration,
-	MethodDeclarationOverloadStructure,
-	OptionalKind,
-	ParameterDeclarationStructure,
-} from "ts-morph";
+} from "../../../functions/utils.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
+/**
+ * Emits Angular `HttpClient` service methods onto a generated service class.
+ */
 export class ServiceMethodGenerator {
-	private analyzer: ServiceMethodAnalyzer;
+	/** Property `analyzer`. */
+	public analyzer: ServiceMethodAnalyzer;
 
+	/**
+	 * Creates a new `ServiceMethodGenerator`.
+	 *
+	 * @param config - Active generator configuration.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 */
 	constructor(
 		private readonly config: GeneratorConfig,
 
+		/** Parsed OpenAPI specification instance. */
 		readonly parser: SwaggerParser,
 	) {
 		this.analyzer = new ServiceMethodAnalyzer(config, parser);
 	}
 
+	/**
+	 * Analyzes an OpenAPI operation and appends the corresponding Angular `HttpClient` method to `classDeclaration`.
+	 *
+	 * @param classDeclaration - Target service class declaration.
+	 * @param operation - Operation path info to emit.
+	 */
 	public addServiceMethod(
 		classDeclaration: ClassDeclaration,
 		operation: PathInfo,
@@ -287,17 +309,7 @@ export class ServiceMethodGenerator {
 
 			const example = this.extractParameterExample(param);
 
-			const serialized = this.serializeExampleValue(
-				example as
-					| Record<
-							string,
-							string | number | boolean | object | undefined | null
-					  >
-					| string
-					| number
-					| boolean
-					| null,
-			);
+			const serialized = this.serializeExampleValue(example);
 
 			if (serialized !== undefined) {
 				tags.push(`@paramExample ${paramName} ${serialized}`);
@@ -336,17 +348,7 @@ export class ServiceMethodGenerator {
 				Object.entries(resolved.content).forEach(([mediaType, mediaObj]) => {
 					const example = this.extractMediaTypeExample(mediaObj, mediaType);
 
-					const serialized = this.serializeExampleValue(
-						example as
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| string
-							| number
-							| boolean
-							| null,
-					);
+					const serialized = this.serializeExampleValue(example);
 
 					if (serialized !== undefined) {
 						tags.push(`@responseExample ${code} ${mediaType} ${serialized}`);
@@ -358,14 +360,7 @@ export class ServiceMethodGenerator {
 		return tags;
 	}
 
-	private serializeExampleValue(
-		value:
-			| Record<string, string | number | boolean | object | undefined | null>
-			| string
-			| number
-			| boolean
-			| null,
-	): string | undefined {
+	private serializeExampleValue(value: OpenApiValue): string | undefined {
 		if (value === undefined) return undefined;
 
 		try {
@@ -380,34 +375,19 @@ export class ServiceMethodGenerator {
 		preferSerialized = false,
 	): {
 		found: boolean;
-		value:
-			| Record<string, string | number | boolean | object | undefined | null>
-			| string
-			| number
-			| boolean
-			| null;
+		value: OpenApiValue;
 		kind?: "data" | "value" | "serialized" | "external";
 	} {
 		if (!exampleObj || typeof exampleObj !== "object")
 			return { found: false, value: null };
 
+		const rec = exampleObj as Record<string, OpenApiValue>;
+
 		if (preferSerialized) {
 			if (Object.hasOwn(exampleObj, "serializedValue")) {
 				return {
 					found: true,
-					value: (
-						exampleObj as Record<
-							string,
-							| string
-							| number
-							| boolean
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| null
-						>
-					).serializedValue,
+					value: rec.serializedValue,
 					kind: "serialized",
 				};
 			}
@@ -415,19 +395,7 @@ export class ServiceMethodGenerator {
 			if (Object.hasOwn(exampleObj, "externalValue")) {
 				return {
 					found: true,
-					value: (
-						exampleObj as Record<
-							string,
-							| string
-							| number
-							| boolean
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| null
-						>
-					).externalValue,
+					value: rec.externalValue,
 					kind: "external",
 				};
 			}
@@ -435,19 +403,7 @@ export class ServiceMethodGenerator {
 			if (Object.hasOwn(exampleObj, "dataValue")) {
 				return {
 					found: true,
-					value: (
-						exampleObj as Record<
-							string,
-							| string
-							| number
-							| boolean
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| null
-						>
-					).dataValue,
+					value: rec.dataValue,
 					kind: "data",
 				};
 			}
@@ -455,19 +411,7 @@ export class ServiceMethodGenerator {
 			if (Object.hasOwn(exampleObj, "value")) {
 				return {
 					found: true,
-					value: (
-						exampleObj as Record<
-							string,
-							| string
-							| number
-							| boolean
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| null
-						>
-					).value,
+					value: rec.value,
 					kind: "value",
 				};
 			}
@@ -475,19 +419,7 @@ export class ServiceMethodGenerator {
 			if (Object.hasOwn(exampleObj, "dataValue")) {
 				return {
 					found: true,
-					value: (
-						exampleObj as Record<
-							string,
-							| string
-							| number
-							| boolean
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| null
-						>
-					).dataValue,
+					value: rec.dataValue,
 					kind: "data",
 				};
 			}
@@ -495,19 +427,7 @@ export class ServiceMethodGenerator {
 			if (Object.hasOwn(exampleObj, "value")) {
 				return {
 					found: true,
-					value: (
-						exampleObj as Record<
-							string,
-							| string
-							| number
-							| boolean
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| null
-						>
-					).value,
+					value: rec.value,
 					kind: "value",
 				};
 			}
@@ -515,19 +435,7 @@ export class ServiceMethodGenerator {
 			if (Object.hasOwn(exampleObj, "serializedValue")) {
 				return {
 					found: true,
-					value: (
-						exampleObj as Record<
-							string,
-							| string
-							| number
-							| boolean
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| null
-						>
-					).serializedValue,
+					value: rec.serializedValue,
 					kind: "serialized",
 				};
 			}
@@ -535,19 +443,7 @@ export class ServiceMethodGenerator {
 			if (Object.hasOwn(exampleObj, "externalValue")) {
 				return {
 					found: true,
-					value: (
-						exampleObj as Record<
-							string,
-							| string
-							| number
-							| boolean
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| null
-						>
-					).externalValue,
+					value: rec.externalValue,
 					kind: "external",
 				};
 			}
@@ -557,12 +453,7 @@ export class ServiceMethodGenerator {
 	}
 
 	private wrapExampleValue(picked: {
-		value:
-			| Record<string, string | number | boolean | object | undefined | null>
-			| string
-			| number
-			| boolean
-			| null;
+		value: OpenApiValue;
 		kind?: "data" | "value" | "serialized" | "external";
 	}): OpenApiValue {
 		if (picked.kind === "serialized") {
@@ -600,10 +491,7 @@ export class ServiceMethodGenerator {
 			!Array.isArray(param.schema) &&
 			!("$ref" in param.schema)
 		) {
-			const schema = param.schema as Record<
-				string,
-				string | number | boolean | object | undefined | null
-			>;
+			const schema = param.schema as Record<string, OpenApiValue>;
 
 			if (schema.dataValue !== undefined) return schema.dataValue;
 
@@ -669,21 +557,11 @@ export class ServiceMethodGenerator {
 
 	private extractRequestBodyExamples(requestBody: RequestBody): {
 		mediaType: string;
-		value:
-			| Record<string, string | number | boolean | object | undefined | null>
-			| string
-			| number
-			| boolean
-			| null;
+		value: OpenApiValue;
 	}[] {
 		const entries: {
 			mediaType: string;
-			value:
-				| Record<string, string | number | boolean | object | undefined | null>
-				| string
-				| number
-				| boolean
-				| null;
+			value: OpenApiValue;
 		}[] = [];
 
 		const content = requestBody.content ?? {};
@@ -694,15 +572,7 @@ export class ServiceMethodGenerator {
 			if (example !== undefined) {
 				entries.push({
 					mediaType,
-					value: example as
-						| Record<
-								string,
-								string | number | boolean | object | undefined | null
-						  >
-						| string
-						| number
-						| boolean
-						| null,
+					value: example,
 				});
 			}
 		});
@@ -793,45 +663,25 @@ export class ServiceMethodGenerator {
 
 	private getRawOperation(
 		operation: PathInfo,
-	):
-		| Record<string, string | number | boolean | object | undefined | null>
-		| undefined {
+	): Record<string, OpenApiValue> | undefined {
 		const pathItem = this.parser.spec.paths?.[operation.path];
 
 		if (!pathItem || typeof pathItem !== "object") return undefined;
 
 		const methodKey = operation.method.toLowerCase();
 
-		const direct = (
-			pathItem as Record<
-				string,
-				string | number | boolean | object | undefined | null
-			>
-		)[methodKey];
+		const direct = (pathItem as Record<string, OpenApiValue>)[methodKey];
 
-		if (direct)
-			return direct as Record<
-				string,
-				string | number | boolean | object | undefined | null
-			>;
+		if (direct) return direct as Record<string, OpenApiValue>;
 
-		const additional = (
-			pathItem as Record<
-				string,
-				string | number | boolean | object | undefined | null
-			>
-		).additionalOperations as
-			| Record<string, string | number | boolean | object | undefined | null>
-			| undefined;
+		const additional = (pathItem as Record<string, OpenApiValue>)
+			.additionalOperations as Record<string, OpenApiValue> | undefined;
 
 		if (!additional) return undefined;
 
 		for (const [key, value] of Object.entries(additional)) {
 			if (key.toLowerCase() === methodKey)
-				return value as Record<
-					string,
-					string | number | boolean | object | undefined | null
-				>;
+				return value as Record<string, OpenApiValue>;
 		}
 
 		return undefined;
@@ -995,7 +845,16 @@ export class ServiceMethodGenerator {
 		return uniqueByMedia.filter((v) => filteredMediaTypes.has(v.mediaType));
 	}
 
-	private emitMethodBody(
+	/**
+	 * Executes `emitMethodBody`.
+	 * @param model - Parameter `model`.
+	 * @param rawOp - Parameter `rawOp`.
+	 * @param isSSE - Parameter `isSSE`.
+	 * @param hasContentNegotiation - Parameter `hasContentNegotiation`.
+	 * @param negotiationVariants - Parameter `negotiationVariants`.
+	 * @returns Result of `emitMethodBody`.
+	 */
+	public emitMethodBody(
 		model: ServiceMethodModel,
 		rawOp: PathInfo,
 		isSSE: boolean,
@@ -1172,12 +1031,8 @@ export class ServiceMethodGenerator {
 					explode: p.explode,
 					allowReserved: p.allowReserved,
 					serialization: p.serializationLink,
-					allowEmptyValue: (
-						p as OpenApiValue as Record<
-							string,
-							string | number | boolean | object | undefined | null
-						>
-					).allowEmptyValue,
+					allowEmptyValue: (p as OpenApiValue as Record<string, OpenApiValue>)
+						.allowEmptyValue,
 					...(p.contentType ? { contentType: p.contentType } : {}),
 					...(p.encoding ? { encoding: p.encoding } : {}),
 					...(p.contentEncoderConfig
@@ -1895,7 +1750,19 @@ export class ServiceMethodGenerator {
 		return lines.join("\n");
 	}
 
-	private emitOverloads(
+	/**
+	 * Executes `emitOverloads`.
+	 * @param methodName - Parameter `methodName`.
+	 * @param responseType - Parameter `responseType`.
+	 * @param parameters - Parameter `parameters`.
+	 * @param isDeprecated - Parameter `isDeprecated`.
+	 * @param isSSE - Parameter `isSSE`.
+	 * @param variants - Parameter `variants`.
+	 * @param serverOptionType - Parameter `serverOptionType`.
+	 * @param negotiationVariants - Parameter `negotiationVariants`.
+	 * @returns Result of `emitOverloads`.
+	 */
+	public emitOverloads(
 		methodName: string,
 		responseType: string,
 		parameters: OptionalKind<ParameterDeclarationStructure>[],

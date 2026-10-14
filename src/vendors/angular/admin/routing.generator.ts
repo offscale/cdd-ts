@@ -1,7 +1,12 @@
+/**
+ * Module for routing generator in vendors/angular/admin/routing.generator.
+ *
+ * @module vendors/angular/admin/routing.generator
+ */
 import * as path from "node:path";
-import type { Resource } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import { camelCase, pascalCase } from "../../../functions/utils.js";
 
 /**
  * The Angular Admin UI Routing Generator.
@@ -143,6 +148,7 @@ export class RoutingGenerator {
 	}
 
 	/**
+	 * Creates a new `RoutingGenerator` instance.
 	 * @param project ts-morph Project used for emitting files.
 	 */
 

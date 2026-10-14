@@ -1,3 +1,8 @@
+/**
+ * Module for admin test generator in vendors/react/admin/admin-test.generator.
+ *
+ * @module vendors/react/admin/admin-test.generator
+ */
 import * as path from "node:path";
 import type { Project, SourceFile } from "ts-morph";
 

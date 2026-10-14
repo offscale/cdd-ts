@@ -1,4 +1,8 @@
-// src/core/utils/spec-extractor.ts
+/**
+ * Extracts normalized `PathInfo` operations from OpenAPI 3.x and Swagger 2.0 path maps.
+ *
+ * @module openapi/parse_spec_extractor
+ */
 import type {
 	BodyParameter,
 	Response,
@@ -37,6 +41,12 @@ type UnifiedParameter = SwaggerOfficialParameter & {
 	[key: string]: OpenApiValue;
 };
 
+/**
+ * Groups parsed `PathInfo` operations by their primary tag or first URL segment.
+ *
+ * @param parser - Object containing `operations` array.
+ * @returns Record mapping PascalCase controller names to their `PathInfo[]` operations.
+ */
 export function groupPathsByController(parser: {
 	operations: PathInfo[];
 }): Record<string, PathInfo[]> {
@@ -63,20 +73,26 @@ export function groupPathsByController(parser: {
 	return groups;
 }
 
+/**
+ * Extracts and normalizes all HTTP operations from an OpenAPI `paths` or `webhooks` object.
+ *
+ * @param swaggerPaths - Map of path templates to `PathItem` definitions.
+ * @param resolveRef - Optional function to resolve `$ref` strings.
+ * @param components - Optional `components` object containing `securitySchemes`.
+ * @param options - Extraction options (`isOpenApi3`, `defaultConsumes`, `defaultProduces`).
+ * @param resolveObj - Optional function to resolve `$ref` / `$dynamicRef` objects with context.
+ * @returns Array of normalized `PathInfo` operation objects.
+ */
 export function extractPaths(
 	swaggerPaths: { [p: string]: PathItem } | undefined,
-	resolveRef?: (
-		ref: string,
-	) => string | number | boolean | object | undefined | null,
+	resolveRef?: (ref: string) => OpenApiValue,
 	components?: { securitySchemes?: Record<string, OpenApiValue> } | undefined,
 	options?: {
 		isOpenApi3?: boolean;
 		defaultConsumes?: string[];
 		defaultProduces?: string[];
 	},
-	resolveObj?: (
-		obj: OpenApiValue,
-	) => string | number | boolean | object | undefined | null,
+	resolveObj?: (obj: OpenApiValue) => OpenApiValue,
 ): PathInfo[] {
 	if (!swaggerPaths) {
 		return [];

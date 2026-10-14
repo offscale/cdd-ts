@@ -1,95 +1,97 @@
-// @ts-nocheck
-
-import type { SwaggerDefinition, SwaggerSpec } from "@src/core/types/index.js";
+import { parseGeneratedModels } from "@src/classes/parse.js";
+import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
+import {
+	buildOpenApiSpecFromScan,
+	scanTypeScriptProject,
+} from "@src/functions/parse.js";
+import {
+	applyReverseMetadata,
+	parseGeneratedMetadata,
+} from "@src/openapi/emit.js";
+import { SwaggerParser } from "@src/openapi/parse.js";
+import {
+	isDynamicReferenceObject,
+	isOpenApiObject,
+	isParameterObject,
+	isReferenceObject,
+	isSwaggerDefinition,
+} from "@src/openapi/type_guards.js";
+import { AngularClientGenerator } from "@src/vendors/angular/angular-client.generator.js";
+import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 
-describe("Core: Types & Interfaces Coverage", () => {
-	it("should support SPDX identifier in LicenseObject", () => {
+describe("Core: Types, Type Guards & OpenAPI 3.1/3.2 Round-Trip Coverage", () => {
+	it("should validate runtime type guards (isOpenApiObject, isReferenceObject, isDynamicReferenceObject, isSwaggerDefinition, isParameterObject)", () => {
+		expect(isOpenApiObject({ a: 1 })).toBe(true);
+		expect(isOpenApiObject(null)).toBe(false);
+		expect(isOpenApiObject(undefined)).toBe(false);
+		expect(isOpenApiObject("str")).toBe(false);
+		expect(isOpenApiObject([1, 2])).toBe(false);
+
+		expect(isReferenceObject({ $ref: "#/components/schemas/User" })).toBe(true);
+		expect(isReferenceObject({ $ref: "" })).toBe(false);
+		expect(isReferenceObject({ type: "string" })).toBe(false);
+		expect(isReferenceObject(null)).toBe(false);
+
+		expect(isDynamicReferenceObject({ $dynamicRef: "#meta" })).toBe(true);
+		expect(isDynamicReferenceObject({ $dynamicRef: "" })).toBe(false);
+		expect(isDynamicReferenceObject({ $ref: "#/a" })).toBe(false);
+		expect(isDynamicReferenceObject(undefined)).toBe(false);
+
+		expect(isSwaggerDefinition({ type: "object" })).toBe(true);
+		expect(isSwaggerDefinition(true)).toBe(false);
+		expect(isSwaggerDefinition(null)).toBe(false);
+
+		expect(isParameterObject({ name: "id", in: "path" })).toBe(true);
+		expect(isParameterObject({ name: "q", in: "query" })).toBe(true);
+		expect(isParameterObject({ name: "raw", in: "querystring" })).toBe(true);
+		expect(isParameterObject({ name: "", in: "query" })).toBe(false);
+		expect(isParameterObject({ name: "id", in: "invalid" })).toBe(false);
+		expect(isParameterObject(null)).toBe(false);
+	});
+
+	it("should parse and round-trip OAS 3.1/3.2 SPDX license identifier, summary, webhooks, jsonSchemaDialect, and boolean schemas through SwaggerParser and emitOpenApiSpec", () => {
 		const spec: SwaggerSpec = {
 			openapi: "3.1.0",
+			jsonSchemaDialect: "https://spec.openapis.org/oas/3.1/dialect/base",
 			info: {
-				title: "Test API",
+				title: "SPDX & Dialect API",
+				summary: "Short summary of the API",
 				version: "1.0.0",
 				license: {
 					name: "Apache 2.0",
 					identifier: "Apache-2.0",
 				},
 			},
-			paths: {},
-		};
-
-		expect(spec.info.license?.identifier).toBe("Apache-2.0");
-	});
-
-	it("should support root Level tags and externalDocs (OAS 3.2)", () => {
-		const spec: SwaggerSpec = {
-			openapi: "3.2.0",
-			info: { title: "T", version: "1" },
-			externalDocs: { url: "http://doc" },
-			tags: [{ name: "Tag", summary: "Summarized Tag" }],
-			paths: {},
-		};
-
-		expect(spec.externalDocs?.url).toBe("http://doc");
-		expect(spec.tags?.[0].summary).toBe("Summarized Tag");
-	});
-
-	it("should support allowEmptyValue in Parameter", () => {
-		const param = {
-			name: "test",
-			in: "query",
-			allowEmptyValue: true,
-		};
-		expect(param.allowEmptyValue).toBe(true);
-	});
-
-	it("should support Example Objects on parameters (OAS 3.2)", () => {
-		const spec: SwaggerSpec = {
-			openapi: "3.2.0",
-			info: { title: "Param Examples", version: "1.0" },
-			paths: {
-				"/search": {
-					get: {
-						parameters: [
-							{
-								name: "q",
-								in: "query",
-								examples: {
-									example: { dataValue: "cats" },
+			webhooks: {
+				newPet: {
+					post: {
+						operationId: "onNewPet",
+						requestBody: {
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Pet" },
 								},
 							},
-						],
+						},
 						responses: {
-							"200": { description: "ok" },
+							"200": {
+								description: "Webhook processed",
+							},
 						},
 					},
 				},
 			},
-		};
-
-		const param = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/search"].get.parameters[0];
-
-		expect(param.examples.example.dataValue).toBe("cats");
-	});
-
-	it("should support Example Objects on headers (OAS 3.2)", () => {
-		const spec: SwaggerSpec = {
-			openapi: "3.2.0",
-			info: { title: "Header Examples", version: "1.0" },
 			paths: {
-				"/status": {
+				"/pets": {
 					get: {
+						operationId: "listPets",
 						responses: {
 							"200": {
 								description: "ok",
-								headers: {
-									"X-Rate-Limit": {
-										examples: {
-											example: { serializedValue: "100" },
-										},
-										schema: { type: "string" },
+								content: {
+									"application/json": {
+										schema: { $ref: "#/components/schemas/Pet" },
 									},
 								},
 							},
@@ -97,169 +99,78 @@ describe("Core: Types & Interfaces Coverage", () => {
 					},
 				},
 			},
-		};
-
-		const header = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/status"].get.responses["200"].headers["X-Rate-Limit"];
-
-		expect(header.examples.example.serializedValue).toBe("100");
-	});
-
-	it("should support numeric exclusiveMinimum/exclusiveMaximum (OAS 3.1/JSON Schema 2020-12)", () => {
-		const schema: SwaggerDefinition = {
-			type: "number",
-			exclusiveMinimum: 10,
-			exclusiveMaximum: 20,
-		};
-		expect(schema.exclusiveMinimum).toBe(10);
-		expect(schema.exclusiveMaximum).toBe(20);
-	});
-
-	it("should support boolean exclusiveMinimum/exclusiveMaximum (OAS 3.0)", () => {
-		const schema: SwaggerDefinition = {
-			type: "number",
-			minimum: 10,
-			exclusiveMinimum: true,
-			maximum: 20,
-			exclusiveMaximum: true,
-		};
-		expect(schema.exclusiveMinimum).toBe(true);
-		expect(schema.exclusiveMaximum).toBe(true);
-	});
-
-	it("should support JSON Schema meta keywords on Schema Object (OAS 3.1+)", () => {
-		const schema: SwaggerDefinition = {
-			$id: "https://example.com/schemas/User",
-			$schema: "https://spec.openapis.org/oas/3.1/dialect/base",
-			$anchor: "UserAnchor",
-			unevaluatedItems: false,
-		};
-
-		expect(schema.$id).toBe("https://example.com/schemas/User");
-		expect(schema.$schema).toBe(
-			"https://spec.openapis.org/oas/3.1/dialect/base",
-		);
-		expect(schema.$anchor).toBe("UserAnchor");
-		expect(schema.unevaluatedItems).toBe(false);
-	});
-
-	it("should support webhooks in components (OAS 3.1+)", () => {
-		const spec: SwaggerSpec = {
-			openapi: "3.1.0",
-			info: { title: "Webhooks Components", version: "1.0" },
-			paths: {},
-			components: {
-				webhooks: {
-					myWebhook: {
-						post: {
-							responses: { "200": { description: "ok" } },
-						},
-					},
-				},
-			},
-		};
-		expect(spec.components?.webhooks?.myWebhook).toBeDefined();
-	});
-
-	it("should support responses, requestBodies, examples, and mediaTypes in components (OAS 3.2)", () => {
-		const spec: SwaggerSpec = {
-			openapi: "3.2.0",
-			info: { title: "Components Extras", version: "1.0" },
-			paths: {},
-			components: {
-				responses: {
-					Ok: { description: "ok" },
-				},
-				requestBodies: {
-					Payload: {
-						content: {
-							"application/json": { schema: { type: "string" } },
-						},
-					},
-				},
-				examples: {
-					ExampleOne: { dataValue: { foo: "bar" } },
-				},
-				mediaTypes: {
-					JsonPayload: { schema: { type: "string" } },
-				},
-			},
-		};
-
-		expect(spec.components?.responses?.Ok).toBeDefined();
-		expect(spec.components?.requestBodies?.Payload).toBeDefined();
-		expect(spec.components?.examples?.ExampleOne).toBeDefined();
-		expect(spec.components?.mediaTypes?.JsonPayload).toBeDefined();
-	});
-
-	it("should support Reference Object summary/description overrides in components (OAS 3.2)", () => {
-		const spec: SwaggerSpec = {
-			openapi: "3.2.0",
-			info: { title: "Ref Overrides", version: "1.0" },
-			paths: {},
-			components: {
-				responses: {
-					Ok: {
-						$ref: "#/components/responses/BaseOk",
-						summary: "Short summary",
-						description: "Override description",
-					},
-				},
-				securitySchemes: {
-					OAuth: {
-						$ref: "#/components/securitySchemes/OAuthBase",
-						summary: "Auth summary",
-						description: "Auth description",
-					},
-				},
-			},
-		};
-
-		expect(spec.components?.responses?.Ok).toBeDefined();
-		expect(spec.components?.securitySchemes?.OAuth).toBeDefined();
-	});
-
-	it("should support oauth2MetadataUrl in security schemes (OAS 3.2)", () => {
-		const spec: SwaggerSpec = {
-			openapi: "3.2.0",
-			info: { title: "Security Metadata", version: "1.0" },
-			paths: {},
-			components: {
-				securitySchemes: {
-					OAuth: {
-						type: "oauth2",
-						oauth2MetadataUrl:
-							"https://example.com/.well-known/oauth-authorization-server",
-						flows: {
-							clientCredentials: {
-								tokenUrl: "https://example.com/token",
-								scopes: {},
-							},
-						},
-					},
-				},
-			},
-		};
-		expect(spec.components?.securitySchemes?.OAuth.oauth2MetadataUrl).toContain(
-			".well-known",
-		);
-	});
-
-	it("should allow boolean schemas in components (JSON Schema 2020-12)", () => {
-		const spec: SwaggerSpec = {
-			openapi: "3.2.0",
-			info: { title: "Boolean Schemas", version: "1.0" },
-			paths: {},
 			components: {
 				schemas: {
+					Pet: {
+						type: ["object", "null"],
+						$schema: "https://json-schema.org/draft/2020-12/schema",
+						const: "dog",
+						examples: ["dog", "cat"],
+						exclusiveMinimum: 0,
+						exclusiveMaximum: 100,
+						contentEncoding: "base64",
+						contentMediaType: "image/png",
+						properties: {
+							name: { type: "string" },
+						},
+					},
 					AllowAny: true,
 					AllowNone: false,
 				},
 			},
 		};
 
-		expect(spec.components?.schemas?.AllowAny).toBe(true);
-		expect(spec.components?.schemas?.AllowNone).toBe(false);
+		const config: GeneratorConfig = {
+			input: "memory://spec.json",
+			output: "/out",
+			options: { framework: "angular" },
+		};
+
+		const parser = new SwaggerParser(spec, config);
+		expect(parser.spec.info.summary).toBe("Short summary of the API");
+		expect(parser.spec.info.license?.identifier).toBe("Apache-2.0");
+		expect(parser.webhooks).toHaveLength(1);
+		expect(parser.webhooks[0]?.operationId).toBe("onNewPet");
+		expect(parser.getJsonSchemaDialect()).toBe(
+			"https://spec.openapis.org/oas/3.1/dialect/base",
+		);
+
+		const project = new Project({ useInMemoryFileSystem: true });
+		const generator = new AngularClientGenerator();
+		generator.generate(project, parser, config, "/out");
+		project.saveSync();
+
+		const fsHost = project.getFileSystem();
+		const fsAdapter = {
+			statSync: (p: string) => ({
+				isFile: () => fsHost.fileExistsSync(p),
+				isDirectory: () => fsHost.directoryExistsSync(p),
+			}),
+			existsSync: (p: string) =>
+				fsHost.fileExistsSync(p) || fsHost.directoryExistsSync(p),
+			readFileSync: (p: string) => fsHost.readFileSync(p),
+			readdirSync: (p: string) =>
+				fsHost
+					.readDirSync(p)
+					.map((entry) => entry.name.replace(/\/$/, "").split("/").pop() ?? ""),
+		};
+
+		const models = parseGeneratedModels("/out", fsAdapter);
+		expect(models.AllowAny).toBe(true);
+		expect(models.AllowNone).toBe(false);
+
+		const scan = scanTypeScriptProject("/out", fsAdapter);
+		const baseSpec = buildOpenApiSpecFromScan(scan);
+		const metadata = parseGeneratedMetadata("/out", fsAdapter);
+		const roundTripped = applyReverseMetadata(baseSpec, metadata);
+
+		expect(roundTripped.info.summary).toBe("Short summary of the API");
+		expect(roundTripped.info.license?.identifier).toBe("Apache-2.0");
+		expect(roundTripped.jsonSchemaDialect).toBe(
+			"https://spec.openapis.org/oas/3.1/dialect/base",
+		);
+		expect(roundTripped.webhooks?.newPet).toBeDefined();
+		expect(roundTripped.components?.schemas?.AllowAny).toBe(true);
+		expect(roundTripped.components?.schemas?.AllowNone).toBe(false);
 	});
 });

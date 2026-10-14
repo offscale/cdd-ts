@@ -1,18 +1,15 @@
-// @ts-nocheck
 // tests/analysis/01-form-model-builder.spec.ts
 
 import type { GeneratorConfig, Resource } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { FormModelBuilder } from "@src/vendors/angular/admin/analysis/form-model.builder.js";
 import { describe, expect, it, vi } from "vitest";
+import { type TestValue, testCast } from "../shared/helpers.js";
 
 describe("Analysis: FormModelBuilder", () => {
-	const setup = (
-		spec: string | number | boolean | object | undefined | null,
-		resourceName = "TestResource",
-	) => {
+	const setup = (spec: TestValue, resourceName = "TestResource") => {
 		const config: GeneratorConfig = { input: "", output: "", options: {} };
-		const parser = new SwaggerParser(spec, config);
+		const parser = new SwaggerParser(testCast(spec), config);
 		const builder = new FormModelBuilder(parser);
 
 		const mainSchema = spec.components.schemas[resourceName];
@@ -27,13 +24,7 @@ describe("Analysis: FormModelBuilder", () => {
 				([name, schema]) => ({
 					name,
 
-					schema: schema as
-						| string
-						| number
-						| boolean
-						| object
-						| undefined
-						| null,
+					schema: testCast(schema),
 				}),
 			),
 			listProperties: [],
@@ -57,7 +48,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 		expect(result.usesCustomValidators).toBe(true);
 	});
@@ -80,7 +71,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 
 		expect(result.hasMaps).toBe(true);
@@ -115,7 +106,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 		const mapControl = result.topLevelControls.find((c) => c.name === "meta");
 
@@ -143,7 +134,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 
 		const mapControl = result.topLevelControls.find(
@@ -174,7 +165,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 
 		const mapControl = result.topLevelControls.find(
@@ -211,7 +202,7 @@ describe("Analysis: FormModelBuilder", () => {
 			},
 		};
 
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 
 		expect(result.dependencyRules.length).toBe(2);
@@ -246,7 +237,7 @@ describe("Analysis: FormModelBuilder", () => {
 			},
 		};
 
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 
 		const rules = result.dependencyRules.filter(
@@ -279,7 +270,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 		expect(result.dependencyRules.length).toBe(1);
 	});
@@ -303,7 +294,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 		expect(result.usesCustomValidators).toBe(true);
 	});
@@ -327,7 +318,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 		expect(result.usesCustomValidators).toBe(true);
 	});
@@ -347,7 +338,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 		expect(result.usesCustomValidators).toBe(true);
 	});
@@ -373,7 +364,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 
 		expect(result.isPolymorphic).toBe(true);
@@ -435,7 +426,7 @@ describe("Analysis: FormModelBuilder", () => {
 			},
 		};
 
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 
 		expect(result.isPolymorphic).toBe(true);
@@ -487,7 +478,7 @@ describe("Analysis: FormModelBuilder", () => {
 			},
 		};
 
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 
 		expect(result.isPolymorphic).toBe(true);
@@ -520,11 +511,10 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
-		vi.spyOn(
-			builder as string | number | boolean | object | undefined | null,
-			"analyzePolymorphism",
-		).mockReturnValue(null);
+		const { builder, resource } = setup(testCast(spec));
+		vi.spyOn(testCast(builder), "analyzePolymorphism").mockReturnValue(
+			testCast(null),
+		);
 		const result = builder.build(resource);
 
 		expect(result.isPolymorphic).toBe(true);
@@ -541,16 +531,11 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec);
+		const { builder } = setup(testCast(spec));
 
-		(
-			builder as string | number | boolean | object | undefined | null
-		).analyzeDependentSchemas({ type: "object" });
+		builder.analyzeDependentSchemas({ type: "object" });
 
-		expect(
-			(builder as string | number | boolean | object | undefined | null).result
-				.dependencyRules,
-		).toEqual([]);
+		expect(builder.result.dependencyRules).toEqual([]);
 	});
 
 	it("should ignore dependentSchemas when ref cannot be resolved", () => {
@@ -564,20 +549,15 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec);
+		const { builder } = setup(testCast(spec));
 
-		(
-			builder as string | number | boolean | object | undefined | null
-		).analyzeDependentSchemas({
+		builder.analyzeDependentSchemas({
 			dependentSchemas: {
 				missing: { $ref: "#/components/schemas/DoesNotExist" },
 			},
 		});
 
-		expect(
-			(builder as string | number | boolean | object | undefined | null).result
-				.dependencyRules,
-		).toEqual([]);
+		expect(builder.result.dependencyRules).toEqual([]);
 		warnSpy.mockRestore();
 	});
 
@@ -591,20 +571,15 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec);
+		const { builder } = setup(testCast(spec));
 
-		(
-			builder as string | number | boolean | object | undefined | null
-		).analyzeDependentSchemas({
+		builder.analyzeDependentSchemas({
 			dependentSchemas: {
 				flag: { properties: { extra: { type: "string" } } },
 			},
 		});
 
-		expect(
-			(builder as string | number | boolean | object | undefined | null).result
-				.dependencyRules,
-		).toEqual([]);
+		expect(builder.result.dependencyRules).toEqual([]);
 	});
 
 	it("should return null when analyzePolymorphism receives schema without discriminator", () => {
@@ -617,11 +592,9 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec);
+		const { builder } = setup(testCast(spec));
 
-		const result = (
-			builder as string | number | boolean | object | undefined | null
-		).analyzePolymorphism({
+		const result = builder.analyzePolymorphism({
 			name: "poly",
 			schema: { oneOf: [{ type: "string" }] },
 		});
@@ -639,20 +612,18 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec);
+		const { builder } = setup(testCast(spec));
 
-		const config = (
-			builder as string | number | boolean | object | undefined | null
-		).analyzePolymorphism({
+		const config = builder.analyzePolymorphism({
 			name: "poly",
 			schema: { discriminator: { propertyName: "type" } },
 		});
 
 		expect(config).toBeDefined();
 
-		expect(config.options).toEqual([]);
+		expect(testCast<TestValue>(config).options).toEqual([]);
 
-		expect(config.discriminatorOptions).toEqual([]);
+		expect(testCast<TestValue>(config).discriminatorOptions).toEqual([]);
 	});
 
 	it("should use discriminator mapping when explicit mapping is present", () => {
@@ -679,16 +650,16 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec, "Poly");
+		const { builder } = setup(testCast(spec), "Poly");
 
-		const config = (
-			builder as string | number | boolean | object | undefined | null
-		).analyzePolymorphism({
+		const config = builder.analyzePolymorphism({
 			name: "poly",
 			schema: spec.components.schemas.Poly,
 		});
 
-		expect(config.options[0].discriminatorValue).toBe("mapped");
+		expect(testCast<TestValue>(config).options[0].discriminatorValue).toBe(
+			"mapped",
+		);
 		warnSpy.mockRestore();
 	});
 
@@ -715,7 +686,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 
 		const prefixed = result.topLevelControls.find((c) => c.name === "prefixed");
@@ -747,11 +718,9 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 
-		(
-			builder as string | number | boolean | object | undefined | null
-		).getFormControlTypeString = () =>
+		builder.getFormControlTypeString = () =>
 			"string | number | boolean | object | undefined | null";
 		const result = builder.build(resource);
 		const mapControl = result.topLevelControls.find((c) => c.name === "meta");
@@ -780,7 +749,7 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 		const mapControl = result.topLevelControls.find((c) => c.name === "loose");
 		expect(mapControl?.controlType).toBe("map");
@@ -814,19 +783,16 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec, "Poly");
+		const { builder } = setup(testCast(spec), "Poly");
 
-		const config = (
-			builder as string | number | boolean | object | undefined | null
-		).analyzePolymorphism({
+		const config = builder.analyzePolymorphism({
 			name: "poly",
 			schema: spec.components.schemas.Poly,
 		});
 
 		expect(
-			config.options[0].controls.some(
-				(c: string | number | boolean | object | undefined | null) =>
-					c.name === "name",
+			testCast<TestValue>(config).options[0].controls.some(
+				(c: TestValue) => c.name === "name",
 			),
 		).toBe(true);
 	});
@@ -861,19 +827,16 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec, "Poly");
+		const { builder } = setup(testCast(spec), "Poly");
 
-		const config = (
-			builder as string | number | boolean | object | undefined | null
-		).analyzePolymorphism({
+		const config = builder.analyzePolymorphism({
 			name: "poly",
 			schema: spec.components.schemas.Poly,
 		});
 
 		expect(
-			config.options[0].controls.some(
-				(c: string | number | boolean | object | undefined | null) =>
-					c.name === "name",
+			testCast<TestValue>(config).options[0].controls.some(
+				(c: TestValue) => c.name === "name",
 			),
 		).toBe(true);
 	});
@@ -898,16 +861,14 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec, "Poly");
+		const { builder } = setup(testCast(spec), "Poly");
 
-		const config = (
-			builder as string | number | boolean | object | undefined | null
-		).analyzePolymorphism({
+		const config = builder.analyzePolymorphism({
 			name: "poly",
 			schema: spec.components.schemas.Poly,
 		});
 
-		expect(config.defaultOption).toBeUndefined();
+		expect(testCast<TestValue>(config).defaultOption).toBeUndefined();
 	});
 
 	it("should skip unresolved allOf refs when collecting polymorphic properties", () => {
@@ -938,19 +899,16 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec, "Poly");
+		const { builder } = setup(testCast(spec), "Poly");
 
-		const config = (
-			builder as string | number | boolean | object | undefined | null
-		).analyzePolymorphism({
+		const config = builder.analyzePolymorphism({
 			name: "poly",
 			schema: spec.components.schemas.Poly,
 		});
 
 		expect(
-			config.options[0].controls.some(
-				(c: string | number | boolean | object | undefined | null) =>
-					c.name === "name",
+			testCast<TestValue>(config).options[0].controls.some(
+				(c: TestValue) => c.name === "name",
 			),
 		).toBe(true);
 		warnSpy.mockRestore();
@@ -976,16 +934,14 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec, "Poly");
+		const { builder } = setup(testCast(spec), "Poly");
 
-		const config = (
-			builder as string | number | boolean | object | undefined | null
-		).analyzePolymorphism({
+		const config = builder.analyzePolymorphism({
 			name: "poly",
 			schema: spec.components.schemas.Poly,
 		});
 
-		expect(config.defaultOption).toBeUndefined();
+		expect(testCast<TestValue>(config).defaultOption).toBeUndefined();
 	});
 
 	it("should add discriminator option when parser options are empty", () => {
@@ -1010,19 +966,17 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, parser } = setup(spec, "Poly");
+		const { builder, parser } = setup(testCast(spec), "Poly");
 
-		const prop = {
+		const prop = testCast({
 			name: "poly",
 			schema: spec.components.schemas.Poly,
-		} as string | number | boolean | object | undefined | null;
+		});
 		vi.spyOn(parser, "getPolymorphicSchemaOptions").mockReturnValue([]);
 
-		const config = (
-			builder as string | number | boolean | object | undefined | null
-		).analyzePolymorphism(prop);
+		const config = builder.analyzePolymorphism(testCast(prop));
 
-		expect(config.discriminatorOptions).toContain("sub");
+		expect(testCast<TestValue>(config).discriminatorOptions).toContain("sub");
 	});
 
 	it("should fall back to ref name when discriminator value has no enum", () => {
@@ -1044,21 +998,18 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder } = setup(spec, "Poly");
+		const { builder } = setup(testCast(spec), "Poly");
 
-		const prop = { name: "poly", schema: spec.components.schemas.Poly } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
+		const prop = testCast({
+			name: "poly",
+			schema: spec.components.schemas.Poly,
+		});
 
-		const config = (
-			builder as string | number | boolean | object | undefined | null
-		).analyzePolymorphism(prop);
+		const config = builder.analyzePolymorphism(testCast(prop));
 
-		expect(config.options[0].discriminatorValue).toBe("Sub");
+		expect(testCast<TestValue>(config).options[0].discriminatorValue).toBe(
+			"Sub",
+		);
 	});
 
 	it("should skip polymorphic option when ref name is empty", () => {
@@ -1072,25 +1023,25 @@ describe("Analysis: FormModelBuilder", () => {
 				},
 			},
 		};
-		const { builder, parser } = setup(spec);
+		const { builder, parser } = setup(testCast(spec));
 
-		const prop = {
+		const prop = testCast({
 			name: "poly",
 			schema: {
 				discriminator: { propertyName: "type" },
 				oneOf: [{ $ref: "/" }],
 			},
-		} as string | number | boolean | object | undefined | null;
-		vi.spyOn(parser, "resolve").mockReturnValue({
-			type: "object",
-			properties: { type: { type: "string" } },
-		} as string | number | boolean | object | undefined | null);
+		});
+		vi.spyOn(parser, "resolve").mockReturnValue(
+			testCast({
+				type: "object",
+				properties: { type: { type: "string" } },
+			}),
+		);
 
-		const config = (
-			builder as string | number | boolean | object | undefined | null
-		).analyzePolymorphism(prop);
+		const config = builder.analyzePolymorphism(testCast(prop));
 
-		expect(config.options.length).toBe(0);
+		expect(testCast<TestValue>(config).options.length).toBe(0);
 		warnSpy.mockRestore();
 	});
 
@@ -1135,7 +1086,7 @@ describe("Analysis: FormModelBuilder", () => {
 			},
 		};
 
-		const { builder } = setup(spec, "Transport"); // uses same setup util but will overwrite resource manually below since we need deep prop
+		const { builder } = setup(testCast(spec), "Transport"); // uses same setup util but will overwrite resource manually below since we need deep prop
 
 		// Manually construct the resource property for 'payload' which targets the polymorphic schema
 		const resource: Resource = {
@@ -1146,13 +1097,9 @@ describe("Analysis: FormModelBuilder", () => {
 			formProperties: [
 				{
 					name: "payload",
-					schema: spec.components.schemas.Transport.properties.payload as
-						| string
-						| number
-						| boolean
-						| object
-						| undefined
-						| null,
+					schema: testCast(
+						spec.components.schemas.Transport.properties.payload,
+					),
 				},
 			],
 			listProperties: [],
@@ -1198,7 +1145,7 @@ describe("Analysis: FormModelBuilder", () => {
 			},
 		};
 
-		const { builder, resource } = setup(spec);
+		const { builder, resource } = setup(testCast(spec));
 		const result = builder.build(resource);
 		const arrayControl = result.topLevelControls.find((c) => c.name === "tags");
 

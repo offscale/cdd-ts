@@ -1,10 +1,28 @@
+/**
+ * Generates `utils/content-encoder.ts` for encoding OAS 3.1 `contentMediaType` and `contentEncoding` values.
+ *
+ * @module openapi/emit_content_encoder
+ */
 import * as path from "node:path";
 import { type Project, Scope } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 
+/**
+ * Generates the `utils/content-encoder.ts` utility file.
+ */
 export class ContentEncoderGenerator {
+	/**
+	 * Creates a new `ContentEncoderGenerator`.
+	 *
+	 * @param project - The `ts-morph` project to create `utils/content-encoder.ts` in.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Generates `utils/content-encoder.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const utilsDir = path.join(outputDir, "utils");
 
@@ -69,8 +87,9 @@ export class ContentEncoderGenerator {
         if (typeof TextEncoder !== 'undefined') {
             return new TextEncoder().encode(input);
         }
-        if (typeof (globalThis as string | number | boolean | object | undefined | null).Buffer !== 'undefined') {
-            return Uint8Array.from((globalThis as string | number | boolean | object | undefined | null).Buffer.from(input, 'utf-8'));
+        const g = globalThis as { Buffer?: { from: (data: string, encoding: string) => Uint8Array } };
+        if (typeof g.Buffer !== 'undefined') {
+            return Uint8Array.from(g.Buffer.from(input, 'utf-8'));
         }
         const out = new Uint8Array(input.length);
         for (let i = 0; i < input.length; i++) {
@@ -86,8 +105,9 @@ export class ContentEncoderGenerator {
 			parameters: [{ name: "bytes", type: "Uint8Array" }],
 			returnType: "string",
 			statements: `
-        if (typeof (globalThis as string | number | boolean | object | undefined | null).Buffer !== 'undefined') {
-            return (globalThis as string | number | boolean | object | undefined | null).Buffer.from(bytes).toString('base64');
+        const g = globalThis as { Buffer?: { from: (data: Uint8Array) => { toString: (encoding: string) => string } } };
+        if (typeof g.Buffer !== 'undefined') {
+            return g.Buffer.from(bytes).toString('base64');
         }
         let binary = '';
         for (let i = 0; i < bytes.length; i++) {
@@ -103,11 +123,11 @@ export class ContentEncoderGenerator {
 			parameters: [
 				{
 					name: "value",
-					type: "string | number | boolean | object | undefined | null",
+					type: "unknown",
 				},
 				{ name: "encoding", type: "string" },
 			],
-			returnType: "string | number | boolean | object | undefined | null",
+			returnType: "unknown",
 			docs: ["Applies base64/base64url encoding to string or binary values."],
 			statements: `
         if (value === null || value === undefined) return value;
@@ -141,7 +161,7 @@ export class ContentEncoderGenerator {
 			parameters: [
 				{
 					name: "data",
-					type: "string | number | boolean | object | undefined | null",
+					type: "unknown",
 				},
 				{
 					name: "config",
@@ -149,14 +169,14 @@ export class ContentEncoderGenerator {
 					hasQuestionToken: true,
 				},
 			],
-			returnType: "string | number | boolean | object | undefined | null",
+			returnType: "unknown",
 			statements: `
         if (data === null || data === undefined || !config) { 
             return data; 
         } 
 
         // 1. Auto-encode to string
-        let current = data;
+        let current: unknown = data;
         if (config.encode && typeof current !== 'string') { 
             try { 
                 current = JSON.stringify(current);
@@ -183,13 +203,14 @@ export class ContentEncoderGenerator {
         } 
 
         // 3. Objects
-        if (typeof current === 'object') { 
+        if (typeof current === 'object' && current !== null) { 
             if (config.properties) { 
                 // Shallow copy to avoid mutating original data if used elsewhere
-                const result = { ...current }; 
+                const record = current as Record<string, unknown>;
+                const result: Record<string, unknown> = { ...record }; 
                 Object.keys(config.properties).forEach(key => { 
-                    if (Object.prototype.hasOwnProperty.call(current, key)) { 
-                        result[key] = this.encode((current as string | number | boolean | object | undefined | null)[key], config.properties![key]); 
+                    if (Object.prototype.hasOwnProperty.call(record, key)) { 
+                        result[key] = this.encode(record[key], config.properties![key]); 
                     } 
                 }); 
                 return result; 

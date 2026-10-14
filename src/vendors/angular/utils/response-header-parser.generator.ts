@@ -1,10 +1,24 @@
+/**
+ * Module for response header parser generator in vendors/angular/utils/response-header-parser.generator.
+ *
+ * @module vendors/angular/utils/response-header-parser.generator
+ */
 import * as path from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 import { type Project, Scope } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 
+/** Generator/utility class `ResponseHeaderParserGenerator`. */
 export class ResponseHeaderParserGenerator {
+	/**
+	 * Creates a new `ResponseHeaderParserGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Executes `generate` on `ResponseHeaderParserGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(outputDir: string): void {
 		const utilsDir = path.join(outputDir, "utils");
 

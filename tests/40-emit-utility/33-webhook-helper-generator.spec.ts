@@ -1,23 +1,17 @@
-// @ts-nocheck
-
 import { WebhookGenerator } from "@src/functions/emit_webhook.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { WebhookHelperGenerator } from "@src/vendors/angular/utils/webhook-helper.generator.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import {
+	createTestProject,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 
 describe("Emitter: WebhookHelperGenerator", () => {
-	const createParser = (
-		spec: string | number | boolean | object | undefined | null,
-	) =>
-		new SwaggerParser(spec, { options: {} } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null);
+	const createParser = (spec: TestValue) =>
+		new SwaggerParser(testCast(spec), testCast({ options: {} }));
 
 	it("should skip generation if no webhooks are defined", () => {
 		const project = createTestProject();
@@ -26,7 +20,7 @@ describe("Emitter: WebhookHelperGenerator", () => {
 			info: { title: "No Webhooks", version: "1.0" },
 			paths: {},
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 
 		new WebhookHelperGenerator(parser, project).generate("/out");
 		const sourceFile = project.getSourceFile("/out/utils/webhook.service.ts");
@@ -45,7 +39,7 @@ describe("Emitter: WebhookHelperGenerator", () => {
 				},
 			},
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 
 		new WebhookHelperGenerator(parser, project).generate("/out");
 		const sourceFile = project.getSourceFileOrThrow(
@@ -71,7 +65,7 @@ describe("Emitter: WebhookHelperGenerator", () => {
 				},
 			},
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 
 		// Need both generators: Shared definition + Helper service
 		new WebhookGenerator(parser, project).generate("/out");
@@ -99,12 +93,10 @@ describe("Emitter: WebhookHelperGenerator", () => {
 		});
 
 		const moduleScope = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		const mockInjectable =
-			() => (target: string | number | boolean | object | undefined | null) =>
-				target;
+		const mockInjectable = () => (target: TestValue) => target;
 
 		const wrappedCode = `
             ${jsDefs} 
@@ -112,9 +104,11 @@ describe("Emitter: WebhookHelperGenerator", () => {
             ${jsService} 
         `;
 
-		new Function("exports", "Injectable", wrappedCode)(
-			moduleScope.exports,
-			mockInjectable,
+		testCast(
+			new Function("exports", "Injectable", wrappedCode)(
+				moduleScope.exports,
+				mockInjectable,
+			),
 		);
 
 		const ServiceClass = moduleScope.exports.WebhookService;
@@ -158,11 +152,10 @@ describe("Emitter: WebhookHelperGenerator", () => {
 				},
 			},
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		// Force parser.webhooks empty to exercise fallback branch
 
-		(parser as string | number | boolean | object | undefined | null).webhooks =
-			[];
+		testCast<TestValue>(parser).webhooks = testCast([]);
 
 		new WebhookHelperGenerator(parser, project).generate("/out");
 		const sourceFile = project.getSourceFile("/out/utils/webhook.service.ts");

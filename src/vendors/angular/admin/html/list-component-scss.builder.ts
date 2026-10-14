@@ -1,3 +1,14 @@
+/**
+ * SCSS stylesheet generator for Angular admin list components.
+ *
+ * @module vendors/angular/admin/html/list-component-scss.builder
+ */
+
+/**
+ * Generates the default SCSS stylesheet content for an Angular admin list/table component.
+ *
+ * @returns SCSS stylesheet string.
+ */
 export function generateListComponentScss(): string {
 	return `
 .admin-list-container { padding: 24px; }

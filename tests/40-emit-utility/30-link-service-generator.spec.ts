@@ -1,22 +1,16 @@
-// @ts-nocheck
-
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { LinkServiceGenerator } from "@src/vendors/angular/utils/link-service.generator.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import {
+	createTestProject,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 
 describe("Emitter: LinkServiceGenerator", () => {
-	const createParser = (
-		spec: string | number | boolean | object | undefined | null,
-	) =>
-		new SwaggerParser(spec, { options: {} } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null);
+	const createParser = (spec: TestValue) =>
+		new SwaggerParser(testCast(spec), testCast({ options: {} }));
 
 	it("should skip generation if no links defined in spec", () => {
 		const project = createTestProject();
@@ -25,7 +19,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			info: { title: "T", version: "1" },
 			paths: {},
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 
 		new LinkServiceGenerator(parser, project).generate("/out");
 		const sourceFile = project.getSourceFile("/out/utils/link.service.ts");
@@ -51,7 +45,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 				},
 			},
 		};
-		const parser = createParser(specWithLinks);
+		const parser = createParser(testCast(specWithLinks));
 
 		new LinkServiceGenerator(parser, project).generate("/out");
 
@@ -92,14 +86,12 @@ describe("Emitter: LinkServiceGenerator", () => {
 		};
 
 		const moduleScope = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
 		// Returns a decorator function that does nothing, satisfying usage like @Injectable()
 
-		const mockInjectable =
-			() => (target: string | number | boolean | object | undefined | null) =>
-				target;
+		const mockInjectable = () => (target: TestValue) => target;
 
 		// Inject mock API_LINKS into global scope of evaluation
 		const wrappedCode = `
@@ -107,9 +99,11 @@ describe("Emitter: LinkServiceGenerator", () => {
             ${jsCode} 
         `;
 
-		new Function("exports", "Injectable", wrappedCode)(
-			moduleScope.exports,
-			mockInjectable,
+		testCast(
+			new Function("exports", "Injectable", wrappedCode)(
+				moduleScope.exports,
+				mockInjectable,
+			),
 		);
 
 		const ServiceClass = moduleScope.exports.LinkService;
@@ -134,7 +128,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			components: { links: { Test: { operationId: "noop" } } },
 			paths: {},
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -169,20 +163,20 @@ describe("Emitter: LinkServiceGenerator", () => {
 		};
 
 		const moduleScope = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		const mockInjectable =
-			() => (target: string | number | boolean | object | undefined | null) =>
-				target;
+		const mockInjectable = () => (target: TestValue) => target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		new Function("exports", "Injectable", wrappedCode)(
-			moduleScope.exports,
-			mockInjectable,
+		testCast(
+			new Function("exports", "Injectable", wrappedCode)(
+				moduleScope.exports,
+				mockInjectable,
+			),
 		);
 
 		const service = new moduleScope.exports.LinkService();
@@ -204,7 +198,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -248,20 +242,20 @@ describe("Emitter: LinkServiceGenerator", () => {
 		const responseMock = { status: 201, headers: {}, body: {} };
 
 		const moduleScope = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		const mockInjectable =
-			() => (target: string | number | boolean | object | undefined | null) =>
-				target;
+		const mockInjectable = () => (target: TestValue) => target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		new Function("exports", "Injectable", wrappedCode)(
-			moduleScope.exports,
-			mockInjectable,
+		testCast(
+			new Function("exports", "Injectable", wrappedCode)(
+				moduleScope.exports,
+				mockInjectable,
+			),
 		);
 
 		const service = new moduleScope.exports.LinkService();
@@ -301,7 +295,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -340,20 +334,20 @@ describe("Emitter: LinkServiceGenerator", () => {
 		const responseMock = { status: 200, headers: {}, body: {} };
 
 		const moduleScope = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		const mockInjectable =
-			() => (target: string | number | boolean | object | undefined | null) =>
-				target;
+		const mockInjectable = () => (target: TestValue) => target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		new Function("exports", "Injectable", wrappedCode)(
-			moduleScope.exports,
-			mockInjectable,
+		testCast(
+			new Function("exports", "Injectable", wrappedCode)(
+				moduleScope.exports,
+				mockInjectable,
+			),
 		);
 
 		const service = new moduleScope.exports.LinkService();
@@ -389,7 +383,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -419,20 +413,20 @@ describe("Emitter: LinkServiceGenerator", () => {
 		const responseMock = { status: 200, headers: {}, body: {} };
 
 		const moduleScope = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		const mockInjectable =
-			() => (target: string | number | boolean | object | undefined | null) =>
-				target;
+		const mockInjectable = () => (target: TestValue) => target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		new Function("exports", "Injectable", wrappedCode)(
-			moduleScope.exports,
-			mockInjectable,
+		testCast(
+			new Function("exports", "Injectable", wrappedCode)(
+				moduleScope.exports,
+				mockInjectable,
+			),
 		);
 
 		const service = new moduleScope.exports.LinkService();
@@ -452,7 +446,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -483,20 +477,20 @@ describe("Emitter: LinkServiceGenerator", () => {
 		const responseMock = { status: 200, headers: {}, body: {} };
 
 		const moduleScope = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		const mockInjectable =
-			() => (target: string | number | boolean | object | undefined | null) =>
-				target;
+		const mockInjectable = () => (target: TestValue) => target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		new Function("exports", "Injectable", wrappedCode)(
-			moduleScope.exports,
-			mockInjectable,
+		testCast(
+			new Function("exports", "Injectable", wrappedCode)(
+				moduleScope.exports,
+				mockInjectable,
+			),
 		);
 
 		const service = new moduleScope.exports.LinkService();
@@ -520,7 +514,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -549,20 +543,20 @@ describe("Emitter: LinkServiceGenerator", () => {
 		const responseMock = { status: 200, headers: {}, body: { "a/b": 42 } };
 
 		const moduleScope = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		const mockInjectable =
-			() => (target: string | number | boolean | object | undefined | null) =>
-				target;
+		const mockInjectable = () => (target: TestValue) => target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		new Function("exports", "Injectable", wrappedCode)(
-			moduleScope.exports,
-			mockInjectable,
+		testCast(
+			new Function("exports", "Injectable", wrappedCode)(
+				moduleScope.exports,
+				mockInjectable,
+			),
 		);
 
 		const service = new moduleScope.exports.LinkService();
@@ -582,7 +576,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -617,20 +611,20 @@ describe("Emitter: LinkServiceGenerator", () => {
 		const responseMock = { status: 200, headers: {}, body: {} };
 
 		const moduleScope = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		const mockInjectable =
-			() => (target: string | number | boolean | object | undefined | null) =>
-				target;
+		const mockInjectable = () => (target: TestValue) => target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)};
             ${jsCode}
         `;
 
-		new Function("exports", "Injectable", wrappedCode)(
-			moduleScope.exports,
-			mockInjectable,
+		testCast(
+			new Function("exports", "Injectable", wrappedCode)(
+				moduleScope.exports,
+				mockInjectable,
+			),
 		);
 
 		const service = new moduleScope.exports.LinkService();

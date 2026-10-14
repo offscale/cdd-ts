@@ -6,8 +6,8 @@ import { generateFromConfigSync } from "@src/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { AxiosServiceTestGenerator } from "@src/vendors/axios/test/service-test.generator.js";
 import { Project } from "ts-morph";
-// @ts-nocheck
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 describe("Axios Implementation Edge Cases", () => {
 	afterEach(() => {
@@ -42,7 +42,7 @@ describe("Axios Implementation Edge Cases", () => {
 			},
 		};
 
-		const parser = new SwaggerParser(spec as any, config);
+		const parser = new SwaggerParser(testCast(spec), config);
 		const project = new Project({ useInMemoryFileSystem: true });
 		const testGen = new AxiosServiceTestGenerator(parser, project, config);
 
@@ -51,7 +51,7 @@ describe("Axios Implementation Edge Cases", () => {
 
 		testGen.generateServiceTestFile(
 			"mocked",
-			ops as any,
+			testCast(ops),
 			path.join(os.tmpdir(), "test-output-mocked/services"),
 		);
 
@@ -497,7 +497,7 @@ it("should generate composable tests when config.options.composableTests is true
 	};
 
 	const project = new Project();
-	generateFromConfigSync(config as any, project, { spec });
+	generateFromConfigSync(testCast(config), project, { spec });
 
 	const testFile = project.getSourceFile(
 		path.join(
@@ -531,15 +531,19 @@ it("should cover missing branches in AxiosServiceTestGenerator when isComposable
 		},
 	};
 
-	const parser = new SwaggerParser(spec as any, config as any);
+	const parser = new SwaggerParser(testCast(spec), testCast(config));
 	const project = new Project({ useInMemoryFileSystem: true });
-	const testGen = new AxiosServiceTestGenerator(parser, project, config as any);
+	const testGen = new AxiosServiceTestGenerator(
+		parser,
+		project,
+		testCast(config),
+	);
 
 	const ops = parser.operations;
 
 	testGen.generateServiceTestFile(
 		"mocked",
-		ops as any,
+		testCast(ops),
 		path.join(os.tmpdir(), "test-output-mocked-composable/services"),
 	);
 

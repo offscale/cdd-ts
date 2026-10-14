@@ -1,10 +1,9 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 describe("Emitter: TypeGenerator (Sanitization)", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
@@ -45,9 +44,7 @@ describe("Emitter: TypeGenerator (Sanitization)", () => {
 			},
 		};
 
-		const sourceFile = runGenerator(
-			spec as string | number | boolean | object | undefined | null,
-		);
+		const sourceFile = runGenerator(testCast(spec));
 		const iface = sourceFile.getInterfaceOrThrow("Unsafe");
 		const doc = iface.getJsDocs()[0].getDescription();
 
@@ -82,9 +79,7 @@ describe("Emitter: TypeGenerator (Sanitization)", () => {
 			},
 		};
 
-		const sourceFile = runGenerator(
-			spec as string | number | boolean | object | undefined | null,
-		);
+		const sourceFile = runGenerator(testCast(spec));
 		const typeAlias = sourceFile.getTypeAliasOrThrow("Doc");
 		const tags = typeAlias.getJsDocs()[0].getTags();
 		const seeTag = tags.find((t) => t.getTagName() === "see");

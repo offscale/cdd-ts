@@ -1,3 +1,14 @@
+/**
+ * SCSS stylesheet generator for Angular admin form components.
+ *
+ * @module vendors/angular/admin/html/form-component-scss.builder
+ */
+
+/**
+ * Generates the default SCSS stylesheet content for an Angular admin form component.
+ *
+ * @returns SCSS stylesheet string.
+ */
 export function generateFormComponentScss(): string {
 	return `
 .admin-form-container { padding: 24px; }

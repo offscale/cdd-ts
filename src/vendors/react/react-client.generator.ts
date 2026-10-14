@@ -1,47 +1,46 @@
+/**
+ * Orchestrates the generation of a React SWR-based API client SDK.
+ *
+ * @module vendors/react/react-client.generator
+ */
 import * as path from "node:path";
-import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
-import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import { AbstractClientGenerator } from "../../core/generator.js";
+import {
+	AbstractClientGenerator,
+	type IClientGenerator,
+} from "../../core/generator.js";
+import type { GeneratorConfig } from "../../core/types/index.js";
+import { ServiceMethodAnalyzer } from "../../functions/parse_analyzer.js";
+import { camelCase, pascalCase } from "../../functions/utils.js";
+import type { SwaggerParser } from "../../openapi/parse.js";
 import { FetchClientGenerator } from "../fetch/fetch-client.generator.js";
 import { ReactAdminGenerator } from "./admin/admin.generator.js";
 import { ReactHookTestGenerator } from "./test/hook-test.generator.js";
 
-function getControllerCanonicalName(op: PathInfo): string {
-	if (Array.isArray(op.tags) && op.tags[0]) {
-		return pascalCase(op.tags[0].toString());
-	}
-	const firstSegment = op.path.split("/").filter(Boolean)[0];
-	return firstSegment ? pascalCase(firstSegment) : "Default";
-}
-
-function groupPathsByCanonicalController(
-	parser: SwaggerParser,
-): Record<string, PathInfo[]> {
-	const groups: Record<string, PathInfo[]> = {};
-	for (const op of parser.operations) {
-		const group = getControllerCanonicalName(op);
-		if (!groups[group]) groups[group] = [];
-		groups[group].push(op);
-	}
-	return groups;
-}
-
 /**
  * Generates a React-based API client.
- * It delegates to the Fetch client generation as the foundation,
- * and then generates React-specific hooks for each service.
+ * It delegates to the Fetch client generation (or an injected `IClientGenerator`) as the foundation,
+ * and then generates React-specific SWR hooks for each service.
  */
 export class ReactClientGenerator extends AbstractClientGenerator {
+	private readonly baseGenerator: IClientGenerator;
+
+	/**
+	 * Creates a new `ReactClientGenerator`.
+	 *
+	 * @param baseGenerator - Optional underlying HTTP client generator delegate (defaults to `FetchClientGenerator`).
+	 */
+	constructor(baseGenerator?: IClientGenerator) {
+		super();
+		this.baseGenerator = baseGenerator ?? new FetchClientGenerator();
+	}
+
 	/**
 	 * Executes the generation pipeline for the React client.
-	 * @param project The ts-morph Project to use for generation.
-	 * @param parser The parsed Swagger/OpenAPI model.
-	 * @param config The generator configuration options.
-	 * @param outputRoot The target output directory.
-	 * @returns A promise that resolves when generation finishes.
+	 * @param project - The ts-morph Project to use for generation.
+	 * @param parser - The parsed Swagger/OpenAPI model.
+	 * @param config - The generator configuration options.
+	 * @param outputRoot - The target output directory.
 	 */
 	public generate(
 		project: Project,
@@ -49,9 +48,7 @@ export class ReactClientGenerator extends AbstractClientGenerator {
 		config: GeneratorConfig,
 		outputRoot: string,
 	): void {
-		// React utilizes the Fetch client primitives
-		const baseGenerator = new FetchClientGenerator();
-		baseGenerator.generate(project, parser, config, outputRoot);
+		this.baseGenerator.generate(project, parser, config, outputRoot);
 
 		if (config.options?.admin) {
 			const adminGenerator = new ReactAdminGenerator(parser, project, config);
@@ -86,11 +83,12 @@ export const useApiContext = () => useContext(ApiContext);
 		const hooksDir = path.join(outputRoot, "hooks");
 		const hooksIndex = project.createSourceFile(
 			path.join(hooksDir, "index.ts"),
-			`export * from '../provider.js';\n`,
+			`export * from '../provider.js';
+`,
 			{ overwrite: true },
 		);
 
-		const operationsByController = groupPathsByCanonicalController(parser);
+		const operationsByController = this.groupOperationsByController(parser);
 		const analyzer = new ServiceMethodAnalyzer(config, parser);
 
 		for (const [controllerName, operations] of Object.entries(
@@ -133,7 +131,8 @@ export const useApiContext = () => useContext(ApiContext);
 			hookFile.addFunction({
 				name: hookName,
 				isExported: true,
-				statements: `const [service] = useState(() => new ${serviceName}());\nreturn service;`,
+				statements: `const [service] = useState(() => new ${serviceName}());
+return service;`,
 			});
 
 			const usedNames = new Set<string>();
@@ -164,7 +163,7 @@ export const useApiContext = () => useContext(ApiContext);
 
 				const isGet = model.httpMethod.toLowerCase() === "get";
 				const methodHookName = `use${pascalCase(model.methodName)}`;
-				const returnType = model.responseType; // Note: may need actual types imported
+				const returnType = model.responseType;
 
 				const paramList = model.parameters
 					.map((p) => `${p.name}: ${p.type}`)
@@ -183,7 +182,7 @@ export const useApiContext = () => useContext(ApiContext);
 							...model.parameters,
 							{
 								name: "config",
-								type: `SWRConfiguration<${returnType}, any>`,
+								type: `SWRConfiguration<${returnType}, Error>`,
 								hasQuestionToken: true,
 							},
 						],
@@ -198,13 +197,16 @@ export const useApiContext = () => useContext(ApiContext);
                         `,
 					});
 				} else {
+					const mutationArgType = paramList
+						? `{ ${paramList} }`
+						: "Record<string, never>";
 					hookFile.addFunction({
 						name: methodHookName,
 						isExported: true,
 						parameters: [
 							{
 								name: "config",
-								type: `SWRMutationConfiguration<${returnType}, any, any, any>`,
+								type: `SWRMutationConfiguration<${returnType}, Error, string, ${mutationArgType}>`,
 								hasQuestionToken: true,
 							},
 						],
@@ -213,7 +215,7 @@ export const useApiContext = () => useContext(ApiContext);
                             const apiConfig = useApiContext();
                             return useSWRMutation(
                                 '${model.methodName}',
-                                (key, { arg }: { arg: { ${paramList} } }) => service.${model.methodName}(${model.parameters.map((p) => `arg.${p.name}`).join(", ") || ""}${model.parameters.length > 0 ? ", apiConfig" : "apiConfig"}),
+                                (key, { arg }: { arg: ${mutationArgType} }) => service.${model.methodName}(${model.parameters.map((p) => `arg.${p.name}`).join(", ") || ""}${model.parameters.length > 0 ? ", apiConfig" : "apiConfig"}),
                                 config
                             );
                         `,

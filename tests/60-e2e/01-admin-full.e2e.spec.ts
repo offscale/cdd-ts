@@ -1,8 +1,6 @@
-// @ts-nocheck
-
 import type { ClassDeclaration, Project, SourceFile } from "ts-morph";
 import { beforeAll, describe, expect, it } from "vitest";
-import { runGenerator } from "../shared/helpers.js";
+import { runGenerator, testCast } from "../shared/helpers.js";
 import { coverageSpec, polymorphismSpec } from "../shared/specs.js";
 
 describe("E2E: Admin UI Generation", () => {
@@ -11,12 +9,12 @@ describe("E2E: Admin UI Generation", () => {
 	// Helper to generate the admin UI and return the project
 	const runAdminGen = async (spec: object) => {
 		project = await runGenerator(spec, {
-			options: {
+			options: testCast({
 				admin: true,
 				generateServices: true,
 				dateType: "string",
 				enumStyle: "enum",
-			} as string | number | boolean | object | undefined | null,
+			}),
 		});
 		return project;
 	};

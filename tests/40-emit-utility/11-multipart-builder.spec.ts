@@ -1,9 +1,11 @@
-// @ts-nocheck
-
 import { MultipartBuilderGenerator } from "@src/functions/emit_multipart.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import {
+	createTestProject,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 
 function getMultipartBuilder() {
 	const project = createTestProject();
@@ -23,57 +25,50 @@ function getMultipartBuilder() {
 	});
 
 	const moduleScope = {
-		exports: {} as string | number | boolean | object | undefined | null,
+		exports: testCast({}),
 	};
 
-	global.FormData = class FormData {
-		_entries: Record<
-			string,
-			string | number | boolean | object | undefined | null
-		> = {};
+	global.FormData = testCast(
+		class FormData {
+			_entries: Record<string, TestValue> = {};
 
-		append(
-			k: string,
-			v: string | number | boolean | object | undefined | null,
-		) {
-			this._entries[k] = v;
-		}
-	} as string | number | boolean | object | undefined | null;
+			append(k: string, v: TestValue) {
+				this._entries[k] = v;
+			}
+		},
+	);
 
-	global.Blob = class Blob {
-		parts: string | number | boolean | object | undefined | null[];
+	global.Blob = testCast(
+		class Blob {
+			parts: TestValue;
 
-		options: string | number | boolean | object | undefined | null;
-		type: string;
+			options: TestValue;
+			type: string;
 
-		constructor(
-			parts: string | number | boolean | object | undefined | null[],
-			options: string | number | boolean | object | undefined | null,
-		) {
-			this.parts = parts;
+			constructor(parts: TestValue, options: TestValue) {
+				this.parts = parts;
 
-			this.options = options;
+				this.options = options;
 
-			this.type = options?.type || "";
-		}
-	} as string | number | boolean | object | undefined | null;
+				this.type = testCast(options?.type || "");
+			}
+		},
+	);
 
-	global.File = class File extends global.Blob {
-		name: string;
+	global.File = testCast(
+		class File extends global.Blob {
+			name: string;
 
-		constructor(
-			parts: string | number | boolean | object | undefined | null[],
-			name: string,
-			options: string | number | boolean | object | undefined | null,
-		) {
-			super(parts, options);
-			this.name = name;
-		}
-	} as string | number | boolean | object | undefined | null;
+			constructor(parts: TestValue, name: string, options: TestValue) {
+				super(testCast(parts), testCast(options));
+				this.name = name;
+			}
+		},
+	);
 
 	const finalCode = `${jsCode}\nmoduleScope.exports.MultipartBuilder = MultipartBuilder;`;
 
-	new Function("moduleScope", finalCode)(moduleScope);
+	testCast(new Function("moduleScope", finalCode)(moduleScope));
 
 	return moduleScope.exports.MultipartBuilder;
 }
@@ -97,13 +92,7 @@ describe("Utility: MultipartBuilder", () => {
 
 			const result = MultipartBuilder.serialize(body, {});
 
-			const formData = result.content as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
+			const formData = testCast(result.content);
 
 			expect(formData).toBeInstanceOf(global.FormData);
 		});
@@ -113,13 +102,7 @@ describe("Utility: MultipartBuilder", () => {
 
 			const result = MultipartBuilder.serialize(body, {});
 
-			const formData = result.content as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
+			const formData = testCast(result.content);
 
 			const appended = formData._entries.meta;
 
@@ -159,22 +142,13 @@ describe("Utility: MultipartBuilder", () => {
 
 			const result = MultipartBuilder.serialize(body, encoding);
 
-			const blob = result.content as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
+			const blob = testCast(result.content);
 
 			// Blob parts can be objects (File) or strings.
 			// We check specifically for strings to validate headers.
 
 			const stringParts = blob.parts
-				.filter(
-					(p: string | number | boolean | object | undefined | null) =>
-						typeof p === "string",
-				)
+				.filter((p: TestValue) => typeof p === "string")
 				.join("");
 
 			expect(stringParts).toContain('filename="test.txt"');
@@ -192,19 +166,10 @@ describe("Utility: MultipartBuilder", () => {
 
 			const result = MultipartBuilder.serialize(body, encoding);
 
-			const blob = result.content as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
+			const blob = testCast(result.content);
 
 			const stringParts = blob.parts
-				.filter(
-					(p: string | number | boolean | object | undefined | null) =>
-						typeof p === "string",
-				)
+				.filter((p: TestValue) => typeof p === "string")
 				.join("");
 
 			expect(stringParts).toContain('name="tags"');
@@ -224,19 +189,10 @@ describe("Utility: MultipartBuilder", () => {
 
 			const result = MultipartBuilder.serialize(body, encoding);
 
-			const blob = result.content as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
+			const blob = testCast(result.content);
 
 			const stringParts = blob.parts
-				.filter(
-					(p: string | number | boolean | object | undefined | null) =>
-						typeof p === "string",
-				)
+				.filter((p: TestValue) => typeof p === "string")
 				.join("");
 
 			expect(stringParts).toContain('name="a"');
@@ -254,19 +210,10 @@ describe("Utility: MultipartBuilder", () => {
 
 			const result = MultipartBuilder.serialize(body, encoding);
 
-			const blob = result.content as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
+			const blob = testCast(result.content);
 
 			const stringParts = blob.parts
-				.filter(
-					(p: string | number | boolean | object | undefined | null) =>
-						typeof p === "string",
-				)
+				.filter((p: TestValue) => typeof p === "string")
 				.join("");
 
 			expect(stringParts).toContain('name="meta"');
@@ -295,19 +242,10 @@ describe("Utility: MultipartBuilder", () => {
 
 			// Verify parts
 
-			const blob = result.content as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
+			const blob = testCast(result.content);
 
 			const stringParts = blob.parts
-				.filter(
-					(p: string | number | boolean | object | undefined | null) =>
-						typeof p === "string",
-				)
+				.filter((p: TestValue) => typeof p === "string")
 				.join("");
 
 			// Should have no Content-Disposition by default for mixed array items
@@ -335,19 +273,10 @@ describe("Utility: MultipartBuilder", () => {
 
 			const result = MultipartBuilder.serialize(body, config);
 
-			const blob = result.content as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
+			const blob = testCast(result.content);
 
 			const stringParts = blob.parts
-				.filter(
-					(p: string | number | boolean | object | undefined | null) =>
-						typeof p === "string",
-				)
+				.filter((p: TestValue) => typeof p === "string")
 				.join("");
 
 			// Check that it applied to all
@@ -367,19 +296,10 @@ describe("Utility: MultipartBuilder", () => {
 
 			const result = MultipartBuilder.serialize(body, config);
 
-			const blob = result.content as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
+			const blob = testCast(result.content);
 
 			const stringParts = blob.parts
-				.filter(
-					(p: string | number | boolean | object | undefined | null) =>
-						typeof p === "string",
-				)
+				.filter((p: TestValue) => typeof p === "string")
 				.join("");
 
 			expect(stringParts).toContain("Content-Type: text/prefix");

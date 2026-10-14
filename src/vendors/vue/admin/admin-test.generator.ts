@@ -1,3 +1,8 @@
+/**
+ * Module for admin test generator in vendors/vue/admin/admin-test.generator.
+ *
+ * @module vendors/vue/admin/admin-test.generator
+ */
 import * as path from "node:path";
 import type { Project } from "ts-morph";
 

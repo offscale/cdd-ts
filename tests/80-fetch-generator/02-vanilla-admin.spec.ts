@@ -1,18 +1,15 @@
-// @ts-nocheck
-
-import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { runGenerator } from "../shared/helpers.js";
+import { runGenerator, testCast } from "../shared/helpers.js";
 import { coverageSpec } from "../shared/specs.js";
 
 describe("Vanilla Admin UI Generation (Fetch)", () => {
 	it("should generate vanilla web components for admin UI", async () => {
 		const project = await runGenerator(coverageSpec, {
-			options: {
+			options: testCast({
 				implementation: "fetch",
 				admin: true,
 				generateServices: true,
-			} as string | number | boolean | object | undefined | null,
+			}),
 		});
 
 		const files = project.getSourceFiles().map((f) => f.getFilePath());

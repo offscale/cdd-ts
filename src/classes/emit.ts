@@ -1,19 +1,9 @@
-// src/generators/shared/type.generator.ts
+/**
+ * Generates TypeScript model interfaces, enums, and type aliases from OpenAPI schemas, webhooks, callbacks, links, and response headers.
+ *
+ * @module classes/emit
+ */
 import * as path from "node:path";
-import type {
-	GeneratorConfig,
-	HeaderObject,
-	OpenApiValue,
-	PathItem,
-	SwaggerDefinition,
-} from "@src/core/types/index.js";
-import {
-	extractPaths,
-	getTypeScriptType,
-	pascalCase,
-	sanitizeComment,
-} from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type {
 	InterfaceDeclaration,
 	JSDocStructure,
@@ -23,8 +13,32 @@ import type {
 	PropertySignatureStructure,
 	SourceFile,
 } from "ts-morph";
+import type {
+	GeneratorConfig,
+	HeaderObject,
+	OpenApiValue,
+	PathItem,
+	SwaggerDefinition,
+} from "../core/types/index.js";
+import {
+	extractPaths,
+	getTypeScriptType,
+	pascalCase,
+	sanitizeComment,
+} from "../functions/utils.js";
+import type { SwaggerParser } from "../openapi/parse.js";
 
+/**
+ * Generates TypeScript model definitions under `models/` and re-exports them via `models/index.ts`.
+ */
 export class TypeGenerator {
+	/**
+	 * Creates a new `TypeGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification wrapper.
+	 * @param project - The target `ts-morph` project.
+	 * @param config - Active generator configuration.
+	 */
 	constructor(
 		private parser: SwaggerParser,
 
@@ -33,6 +47,11 @@ export class TypeGenerator {
 		private config: GeneratorConfig,
 	) {}
 
+	/**
+	 * Generates all model files and `models/index.ts` under the specified output directory.
+	 *
+	 * @param outputDir - Root directory for generated output files.
+	 */
 	public generate(outputDir: string): void {
 		const modelsDir = path.join(outputDir, "models");
 		const indexFilePath = path.join(modelsDir, "index.ts");
@@ -277,6 +296,12 @@ export class TypeGenerator {
 		});
 		indexSourceFile.formatText();
 	}
+	/**
+	 * Determines whether a schema definition should be emitted as a TypeScript `interface` rather than a `type` alias.
+	 *
+	 * @param def - OpenAPI schema definition or boolean schema.
+	 * @returns `true` if an `interface` declaration should be emitted.
+	 */
 	private shouldGenerateInterface(def: SwaggerDefinition | boolean): boolean {
 		if (typeof def === "boolean") return false;
 
@@ -297,6 +322,13 @@ export class TypeGenerator {
 		);
 	}
 
+	/**
+	 * Emits a TypeScript `enum` or literal union `type` alias for an enumerated schema.
+	 *
+	 * @param sourceFile - Target `SourceFile`.
+	 * @param name - Raw schema name.
+	 * @param def - Enumerated OpenAPI schema definition.
+	 */
 	private generateEnum(
 		sourceFile: SourceFile,
 		name: string,
@@ -347,6 +379,13 @@ export class TypeGenerator {
 		}
 	}
 
+	/**
+	 * Emits a TypeScript `type` alias declaration for a schema definition.
+	 *
+	 * @param sourceFile - Target `SourceFile`.
+	 * @param name - Raw schema name.
+	 * @param def - OpenAPI schema definition or boolean schema.
+	 */
 	private generateTypeAlias(
 		sourceFile: SourceFile,
 		name: string,
@@ -367,6 +406,13 @@ export class TypeGenerator {
 		});
 	}
 
+	/**
+	 * Emits a TypeScript `interface` declaration (and optional `*Request` variant) for an object schema.
+	 *
+	 * @param sourceFile - Target `SourceFile`.
+	 * @param name - Raw schema name.
+	 * @param def - Object OpenAPI schema definition.
+	 */
 	private generateInterface(
 		sourceFile: SourceFile,
 		name: string,
@@ -410,6 +456,13 @@ export class TypeGenerator {
 		}
 	}
 
+	/**
+	 * Applies `allOf` inheritance (`extends`) and inline property merging to an `InterfaceDeclaration`.
+	 *
+	 * @param interfaceDecl - Target `InterfaceDeclaration`.
+	 * @param def - OpenAPI schema definition containing `allOf`.
+	 * @param options - Read-only / write-only filtering options.
+	 */
 	private applyComposition(
 		interfaceDecl: InterfaceDeclaration,
 		def: SwaggerDefinition,
@@ -454,6 +507,12 @@ export class TypeGenerator {
 		}
 	}
 
+	/**
+	 * Adds a string index signature to an `InterfaceDeclaration` when `additionalProperties`, `unevaluatedProperties`, or `patternProperties` are present.
+	 *
+	 * @param interfaceDecl - Target `InterfaceDeclaration`.
+	 * @param def - OpenAPI schema definition.
+	 */
 	private applyIndexSignature(
 		interfaceDecl: InterfaceDeclaration,
 		def: SwaggerDefinition,
@@ -518,6 +577,13 @@ export class TypeGenerator {
 		}
 	}
 
+	/**
+	 * Builds `ts-morph` property signature structures from a schema's `properties` map.
+	 *
+	 * @param def - OpenAPI schema definition.
+	 * @param options - Read-only / write-only filtering options.
+	 * @returns Array of property signature structures.
+	 */
 	private getInterfaceProperties(
 		def: SwaggerDefinition,
 		options: {
@@ -565,6 +631,12 @@ export class TypeGenerator {
 		return props;
 	}
 
+	/**
+	 * Checks whether an object schema requires a separate `*Request` interface due to `readOnly` or `writeOnly` properties.
+	 *
+	 * @param def - OpenAPI schema definition.
+	 * @returns `true` if a separate request model interface should be emitted.
+	 */
 	private needsRequestModel(def: SwaggerDefinition): boolean {
 		const hasDirect =
 			def.properties &&
@@ -600,9 +672,24 @@ export class TypeGenerator {
 		return false;
 	}
 
+	/**
+	 * Builds `ts-morph` JSDoc structures preserving OpenAPI validation keywords and vendor extensions.
+	 *
+	 * @param def - OpenAPI schema definition or boolean schema.
+	 * @returns Array of JSDoc structures.
+	 */
 	private buildJSDoc(
 		def: SwaggerDefinition | boolean,
 	): OptionalKind<JSDocStructure>[] {
+		if (typeof def === "boolean") {
+			return [
+				{
+					description: "",
+					tags: [{ tagName: "booleanSchema", text: String(def) }],
+				},
+			];
+		}
+
 		if (!def || typeof def !== "object") return [];
 
 		const description = sanitizeComment(def.description || "");

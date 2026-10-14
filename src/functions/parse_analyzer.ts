@@ -1,4 +1,10 @@
-// src/analysis/service-method-analyzer.ts
+/**
+ * Analyzes OpenAPI `PathInfo` operations into `ServiceMethodModel` intermediate representations.
+ *
+ * @module functions/parse_analyzer
+ */
+
+import type { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import type {
 	EncodingProperty,
 	GeneratorConfig,
@@ -8,15 +14,8 @@ import type {
 	PathInfo,
 	SwaggerDefinition,
 	SwaggerResponse,
-} from "@src/core/types/index.js";
-import {
-	camelCase,
-	getTypeScriptType,
-	isDataTypeInterface,
-	sanitizeComment,
-} from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import type { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
+} from "../core/types/index.js";
+import type { SwaggerParser } from "../openapi/parse.js";
 import type {
 	BodyVariant,
 	ErrorResponseInfo,
@@ -25,14 +24,35 @@ import type {
 	ResponseVariant,
 	ServiceMethodModel,
 } from "./types.js";
+import {
+	camelCase,
+	getTypeScriptType,
+	isDataTypeInterface,
+	sanitizeComment,
+} from "./utils.js";
 
+/**
+ * Analyzes an OpenAPI operation (`PathInfo`) and constructs a `ServiceMethodModel` IR for code generation.
+ */
 export class ServiceMethodAnalyzer {
+	/**
+	 * Creates a new `ServiceMethodAnalyzer`.
+	 *
+	 * @param config - Generator configuration options.
+	 * @param parser - The parsed OpenAPI specification.
+	 */
 	constructor(
 		private config: GeneratorConfig,
 
 		private parser: SwaggerParser,
 	) {}
 
+	/**
+	 * Analyzes a single `PathInfo` operation into a `ServiceMethodModel`, or returns `null` if `methodName` is missing.
+	 *
+	 * @param operation - The parsed OpenAPI operation.
+	 * @returns The analyzed `ServiceMethodModel` or `null`.
+	 */
 	public analyze(operation: PathInfo): ServiceMethodModel | null {
 		if (!operation.methodName) return null;
 
@@ -595,7 +615,13 @@ export class ServiceMethodAnalyzer {
 		return { variants, ...(successCode ? { successCode } : {}) };
 	}
 
-	private resolveType(schema: OpenApiValue, knownTypes: string[]): string {
+	/**
+	 * Executes `resolveType`.
+	 * @param schema - Parameter `schema`.
+	 * @param knownTypes - Parameter `knownTypes`.
+	 * @returns Result of `resolveType`.
+	 */
+	public resolveType(schema: OpenApiValue, knownTypes: string[]): string {
 		return schema !== undefined
 			? getTypeScriptType(schema as SwaggerDefinition, this.config, knownTypes)
 			: "string | number | boolean | object | undefined | null";
@@ -1241,7 +1267,14 @@ export class ServiceMethodAnalyzer {
 		return { type: "json", paramName: bodyParamName };
 	}
 
-	private enrichEncodingConfig(
+	/**
+	 * Executes `enrichEncodingConfig`.
+	 * @param propSchema - Parameter `propSchema`.
+	 * @param configMap - Parameter `configMap`.
+	 * @param key - Parameter `key`.
+	 * @returns Result of `enrichEncodingConfig`.
+	 */
+	public enrichEncodingConfig(
 		propSchema: SwaggerDefinition | boolean,
 		configMap: Record<string, EncodingProperty>,
 		key: string,
@@ -1563,7 +1596,13 @@ export class ServiceMethodAnalyzer {
 		return properties.some((p) => p.readOnly || p.writeOnly);
 	}
 
-	private getXmlConfig(
+	/**
+	 * Executes `getXmlConfig`.
+	 * @param schema - Parameter `schema`.
+	 * @param depth - Parameter `depth`.
+	 * @returns Result of `getXmlConfig`.
+	 */
+	public getXmlConfig(
 		schema: SwaggerDefinition | boolean | undefined,
 		depth: number,
 	): Record<string, OpenApiValue> {
@@ -1651,7 +1690,13 @@ export class ServiceMethodAnalyzer {
 		return config;
 	}
 
-	private getDecodingConfig(
+	/**
+	 * Executes `getDecodingConfig`.
+	 * @param schema - Parameter `schema`.
+	 * @param depth - Parameter `depth`.
+	 * @returns Result of `getDecodingConfig`.
+	 */
+	public getDecodingConfig(
 		schema: SwaggerDefinition | boolean | undefined,
 		depth: number = 5,
 	): Record<string, OpenApiValue> {
@@ -1796,7 +1841,13 @@ export class ServiceMethodAnalyzer {
 			: "data";
 	}
 
-	private getEncodingConfig(
+	/**
+	 * Executes `getEncodingConfig`.
+	 * @param schema - Parameter `schema`.
+	 * @param depth - Parameter `depth`.
+	 * @returns Result of `getEncodingConfig`.
+	 */
+	public getEncodingConfig(
 		schema: SwaggerDefinition | boolean | undefined,
 		depth: number = 5,
 	): Record<string, OpenApiValue> {

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
@@ -26,7 +24,7 @@ import {
 	type Mock,
 	vi,
 } from "vitest";
-
+import { type TestValue, testCast } from "../shared/helpers.js";
 import { parserCoverageSpec } from "../shared/specs.js";
 
 vi.mock("fs", async (importOriginal) => {
@@ -45,18 +43,18 @@ vi.mock("node:url", () => ({
 describe("Core: SwaggerParser", () => {
 	let config: GeneratorConfig;
 
-	let consoleWarnSpy: string | number | boolean | object | undefined | null;
+	let consoleWarnSpy: TestValue;
 	const originalJsonParse = JSON.parse;
 	const validInfo = { title: "Test API", version: "1.0.0" };
 
-	let realValidateSpec: string | number | boolean | object | undefined | null;
+	let realValidateSpec: TestValue;
 
 	beforeAll(async () => {
 		const actual = await vi.importActual<typeof validator>(
 			"@src/openapi/parse_validator.js",
 		);
 
-		realValidateSpec = actual.validateSpec;
+		realValidateSpec = testCast(actual.validateSpec);
 	});
 
 	beforeEach(() => {
@@ -66,7 +64,9 @@ describe("Core: SwaggerParser", () => {
 			options: {},
 		};
 
-		consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		consoleWarnSpy = testCast(
+			vi.spyOn(console, "warn").mockImplementation(() => {}),
+		);
 		(validator.validateSpec as Mock).mockImplementation(() => {});
 	});
 
@@ -78,7 +78,9 @@ describe("Core: SwaggerParser", () => {
 
 	describe("File Loading and Instantiation", () => {
 		beforeEach(() => {
-			(validator.validateSpec as Mock).mockImplementation(realValidateSpec);
+			(validator.validateSpec as Mock).mockImplementation(
+				testCast(realValidateSpec),
+			);
 		});
 
 		it("should create parser from local JSON file", async () => {
@@ -183,27 +185,21 @@ describe("Core: SwaggerParser", () => {
 
 		it("should correctly initialize when spec has no $self property", () => {
 			const spec = { openapi: "3.0.0", info: validInfo, paths: {} };
-			expect(
-				() =>
-					new SwaggerParser(
-						spec as string | number | boolean | object | undefined | null,
-						config,
-					),
-			).not.toThrow();
+			expect(() => new SwaggerParser(testCast(spec), config)).not.toThrow();
 		});
 	});
 
 	describe("OAS 3.2 Compliance: Server URL Resolution", () => {
 		it("should resolve relative server URLs against document URI", async () => {
-			const spec = {
+			const spec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {},
 				servers: [{ url: "v1/api" }, { url: "/root/api" }],
-			} as string | number | boolean | object | undefined | null;
+			});
 
 			const parser = new SwaggerParser(
-				spec,
+				testCast(spec),
 				config,
 				undefined,
 				"https://example.com/docs/openapi.json",
@@ -214,7 +210,7 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it("should resolve relative operation servers against document URI", () => {
-			const spec = {
+			const spec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {
@@ -227,10 +223,10 @@ describe("Core: SwaggerParser", () => {
 						},
 					},
 				},
-			} as string | number | boolean | object | undefined | null;
+			});
 
 			const parser = new SwaggerParser(
-				spec,
+				testCast(spec),
 				config,
 				undefined,
 				"https://example.com/api/openapi.json",
@@ -242,7 +238,7 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it('should treat empty operation servers as default "/" and override global servers', () => {
-			const spec = {
+			const spec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				servers: [{ url: "https://api.example.com/v1" }],
@@ -263,10 +259,10 @@ describe("Core: SwaggerParser", () => {
 						},
 					},
 				},
-			} as string | number | boolean | object | undefined | null;
+			});
 
 			const parser = new SwaggerParser(
-				spec,
+				testCast(spec),
 				config,
 				undefined,
 				"https://example.com/openapi.json",
@@ -281,7 +277,7 @@ describe("Core: SwaggerParser", () => {
 			const entryUri = "https://example.com/root/openapi.yaml";
 			const refUri = "https://example.com/shared/paths.yaml";
 
-			const entrySpec: SwaggerSpec = {
+			const entrySpec: SwaggerSpec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {
@@ -289,9 +285,9 @@ describe("Core: SwaggerParser", () => {
 						$ref: "../shared/paths.yaml#/components/pathItems/ExternalPath",
 					},
 				},
-			} as string | number | boolean | object | undefined | null;
+			});
 
-			const refSpec: SwaggerSpec = {
+			const refSpec: SwaggerSpec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				components: {
@@ -305,7 +301,7 @@ describe("Core: SwaggerParser", () => {
 						},
 					},
 				},
-			} as string | number | boolean | object | undefined | null;
+			});
 
 			const cache = new Map<string, SwaggerSpec>([
 				[entryUri, entrySpec],
@@ -323,16 +319,16 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it("should ignore $self when resolving relative server URLs", async () => {
-			const spec = {
+			const spec = testCast({
 				openapi: "3.2.0",
 				$self: "https://cdn.spec.com/latest/spec.yaml",
 				info: validInfo,
 				paths: {},
 				servers: [{ url: "./v1" }],
-			} as string | number | boolean | object | undefined | null;
+			});
 
 			const parser = new SwaggerParser(
-				spec,
+				testCast(spec),
 				config,
 				undefined,
 				"https://example.com/spec.json",
@@ -342,16 +338,16 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it("should ignore relative $self when resolving server URLs", () => {
-			const spec = {
+			const spec = testCast({
 				openapi: "3.2.0",
 				$self: "../canon/spec.yaml",
 				info: validInfo,
 				paths: {},
 				servers: [{ url: "./api" }],
-			} as string | number | boolean | object | undefined | null;
+			});
 
 			const parser = new SwaggerParser(
-				spec,
+				testCast(spec),
 				config,
 				undefined,
 				"https://example.com/v2/draft/doc.json",
@@ -361,15 +357,15 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it("should leave template URLs untouched if they start with braces", async () => {
-			const spec = {
+			const spec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {},
 				servers: [{ url: "{scheme}://api.com" }],
-			} as string | number | boolean | object | undefined | null;
+			});
 
 			const parser = new SwaggerParser(
-				spec,
+				testCast(spec),
 				config,
 				undefined,
 				"https://example.com",
@@ -378,15 +374,15 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it("should preserve template variables in path during resolution", async () => {
-			const spec = {
+			const spec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {},
 				servers: [{ url: "api/{version}" }],
-			} as string | number | boolean | object | undefined | null;
+			});
 
 			const parser = new SwaggerParser(
-				spec,
+				testCast(spec),
 				config,
 				undefined,
 				"https://example.com/spec.json",
@@ -395,34 +391,26 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it("should keep server entries without url unchanged", () => {
-			const spec = {
+			const spec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {},
-				servers: [
-					{ description: "no url" } as
-						| string
-						| number
-						| boolean
-						| object
-						| undefined
-						| null,
-				],
-			} as string | number | boolean | object | undefined | null;
-			const parser = new SwaggerParser(spec, config);
+				servers: [testCast({ description: "no url" })],
+			});
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.servers[0]).toEqual({ description: "no url" });
 		});
 
 		it("should return original server URL when resolution fails", () => {
-			const spec = {
+			const spec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {},
 				servers: [{ url: "http://[invalid]" }],
-			} as string | number | boolean | object | undefined | null;
+			});
 
 			const parser = new SwaggerParser(
-				spec,
+				testCast(spec),
 				config,
 				undefined,
 				"https://example.com",
@@ -452,7 +440,7 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(spec as any, config);
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.operations.length).toBe(0);
 		});
 
@@ -479,7 +467,7 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(spec as any, config);
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.operations.length).toBe(1);
 		});
 
@@ -487,7 +475,7 @@ describe("Core: SwaggerParser", () => {
 			const entryUri = "https://example.com/openapi.json";
 			const externalUri = "https://example.com/other.json";
 
-			const entrySpec: SwaggerSpec = {
+			const entrySpec: SwaggerSpec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {
@@ -501,9 +489,9 @@ describe("Core: SwaggerParser", () => {
 						$ref: "other.json#/paths/~1external",
 					},
 				},
-			} as string | number | boolean | object | undefined | null;
+			});
 
-			const externalSpec: SwaggerSpec = {
+			const externalSpec: SwaggerSpec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {
@@ -514,7 +502,7 @@ describe("Core: SwaggerParser", () => {
 						},
 					},
 				},
-			} as string | number | boolean | object | undefined | null;
+			});
 
 			const cache = new Map<string, SwaggerSpec>([
 				[entryUri, entrySpec],
@@ -538,7 +526,7 @@ describe("Core: SwaggerParser", () => {
 			const entryUri = "https://example.com/openapi2.json";
 			const externalUri = "https://example.com/other2.json";
 
-			const entrySpec: SwaggerSpec = {
+			const entrySpec: SwaggerSpec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {
@@ -546,9 +534,9 @@ describe("Core: SwaggerParser", () => {
 						$ref: "other2.json#/paths/~1external",
 					},
 				},
-			} as any;
+			});
 
-			const externalSpec: SwaggerSpec = {
+			const externalSpec: SwaggerSpec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {
@@ -565,7 +553,7 @@ describe("Core: SwaggerParser", () => {
 						},
 					},
 				},
-			} as any;
+			});
 
 			const cache = new Map<string, SwaggerSpec>([
 				[entryUri, entrySpec],
@@ -589,7 +577,7 @@ describe("Core: SwaggerParser", () => {
 			const entryUri = "https://example.com/openapi3.json";
 			const externalUri = "https://example.com/other3.json";
 
-			const entrySpec: SwaggerSpec = {
+			const entrySpec: SwaggerSpec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				webhooks: {
@@ -597,9 +585,9 @@ describe("Core: SwaggerParser", () => {
 						$ref: "other3.json#/paths/~1external",
 					},
 				},
-			} as any;
+			});
 
-			const externalSpec: SwaggerSpec = {
+			const externalSpec: SwaggerSpec = testCast({
 				openapi: "3.2.0",
 				info: validInfo,
 				paths: {
@@ -616,7 +604,7 @@ describe("Core: SwaggerParser", () => {
 						},
 					},
 				},
-			} as any;
+			});
 
 			const cache = new Map<string, SwaggerSpec>([
 				[entryUri, entrySpec],
@@ -659,14 +647,9 @@ describe("Core: SwaggerParser", () => {
 
 		beforeEach(() => {
 			parser = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
+				testCast(spec),
 				config,
-				new Map([
-					[
-						"file://entry-spec.json",
-						spec as string | number | boolean | object | undefined | null,
-					],
-				]),
+				new Map([["file://entry-spec.json", testCast(spec)]]),
 			);
 		});
 
@@ -717,16 +700,8 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it("should return undefined for a null/undefined object", () => {
-			expect(
-				parser.resolve(
-					null as string | number | boolean | object | undefined | null,
-				),
-			).toBeUndefined();
-			expect(
-				parser.resolve(
-					undefined as string | number | boolean | object | undefined | null,
-				),
-			).toBeUndefined();
+			expect(parser.resolve(testCast(null))).toBeUndefined();
+			expect(parser.resolve(testCast(undefined))).toBeUndefined();
 		});
 
 		it("should handle nested (recursive) static references", () => {
@@ -745,7 +720,9 @@ describe("Core: SwaggerParser", () => {
 
 	describe("Multi-document Parsing", () => {
 		beforeEach(() => {
-			(validator.validateSpec as Mock).mockImplementation(realValidateSpec);
+			(validator.validateSpec as Mock).mockImplementation(
+				testCast(realValidateSpec),
+			);
 		});
 
 		it("should pre-load and resolve external file references", async () => {
@@ -913,11 +890,11 @@ describe("Core: SwaggerParser", () => {
 	describe("Polymorphism Logic", () => {
 		it("getPolymorphicSchemaOptions should return empty array for non-polymorphic schema", () => {
 			const parser = new SwaggerParser(
-				{
+				testCast({
 					openapi: "3.0.0",
 					...validInfo,
 					paths: {},
-				} as string | number | boolean | object | undefined | null,
+				}),
 				{ options: {} } as GeneratorConfig,
 			);
 			expect(parser.getPolymorphicSchemaOptions({ type: "object" })).toEqual(
@@ -931,16 +908,9 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it("should correctly use explicit discriminator mapping", () => {
-			const parser = new SwaggerParser(
-				parserCoverageSpec as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
-				{ options: {} } as GeneratorConfig,
-			);
+			const parser = new SwaggerParser(testCast(parserCoverageSpec), {
+				options: {},
+			} as GeneratorConfig);
 			const schema = parser.getDefinition("WithMapping");
 			const options = parser.getPolymorphicSchemaOptions(
 				schema as SwaggerDefinition,
@@ -967,16 +937,9 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(
-				specWithBadMapping as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
-				{ options: {} } as GeneratorConfig,
-			);
+			const parser = new SwaggerParser(testCast(specWithBadMapping), {
+				options: {},
+			} as GeneratorConfig);
 			const schema = parser.getDefinition("BadMap");
 			const options = parser.getPolymorphicSchemaOptions(
 				schema as SwaggerDefinition,
@@ -985,16 +948,9 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it("should correctly infer discriminator mapping when it is not explicitly provided", () => {
-			const parser = new SwaggerParser(
-				parserCoverageSpec as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
-				{ options: {} } as GeneratorConfig,
-			);
+			const parser = new SwaggerParser(testCast(parserCoverageSpec), {
+				options: {},
+			} as GeneratorConfig);
 			const schema = parser.getDefinition("PolyWithInline");
 			const options = parser.getPolymorphicSchemaOptions(
 				schema as SwaggerDefinition,
@@ -1004,16 +960,9 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it("getPolymorphicSchemaOptions should handle oneOf items that are not refs", () => {
-			const parser = new SwaggerParser(
-				parserCoverageSpec as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
-				{ options: {} } as GeneratorConfig,
-			);
+			const parser = new SwaggerParser(testCast(parserCoverageSpec), {
+				options: {},
+			} as GeneratorConfig);
 			const schema = parser.getDefinition("PolyWithInline");
 			const options = parser.getPolymorphicSchemaOptions(
 				schema as SwaggerDefinition,
@@ -1023,16 +972,9 @@ describe("Core: SwaggerParser", () => {
 		});
 
 		it("getPolymorphicSchemaOptions should handle refs to schemas without the discriminator property or enum", () => {
-			const parser = new SwaggerParser(
-				parserCoverageSpec as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
-				{ options: {} } as GeneratorConfig,
-			);
+			const parser = new SwaggerParser(testCast(parserCoverageSpec), {
+				options: {},
+			} as GeneratorConfig);
 			const schema = parser.getDefinition("PolyWithInvalidRefs");
 			const options = parser.getPolymorphicSchemaOptions(
 				schema as SwaggerDefinition,
@@ -1059,10 +1001,7 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(spec), config);
 			const polySchema = parser.getDefinition("Poly");
 			const options = parser.getPolymorphicSchemaOptions(
 				polySchema as SwaggerDefinition,
@@ -1097,10 +1036,7 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(spec), config);
 			const petSchema = parser.getDefinition("Pet");
 			const options = parser.getPolymorphicSchemaOptions(
 				petSchema as SwaggerDefinition,
@@ -1111,20 +1047,24 @@ describe("Core: SwaggerParser", () => {
 
 		it("should return empty options when implicit name is missing", () => {
 			const parser = new SwaggerParser(
-				{
+				testCast({
 					openapi: "3.1.0",
 					info: validInfo,
 					paths: {},
-				} as string | number | boolean | object | undefined | null,
+				}),
 				config,
 			);
-			vi.spyOn(parser, "resolveReference").mockReturnValue({
-				properties: { type: { type: "string" } },
-			} as string | number | boolean | object | undefined | null);
-			const options = parser.getPolymorphicSchemaOptions({
-				oneOf: [{ $ref: "/" }],
-				discriminator: { propertyName: "type" },
-			} as string | number | boolean | object | undefined | null);
+			vi.spyOn(parser, "resolveReference").mockReturnValue(
+				testCast({
+					properties: { type: { type: "string" } },
+				}),
+			);
+			const options = parser.getPolymorphicSchemaOptions(
+				testCast({
+					oneOf: [{ $ref: "/" }],
+					discriminator: { propertyName: "type" },
+				}),
+			);
 
 			expect(options).toEqual([]);
 		});
@@ -1132,49 +1072,31 @@ describe("Core: SwaggerParser", () => {
 
 	describe("OAS 3.1+ Features", () => {
 		it("should parse jsonSchemaDialect", () => {
-			const spec = {
+			const spec = testCast({
 				openapi: "3.1.0",
 				info: validInfo,
 				paths: {},
 				jsonSchemaDialect: OAS_3_1_DIALECT,
-			} as string | number | boolean | object | undefined | null;
-			const parser = new SwaggerParser(spec, config);
+			});
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.getJsonSchemaDialect()).toBe(OAS_3_1_DIALECT);
 		});
 
 		it("should default jsonSchemaDialect for OpenAPI 3.1 when missing", () => {
-			const spec = { openapi: "3.1.0", info: validInfo, paths: {} } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
-			const parser = new SwaggerParser(spec, config);
+			const spec = testCast({ openapi: "3.1.0", info: validInfo, paths: {} });
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.getJsonSchemaDialect()).toBe(OAS_3_1_DIALECT);
 		});
 
 		it("should default jsonSchemaDialect for OpenAPI 3.2 when missing", () => {
-			const spec = { openapi: "3.2.0", info: validInfo, paths: {} } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
-			const parser = new SwaggerParser(spec, config);
+			const spec = testCast({ openapi: "3.2.0", info: validInfo, paths: {} });
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.getJsonSchemaDialect()).toBe(OAS_3_1_DIALECT);
 		});
 
 		it("should return undefined jsonSchemaDialect for OpenAPI 3.0 without dialect", () => {
-			const spec = { openapi: "3.0.3", info: validInfo, paths: {} } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null;
-			const parser = new SwaggerParser(spec, config);
+			const spec = testCast({ openapi: "3.0.3", info: validInfo, paths: {} });
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.getJsonSchemaDialect()).toBeUndefined();
 		});
 
@@ -1185,10 +1107,7 @@ describe("Core: SwaggerParser", () => {
 				jsonSchemaDialect: JSON_SCHEMA_2020_12_DIALECT,
 				paths: {},
 			};
-			new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				{ options: {} } as GeneratorConfig,
-			);
+			new SwaggerParser(testCast(spec), { options: {} } as GeneratorConfig);
 
 			expect(consoleWarnSpy).not.toHaveBeenCalled();
 		});
@@ -1200,10 +1119,7 @@ describe("Core: SwaggerParser", () => {
 				jsonSchemaDialect: "https://spec.openapis.org/oas/3.0/dialect",
 				paths: {},
 			};
-			new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				{ options: {} } as GeneratorConfig,
-			);
+			new SwaggerParser(testCast(spec), { options: {} } as GeneratorConfig);
 
 			expect(consoleWarnSpy).not.toHaveBeenCalled();
 		});
@@ -1247,20 +1163,13 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(
-				specWithOverrides as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
-				{ options: {} } as GeneratorConfig,
-			);
+			const parser = new SwaggerParser(testCast(specWithOverrides), {
+				options: {},
+			} as GeneratorConfig);
 
-			const resolved = parser.resolve<
-				string | number | boolean | object | undefined | null
-			>(specWithOverrides.components.schemas.WithOverride);
+			const resolved = parser.resolve<TestValue>(
+				specWithOverrides.components.schemas.WithOverride,
+			);
 
 			expect(resolved?.description).toBe("Overridden");
 
@@ -1270,7 +1179,9 @@ describe("Core: SwaggerParser", () => {
 
 	describe("General Getters & Edge Cases", () => {
 		beforeEach(() => {
-			(validator.validateSpec as Mock).mockImplementation(realValidateSpec);
+			(validator.validateSpec as Mock).mockImplementation(
+				testCast(realValidateSpec),
+			);
 		});
 
 		it("should get definitions from Swagger 2.0 `definitions`", () => {
@@ -1280,10 +1191,7 @@ describe("Core: SwaggerParser", () => {
 				paths: {},
 				definitions: { Pet: { type: "object" } },
 			};
-			const parser = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.getDefinitions()).toHaveProperty("Pet");
 			expect(parser.getDefinition("Pet")).toEqual({ type: "object" });
 		});
@@ -1295,31 +1203,28 @@ describe("Core: SwaggerParser", () => {
 				paths: {},
 				securityDefinitions: { ApiKey: { type: "apiKey" } },
 			};
-			const parser = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.getSecuritySchemes()).toHaveProperty("ApiKey");
 		});
 
 		it("should validate spec versions correctly", () => {
 			expect(
 				new SwaggerParser(
-					{
+					testCast({
 						openapi: "3.1.0",
 						info: validInfo,
 						paths: {},
-					} as string | number | boolean | object | undefined | null,
+					}),
 					config,
 				).isValidSpec(),
 			).toBe(true);
 			expect(
 				new SwaggerParser(
-					{
+					testCast({
 						swagger: "2.0",
 						info: validInfo,
 						paths: {},
-					} as string | number | boolean | object | undefined | null,
+					}),
 					config,
 				).isValidSpec(),
 			).toBe(true);
@@ -1327,13 +1232,7 @@ describe("Core: SwaggerParser", () => {
 
 		it("should get spec version for Swagger 2.0", () => {
 			const parser = new SwaggerParser(
-				{ swagger: "2.0", info: validInfo, paths: {} } as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
+				testCast({ swagger: "2.0", info: validInfo, paths: {} }),
 				config,
 			);
 			expect(parser.getSpecVersion()).toEqual({
@@ -1351,10 +1250,7 @@ describe("Core: SwaggerParser", () => {
 					securitySchemes: { Bearer: { type: "http", scheme: "bearer" } },
 				},
 			};
-			const parser = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.getSecuritySchemes()).toHaveProperty("Bearer");
 		});
 
@@ -1372,16 +1268,7 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(
-				specWithInlineLink as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(specWithInlineLink), config);
 			const links = parser.getLinks();
 			expect(links).toHaveProperty("MyLink");
 			expect(links.MyLink.description).toBe("An inline link");
@@ -1404,16 +1291,7 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(
-				specWithRefLink as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(specWithRefLink), config);
 			const links = parser.getLinks();
 			expect(links.RefLink.description).toBe("Base link");
 		});
@@ -1431,16 +1309,7 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(
-				specWithMissingLink as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(specWithMissingLink), config);
 			const links = parser.getLinks();
 			expect(links.RefLink).toBeUndefined();
 		});
@@ -1448,19 +1317,13 @@ describe("Core: SwaggerParser", () => {
 		it("should return null for getSpecVersion on a spec without a version field", () => {
 			(validator.validateSpec as Mock).mockImplementation(() => {});
 			const invalidSpec = { info: validInfo, paths: {} };
-			const parser = new SwaggerParser(
-				invalidSpec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(invalidSpec), config);
 			expect(parser.getSpecVersion()).toBeNull();
 		});
 
 		it('should default to "/" server for OAS 3.x when servers field is missing', async () => {
 			const spec = { openapi: "3.0.0", info: validInfo, paths: {} };
-			const parser = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.servers).toHaveLength(1);
 			expect(parser.servers[0].url).toBe("/");
 		});
@@ -1472,20 +1335,14 @@ describe("Core: SwaggerParser", () => {
 				paths: {},
 				servers: [],
 			};
-			const p = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const p = new SwaggerParser(testCast(spec), config);
 			expect(p.servers).toHaveLength(1);
 			expect(p.servers[0].url).toBe("/");
 		});
 
 		it("should NOT default servers for Swagger 2.0 when host is missing", () => {
 			const spec = { swagger: "2.0", info: validInfo, paths: {} };
-			const p = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const p = new SwaggerParser(testCast(spec), config);
 			expect(p.servers).toEqual([]);
 		});
 
@@ -1498,10 +1355,7 @@ describe("Core: SwaggerParser", () => {
 				basePath: "/v1",
 				schemes: ["https", "http"],
 			};
-			const p = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const p = new SwaggerParser(testCast(spec), config);
 			expect(p.servers).toEqual([
 				{ url: "https://api.example.com/v1" },
 				{ url: "http://api.example.com/v1" },
@@ -1516,7 +1370,7 @@ describe("Core: SwaggerParser", () => {
 				basePath: "/api",
 			};
 			const p = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
+				testCast(spec),
 				config,
 				undefined,
 				"https://swagger.example.com/specs/petstore.json",
@@ -1531,10 +1385,7 @@ describe("Core: SwaggerParser", () => {
 				paths: {},
 				servers: [{ url: "http://custom.com/api" }],
 			};
-			const p = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const p = new SwaggerParser(testCast(spec), config);
 			expect(p.servers).toEqual([{ url: "http://custom.com/api" }]);
 		});
 
@@ -1546,7 +1397,7 @@ describe("Core: SwaggerParser", () => {
 				basePath: "/just-base",
 			};
 			const p = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
+				testCast(spec),
 				config,
 				undefined,
 				"file://local",
@@ -1569,10 +1420,13 @@ describe("Core: SwaggerParser", () => {
 			};
 			const cache = new Map<string, SwaggerSpec>([
 				["file://entry-spec.json", spec],
-				["file://other-spec.json", { type: "number", $id: "UserModel" }],
+				[
+					"file://other-spec.json",
+					testCast({ type: "number", $id: "UserModel" }),
+				],
 			]);
 			new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
+				testCast(spec),
 				config,
 				cache,
 				"file://entry-spec.json",
@@ -1603,10 +1457,7 @@ describe("Core: SwaggerParser", () => {
 				},
 			};
 			expect(() => {
-				new SwaggerParser(
-					spec as string | number | boolean | object | undefined | null,
-					config,
-				);
+				new SwaggerParser(testCast(spec), config);
 			}).toThrowError(/Duplicate operationId "dupOp"/);
 		});
 
@@ -1650,10 +1501,7 @@ describe("Core: SwaggerParser", () => {
 				},
 			};
 			expect(() => {
-				new SwaggerParser(
-					spec as string | number | boolean | object | undefined | null,
-					config,
-				);
+				new SwaggerParser(testCast(spec), config);
 			}).toThrowError(/Duplicate operationId/);
 		});
 
@@ -1681,7 +1529,7 @@ describe("Core: SwaggerParser", () => {
 				},
 			};
 			expect(() => {
-				new SwaggerParser(spec as any, config);
+				new SwaggerParser(testCast(spec), config);
 			}).toThrowError(/Duplicate operationId/);
 		});
 
@@ -1701,7 +1549,7 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(spec as any, config);
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(parser.webhooks.some((w) => w.operationId === "dupOp3")).toBe(
 				true,
 			);
@@ -1729,7 +1577,7 @@ describe("Core: SwaggerParser", () => {
 				},
 			};
 			expect(() => {
-				new SwaggerParser(spec as any, config);
+				new SwaggerParser(testCast(spec), config);
 			}).toThrowError(/Duplicate operationId "dupOp"/);
 		});
 
@@ -1757,7 +1605,7 @@ describe("Core: SwaggerParser", () => {
 				},
 			};
 			expect(() => {
-				new SwaggerParser(spec as any, config);
+				new SwaggerParser(testCast(spec), config);
 			}).toThrowError(/Duplicate operationId "dupOp"/);
 		});
 
@@ -1830,7 +1678,7 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(spec as any, config);
+			const parser = new SwaggerParser(testCast(spec), config);
 			expect(
 				parser.operations.some((op) => op.operationId === "inlineGet"),
 			).toBe(true);
@@ -1879,7 +1727,7 @@ describe("Core: SwaggerParser", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(spec as any, config);
+			const parser = new SwaggerParser(testCast(spec), config);
 			const reqs = parser.getSecuritySchemes();
 			expect(reqs).toBeDefined();
 			expect(reqs?.ApiKey).toBeDefined();

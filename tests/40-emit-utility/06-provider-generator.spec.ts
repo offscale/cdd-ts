@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { AuthInterceptorGenerator } from "@src/vendors/angular/utils/auth-interceptor.generator.js";
@@ -10,7 +8,7 @@ import { ProviderGenerator } from "@src/vendors/angular/utils/provider.generator
 import { TokenGenerator } from "@src/vendors/angular/utils/token.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 import { emptySpec, securitySpec } from "../shared/specs.js";
 
 describe("Emitter: ProviderGenerator", () => {
@@ -31,10 +29,7 @@ describe("Emitter: ProviderGenerator", () => {
 			...config,
 		};
 
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			fullConfig,
-		);
+		const parser = new SwaggerParser(testCast(spec), fullConfig);
 
 		new TokenGenerator(project, fullConfig.clientName).generate(
 			fullConfig.output,
@@ -74,13 +69,7 @@ describe("Emitter: ProviderGenerator", () => {
 
 	it("should not generate if generateServices is false", () => {
 		const fileContent = runGenerator(emptySpec, {
-			options: { generateServices: false } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			options: testCast({ generateServices: false }),
 		});
 		expect(fileContent).toBeUndefined();
 	});
@@ -160,13 +149,7 @@ describe("Emitter: ProviderGenerator", () => {
 	it('should add DateInterceptor if dateType is "Date"', () => {
 		const fileContent = runGenerator(emptySpec, {
 			clientName: "Test",
-			options: { dateType: "Date" } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			options: testCast({ dateType: "Date" }),
 		});
 		expect(fileContent).toContain("if (config.enableDateTransform !== false)");
 		expect(fileContent).toContain("fns.push(dateInterceptor);");
@@ -175,7 +158,7 @@ describe("Emitter: ProviderGenerator", () => {
 	it("should generate an empty custom interceptors array if none are provided", () => {
 		const fileContent = runGenerator(emptySpec, { clientName: "Test" });
 		expect(fileContent).toContain(
-			'const customInterceptors = config.interceptors?.map(InterceptorClass => typeof InterceptorClass === "function" && !InterceptorClass.prototype?.intercept ? InterceptorClass : new (InterceptorClass as any)()) || [];',
+			'const customInterceptors = config.interceptors?.map(InterceptorClass => typeof InterceptorClass === "function" && !InterceptorClass.prototype?.intercept ? InterceptorClass : new (InterceptorClass as new () => HttpInterceptor)()) || [];',
 		);
 		expect(fileContent).toContain(
 			`provide: HTTP_INTERCEPTORS_TEST, useValue: customInterceptors`,
@@ -216,10 +199,7 @@ describe("Emitter: ProviderGenerator", () => {
 				enumStyle: "enum",
 			},
 		};
-		const parser = new SwaggerParser(
-			emptySpec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(emptySpec), config);
 		const generator = new ProviderGenerator(parser, project, []);
 
 		generator.generate("/out");
@@ -230,7 +210,7 @@ describe("Emitter: ProviderGenerator", () => {
 
 	it("should use default tokenNames when omitted", () => {
 		const project = createTestProject();
-		const config: GeneratorConfig = {
+		const config: GeneratorConfig = testCast({
 			input: "",
 			output: "/out",
 			options: {
@@ -238,11 +218,8 @@ describe("Emitter: ProviderGenerator", () => {
 				dateType: "string",
 				enumStyle: "enum",
 			},
-		} as string | number | boolean | object | undefined | null;
-		const parser = new SwaggerParser(
-			emptySpec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		});
+		const parser = new SwaggerParser(testCast(emptySpec), config);
 
 		new ProviderGenerator(parser, project).generate("/out");
 

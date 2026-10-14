@@ -1,19 +1,35 @@
+/**
+ * Generates `media-types.ts` exporting reusable `components.mediaTypes` definitions (`API_MEDIA_TYPES`).
+ *
+ * @module openapi/emit_media_types
+ */
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerParser } from "./parse.js";
 
 /**
  * Generates the `media-types.ts` file.
  * Exposes reusable Media Type Objects from components.mediaTypes.
  */
 export class MediaTypesGenerator {
+	/**
+	 * Creates a new `MediaTypesGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The `ts-morph` project to create `media-types.ts` in.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates `media-types.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "media-types.ts");
 

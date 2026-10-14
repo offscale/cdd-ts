@@ -1,19 +1,35 @@
+/**
+ * Generates `headers.ts` exporting reusable `components.headers` definitions (`API_HEADERS`).
+ *
+ * @module openapi/emit_headers
+ */
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerParser } from "./parse.js";
 
 /**
  * Generates the `headers.ts` file.
  * Exposes reusable Header Objects from components.headers.
  */
 export class HeadersGenerator {
+	/**
+	 * Creates a new `HeadersGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The `ts-morph` project to create `headers.ts` in.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates `headers.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "headers.ts");
 

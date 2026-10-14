@@ -1,37 +1,83 @@
+/**
+ * Resolves OpenAPI `$ref` and `$dynamicRef` references across local and external specifications.
+ *
+ * @module openapi/parse_reference_resolver
+ */
 import type {
 	OpenApiValue,
 	SwaggerDefinition,
 	SwaggerSpec,
 } from "../core/types/index.js";
 
+/**
+ * Internal representation of a standard JSON Reference object.
+ */
 interface RefObject {
+	/** The target reference URI or JSON Pointer. */
 	$ref: string;
+	/** Optional summary override. */
 	summary?: string;
+	/** Optional description override. */
 	description?: string;
 }
 
+/**
+ * Internal representation of an OAS 3.1 `$dynamicRef` object.
+ */
 interface DynamicRefObject {
+	/** The target dynamic reference URI or anchor. */
 	$dynamicRef: string;
+	/** Optional summary override. */
 	summary?: string;
+	/** Optional description override. */
 	description?: string;
 }
 
-const isRefObject = (obj: OpenApiValue): obj is RefObject =>
+/**
+ * Type guard checking whether a value is a `RefObject`.
+ *
+ * @param obj - Value to inspect.
+ * @returns `true` if `obj` contains a string `$ref` property.
+ */
+const isRefObject = (obj: unknown): obj is RefObject =>
 	typeof obj === "object" &&
 	obj !== null &&
 	"$ref" in obj &&
-	typeof (obj as { $ref: OpenApiValue }).$ref === "string";
+	typeof (obj as { $ref: unknown }).$ref === "string";
 
-const isDynamicRefObject = (obj: OpenApiValue): obj is DynamicRefObject =>
+/**
+ * Type guard checking whether a value is a `DynamicRefObject`.
+ *
+ * @param obj - Value to inspect.
+ * @returns `true` if `obj` contains a string `$dynamicRef` property.
+ */
+const isDynamicRefObject = (obj: unknown): obj is DynamicRefObject =>
 	typeof obj === "object" &&
 	obj !== null &&
 	"$dynamicRef" in obj &&
 	typeof (
 		obj as {
-			$dynamicRef: OpenApiValue;
+			$dynamicRef: unknown;
 		}
 	).$dynamicRef === "string";
 
+/**
+ * Narrow an `OpenApiValue` to the caller's target schema/component type `T`.
+ *
+ * @template T - Target resolved OpenAPI component type.
+ * @param value - The resolved OpenAPI value.
+ * @returns The typed value `T` or `undefined`.
+ */
+function narrowResolvedValue<T>(value: OpenApiValue): T | undefined {
+	return value as T;
+}
+
+/**
+ * Safely URL-decodes a JSON Pointer fragment.
+ *
+ * @param value - Raw fragment string.
+ * @returns Decoded fragment string, or original string if malformed.
+ */
 const safeDecodeFragment = (value: string): string => {
 	try {
 		return decodeURIComponent(value);
@@ -40,6 +86,12 @@ const safeDecodeFragment = (value: string): string => {
 	}
 };
 
+/**
+ * Removes any `#fragment` suffix from a URI string.
+ *
+ * @param value - Full URI string.
+ * @returns Base URI without fragment.
+ */
 const stripFragment = (value: string): string =>
 	value.split("#", 1)[0] ?? value;
 
@@ -51,20 +103,46 @@ export class ReferenceResolver {
 
 	private static documentUriMap = new WeakMap<object, string>();
 
+	/**
+	 * Creates a new `ReferenceResolver`.
+	 *
+	 * @param specCache - Map of document/anchor URIs to loaded `SwaggerSpec` objects.
+	 * @param entryDocumentUri - The root entry document URI.
+	 */
 	constructor(
 		private specCache: Map<string, SwaggerSpec>,
 
 		private entryDocumentUri: string,
 	) {}
 
+	/**
+	 * Retrieves the resolved base URI associated with a schema object via `$id`.
+	 *
+	 * @param obj - Schema or specification object.
+	 * @returns The associated base URI, if indexed.
+	 */
 	public static getBaseUri(obj: object): string | undefined {
 		return ReferenceResolver.baseUriMap.get(obj);
 	}
 
+	/**
+	 * Retrieves the physical document URI from which a schema object originated.
+	 *
+	 * @param obj - Schema or specification object.
+	 * @returns The document URI, if indexed.
+	 */
 	public static getDocumentUri(obj: object): string | undefined {
 		return ReferenceResolver.documentUriMap.get(obj);
 	}
 
+	/**
+	 * Recursively indexes `$id`, `$anchor`, and `$dynamicAnchor` declarations across a specification.
+	 *
+	 * @param spec - Specification or schema value to index.
+	 * @param baseUri - Current base URI for relative `$id` resolution.
+	 * @param cache - Spec cache to populate with discovered `$id` and anchor URIs.
+	 * @param documentUri - Physical document URI owning `spec`.
+	 */
 	public static indexSchemaIds(
 		spec: OpenApiValue,
 		baseUri: string,
@@ -134,6 +212,12 @@ export class ReferenceResolver {
 		traverse(spec, baseUri, new Set());
 	}
 
+	/**
+	 * Collects all `$ref` and `$dynamicRef` URI strings within an OpenAPI value tree.
+	 *
+	 * @param obj - Root OpenAPI value to scan.
+	 * @returns Deduplicated array of reference strings.
+	 */
 	public static findRefs(obj: OpenApiValue): string[] {
 		const refs = new Set<string>();
 
@@ -156,6 +240,14 @@ export class ReferenceResolver {
 		return Array.from(refs);
 	}
 
+	/**
+	 * Resolves an object that may be a direct definition, a `$ref`, or a `$dynamicRef`.
+	 *
+	 * @template T - Expected resolved object type.
+	 * @param obj - Object or reference to resolve.
+	 * @param resolutionStack - Stack of previously visited reference URIs for cycle detection and dynamic scope.
+	 * @returns The resolved target object of type `T`, or `undefined`.
+	 */
 	public resolve<T>(
 		obj:
 			| T
@@ -212,6 +304,15 @@ export class ReferenceResolver {
 		return resolved;
 	}
 
+	/**
+	 * Resolves a reference string (`$ref` or `$dynamicRef`) against the specification cache.
+	 *
+	 * @template T - Expected resolved target type.
+	 * @param ref - Reference string (URI, relative path, JSON Pointer, or anchor).
+	 * @param currentDocUri - Base document URI from which the reference is resolved.
+	 * @param resolutionStack - Stack of active scope URIs for dynamic anchor resolution.
+	 * @returns The resolved target of type `T`, or `undefined` if unresolvable.
+	 */
 	public resolveReference<T = SwaggerDefinition>(
 		ref: string,
 		currentDocUri: string = this.entryDocumentUri,
@@ -261,7 +362,7 @@ export class ReferenceResolver {
 				const dynamicKey = `${scopeBase}#${fragment}`;
 
 				if (this.specCache.has(dynamicKey)) {
-					return this.specCache.get(dynamicKey) as OpenApiValue as T;
+					return narrowResolvedValue<T>(this.specCache.get(dynamicKey));
 				}
 			}
 		}
@@ -269,7 +370,7 @@ export class ReferenceResolver {
 		const fullUriKey = fragment ? `${targetUri}#${fragment}` : targetUri;
 
 		if (this.specCache.has(fullUriKey)) {
-			return this.specCache.get(fullUriKey) as OpenApiValue as T;
+			return narrowResolvedValue<T>(this.specCache.get(fullUriKey));
 		}
 
 		const targetSpec = this.specCache.get(targetUri);
@@ -332,6 +433,6 @@ export class ReferenceResolver {
 			}
 		}
 
-		return result as T;
+		return narrowResolvedValue<T>(result);
 	}
 }

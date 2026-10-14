@@ -1,19 +1,35 @@
+/**
+ * Generates `request-bodies.ts` exporting reusable `components.requestBodies` definitions (`API_REQUEST_BODIES`).
+ *
+ * @module openapi/emit_request_bodies
+ */
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerParser } from "./parse.js";
 
 /**
  * Generates the `request-bodies.ts` file.
  * Exposes reusable Request Body Objects from components.requestBodies.
  */
 export class RequestBodiesGenerator {
+	/**
+	 * Creates a new `RequestBodiesGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The `ts-morph` project to create `request-bodies.ts` in.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates `request-bodies.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "request-bodies.ts");
 

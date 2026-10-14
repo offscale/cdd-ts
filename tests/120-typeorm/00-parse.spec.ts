@@ -1,9 +1,12 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import type { IOrmGenerator, IOrmParser } from "../../src/core/orm/index.js";
+import type { SwaggerDefinition } from "../../src/core/types/openapi.js";
+import { TypeOrmGenerator } from "../../src/vendors/typeorm/emit.js";
 import { TypeOrmParser } from "../../src/vendors/typeorm/parse.js";
 
 describe("TypeOrmParser", () => {
-	it("should parse an entity class correctly", () => {
+	it("should parse an entity class correctly including arrays and custom entity reference types", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		project.createSourceFile(
 			"user.entity.ts",
@@ -26,15 +29,33 @@ describe("TypeOrmParser", () => {
 
                 @Column()
                 createdAt: Date;
+
+                @Column()
+                tags: string[];
+
+                @Column()
+                scores: Array<number>;
+
+                @Column()
+                phone: PhoneNumber;
+
+                @Column()
+                nullableNote: string | null;
+
+                @Column()
+                untypedProp;
             }
         `,
 		);
 
-		const parser = new TypeOrmParser();
+		const parser: IOrmParser = new TypeOrmParser();
+		const generator: IOrmGenerator = new TypeOrmGenerator();
+		expect(generator).toBeDefined();
+
 		const schemas = parser.parse(project);
 
 		expect(schemas.User).toBeDefined();
-		const userSchema = schemas.User as any;
+		const userSchema = schemas.User as SwaggerDefinition;
 
 		expect(userSchema.type).toBe("object");
 		expect(userSchema.required).toEqual([
@@ -42,13 +63,55 @@ describe("TypeOrmParser", () => {
 			"firstName",
 			"isActive",
 			"createdAt",
+			"tags",
+			"scores",
+			"phone",
+			"nullableNote",
+			"untypedProp",
 		]);
-		expect(userSchema.properties.id.type).toBe("number");
-		expect(userSchema.properties.firstName.type).toBe("string");
-		expect(userSchema.properties.lastName.type).toBe("string");
-		expect(userSchema.properties.isActive.type).toBe("boolean");
-		expect(userSchema.properties.createdAt.type).toBe("string");
-		expect(userSchema.properties.createdAt.format).toBe("date-time");
+		expect((userSchema.properties?.id as SwaggerDefinition).type).toBe(
+			"number",
+		);
+		expect((userSchema.properties?.firstName as SwaggerDefinition).type).toBe(
+			"string",
+		);
+		expect((userSchema.properties?.lastName as SwaggerDefinition).type).toBe(
+			"string",
+		);
+		expect((userSchema.properties?.isActive as SwaggerDefinition).type).toBe(
+			"boolean",
+		);
+		expect((userSchema.properties?.createdAt as SwaggerDefinition).type).toBe(
+			"string",
+		);
+		expect((userSchema.properties?.createdAt as SwaggerDefinition).format).toBe(
+			"date-time",
+		);
+		expect((userSchema.properties?.tags as SwaggerDefinition).type).toBe(
+			"array",
+		);
+		expect(
+			(
+				(userSchema.properties?.tags as SwaggerDefinition)
+					.items as SwaggerDefinition
+			).type,
+		).toBe("string");
+		expect((userSchema.properties?.scores as SwaggerDefinition).type).toBe(
+			"array",
+		);
+		expect(
+			(
+				(userSchema.properties?.scores as SwaggerDefinition)
+					.items as SwaggerDefinition
+			).type,
+		).toBe("number");
+		// PhoneNumber should NOT be misclassified as "number"
+		expect((userSchema.properties?.phone as SwaggerDefinition).type).toBe(
+			"object",
+		);
+		expect((userSchema.properties?.untypedProp as SwaggerDefinition).type).toBe(
+			"object",
+		);
 	});
 
 	it("should fall back to object type if type is unknown", () => {
@@ -68,9 +131,9 @@ describe("TypeOrmParser", () => {
 
 		const parser = new TypeOrmParser();
 		const schemas = parser.parse(project);
-		const schema = schemas.SomeEntity as any;
+		const schema = schemas.SomeEntity as SwaggerDefinition;
 
-		expect(schema.properties.data.type).toBe("object");
+		expect((schema.properties?.data as SwaggerDefinition).type).toBe("object");
 	});
 
 	it("should ignore non-entity classes and non-column properties", () => {
@@ -99,9 +162,9 @@ describe("TypeOrmParser", () => {
 
 		expect(schemas.NotAnEntity).toBeUndefined();
 
-		const myEntity = schemas.MyEntity as any;
-		expect(myEntity.properties.id).toBeDefined();
-		expect(myEntity.properties.notAColumn).toBeUndefined();
+		const myEntity = schemas.MyEntity as SwaggerDefinition;
+		expect(myEntity.properties?.id).toBeDefined();
+		expect(myEntity.properties?.notAColumn).toBeUndefined();
 	});
 
 	it("should clean up required array if empty", () => {
@@ -122,7 +185,7 @@ describe("TypeOrmParser", () => {
 		const parser = new TypeOrmParser();
 		const schemas = parser.parse(project);
 
-		const schema = schemas.EmptyEntity as any;
+		const schema = schemas.EmptyEntity as SwaggerDefinition;
 		expect(schema.required).toBeUndefined();
 	});
 

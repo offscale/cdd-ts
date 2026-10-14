@@ -1,3 +1,8 @@
+/**
+ * Loads, caches, indexes, and validates OpenAPI/Swagger documents and external `$ref` files.
+ *
+ * @module openapi/parse_spec_loader
+ */
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -9,12 +14,30 @@ import { isUrl } from "../functions/utils.js";
 import { ReferenceResolver } from "./parse_reference_resolver.js";
 import { validateSpec } from "./parse_validator.js";
 
+/**
+ * Result bundle returned when loading an entry OpenAPI/Swagger specification and its `$ref` cache.
+ */
+export interface LoadedSpecBundle {
+	/** Parsed root specification object. */
+	entrySpec: SwaggerSpec;
+	/** Cache of all loaded specification documents keyed by canonical URI. */
+	cache: Map<string, SwaggerSpec>;
+	/** Canonical URI of the entry specification document. */
+	documentUri: string;
+}
+
+/**
+ * Loads OpenAPI/Swagger specifications (synchronously or asynchronously) along with referenced external files.
+ */
 export class SpecLoader {
-	public static loadSync(inputPath: string): {
-		entrySpec: SwaggerSpec;
-		cache: Map<string, SwaggerSpec>;
-		documentUri: string;
-	} {
+	/**
+	 * Synchronously loads an OpenAPI/Swagger specification and its local `$ref` dependencies from disk.
+	 *
+	 * @param inputPath - Local file path to the entry OpenAPI/Swagger specification.
+	 * @returns Object containing `entrySpec`, `cache`, and `documentUri`.
+	 * @throws {Error} When the file cannot be read, parsed, or fails specification validation.
+	 */
+	public static loadSync(inputPath: string): LoadedSpecBundle {
 		let documentUri = inputPath;
 		try {
 			documentUri = isUrl(inputPath)
@@ -129,11 +152,14 @@ export class SpecLoader {
 		}
 	}
 
-	public static async load(inputPath: string): Promise<{
-		entrySpec: SwaggerSpec;
-		cache: Map<string, SwaggerSpec>;
-		documentUri: string;
-	}> {
+	/**
+	 * Asynchronously loads an OpenAPI/Swagger specification and its local or remote `$ref` dependencies.
+	 *
+	 * @param inputPath - File path or URL to the entry OpenAPI/Swagger specification.
+	 * @returns Promise resolving to `{ entrySpec, cache, documentUri }`.
+	 * @throws {Error} When the specification cannot be fetched, read, parsed, or fails validation.
+	 */
+	public static async load(inputPath: string): Promise<LoadedSpecBundle> {
 		const documentUri = isUrl(inputPath)
 			? inputPath
 			: pathToFileURL(path.resolve(process.cwd(), inputPath)).href;

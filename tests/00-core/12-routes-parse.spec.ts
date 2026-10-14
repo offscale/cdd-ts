@@ -4,11 +4,12 @@ import { parsePathsMetadata } from "../../src/routes/parse.js";
 
 describe("parsePathsMetadata", () => {
 	it("should return undefined if sourceFile is missing", () => {
-		expect(parsePathsMetadata(null as any)).toBeUndefined();
+		expect(parsePathsMetadata(null)).toBeUndefined();
+		expect(parsePathsMetadata(undefined)).toBeUndefined();
 	});
 
 	it("should return undefined if API_PATHS is not present", () => {
-		const project = new Project();
+		const project = new Project({ useInMemoryFileSystem: true });
 		const sourceFile = project.createSourceFile(
 			"paths.ts",
 			"export const OTHER_VAR = {};",
@@ -18,17 +19,17 @@ describe("parsePathsMetadata", () => {
 	});
 
 	it("should return undefined if API_PATHS has no initializer", () => {
-		const project = new Project();
+		const project = new Project({ useInMemoryFileSystem: true });
 		const sourceFile = project.createSourceFile(
 			"paths.ts",
-			"export declare const API_PATHS: any;",
+			"export declare const API_PATHS: Record<string, unknown>;",
 		);
 
 		expect(parsePathsMetadata(sourceFile)).toBeUndefined();
 	});
 
-	it("should return undefined if API_PATHS cannot be parsed", () => {
-		const project = new Project();
+	it("should return undefined if API_PATHS cannot be statically parsed", () => {
+		const project = new Project({ useInMemoryFileSystem: true });
 		const sourceFile = project.createSourceFile(
 			"paths.ts",
 			"export const API_PATHS = someFunctionCall();",
@@ -37,8 +38,8 @@ describe("parsePathsMetadata", () => {
 		expect(parsePathsMetadata(sourceFile)).toBeUndefined();
 	});
 
-	it("should return undefined if parsed API_PATHS evaluates to string or null", () => {
-		const project = new Project();
+	it("should return undefined if parsed API_PATHS evaluates to string, null, or array", () => {
+		const project = new Project({ useInMemoryFileSystem: true });
 		const sourceFile1 = project.createSourceFile(
 			"paths1.ts",
 			'export const API_PATHS = "hello";',
@@ -50,10 +51,16 @@ describe("parsePathsMetadata", () => {
 			"export const API_PATHS = null;",
 		);
 		expect(parsePathsMetadata(sourceFile2)).toBeUndefined();
+
+		const sourceFile3 = project.createSourceFile(
+			"paths3.ts",
+			"export const API_PATHS = [];",
+		);
+		expect(parsePathsMetadata(sourceFile3)).toBeUndefined();
 	});
 
 	it("should correctly parse API_PATHS metadata", () => {
-		const project = new Project();
+		const project = new Project({ useInMemoryFileSystem: true });
 		const metadata = {
 			"/pet": {
 				summary: "Pet operations",

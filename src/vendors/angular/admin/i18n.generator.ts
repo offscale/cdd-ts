@@ -1,3 +1,8 @@
+/**
+ * Module for i18n generator in vendors/angular/admin/i18n.generator.
+ *
+ * @module vendors/angular/admin/i18n.generator
+ */
 import * as path from "node:path";
 import type { Project, SourceFile } from "ts-morph";
 

@@ -1,7 +1,12 @@
+/**
+ * Module for list component generator in vendors/react/admin/list-component.generator.
+ *
+ * @module vendors/react/admin/list-component.generator
+ */
 import * as path from "node:path";
-import type { Resource } from "@src/core/types/index.js";
-import { pascalCase } from "@src/functions/utils.js";
 import type { Project, SourceFile } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import { pascalCase } from "../../../functions/utils.js";
 import { ReactElementBuilder } from "./html-element.builder.js";
 
 /**

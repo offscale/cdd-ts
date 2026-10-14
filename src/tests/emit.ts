@@ -1,4 +1,19 @@
+/**
+ * Emits Vitest/Jasmine `describe` and `it` test suite structures into a `ts-morph` `SourceFile`.
+ *
+ * @module tests/emit
+ */
 import type { SourceFile } from "ts-morph";
+
+/**
+ * Represents an individual test case inside a test suite.
+ */
+export interface TestCaseDefinition {
+	/** Description of what the test case verifies. */
+	description: string;
+	/** The actual test implementation code. */
+	body: string;
+}
 
 /**
  * Configuration options for emitting a test suite.
@@ -7,12 +22,7 @@ export interface TestEmitOptions {
 	/** The name or description of the main test suite (the describe block). */
 	suiteName: string;
 	/** The individual test cases to be added inside the suite. */
-	cases: Array<{
-		/** Description of what the test case verifies. */
-		description: string;
-		/** The actual test implementation code. */
-		body: string;
-	}>;
+	cases: TestCaseDefinition[];
 }
 
 /**

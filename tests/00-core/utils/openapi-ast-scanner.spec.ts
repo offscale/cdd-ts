@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -11,6 +9,7 @@ import {
 	scanTypeScriptSource,
 } from "@src/functions/parse.js";
 import { afterEach, describe, expect, it } from "vitest";
+import { type TestValue, testCast } from "../../shared/helpers.js";
 
 const tempDirs: string[] = [];
 
@@ -217,13 +216,10 @@ app.post('/users/:id', createUser);
 		const ir = scanTypeScriptSource(sourceText, "/virtual.ts");
 		const spec = buildOpenApiSpecFromScan(ir);
 
-		const createUser = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/users/{id}"].post;
+		const createUser = testCast(spec.paths)["/users/{id}"].post;
 
 		const idParam = createUser.parameters.find(
-			(param: string | number | boolean | object | undefined | null) =>
-				param.name === "id",
+			(param: TestValue) => param.name === "id",
 		);
 
 		expect(idParam?.example).toBe(123);
@@ -264,9 +260,7 @@ app.post('/plain', postPlain);
 		const ir = scanTypeScriptSource(sourceText, "/virtual.ts");
 		const spec = buildOpenApiSpecFromScan(ir);
 
-		const getPlain = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/plain"].get;
+		const getPlain = testCast(spec.paths)["/plain"].get;
 
 		const responseContent = getPlain.responses["200"]?.content?.["text/plain"];
 
@@ -274,9 +268,7 @@ app.post('/plain', postPlain);
 
 		expect(responseContent?.examples?.example?.serializedValue).toBe("OK");
 
-		const postPlain = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/plain"].post;
+		const postPlain = testCast(spec.paths)["/plain"].post;
 
 		const requestContent = postPlain.requestBody?.content?.["text/plain"];
 
@@ -292,13 +284,10 @@ app.post('/plain', postPlain);
 		const ir = scanTypeScriptSource(sourceText, querystringExampleFixture);
 		const spec = buildOpenApiSpecFromScan(ir);
 
-		const rawQuery = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/raw-query-example"].get;
+		const rawQuery = testCast(spec.paths)["/raw-query-example"].get;
 
 		const param = rawQuery.parameters.find(
-			(entry: string | number | boolean | object | undefined | null) =>
-				entry.in === "querystring",
+			(entry: TestValue) => testCast<string>(entry.in) === "querystring",
 		);
 
 		const content = param?.content?.["application/x-www-form-urlencoded"];
@@ -332,23 +321,18 @@ app.get('/resources/:id', fetchResource);
 		const ir = scanTypeScriptSource(sourceText, "/virtual.ts");
 		const spec = buildOpenApiSpecFromScan(ir);
 
-		const op = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/resources/{id}"].get;
+		const op = testCast(spec.paths)["/resources/{id}"].get;
 
 		const idParam = op.parameters.find(
-			(param: string | number | boolean | object | undefined | null) =>
-				param.name === "id",
+			(param: TestValue) => param.name === "id",
 		);
 
 		const searchParam = op.parameters.find(
-			(param: string | number | boolean | object | undefined | null) =>
-				param.name === "search",
+			(param: TestValue) => param.name === "search",
 		);
 
 		const filterParam = op.parameters.find(
-			(param: string | number | boolean | object | undefined | null) =>
-				param.name === "filter",
+			(param: TestValue) => param.name === "filter",
 		);
 
 		expect(idParam?.schema).toEqual({ type: "string", format: "uuid" });
@@ -375,18 +359,14 @@ app.get('/headers', headerHandler);
 		const ir = scanTypeScriptSource(sourceText, "/virtual.ts");
 		const spec = buildOpenApiSpecFromScan(ir);
 
-		const op = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/headers"].get;
+		const op = testCast(spec.paths)["/headers"].get;
 
 		const headerParams = (op.parameters || []).filter(
-			(param: string | number | boolean | object | undefined | null) =>
-				param.in === "header",
+			(param: TestValue) => testCast<string>(param.in) === "header",
 		);
 
-		const headerNames = headerParams.map(
-			(param: string | number | boolean | object | undefined | null) =>
-				String(param.name).toLowerCase(),
+		const headerNames = headerParams.map((param: TestValue) =>
+			String(param.name).toLowerCase(),
 		);
 
 		expect(headerNames).toEqual(["x-custom"]);
@@ -457,16 +437,14 @@ app.get('/headers', headerHandler);
 		expect(spec.info.title).toBe("AST Scan");
 		expect(spec.info.version).toBe("1.2.3");
 
-		const getUser = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/users/{id}"].get;
+		const getUser = testCast(spec.paths)["/users/{id}"].get;
 
 		expect(getUser.operationId).toBe("getUser");
 
 		expect(
 			getUser.parameters.some(
-				(param: string | number | boolean | object | undefined | null) =>
-					param.name === "id" && param.in === "path",
+				(param: TestValue) =>
+					param.name === "id" && testCast<string>(param.in) === "path",
 			),
 		).toBe(true);
 
@@ -476,15 +454,11 @@ app.get('/headers', headerHandler);
 		expect(usersTag?.summary).toBe("User operations");
 		expect(usersTag?.kind).toBe("nav");
 
-		const search = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/search"].query;
+		const search = testCast(spec.paths)["/search"].query;
 
 		expect(search).toBeDefined();
 
-		const rawQuery = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/raw-query"].get;
+		const rawQuery = testCast(spec.paths)["/raw-query"].get;
 
 		expect(rawQuery.parameters).toEqual(
 			expect.arrayContaining([
@@ -498,23 +472,17 @@ app.get('/headers', headerHandler);
 			]),
 		);
 
-		const copyPath = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/files/{id}"];
+		const copyPath = testCast(spec.paths)["/files/{id}"];
 
 		expect(copyPath.additionalOperations?.COPY).toBeDefined();
 
-		const messages = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/messages"].post;
+		const messages = testCast(spec.paths)["/messages"].post;
 
 		expect(messages.requestBody.content["application/json"]).toBeDefined();
 
 		expect(messages.responses["200"].content["text/plain"]).toBeDefined();
 
-		const typedMessages = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/typed-messages"].post;
+		const typedMessages = testCast(spec.paths)["/typed-messages"].post;
 
 		expect(
 			typedMessages.requestBody.content["application/json"].schema,
@@ -528,9 +496,7 @@ app.get('/headers', headerHandler);
 			$ref: "#/components/schemas/MessageReceipt",
 		});
 
-		const secure = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/secure"].get;
+		const secure = testCast(spec.paths)["/secure"].get;
 
 		expect(secure.externalDocs).toEqual({
 			url: "https://example.com/secure",
@@ -554,15 +520,12 @@ app.get('/headers', headerHandler);
 
 		expect(secure["x-feature-flag"]).toBe("beta");
 
-		const documented = (
-			spec.paths as string | number | boolean | object | undefined | null
-		)["/documented/{id}"].get;
+		const documented = testCast(spec.paths)["/documented/{id}"].get;
 
 		expect(documented.operationId).toBe("fetchDocumented");
 
 		const documentedParam = documented.parameters.find(
-			(param: string | number | boolean | object | undefined | null) =>
-				param.name === "id",
+			(param: TestValue) => param.name === "id",
 		);
 
 		expect(documentedParam.description).toBe("Documented id.");
@@ -616,17 +579,13 @@ app.get('/headers', headerHandler);
 			{ title: "Custom", version: "0.1.0" },
 		);
 
-		const customPath = (
-			customSpec.paths as string | number | boolean | object | undefined | null
-		)["/things/{id}"];
+		const customPath = testCast(customSpec.paths)["/things/{id}"];
 
 		expect(customPath.additionalOperations?.COPY).toBeDefined();
 
 		expect(customPath.additionalOperations.COPY.responses["200"]).toBeDefined();
 
-		const uploadPath = (
-			customSpec.paths as string | number | boolean | object | undefined | null
-		)["/upload"].post;
+		const uploadPath = testCast(customSpec.paths)["/upload"].post;
 
 		expect(uploadPath.requestBody.content["multipart/form-data"]).toBeDefined();
 

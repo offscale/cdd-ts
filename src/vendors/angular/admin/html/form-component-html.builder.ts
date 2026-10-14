@@ -1,10 +1,21 @@
-import type { Resource } from "@src/core/types/index.js";
-import { pascalCase } from "@src/functions/utils.js";
-import type { FormAnalysisResult } from "@src/vendors/angular/admin/analysis/form-types.js";
+/**
+ * Module for form component html builder in vendors/angular/admin/html/form-component-html.builder.
+ *
+ * @module vendors/angular/admin/html/form-component-html.builder
+ */
+import type { Resource } from "../../../../core/types/index.js";
+import { pascalCase } from "../../../../functions/utils.js";
+import type { FormAnalysisResult } from "../analysis/form-types.js";
 
 import { HtmlElementBuilder as _ } from "../html-element.builder.js";
 import { buildFormControl } from "./form-controls-html.builder.js";
 
+/**
+ * Executes `generateFormComponentHtml`.
+ * @param resource - Analyzed API resource descriptor.
+ * @param analysis - Form analysis result.
+ * @returns Generated result (string).
+ */
 export function generateFormComponentHtml(
 	resource: Resource,
 	analysis: FormAnalysisResult,

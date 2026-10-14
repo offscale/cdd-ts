@@ -1,10 +1,24 @@
+/**
+ * Module for auth helper generator in vendors/angular/utils/auth-helper.generator.
+ *
+ * @module vendors/angular/utils/auth-helper.generator
+ */
 import * as path from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 import { type ClassDeclaration, type Project, Scope } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 
+/** Generator/utility class `AuthHelperGenerator`. */
 export class AuthHelperGenerator {
+	/**
+	 * Creates a new `AuthHelperGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Executes `generate` on `AuthHelperGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(outputDir: string): void {
 		const authDir = path.join(outputDir, "auth");
 

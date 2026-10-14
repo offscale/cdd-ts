@@ -1,11 +1,10 @@
-// @ts-nocheck
-
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { ExtensionTokensGenerator } from "@src/vendors/angular/utils/extension-tokens.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 const extensionsSpec = {
 	openapi: "3.0.0",
@@ -25,15 +24,12 @@ const extensionsSpec = {
 describe("Generated Code: Extensions Runtime Support", () => {
 	const run = () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const config: GeneratorConfig = {
+		const config: GeneratorConfig = testCast({
 			input: "",
 			output: "/out",
 			options: { framework: "angular" },
-		} as string | number | boolean | object | undefined | null;
-		const parser = new SwaggerParser(
-			extensionsSpec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		});
+		const parser = new SwaggerParser(testCast(extensionsSpec), config);
 
 		// 1. Test Token Generation
 		new ExtensionTokensGenerator(project).generate("/out");

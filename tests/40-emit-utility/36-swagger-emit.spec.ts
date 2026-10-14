@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SwaggerSpec } from "../../src/core/types/index.js";
 import { applyReverseMetadata } from "../../src/openapi/emit.js";
+import { testCast } from "../shared/helpers.js";
 
 describe("Utility: Swagger 2.0 Emitter", () => {
 	it("should emit swagger 2.0 spec when documentMeta has swagger", () => {
@@ -52,7 +53,7 @@ describe("Utility: Swagger 2.0 Emitter", () => {
 		expect(result.servers).toBeUndefined();
 
 		// Path operation translation
-		const op = (result.paths as any)["/test"].post;
+		const op = testCast(result.paths)["/test"].post;
 		expect(op.requestBody).toBeUndefined();
 		expect(op.consumes).toEqual(["application/json"]);
 		expect(op.produces).toEqual(["application/json"]);

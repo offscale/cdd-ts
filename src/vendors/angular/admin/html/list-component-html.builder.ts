@@ -1,9 +1,21 @@
-import type { Resource } from "@src/core/types/index.js";
-import { pascalCase, singular } from "@src/functions/utils.js";
-import { HtmlElementBuilder as _ } from "@src/vendors/angular/admin/html-element.builder.js";
+/**
+ * Module for list component html builder in vendors/angular/admin/html/list-component-html.builder.
+ *
+ * @module vendors/angular/admin/html/list-component-html.builder
+ */
+import type { Resource } from "../../../../core/types/index.js";
+import { pascalCase, singular } from "../../../../functions/utils.js";
+import { HtmlElementBuilder as _ } from "../html-element.builder.js";
 
 //import { HtmlElementBuilder as _ } from '../../html-element.builder.js';
 
+/**
+ * Executes `generateListComponentHtml`.
+ * @param resource - Analyzed API resource descriptor.
+ * @param idProperty - Primary identifier property name.
+ * @param iconMap - Map of action kinds to Material icon names.
+ * @returns Generated result (string).
+ */
 export function generateListComponentHtml(
 	resource: Resource,
 	idProperty: string,

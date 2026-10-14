@@ -1,3 +1,8 @@
+/**
+ * Converts OpenAPI / JSON Schema definitions into TypeScript type expressions.
+ *
+ * @module classes/parse_type_converter
+ */
 import type {
 	GeneratorConfig,
 	MediaTypeObject,
@@ -8,6 +13,13 @@ import type {
 } from "../core/types/index.js";
 import { pascalCase } from "../functions/utils_string.js";
 
+/**
+ * Determines whether a TypeScript type string refers to a named model interface or enum
+ * rather than a built-in primitive, literal, union, or inline object type.
+ *
+ * @param type - TypeScript type expression string.
+ * @returns `true` if `type` is a named model reference.
+ */
 export function isDataTypeInterface(type: string): boolean {
 	if (!type) return false;
 	// Eliminate array brackets and generic wrappers for the base check
@@ -47,7 +59,10 @@ export function isDataTypeInterface(type: string): boolean {
 }
 
 /**
- * Helpers for formatting literal values into TypeScript types.
+ * Formats an OpenAPI literal value (`const` or `enum` member) into a TypeScript literal type string.
+ *
+ * @param val - Literal OpenAPI value.
+ * @returns TypeScript literal type representation.
  */
 function formatLiteralValue(val: OpenApiValue): string {
 	if (val === null) return "null";
@@ -59,20 +74,40 @@ function formatLiteralValue(val: OpenApiValue): string {
 	return "string | number | boolean | object | undefined | null";
 }
 
+/**
+ * Strips parameters from a MIME media type and normalizes it to lowercase.
+ *
+ * @param value - Raw media type string.
+ * @returns Normalized media type or `undefined`.
+ */
 function normalizeMediaType(value: string | undefined): string | undefined {
 	if (!value || typeof value !== "string") return undefined;
 
 	return value.split(";")[0]?.trim().toLowerCase();
 }
 
+/**
+ * Internal entry used when ranking and filtering candidate media types.
+ */
 type MediaTypeEntry = {
+	/** Original media type key. */
 	raw: string;
+	/** Lowercase media type without parameters. */
 	normalized: string;
+	/** Specificity score (0 = invalid, 1 = wildcard, 2 = exact). */
 	specificity: number;
+	/** Declaration index in the original `content` map. */
 	index: number;
+	/** Associated `MediaTypeObject`. */
 	media: MediaTypeObject;
 };
 
+/**
+ * Computes a specificity score for a normalized media type.
+ *
+ * @param normalized - Normalized media type string.
+ * @returns Specificity score (`0`, `1`, or `2`).
+ */
 function mediaTypeSpecificity(normalized: string): number {
 	const [type, subtype] = normalized.split("/");
 
@@ -83,6 +118,13 @@ function mediaTypeSpecificity(normalized: string): number {
 	return 2;
 }
 
+/**
+ * Checks whether a media type range pattern matches a more specific candidate media type.
+ *
+ * @param range - Wildcard media type range.
+ * @param candidate - Specific media type candidate.
+ * @returns `true` if `range` matches `candidate`.
+ */
 function matchesMediaType(range: string, candidate: string): boolean {
 	const [rangeType, rangeSubtype] = range.split("/");
 
@@ -105,6 +147,12 @@ function matchesMediaType(range: string, candidate: string): boolean {
 	return regex.test(candSubtype);
 }
 
+/**
+ * Filters out wildcard media type entries shadowed by more specific matching entries.
+ *
+ * @param entries - Candidate media type entries.
+ * @returns Filtered list of media type entries.
+ */
 function filterMediaTypeEntries(entries: MediaTypeEntry[]): MediaTypeEntry[] {
 	return entries.filter((candidate) => {
 		if (candidate.specificity === 2) return true;
@@ -118,6 +166,12 @@ function filterMediaTypeEntries(entries: MediaTypeEntry[]): MediaTypeEntry[] {
 	});
 }
 
+/**
+ * Returns the preference priority for a normalized media type (lower is higher priority).
+ *
+ * @param normalized - Normalized media type string.
+ * @returns Numeric priority rank.
+ */
 function getMediaTypePriority(normalized: string): number {
 	if (normalized === "application/json") return 0;
 
@@ -134,6 +188,12 @@ function getMediaTypePriority(normalized: string): number {
 	return 6;
 }
 
+/**
+ * Selects the highest-priority `MediaTypeObject` from a request body or response `content` map.
+ *
+ * @param content - Map of media type strings to `MediaTypeObject` definitions.
+ * @returns Preferred `MediaTypeObject` or `undefined`.
+ */
 function pickPreferredMediaType(
 	content: Record<string, MediaTypeObject | undefined>,
 ): MediaTypeObject | undefined {
@@ -177,6 +237,12 @@ function pickPreferredMediaType(
 	return sorted[0]?.media;
 }
 
+/**
+ * Checks whether a normalized media type represents a text-based payload.
+ *
+ * @param mediaType - Normalized media type string.
+ * @returns `true` if the media type is textual.
+ */
 function isTextualMediaType(mediaType: string | undefined): boolean {
 	if (!mediaType) return false;
 
@@ -201,6 +267,12 @@ function isTextualMediaType(mediaType: string | undefined): boolean {
 	return false;
 }
 
+/**
+ * Checks whether a normalized media type represents a binary payload.
+ *
+ * @param mediaType - Normalized media type string.
+ * @returns `true` if the media type is binary.
+ */
 function isBinaryMediaType(mediaType: string | undefined): boolean {
 	if (!mediaType) return false;
 
@@ -216,6 +288,14 @@ function isBinaryMediaType(mediaType: string | undefined): boolean {
 	return false;
 }
 
+/**
+ * Converts an OpenAPI/JSON Schema definition into a TypeScript type expression string.
+ *
+ * @param schema - OpenAPI schema definition or boolean schema.
+ * @param config - Active generator configuration.
+ * @param knownTypes - Optional list of known generated PascalCase model names.
+ * @returns TypeScript type expression string.
+ */
 export function getTypeScriptType(
 	schema: SwaggerDefinition | boolean | undefined,
 	config: GeneratorConfig,
@@ -440,6 +520,13 @@ export function getTypeScriptType(
 	}
 }
 
+/**
+ * Resolves the TypeScript type for a numeric OpenAPI schema (`number` or `integer`).
+ *
+ * @param schema - Numeric OpenAPI schema definition.
+ * @param config - Active generator configuration.
+ * @returns TypeScript numeric or union type string.
+ */
 function getNumberType(
 	schema: SwaggerDefinition,
 	config: GeneratorConfig,
@@ -453,6 +540,13 @@ function getNumberType(
 	return "number";
 }
 
+/**
+ * Resolves the TypeScript type for a string OpenAPI schema (`string`, `Date`, `Blob`, or union).
+ *
+ * @param schema - String OpenAPI schema definition.
+ * @param config - Active generator configuration.
+ * @returns TypeScript string, Date, Blob, or literal union type string.
+ */
 function getStringType(
 	schema: SwaggerDefinition,
 	config: GeneratorConfig,
@@ -468,6 +562,14 @@ function getStringType(
 	return "string";
 }
 
+/**
+ * Resolves the TypeScript type for an array or tuple OpenAPI schema.
+ *
+ * @param schema - Array OpenAPI schema definition.
+ * @param config - Active generator configuration.
+ * @param knownTypes - Known generated PascalCase model names.
+ * @returns TypeScript array or tuple type string.
+ */
 function getArrayType(
 	schema: SwaggerDefinition,
 	config: GeneratorConfig,
@@ -539,6 +641,14 @@ function getArrayType(
 		: `${itemsType}[]`;
 }
 
+/**
+ * Resolves the TypeScript type for an inline object OpenAPI schema.
+ *
+ * @param schema - Object OpenAPI schema definition.
+ * @param config - Active generator configuration.
+ * @param knownTypes - Known generated PascalCase model names.
+ * @returns TypeScript object literal or record type string.
+ */
 function getObjectType(
 	schema: SwaggerDefinition,
 	config: GeneratorConfig,
@@ -659,6 +769,14 @@ function getObjectType(
 		: "{ [key: string]: string | number | boolean | object | undefined | null }";
 }
 
+/**
+ * Resolves the TypeScript type for an OpenAPI `RequestBody` definition.
+ *
+ * @param requestBody - RequestBody definition to inspect.
+ * @param config - Active generator configuration.
+ * @param knownTypes - Known generated PascalCase model names.
+ * @returns TypeScript type expression string for the request body.
+ */
 export function getRequestBodyType(
 	requestBody: RequestBody | undefined,
 	config: GeneratorConfig,
@@ -688,6 +806,14 @@ export function getRequestBodyType(
 	return "string | number | boolean | object | undefined | null";
 }
 
+/**
+ * Resolves the TypeScript type for an OpenAPI `SwaggerResponse` definition.
+ *
+ * @param response - SwaggerResponse definition to inspect.
+ * @param config - Active generator configuration.
+ * @param knownTypes - Known generated PascalCase model names.
+ * @returns TypeScript type expression string for the response payload.
+ */
 export function getResponseType(
 	response: SwaggerResponse | undefined,
 	config: GeneratorConfig,

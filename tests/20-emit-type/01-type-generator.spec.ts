@@ -1,10 +1,9 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
-import { type GeneratorConfig, OpenApiValue } from "@src/core/types/index.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 const typeGenSpec = {
 	openapi: "3.0.0",
@@ -103,10 +102,7 @@ describe("Emitter: TypeGenerator", () => {
 			output: "/out",
 			options: { enumStyle: "enum" },
 		};
-		const parser = new SwaggerParser(
-			typeGenSpec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(typeGenSpec), config);
 		const generator = new TypeGenerator(parser, project, config);
 		return { generator, project };
 	};

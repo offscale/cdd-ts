@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
 import { ParameterSerializerGenerator } from "@src/functions/emit_parameter_serializer.js";
@@ -13,6 +11,7 @@ import {
 	finalCoveragePushSpec,
 	finalCoverageSpec,
 } from "../fixtures/coverage.fixture.js";
+import { testCast } from "../shared/helpers.js";
 
 const specBodyTests = {
 	openapi: "3.0.0",
@@ -213,9 +212,7 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 			options: { dateType: "Date", enumStyle: "enum" },
 		};
 
-		const baseComponents =
-			(spec as string | number | boolean | object | undefined | null)
-				.components || {};
+		const baseComponents = testCast(spec).components || {};
 		const extComponents = finalCoverageSpec.components || {};
 
 		const fullSpec = {
@@ -232,10 +229,7 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 			},
 		};
 
-		const parser = new SwaggerParser(
-			fullSpec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(fullSpec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 		new ParameterSerializerGenerator(project).generate("/out");
 		new XmlBuilderGenerator(project).generate("/out");
@@ -268,12 +262,12 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should detect application/xml request body and generate xml serialization logic", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = {
+		const op: PathInfo = testCast({
 			...specBodyTests.paths["/xml-endpoint"].post,
 			method: "POST",
 			path: "/xml-endpoint",
 			methodName: "postXml",
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		methodGen.addServiceMethod(serviceClass, op);
 
@@ -291,12 +285,12 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should generate blob wrapping for encoded multipart fields using accurate OAS 3.2 default logic", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = {
+		const op: PathInfo = testCast({
 			...specBodyTests.paths["/multipart-encoding"].post,
 			method: "POST",
 			path: "/multipart-encoding",
 			methodName: "postEncoded",
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		methodGen.addServiceMethod(serviceClass, op);
 
@@ -316,12 +310,12 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should generate HttpParams builder calls for encoded url-encoded bodies", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = {
+		const op: PathInfo = testCast({
 			...specBodyTests.paths["/urlencoded-encoding"].post,
 			method: "POST",
 			path: "/urlencoded-encoding",
 			methodName: "postUrlEncoded",
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		methodGen.addServiceMethod(serviceClass, op);
 
@@ -344,12 +338,12 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should apply ContentEncoder for urlencoded bodies with contentEncoding", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = {
+		const op: PathInfo = testCast({
 			...specBodyTests.paths["/urlencoded-content-encoding"].post,
 			method: "POST",
 			path: "/urlencoded-content-encoding",
 			methodName: "postUrlEncodedEncoded",
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		methodGen.addServiceMethod(serviceClass, op);
 
@@ -366,12 +360,12 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should serialize ndjson request bodies using newline delimiters", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = {
+		const op: PathInfo = testCast({
 			...specBodyTests.paths["/jsonl-endpoint"].post,
 			method: "POST",
 			path: "/jsonl-endpoint",
 			methodName: "postJsonLines",
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		methodGen.addServiceMethod(serviceClass, op);
 
@@ -387,12 +381,12 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should serialize custom JSON sequential request bodies using newline delimiters", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = {
+		const op: PathInfo = testCast({
 			...specBodyTests.paths["/custom-jsonl-endpoint"].post,
 			method: "POST",
 			path: "/custom-jsonl-endpoint",
 			methodName: "postCustomJsonLines",
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		methodGen.addServiceMethod(serviceClass, op);
 
@@ -433,7 +427,9 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 		expect(bodyParam).toBeDefined();
 		const typeText =
 			bodyParam?.getTypeNode()?.getText() ?? bodyParam?.getType().getText();
-		expect(typeText.replace(/ \| undefined/g, "")).toBe("ReadOnlyModelRequest");
+		expect((typeText ?? "").replace(/ \| undefined/g, "")).toBe(
+			"ReadOnlyModelRequest",
+		);
 	});
 
 	it("should return standard type in Observable response even if request used *Request", () => {
@@ -502,28 +498,18 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should generate HttpParams for legacy formData", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = {
+		const op: PathInfo = testCast({
 			method: "POST",
 			path: "/urlencoded",
 			methodName: "postLegacy",
 			consumes: ["application/x-www-form-urlencoded"],
 
-			parameters: [{ name: "grantType", in: "formData", type: "string" }] as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			parameters: testCast([
+				{ name: "grantType", in: "formData", type: "string" },
+			]),
 
-			responses: { "200": { description: "ok" } } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
-		} as string | number | boolean | object | undefined | null;
+			responses: testCast({ "200": { description: "ok" } }),
+		});
 
 		methodGen.addServiceMethod(serviceClass, op);
 		const body = serviceClass.getMethodOrThrow("postLegacy").getBodyText()!;

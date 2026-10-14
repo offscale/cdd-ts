@@ -1,13 +1,24 @@
+/**
+ * Module for integration test generator in vendors/node/test/integration-test.generator.
+ *
+ * @module vendors/node/test/integration-test.generator
+ */
 import * as path from "node:path";
-import type { PathInfo, SwaggerDefinition } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import { MockDataGenerator } from "../../angular/test/mock-data.generator.js";
+import type { PathInfo, SwaggerDefinition } from "../../../core/types/index.js";
+import { camelCase, pascalCase } from "../../../functions/utils.js";
+import { MockDataGenerator } from "../../../mocks/generate_mock_data.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
+/** Generator/utility class `NodeIntegrationTestGenerator`. */
 export class NodeIntegrationTestGenerator {
 	private mockDataGenerator: MockDataGenerator;
 
+	/**
+	 * Creates a new `NodeIntegrationTestGenerator` instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(
 		parser: SwaggerParser,
 		private readonly project: Project,
@@ -15,6 +26,11 @@ export class NodeIntegrationTestGenerator {
 		this.mockDataGenerator = new MockDataGenerator(parser);
 	}
 
+	/**
+	 * Executes `generate` on `NodeIntegrationTestGenerator`.
+	 * @param controllerGroups - Parameter `controllerGroups` (Record<string, PathInfo[]>).
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(
 		controllerGroups: Record<string, PathInfo[]>,
 		outputDir: string,
@@ -98,9 +114,10 @@ export class NodeIntegrationTestGenerator {
                         try {
                             const result = await service.${methodName}(${argsString});
                             expect(result).toBeDefined();
-                        } catch (error: any) {
-                            if (error && (error.code === 'ECONNREFUSED' || String(error).includes('ECONNREFUSED') || String(error).includes('FormData') || String(error).includes('URLSearchParams'))) {
-                                expect(true).toBe(true);
+                        } catch (error: unknown) {
+                            const errObj = error as { code?: string } | null;
+                            if (errObj && (errObj.code === 'ECONNREFUSED' || String(error).includes('ECONNREFUSED') || String(error).includes('FormData') || String(error).includes('URLSearchParams'))) {
+                                expect(error).toBeDefined();
                             } else {
                                 throw error;
                             }

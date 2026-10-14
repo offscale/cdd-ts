@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { TokenGenerator } from "@src/vendors/angular/utils/token.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";

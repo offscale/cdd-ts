@@ -1,10 +1,25 @@
-import type { Resource } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
+/**
+ * Module for elements generator in vendors/angular/admin/elements.generator.
+ *
+ * @module vendors/angular/admin/elements.generator
+ */
 import type { Project } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import { camelCase, pascalCase } from "../../../functions/utils.js";
 
+/** Generator/utility class `ElementsGenerator`. */
 export class ElementsGenerator {
+	/**
+	 * Creates a new `ElementsGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private readonly project: Project) {}
 
+	/**
+	 * Executes `generate` on `ElementsGenerator`.
+	 * @param resources - List of analyzed API resources.
+	 * @param outDir - Target output directory path.
+	 */
 	public generate(resources: Resource[], outDir: string): void {
 		const filePath = `${outDir}/elements.ts`;
 

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import * as utils from "@src/functions/utils_string.js";
 import { describe, expect, it } from "vitest";
 

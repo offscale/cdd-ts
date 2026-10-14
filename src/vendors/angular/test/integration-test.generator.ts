@@ -1,17 +1,31 @@
+/**
+ * Generates Angular `TestBed` integration test suites for generated SDK services.
+ *
+ * @module vendors/angular/test/integration-test.generator
+ */
 import * as path from "node:path";
-import type { PathInfo, SwaggerDefinition } from "@src/core/types/index.js";
+import type { Project } from "ts-morph";
+import type { PathInfo, SwaggerDefinition } from "../../../core/types/index.js";
 import {
 	camelCase,
 	getBasePathTokenName,
 	pascalCase,
-} from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import type { Project } from "ts-morph";
+} from "../../../functions/utils.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 import { MockDataGenerator } from "./mock-data.generator.js";
 
+/**
+ * Generates `integration.spec.ts` for Angular SDK clients.
+ */
 export class IntegrationTestGenerator {
 	private mockDataGenerator: MockDataGenerator;
 
+	/**
+	 * Creates a new `IntegrationTestGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The target `ts-morph` project.
+	 */
 	constructor(
 		parser: SwaggerParser,
 		private readonly project: Project,
@@ -19,6 +33,13 @@ export class IntegrationTestGenerator {
 		this.mockDataGenerator = new MockDataGenerator(parser);
 	}
 
+	/**
+	 * Generates `integration.spec.ts` in the specified output directory.
+	 *
+	 * @param controllerGroups - Operations grouped by controller name.
+	 * @param outputDir - Target output directory.
+	 * @param clientName - Optional client identifier for multi-client setups.
+	 */
 	public generate(
 		controllerGroups: Record<string, PathInfo[]>,
 		outputDir: string,
@@ -29,14 +50,12 @@ export class IntegrationTestGenerator {
 			overwrite: true,
 		});
 
-		// Add imports
 		sourceFile.addStatements(`
             import { TestBed } from '@angular/core/testing';
-            import { HttpClientModule } from '@angular/common/http';
+            import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
             import { firstValueFrom } from 'rxjs';
         `);
 
-		// Import all services
 		const serviceNames: string[] = [];
 		for (const controllerName of Object.keys(controllerGroups)) {
 			const serviceName = `${pascalCase(controllerName)}Service`;
@@ -48,26 +67,30 @@ export class IntegrationTestGenerator {
 
 		const basePathTokenName = getBasePathTokenName(clientName || "default");
 
-		// Add token import
 		sourceFile.addStatements(
 			`import { ${basePathTokenName} } from './tokens';`,
 		);
 
-		// Setup test suite
 		sourceFile.addStatements(`
             describe('SDK Integration Tests', () => {
+                let httpMock: HttpTestingController;
+
                 beforeEach(() => {
                     TestBed.configureTestingModule({
-                        imports: [HttpClientModule],
+                        imports: [HttpClientTestingModule],
                         providers: [
-                            ${serviceNames.join(",\n                            ")},
+                            ${serviceNames.join(`,${String.fromCharCode(10)}                            `)},
                             { provide: ${basePathTokenName}, useValue: 'http://localhost:8080/v2' }
                         ]
                     });
+                    httpMock = TestBed.inject(HttpTestingController);
+                });
+
+                afterEach(() => {
+                    httpMock.verify();
                 });
         `);
 
-		// Generate a test case for each operation
 		for (const [controllerName, operations] of Object.entries(
 			controllerGroups,
 		)) {
@@ -78,37 +101,31 @@ export class IntegrationTestGenerator {
             `);
 
 			for (const op of operations) {
-				/* v8 ignore next */
 				const methodName =
 					op.methodName || camelCase(op.operationId || "unknown");
-				/* v8 ignore next */
 				const parameters = op.parameters || [];
 				const mockArgs: string[] = [];
 
-				// Add mock data for parameters
 				for (const param of parameters) {
 					if (param.required) {
-						/* v8 ignore start */
 						const schemaDef = (param.schema || param) as SwaggerDefinition;
 						const schemaName = schemaDef?.name || param.name;
-						/* v8 ignore stop */
 						mockArgs.push(
-							`${this.mockDataGenerator.generate(String(schemaName))} as any`,
+							`${this.mockDataGenerator.generate(String(schemaName))} as never`,
 						);
 					} else {
-						mockArgs.push("null as any");
+						mockArgs.push("null as never");
 					}
 				}
 
 				if (op.requestBody?.content) {
 					const contentTypes = Object.keys(op.requestBody.content);
-					/* v8 ignore next 6 */
 					if (contentTypes.length > 0) {
-						const schema = op.requestBody.content[contentTypes[0]].schema;
+						const schema = op.requestBody.content[contentTypes[0]!]?.schema;
 						const schemaDef = schema as SwaggerDefinition;
 						const schemaName = schemaDef?.name ? schemaDef.name : "Unknown";
 						mockArgs.push(
-							`${this.mockDataGenerator.generate(String(schemaName))} as any`,
+							`${this.mockDataGenerator.generate(String(schemaName))} as never`,
 						);
 					}
 				}
@@ -118,16 +135,12 @@ export class IntegrationTestGenerator {
 				sourceFile.addStatements(`
                     it('should call ${methodName} successfully', async () => {
                         const service = TestBed.inject(${serviceName});
-                        try {
-                            const result = await firstValueFrom(service.${methodName}(${argsString}));
-                            expect(result).toBeDefined();
-                        } catch (error: any) {
-                            if (error && error.status === 0) {
-                                expect(true).toBe(true);
-                            } else {
-                                throw error;
-                            }
-                        }
+                        const mockResponse = {};
+                        const resultPromise = firstValueFrom(service.${methodName}(${argsString}));
+                        const req = httpMock.expectOne((r) => r.method === '${op.method.toUpperCase()}');
+                        req.flush(mockResponse);
+                        const result = await resultPromise;
+                        expect(result).toEqual(mockResponse);
                     });
                 `);
 			}

@@ -1,68 +1,61 @@
-// @ts-nocheck
-
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { groupPathsByController } from "@src/functions/utils.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceGenerator } from "@src/vendors/angular/service/service.generator.js";
 import { type ImportDeclaration, Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import {
+	createTestProject,
+	type TestCallable,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 import { branchCoverageSpec, coverageSpecPart2 } from "../shared/specs.js";
 
 describe("Generators (Angular): Service Generators (Coverage)", () => {
-	const ensureResponses = (
-		spec: string | number | boolean | object | undefined | null,
-	) => {
-		if (!spec?.paths) return spec;
-		const methods = [
-			"get",
-			"post",
-			"put",
-			"delete",
-			"options",
-			"head",
-			"patch",
-			"trace",
-			"query",
-		];
+	const ensureResponses = testCast(
+		testCast((spec: TestValue) => {
+			if (!spec?.paths) return spec;
+			const methods = [
+				"get",
+				"post",
+				"put",
+				"delete",
+				"options",
+				"head",
+				"patch",
+				"trace",
+				"query",
+			];
 
-		for (const pathItem of Object.values(spec.paths)) {
-			if (!pathItem || typeof pathItem !== "object") continue;
-			for (const method of methods) {
-				const operation = (
-					pathItem as string | number | boolean | object | undefined | null
-				)[method];
+			for (const pathItem of Object.values(spec.paths)) {
+				if (!pathItem || typeof pathItem !== "object") continue;
+				for (const method of methods) {
+					const operation = testCast(pathItem)[method];
 
-				if (operation && operation.responses === undefined) {
-					operation.responses = { "200": { description: "ok" } };
+					if (operation && operation.responses === undefined) {
+						operation.responses = testCast({
+							"200": testCast({ description: testCast("ok") }),
+						});
+					}
 				}
-			}
 
-			if (
-				(pathItem as string | number | boolean | object | undefined | null)
-					.additionalOperations
-			) {
-				for (const operation of Object.values(
-					(pathItem as string | number | boolean | object | undefined | null)
-						.additionalOperations,
-				)) {
-					if (
-						operation &&
-						(operation as string | number | boolean | object | undefined | null)
-							.responses === undefined
-					) {
-						(
-							operation as string | number | boolean | object | undefined | null
-						).responses = {
-							"200": { description: "ok" },
-						};
+				if (testCast(pathItem).additionalOperations) {
+					for (const operation of Object.values(
+						testCast(pathItem).additionalOperations,
+					)) {
+						if (operation && testCast(operation).responses === undefined) {
+							testCast(operation).responses = testCast({
+								"200": testCast({ description: testCast("ok") }),
+							});
+						}
 					}
 				}
 			}
-		}
 
-		return spec;
-	};
+			return spec;
+		}),
+	);
 
 	const run = (spec: object): Project => {
 		const project = createTestProject();
@@ -72,12 +65,11 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 			options: { dateType: "string", enumStyle: "enum", framework: "angular" },
 		};
 
-		const specClone = ensureResponses(JSON.parse(JSON.stringify(spec)));
-
-		const parser = new SwaggerParser(
-			specClone as string | number | boolean | object | undefined | null,
-			config,
+		const specClone = testCast<TestCallable>(ensureResponses)(
+			JSON.parse(JSON.stringify(spec)),
 		);
+
+		const parser = new SwaggerParser(testCast(specClone), config);
 		const serviceGen = new ServiceGenerator(parser, project, config);
 		const controllerGroups = groupPathsByController(parser);
 		for (const [name, operations] of Object.entries(controllerGroups)) {
@@ -96,13 +88,9 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 		);
 		expect(modelImport).toBeDefined();
 
-		expect(
-			modelImport
-				?.getNamedImports()
-				.map((i: string | number | boolean | object | undefined | null) =>
-					i.getName(),
-				),
-		).toContain("User");
+		expect(modelImport?.getNamedImports().map((i) => i.getName())).toContain(
+			"User",
+		);
 	});
 
 	it("should not import string | number | boolean | object | undefined | null models if only primitive parameters are used", () => {
@@ -134,6 +122,7 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 		const _modelImport = serviceFile.getImportDeclaration(
 			(imp) => imp.getModuleSpecifierValue() === "../models",
 		);
+		void _modelImport;
 	});
 
 	it("should generate methods for multipart/form-data", () => {
@@ -194,12 +183,7 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 			.getClassOrThrow("BodyNoSchemaService")
 			.getMethodOrThrow("postBodyNoSchema");
 
-		const param = method
-			.getParameters()
-			.find(
-				(p: string | number | boolean | object | undefined | null) =>
-					p.getName() === "body",
-			);
+		const param = method.getParameters().find((p) => p.getName() === "body");
 		expect(param?.getType().getText()).toBe(
 			"string | number | boolean | object | null | undefined",
 		);
@@ -215,17 +199,13 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 			.getMethodOrThrow("getAllRequired");
 		const overloads = method.getOverloads();
 
-		const responseOverload = overloads.find(
-			(o: string | number | boolean | object | undefined | null) =>
-				o.getReturnType().getText().includes("HttpResponse"),
+		const responseOverload = overloads.find((o) =>
+			o.getReturnType().getText().includes("HttpResponse"),
 		)!;
 
 		const optionsParam = responseOverload
 			.getParameters()
-			.find(
-				(p: string | number | boolean | object | undefined | null) =>
-					p.getName() === "options",
-			)!;
+			.find((p) => p.getName() === "options")!;
 		expect(optionsParam.hasQuestionToken()).toBe(false);
 	});
 
@@ -269,7 +249,7 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 			output: "/out",
 			options: { dateType: "string", enumStyle: "enum", framework: "angular" },
 		};
-		const parser = new SwaggerParser(spec as any, config);
+		const parser = new SwaggerParser(testCast(spec), config);
 
 		// Mutate after validation
 		const op = parser.operations.find((o) => o.operationId === "getEdge")!;
@@ -308,7 +288,7 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 
 		const project = new Project({ useInMemoryFileSystem: true });
 		const serviceGen = new ServiceGenerator(parser, project, config);
-		serviceGen.generateServiceFile("Edge", [op as any], "/out/services");
+		serviceGen.generateServiceFile("Edge", [testCast(op)], "/out/services");
 
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/edge.service.ts",
@@ -360,13 +340,9 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 			(imp: ImportDeclaration) => imp.getModuleSpecifierValue() === "../models",
 		);
 
-		expect(
-			modelImport
-				?.getNamedImports()
-				.map((i: string | number | boolean | object | undefined | null) =>
-					i.getName(),
-				),
-		).toContain("User");
+		expect(modelImport?.getNamedImports().map((i) => i.getName())).toContain(
+			"User",
+		);
 
 		const noContentServiceFile = project.getSourceFileOrThrow(
 			"/out/services/noContentResponse.service.ts",

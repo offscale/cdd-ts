@@ -1,24 +1,40 @@
+/**
+ * Generates `links.ts` exporting the OpenAPI Links registry (`API_LINKS`, `API_COMPONENT_LINKS`).
+ *
+ * @module openapi/emit_link
+ */
 import * as path from "node:path";
+import { type Project, VariableDeclarationKind } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 import type {
 	LinkObject,
 	PathInfo,
 	SpecOperation,
-} from "@src/core/types/index.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+} from "../core/types/index.js";
+import type { SwaggerParser } from "./parse.js";
 
 /**
  * Generates the `links.ts` file.
  * Registry for OpenAPI Links defined in operation responses.
  */
 export class LinkGenerator {
+	/**
+	 * Creates a new `LinkGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The `ts-morph` project to create `links.ts` in.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates `links.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "links.ts");
 

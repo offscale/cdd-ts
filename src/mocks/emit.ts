@@ -1,19 +1,35 @@
+/**
+ * Generates the `examples.ts` module exposing reusable OpenAPI `components.examples`.
+ *
+ * @module mocks/emit
+ */
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerParser } from "../openapi/parse.js";
 
 /**
  * Generates the `examples.ts` file.
  * Exposes reusable Example Objects from components.examples.
  */
 export class ExamplesGenerator {
+	/**
+	 * Creates a new `ExamplesGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification wrapper.
+	 * @param project - The target `ts-morph` project.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates `examples.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Root directory for generated output files.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "examples.ts");
 

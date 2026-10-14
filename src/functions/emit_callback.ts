@@ -1,18 +1,19 @@
+/**
+ * Emits the `callbacks.ts` file containing TypeScript payload type aliases and runtime metadata for OpenAPI callbacks.
+ *
+ * @module functions/emit_callback
+ */
 import * as path from "node:path";
-import type {
-	OpenApiValue,
-	PathInfo,
-	PathItem,
-} from "@src/core/types/index.js";
+import { type Project, VariableDeclarationKind } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { OpenApiValue, PathInfo, PathItem } from "../core/types/index.js";
+import type { SwaggerParser } from "../openapi/parse.js";
 import {
 	extractPaths,
 	getRequestBodyType,
 	getResponseType,
 	pascalCase,
-} from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+} from "./utils.js";
 
 /**
  * Generates the `callbacks.ts` file.
@@ -20,12 +21,23 @@ import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
  * This allows consumers to strongly type the data they receive from webhooks.
  */
 export class CallbackGenerator {
+	/**
+	 * Creates a new `CallbackGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The `ts-morph` project to create `callbacks.ts` in.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates the `callbacks.ts` file in the specified output directory.
+	 *
+	 * @param outputDir - Target directory where `callbacks.ts` will be emitted.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "callbacks.ts");
 
@@ -210,6 +222,13 @@ export class CallbackGenerator {
 		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 	}
 
+	/**
+	 * Extracts `PathInfo` operations from a callback `PathItem`.
+	 *
+	 * @param urlKey - Callback runtime expression key.
+	 * @param pathItem - Callback `PathItem` definition.
+	 * @returns Array of extracted `PathInfo` operations.
+	 */
 	private processCallbackPathItem(
 		urlKey: string,
 		pathItem: PathItem,

@@ -1,10 +1,25 @@
-import type { Resource } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
+/**
+ * Module for app shell generator in vendors/vanilla/admin/app-shell.generator.
+ *
+ * @module vendors/vanilla/admin/app-shell.generator
+ */
 import type { Project } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import { camelCase, pascalCase } from "../../../functions/utils.js";
 
+/** Generator/utility class `AppShellGenerator`. */
 export class AppShellGenerator {
+	/**
+	 * Creates a new `AppShellGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private readonly project: Project) {}
 
+	/**
+	 * Executes `generate` on `AppShellGenerator`.
+	 * @param resources - List of analyzed API resources.
+	 * @param outDir - Target output directory path.
+	 */
 	public generate(resources: Resource[], outDir: string): void {
 		const filePath = `${outDir}/app-shell.ts`;
 

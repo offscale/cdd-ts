@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { AuthHelperGenerator } from "@src/vendors/angular/utils/auth-helper.generator.js";
 import { DateTransformerGenerator } from "@src/vendors/angular/utils/date-transformer.generator.js";
 import { FileDownloadGenerator } from "@src/vendors/angular/utils/file-download.generator.js";

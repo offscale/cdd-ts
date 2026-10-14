@@ -1,8 +1,9 @@
 /**
  * Provides utilities for sanitizing user input (descriptions, summaries)
  * before embedding them into generated source code files (JSDocs, string literals).
- *
  * This addresses Security considerations from OAS 3.2 regarding Markdown/HTML injection.
+ *
+ * @module functions/utils_sanitizer
  */
 
 /**

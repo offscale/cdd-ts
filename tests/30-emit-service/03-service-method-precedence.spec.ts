@@ -1,4 +1,3 @@
-// @ts-nocheck
 // tests/30-emit-service/03-service-method-precedence.spec.ts
 
 import { TypeGenerator } from "@src/classes/emit.js";
@@ -7,6 +6,7 @@ import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 	const createTestEnv = () => {
@@ -32,10 +32,7 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 		};
 
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(spec), config);
 
 		// Pre-generate types so the generator recognizes "SpecificModel" as a type name
 		new TypeGenerator(parser, project, config).generate("/out");
@@ -48,7 +45,7 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 	};
 
 	it("should prioritize specific 200 response over generic 2XX response", () => {
-		const op: PathInfo = {
+		const op: PathInfo = testCast({
 			method: "GET",
 			path: "/test",
 			methodName: "testSpecific",
@@ -70,7 +67,7 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 					},
 				},
 			},
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		const { methodGen, serviceClass } = createTestEnv();
 		methodGen.addServiceMethod(serviceClass, op);
@@ -85,7 +82,7 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 	});
 
 	it("should fallback to 2XX response if no specific status code exists", () => {
-		const op: PathInfo = {
+		const op: PathInfo = testCast({
 			method: "GET",
 			path: "/test",
 			methodName: "testRange",
@@ -100,7 +97,7 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 				},
 				"400": { description: "Bad Request" },
 			},
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		const { methodGen, serviceClass } = createTestEnv();
 		methodGen.addServiceMethod(serviceClass, op);
@@ -114,7 +111,7 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 	});
 
 	it("should fallback to default response if no success codes (specific or range) exist", () => {
-		const op: PathInfo = {
+		const op: PathInfo = testCast({
 			method: "GET",
 			path: "/test",
 			methodName: "testDefault",
@@ -128,7 +125,7 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 				},
 				"500": { description: "Server Error" },
 			},
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		const { methodGen, serviceClass } = createTestEnv();
 		methodGen.addServiceMethod(serviceClass, op);

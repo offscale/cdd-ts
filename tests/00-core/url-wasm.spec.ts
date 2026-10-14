@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { SwaggerParser } from "../../src/openapi/parse.js";
+import { testCast } from "../shared/helpers.js";
 
 describe("WASM URL fallback", () => {
 	it("parses petstore spec when URL is undefined", async () => {
 		const originalURL = globalThis.URL;
-		// @ts-expect-error
-		globalThis.URL = undefined;
+		testCast(globalThis).URL = testCast(undefined);
 		try {
 			const spec = {
 				openapi: "3.1.0",
@@ -29,7 +29,7 @@ describe("WASM URL fallback", () => {
 					},
 				},
 			};
-			const parser = new SwaggerParser(spec as any, {
+			const parser = new SwaggerParser(testCast(spec), {
 				input: "memory://spec.json",
 				output: "dummy",
 				options: { framework: "vanilla" },

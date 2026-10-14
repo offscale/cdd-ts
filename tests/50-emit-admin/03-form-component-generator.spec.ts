@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type {
 	GeneratorConfig,
 	Resource,
@@ -16,6 +14,7 @@ import { Project } from "ts-morph";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { branchCoverageSpec } from "../fixtures/coverage.fixture.js";
+import { type TestValue, testCast } from "../shared/helpers.js";
 
 describe("Generators (Angular): FormComponentGenerator", () => {
 	let project: Project;
@@ -26,11 +25,8 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 		paths: {},
 	};
 
-	const run = (
-		spec: string | number | boolean | object | undefined | null,
-		resourceOverrides: Partial<Resource> = {},
-	) => {
-		const parser = new SwaggerParser(spec, config);
+	const run = (spec: TestValue, resourceOverrides: Partial<Resource> = {}) => {
+		const parser = new SwaggerParser(testCast(spec), config);
 
 		// Basic resource extraction simulation
 		const schemaName = resourceOverrides.modelName || "Test";
@@ -68,13 +64,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 			modelName: schemaName,
 			isEditable: true,
 			operations: [],
-			formProperties: formProps as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null[],
+			formProperties: testCast(testCast<TestValue>(formProps)),
 			listProperties: [],
 			...resourceOverrides,
 		};
@@ -114,7 +104,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 					},
 				},
 			};
-			const { sourceFile } = run(spec);
+			const { sourceFile } = run(testCast(spec));
 			const classText = sourceFile.getClass("TestFormComponent")?.getText()!;
 
 			// Updated expectations for new FormControl syntax used by generator
@@ -143,7 +133,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 					},
 				},
 			};
-			const { sourceFile } = run(spec);
+			const { sourceFile } = run(testCast(spec));
 			const classText = sourceFile.getClass("TestFormComponent")?.getText()!;
 
 			// Has helpers
@@ -185,7 +175,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				},
 			};
 
-			const { sourceFile } = run(spec);
+			const { sourceFile } = run(testCast(spec));
 			const classText = sourceFile.getClass("TestFormComponent")?.getText()!;
 			// Generator outputs default value in constructor
 			expect(classText).toContain(
@@ -208,7 +198,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 					},
 				},
 			};
-			const { sourceFile } = run(spec);
+			const { sourceFile } = run(testCast(spec));
 			const classText = sourceFile.getClass("TestFormComponent")?.getText()!;
 
 			expect(classText).toContain(`'id':`);
@@ -234,7 +224,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 					},
 				},
 			};
-			const { sourceFile } = run(spec, {
+			const { sourceFile } = run(testCast(spec), {
 				name: "poly",
 				modelName: "Poly",
 				formProperties: [
@@ -275,7 +265,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 			};
 
 			// Run with automatic resolution in helper
-			const { sourceFile } = run(spec, { modelName: "Test" });
+			const { sourceFile } = run(testCast(spec), { modelName: "Test" });
 			const classText = sourceFile.getClass("TestFormComponent")?.getText();
 
 			// Expect logic switching on the discriminator property
@@ -308,7 +298,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				},
 			};
 
-			const { sourceFile } = run(spec, { modelName: "Test" });
+			const { sourceFile } = run(testCast(spec), { modelName: "Test" });
 			const classText = sourceFile.getClass("TestFormComponent")?.getText();
 
 			// Expect dependent schema effect block in setupDynamicFormEffects
@@ -347,7 +337,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				},
 			};
 
-			const { sourceFile } = run(spec, { modelName: "Test" });
+			const { sourceFile } = run(testCast(spec), { modelName: "Test" });
 			const classText = sourceFile.getClass("TestFormComponent")?.getText();
 
 			expect(classText).toContain("setupDynamicFormEffects");
@@ -384,7 +374,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 			},
 		};
 
-		const { sourceFile } = run(spec, {
+		const { sourceFile } = run(testCast(spec), {
 			name: "withUnsupported",
 			modelName: "WithUnsupported",
 		});
@@ -398,13 +388,10 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 
 	describe("Coverage: internal helpers", () => {
 		it("should generate polymorphic form helpers with enum dedupe and map branches", () => {
-			const parser = new SwaggerParser(
-				validBase as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(validBase), config);
 			const generator = new FormComponentGenerator(project, parser);
 
-			const arrayItemControl: FormControlModel = {
+			const arrayItemControl: FormControlModel = testCast({
 				name: "itemName",
 				propertyName: "itemName",
 				dataType: "string | null",
@@ -412,7 +399,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				validationRules: [],
 				controlType: "control",
 				schema: { type: "string" },
-			} as string | number | boolean | object | undefined | null;
+			});
 
 			const analysis: FormAnalysisResult = {
 				interfaces: [
@@ -423,7 +410,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 					},
 				],
 				topLevelControls: [
-					{
+					testCast({
 						name: "status",
 						propertyName: "status",
 						dataType: "string | null",
@@ -431,8 +418,8 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 						validationRules: [],
 						controlType: "control",
 						schema: { type: "string", enum: ["A", "B"] },
-					} as string | number | boolean | object | undefined | null,
-					{
+					}),
+					testCast({
 						name: "status",
 						propertyName: "status",
 						dataType: "string | null",
@@ -440,8 +427,8 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 						validationRules: [],
 						controlType: "control",
 						schema: { type: "string", enum: ["A", "B"] },
-					} as string | number | boolean | object | undefined | null,
-					{
+					}),
+					testCast({
 						name: "missingSchema",
 						propertyName: "missingSchema",
 						dataType: "string | null",
@@ -449,8 +436,8 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 						validationRules: [],
 						controlType: "control",
 						schema: undefined,
-					} as string | number | boolean | object | undefined | null,
-					{
+					}),
+					testCast({
 						name: "items",
 						propertyName: "items",
 						dataType: "ItemForm[]",
@@ -460,8 +447,8 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 						schema: { type: "array", items: { type: "object" } },
 						nestedControls: [arrayItemControl],
 						nestedFormInterface: "ItemForm",
-					} as string | number | boolean | object | undefined | null,
-					{
+					}),
+					testCast({
 						name: "meta",
 						propertyName: "meta",
 						dataType: "Record<string, string>",
@@ -470,7 +457,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 						controlType: "map",
 						schema: { type: "object" },
 
-						mapValueControl: {
+						mapValueControl: testCast({
 							name: "value",
 							propertyName: "value",
 							dataType: "string | null",
@@ -478,9 +465,9 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 							validationRules: [],
 							controlType: "control",
 							schema: { type: "string" },
-						} as string | number | boolean | object | undefined | null,
-					} as string | number | boolean | object | undefined | null,
-					{
+						}),
+					}),
+					testCast({
 						name: "meta2",
 						propertyName: "meta2",
 						dataType: "Record<string, string>",
@@ -489,7 +476,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 						controlType: "map",
 						schema: { type: "object" },
 						mapValueControl: undefined,
-					} as string | number | boolean | object | undefined | null,
+					}),
 				],
 				usesCustomValidators: false,
 				hasFormArrays: true,
@@ -497,7 +484,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				hasMaps: true,
 				isPolymorphic: true,
 				polymorphicProperties: [
-					{
+					testCast({
 						propertyName: "type",
 						discriminatorOptions: ["sub"],
 						options: [
@@ -506,7 +493,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 								modelName: "SubModel",
 								subFormName: "sub",
 								controls: [
-									{
+									testCast({
 										name: "subProp",
 										propertyName: "subProp",
 										dataType: "string | null",
@@ -514,11 +501,11 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 										validationRules: [],
 										controlType: "control",
 										schema: { type: "string" },
-									} as string | number | boolean | object | undefined | null,
+									}),
 								],
 							},
 						],
-					} as string | number | boolean | object | undefined | null,
+					}),
 				],
 				dependencyRules: [
 					{ type: "required", triggerField: "flag", targetField: "target" },
@@ -535,9 +522,11 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				listProperties: [],
 			};
 
-			(
-				generator as string | number | boolean | object | undefined | null
-			).generateFormComponentTs(resource, "/admin/test/test-form", analysis);
+			generator.generateFormComponentTs(
+				resource,
+				"/admin/test/test-form",
+				analysis,
+			);
 			const sourceFile = project.getSourceFileOrThrow(
 				"/admin/test/test-form/test-form.component.ts",
 			);
@@ -552,10 +541,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 		});
 
 		it("should fall back to string | number | boolean | object | undefined | null when interface props are not found in polymorphic options", () => {
-			const parser = new SwaggerParser(
-				validBase as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(validBase), config);
 			const generator = new FormComponentGenerator(project, parser);
 
 			const analysis: FormAnalysisResult = {
@@ -573,7 +559,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				hasMaps: false,
 				isPolymorphic: true,
 				polymorphicProperties: [
-					{
+					testCast({
 						propertyName: "type",
 						discriminatorOptions: ["sub"],
 						options: [
@@ -582,7 +568,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 								modelName: "SubModel",
 								subFormName: "sub",
 								controls: [
-									{
+									testCast({
 										name: "subProp",
 										propertyName: "subProp",
 										dataType: "string | null",
@@ -590,11 +576,11 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 										validationRules: [],
 										controlType: "control",
 										schema: { type: "string" },
-									} as string | number | boolean | object | undefined | null,
+									}),
 								],
 							},
 						],
-					} as string | number | boolean | object | undefined | null,
+					}),
 				],
 				dependencyRules: [],
 			};
@@ -608,9 +594,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				listProperties: [],
 			};
 
-			(
-				generator as string | number | boolean | object | undefined | null
-			).generateFormComponentTs(
+			generator.generateFormComponentTs(
 				resource,
 				"/admin/test-any/test-form",
 				analysis,
@@ -624,16 +608,13 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 		});
 
 		it("should default array item interface to string | number | boolean | object | undefined | null when nestedFormInterface is missing", () => {
-			const parser = new SwaggerParser(
-				validBase as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(validBase), config);
 			const generator = new FormComponentGenerator(project, parser);
 
 			const analysis: FormAnalysisResult = {
 				interfaces: [],
 				topLevelControls: [
-					{
+					testCast({
 						name: "items",
 						propertyName: "items",
 						dataType:
@@ -642,7 +623,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 						validationRules: [],
 						controlType: "array",
 						nestedControls: [
-							{
+							testCast({
 								name: "name",
 								propertyName: "name",
 								dataType: "string | null",
@@ -650,9 +631,9 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 								validationRules: [],
 								controlType: "control",
 								schema: { type: "string" },
-							} as string | number | boolean | object | undefined | null,
+							}),
 						],
-					} as string | number | boolean | object | undefined | null,
+					}),
 				],
 				usesCustomValidators: false,
 				hasFormArrays: true,
@@ -672,9 +653,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				listProperties: [],
 			};
 
-			(
-				generator as string | number | boolean | object | undefined | null
-			).generateFormComponentTs(
+			generator.generateFormComponentTs(
 				resource,
 				"/admin/test-any-array/test-form",
 				analysis,
@@ -688,10 +667,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 		});
 
 		it("should generate onSubmit branches for create-only and update-only flows", () => {
-			const parser = new SwaggerParser(
-				validBase as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(validBase), config);
 			const generator = new FormComponentGenerator(project, parser);
 			const sourceFile = project.createSourceFile(
 				"/admin/test-on-submit.ts",
@@ -704,22 +680,12 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				name: "test",
 				modelName: "Test",
 				isEditable: true,
-				operations: [
-					{ action: "create", methodName: "createTest" } as
-						| string
-						| number
-						| boolean
-						| object
-						| undefined
-						| null,
-				],
+				operations: [testCast({ action: "create", methodName: "createTest" })],
 				formProperties: [],
 				listProperties: [],
 			};
 
-			(
-				generator as string | number | boolean | object | undefined | null
-			).addOnSubmit(classDeclaration, createOnly, "TestService", false);
+			generator.addOnSubmit(classDeclaration, createOnly, "TestService", false);
 			const createBody =
 				classDeclaration.getMethodOrThrow("onSubmit").getBodyText() ?? "";
 			expect(createBody).toContain("this.form.getRawValue()");
@@ -731,22 +697,12 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				name: "test",
 				modelName: "Test",
 				isEditable: true,
-				operations: [
-					{ action: "update", methodName: "updateTest" } as
-						| string
-						| number
-						| boolean
-						| object
-						| undefined
-						| null,
-				],
+				operations: [testCast({ action: "update", methodName: "updateTest" })],
 				formProperties: [],
 				listProperties: [],
 			};
 
-			(
-				generator as string | number | boolean | object | undefined | null
-			).addOnSubmit(classDeclaration, updateOnly, "TestService", false);
+			generator.addOnSubmit(classDeclaration, updateOnly, "TestService", false);
 			const updateBody =
 				classDeclaration.getMethodOrThrow("onSubmit").getBodyText() ?? "";
 			expect(updateBody).toContain("updateTest");
@@ -754,10 +710,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 		});
 
 		it("should skip patchForm when there are no complex props and use string | number | boolean | object | undefined | null when modelName is missing", () => {
-			const parser = new SwaggerParser(
-				validBase as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(validBase), config);
 			const generator = new FormComponentGenerator(project, parser);
 			const sourceFile = project.createSourceFile("/admin/test-patch.ts", "", {
 				overwrite: true,
@@ -776,17 +729,9 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 				dependencyRules: [],
 			};
 
-			(
-				generator as string | number | boolean | object | undefined | null
-			).addPatchForm(
+			generator.addPatchForm(
 				classDeclaration,
-				{ name: "test", modelName: "Test" } as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
+				testCast({ name: "test", modelName: "Test" }),
 				analysisEmpty,
 			);
 			expect(classDeclaration.getMethod("patchForm")).toBeUndefined();
@@ -794,7 +739,7 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 			const analysisComplex: FormAnalysisResult = {
 				...analysisEmpty,
 				topLevelControls: [
-					{
+					testCast({
 						name: "meta",
 						propertyName: "meta",
 						dataType: "Record<string, string>",
@@ -802,22 +747,14 @@ describe("Generators (Angular): FormComponentGenerator", () => {
 						validationRules: [],
 						controlType: "map",
 						schema: { type: "object" },
-					} as string | number | boolean | object | undefined | null,
+					}),
 				],
 				hasMaps: true,
 			};
 
-			(
-				generator as string | number | boolean | object | undefined | null
-			).addPatchForm(
+			generator.addPatchForm(
 				classDeclaration,
-				{ name: "test", modelName: "" } as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
+				testCast({ name: "test", modelName: "" }),
 				analysisComplex,
 			);
 			const patchMethod = classDeclaration.getMethodOrThrow("patchForm");

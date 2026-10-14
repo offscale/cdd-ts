@@ -1,11 +1,23 @@
+/**
+ * Module for service generator in vendors/angular/service/service.generator.
+ *
+ * @module vendors/angular/service/service.generator
+ */
 // src/generators/angular/service/service.generator.ts
 
+import {
+	type ClassDeclaration,
+	type Project,
+	Scope,
+	type SourceFile,
+} from "ts-morph";
 import type {
 	GeneratorConfig,
 	OpenApiValue,
 	PathInfo,
 	SwaggerDefinition,
-} from "@src/core/types/index.js";
+} from "../../../core/types/index.js";
+import { AbstractServiceGenerator } from "../../../functions/emit_service.js";
 import {
 	getBasePathTokenName,
 	getClientContextTokenName,
@@ -13,20 +25,20 @@ import {
 	getTypeScriptType,
 	isDataTypeInterface,
 	pascalCase,
-} from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import {
-	type ClassDeclaration,
-	type Project,
-	Scope,
-	type SourceFile,
-} from "ts-morph";
-import { AbstractServiceGenerator } from "../../../functions/emit_service.js";
+} from "../../../functions/utils.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 import { ServiceMethodGenerator } from "./service-method.generator.js";
 
+/** Generator/utility class `ServiceGenerator`. */
 export class ServiceGenerator extends AbstractServiceGenerator {
 	private methodGenerator: ServiceMethodGenerator;
 
+	/**
+	 * Creates a new `ServiceGenerator` instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param project - Target `ts-morph` project instance.
+	 * @param config - Active generator configuration.
+	 */
 	constructor(
 		parser: SwaggerParser,
 		project: Project,
@@ -37,6 +49,12 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 		this.methodGenerator = new ServiceMethodGenerator(this.config, this.parser);
 	}
 
+	/**
+	 * Executes `generateServiceFile` on `ServiceGenerator`.
+	 * @param controllerName - Logical controller or tag group name.
+	 * @param operations - Operations belonging to the controller or resource.
+	 * @param outputDir - Target output directory path.
+	 */
 	public override generateServiceFile(
 		controllerName: string,
 		operations: PathInfo[],
@@ -45,10 +63,20 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 		super.generateServiceFile(controllerName, operations, outputDir);
 	}
 
+	/**
+	 * Executes `getFileName` on `ServiceGenerator`.
+	 * @param controllerName - Logical controller or tag group name.
+	 * @returns Generated result (string).
+	 */
 	protected getFileName(controllerName: string): string {
 		return `${controllerName}.service.ts`;
 	}
 
+	/**
+	 * Executes `generateImports` on `ServiceGenerator`.
+	 * @param sourceFile - Parameter `sourceFile` (SourceFile).
+	 * @param operations - Operations belonging to the controller or resource.
+	 */
 	protected generateImports(
 		sourceFile: SourceFile,
 		operations: PathInfo[],
@@ -330,6 +358,12 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 		});
 	}
 
+	/**
+	 * Executes `generateServiceContent` on `ServiceGenerator`.
+	 * @param sourceFile - Parameter `sourceFile` (SourceFile).
+	 * @param controllerName - Logical controller or tag group name.
+	 * @param operations - Operations belonging to the controller or resource.
+	 */
 	protected generateServiceContent(
 		sourceFile: SourceFile,
 		controllerName: string,

@@ -1,16 +1,22 @@
+/**
+ * Module for provider generator in vendors/angular/utils/provider.generator.
+ *
+ * @module vendors/angular/utils/provider.generator
+ */
 import * as path from "node:path";
-import { PROVIDER_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
+import type { Project, SourceFile } from "ts-morph";
+import { PROVIDER_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
+import type { GeneratorConfig } from "../../../core/types/index.js";
 import {
 	camelCase,
 	getBasePathTokenName,
 	getInterceptorsTokenName,
 	getServerVariablesTokenName,
 	pascalCase,
-} from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import type { Project, SourceFile } from "ts-morph";
+} from "../../../functions/utils.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
+/** Generator/utility class `ProviderGenerator`. */
 export class ProviderGenerator {
 	private readonly clientName: string;
 	private readonly capitalizedClientName: string;
@@ -20,6 +26,12 @@ export class ProviderGenerator {
 	private readonly hasBearer: boolean;
 	private readonly hasMtls: boolean;
 
+	/**
+	 * Creates a new `ProviderGenerator` instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param project - Target `ts-morph` project instance.
+	 * @param tokenNames - Generated authentication injection token names.
+	 */
 	constructor(
 		parser: SwaggerParser,
 
@@ -42,6 +54,10 @@ export class ProviderGenerator {
 		this.hasMtls = this.tokenNames.includes("httpsAgentConfig");
 	}
 
+	/**
+	 * Executes `generate` on `ProviderGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(outputDir: string): void {
 		if (this.config.options.generateServices === false) {
 			return;
@@ -81,6 +97,7 @@ export class ProviderGenerator {
 				namedImports: [
 					"provideHttpClient",
 					"withInterceptors",
+					"HttpInterceptor",
 					"HttpInterceptorFn",
 				],
 				moduleSpecifier: "@angular/common/http",
@@ -160,7 +177,7 @@ export class ProviderGenerator {
 				},
 				{
 					name: "interceptors",
-					type: `HttpInterceptorFn[] | (new (...args: Array<string | number | boolean | null>) => any)[]`,
+					type: `HttpInterceptorFn[] | (new (...args: Array<string | number | boolean | null>) => HttpInterceptor)[]`,
 					hasQuestionToken: true,
 					docs: [
 						"An array of HttpInterceptorFn (or custom HttpInterceptor classes for backwards compatibility).",
@@ -295,7 +312,7 @@ export class ProviderGenerator {
 
 				writer.blankLine();
 				writer.writeLine(
-					'const customInterceptors = config.interceptors?.map(InterceptorClass => typeof InterceptorClass === "function" && !InterceptorClass.prototype?.intercept ? InterceptorClass : new (InterceptorClass as any)()) || [];',
+					'const customInterceptors = config.interceptors?.map(InterceptorClass => typeof InterceptorClass === "function" && !InterceptorClass.prototype?.intercept ? InterceptorClass : new (InterceptorClass as new () => HttpInterceptor)()) || [];',
 				);
 
 				writer.writeLine(

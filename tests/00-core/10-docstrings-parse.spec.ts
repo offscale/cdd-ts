@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { parseJSDoc } from "../../src/docstrings/parse.js";
+import { testCast } from "../shared/helpers.js";
 
 describe("parseJSDoc", () => {
 	it("should return an empty object for empty or invalid input", () => {
 		expect(parseJSDoc("")).toEqual({});
-		expect(parseJSDoc(undefined as unknown as string)).toEqual({});
+		expect(parseJSDoc(testCast<string>(undefined))).toEqual({});
 	});
 
 	it("should parse a single-line description", () => {

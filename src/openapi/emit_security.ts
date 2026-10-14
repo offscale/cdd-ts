@@ -1,15 +1,34 @@
+/**
+ * Generates `security.ts` exporting OpenAPI security schemes and global security requirements (`API_SECURITY_SCHEMES`, `API_SECURITY_REQUIREMENTS`).
+ *
+ * @module openapi/emit_security
+ */
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerParser } from "./parse.js";
 
+/**
+ * Generates the `security.ts` file containing OpenAPI security scheme metadata.
+ */
 export class SecurityGenerator {
+	/**
+	 * Creates a new `SecurityGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The `ts-morph` project to create `security.ts` in.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates `security.ts` in the specified output directory when security schemes or requirements exist.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const schemes = this.parser.getSecuritySchemes();
 

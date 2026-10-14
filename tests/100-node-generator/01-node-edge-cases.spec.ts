@@ -4,7 +4,6 @@ import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
 import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
 import { generateFromConfigSync } from "@src/index.js";
 import { Project } from "ts-morph";
-// @ts-nocheck
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("Node Implementation Edge Cases", () => {
@@ -225,9 +224,7 @@ describe("Node Implementation Edge Cases", () => {
 		const postBufferMethod = serviceClass?.getMethod("postBuffer");
 
 		const methodText = postBufferMethod?.getText();
-		expect(methodText).toContain(
-			"resolve(buffer as string | number | boolean | object | undefined | null as Blob);",
-		);
+		expect(methodText).toContain("resolve(new Blob([buffer]) as Blob);");
 	});
 
 	it("should handle multipart body type", async () => {

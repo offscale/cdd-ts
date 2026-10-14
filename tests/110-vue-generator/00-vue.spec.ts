@@ -4,6 +4,7 @@ import type { GeneratorConfig } from "../../src/core/types/index.js";
 import { SwaggerParser } from "../../src/openapi/parse.js";
 import { FetchClientGenerator } from "../../src/vendors/fetch/fetch-client.generator.js";
 import { VueClientGenerator } from "../../src/vendors/vue/vue-client.generator.js";
+import { testCast } from "../shared/helpers.js";
 
 describe("Vue Implementation", () => {
 	beforeEach(() => {
@@ -117,7 +118,7 @@ describe("Vue Implementation", () => {
 			options: { tests: false, framework: "vue" },
 		};
 
-		const spec: any = {
+		const spec = testCast({
 			openapi: "3.0.0",
 			info: { title: "Test API", version: "1.0.0" },
 			paths: {
@@ -131,8 +132,8 @@ describe("Vue Implementation", () => {
 					},
 				},
 			},
-		};
-		const parser = new SwaggerParser(spec, {} as any);
+		});
+		const parser = new SwaggerParser(testCast(spec), testCast({}));
 
 		const generator = new VueClientGenerator();
 		await generator.generate(project, parser, config, "/out");

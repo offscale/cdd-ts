@@ -1,124 +1,46 @@
-import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
-import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
+/**
+ * Generates individual Axios operation methods inside an AxiosService class.
+ *
+ * @module vendors/axios/service/service-method.generator
+ */
+import { AbstractHttpServiceMethodGenerator } from "../../../functions/emit_service_method.js";
 import type {
 	ParamSerialization,
 	ServiceMethodModel,
-} from "@src/functions/types.js";
-import { pascalCase } from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import type { ClassDeclaration } from "ts-morph";
+} from "../../../functions/types.js";
 
 /**
  * Responsible for generating the specific content of individual operations inside an AxiosService.
  * This class abstracts the logic to wrap endpoints in a standard Axios execution flow.
  */
-export class AxiosServiceMethodGenerator {
-	private analyzer: ServiceMethodAnalyzer;
-
+export class AxiosServiceMethodGenerator extends AbstractHttpServiceMethodGenerator {
 	/**
-	 * Instantiates a new method generator.
-	 * @param config The global code generator settings.
-	 * @param parser A reference to the active OpenAPI parser.
+	 * Returns `AxiosRequestConfig` as the transport options type.
+	 *
+	 * @returns `"AxiosRequestConfig"`.
 	 */
-	constructor(
-		config: GeneratorConfig,
-
-		readonly parser: SwaggerParser,
-	) {
-		this.analyzer = new ServiceMethodAnalyzer(config, parser);
-	}
-
-	/**
-	 * Evaluates a single OpenAPI path segment operation and translates it into a valid Axios method.
-	 * @param classDeclaration The `ts-morph` AST element of the service class.
-	 * @param operation The raw `PathInfo` representation of the endpoint.
-	 */
-	public addServiceMethod(
-		classDeclaration: ClassDeclaration,
-		operation: PathInfo,
-	): void {
-		const model = this.analyzer.analyze(operation);
-
-		if (!model) return;
-
-		if (model.errorResponses.length > 0) {
-			const typeName = `${pascalCase(model.methodName)}Error`;
-
-			const union = [...new Set(model.errorResponses.map((e) => e.type))].join(
-				" | ",
-			);
-
-			classDeclaration.getSourceFile().addTypeAlias({
-				name: typeName,
-				isExported: true,
-				type: union,
-			});
-		}
-
-		const distinctTypes = [
-			...new Set(model.responseVariants.map((v) => v.type)),
-		];
-
-		const returnType =
-			distinctTypes.length > 1 ? distinctTypes.join(" | ") : model.responseType;
-
-		const serverOptionType =
-			"{ server?: number | string; serverVariables?: Record<string, string> }";
-
-		classDeclaration.addMethod({
-			name: model.methodName,
-			isAsync: true,
-			parameters: [
-				...model.parameters,
-				{
-					name: "options",
-					hasQuestionToken: true,
-					type: `AxiosRequestConfig & ${serverOptionType}`,
-				},
-			],
-			returnType: `Promise<${returnType}>`,
-			statements: this.emitMethodBody(model),
-		});
+	protected override getTransportOptionsType(): string {
+		return "AxiosRequestConfig";
 	}
 
 	/**
 	 * Translates the `ServiceMethodModel` into stringized valid TypeScript axios code.
-	 * @param model An abstraction holding parameters, path values, query objects, headers, etc.
+	 * @param model - An abstraction holding parameters, path values, query objects, headers, etc.
 	 * @returns A string containing the entire method implementation body block.
 	 */
-	private emitMethodBody(model: ServiceMethodModel): string {
+	protected override emitMethodBody(model: ServiceMethodModel): string {
 		const lines: string[] = [];
+		const urlTemplate = this.buildInterpolatedUrlTemplate(model);
+		const bt = "`";
 
-		let urlTemplate = model.urlTemplate;
-
-		model.pathParams.forEach((p: ParamSerialization) => {
-			const serializeCall = `ParameterSerializer.serializePathParam('${p.originalName}', ${p.paramName}, '${p.style}', ${p.explode}, ${p.allowReserved})`;
-
-			urlTemplate = urlTemplate.replace(
-				`{${p.originalName}}`,
-				`\${${serializeCall}}`,
-			);
-		});
-
-		if (model.operationServers?.length) {
-			lines.push(
-				`const operationServers = ${JSON.stringify(model.operationServers, null, 2)};`,
-			);
-
-			lines.push(
-				`const basePath = resolveServerUrl(operationServers, options?.server ?? 0, options?.serverVariables ?? {});`,
-			);
-		} else {
-			lines.push(
-				`const basePath = (options?.server !== undefined || options?.serverVariables !== undefined) ? getServerUrl(options?.server ?? 0, options?.serverVariables ?? {}) : this.basePath;`,
-			);
-		}
-
+		lines.push(...this.buildBasePathResolutionLines(model));
 		lines.push(
-			`const axiosConfig: AxiosRequestConfig = { ...options, method: '${model.httpMethod.toUpperCase()}', baseURL: basePath, url: \`${urlTemplate}\` };`,
+			`const axiosConfig: AxiosRequestConfig = { ...options, method: '${model.httpMethod.toUpperCase()}', baseURL: basePath, url: ${bt}${urlTemplate}${bt} };`,
 		);
 
-		lines.push(`axiosConfig.headers = { ...options?.headers } as any;`);
+		lines.push(
+			`axiosConfig.headers = { ...(options?.headers as Record<string, string>) };`,
+		);
 
 		model.headerParams.forEach((p: ParamSerialization) => {
 			lines.push(
@@ -128,27 +50,11 @@ export class AxiosServiceMethodGenerator {
 
 		if (model.queryParams.length > 0) {
 			lines.push(
-				`const queryParams = new URLSearchParams(options?.params as any);`,
+				`const queryParams = new URLSearchParams(options?.params as Record<string, string>);`,
 			);
-
-			model.queryParams.forEach((p: ParamSerialization) => {
-				const configObj = JSON.stringify({
-					name: p.originalName,
-					in: "query",
-					style: p.style,
-					explode: p.explode,
-					allowReserved: p.allowReserved,
-				});
-
-				lines.push(
-					`const serialized_${p.paramName} = ParameterSerializer.serializeQueryParam(${configObj}, ${p.paramName});`,
-				);
-
-				lines.push(
-					`serialized_${p.paramName}.forEach((entry: { key: string; value: string }) => queryParams.append(entry.key, entry.value));`,
-				);
-			});
-
+			lines.push(
+				...this.buildQueryParamSerializationLines(model, "queryParams"),
+			);
 			lines.push(`axiosConfig.params = queryParams;`);
 		}
 
@@ -183,7 +89,7 @@ export class AxiosServiceMethodGenerator {
 				} else {
 					lines.push(
 						`if (!axiosConfig.headers['Content-Type']) { axiosConfig.headers['Content-Type'] = 'application/json'; }`,
-					); // Default fallback
+					);
 				}
 			}
 		}

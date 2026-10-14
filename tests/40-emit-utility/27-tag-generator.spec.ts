@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { TagGenerator } from "@src/openapi/emit_tag.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
@@ -7,14 +5,14 @@ import type { Project } from "ts-morph";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 
 const tagsSpec: SwaggerSpec = {
 	openapi: "3.2.0",
 	info: { title: "Tags Test", version: "1.0" },
 	paths: {},
 	tags: [
-		{
+		testCast({
 			name: "Pet",
 			summary: "Pet Operations",
 			description: "Everything about your Pets",
@@ -24,25 +22,19 @@ const tagsSpec: SwaggerSpec = {
 				description: "Find out more",
 				url: "http://swagger.io",
 			},
-		} as string | number | boolean | object | undefined | null,
-		{
+		}),
+		testCast({
 			name: "Store",
 			description: "Access to Petstore orders",
 			parent: "Pet",
-		} as string | number | boolean | object | undefined | null,
+		}),
 	],
 };
 
 describe("Emitter: TagGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = { output: "/out", options: {} } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
+		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
 		const parser = new SwaggerParser(spec, config);
 		new TagGenerator(parser, project).generate("/out");
 		return project;
@@ -57,10 +49,10 @@ describe("Emitter: TagGenerator", () => {
 		});
 
 		const moduleHelper = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		new Function("exports", jsCode)(moduleHelper.exports);
+		testCast(new Function("exports", jsCode)(moduleHelper.exports));
 
 		return moduleHelper.exports;
 	};
@@ -125,15 +117,7 @@ describe("Emitter: TagGenerator", () => {
 			openapi: "3.2.0",
 			info: { title: "MinimalTags", version: "1.0" },
 			paths: {},
-			tags: [
-				{ name: "Minimal" } as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null,
-			],
+			tags: [testCast({ name: "Minimal" })],
 		};
 		const project = runGenerator(minimalSpec);
 

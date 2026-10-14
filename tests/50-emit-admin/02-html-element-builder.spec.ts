@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { HtmlElementBuilder as _ } from "@src/vendors/angular/admin/html-element.builder.js";
 import { describe, expect, it } from "vitest";
 

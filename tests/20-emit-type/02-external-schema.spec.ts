@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 

@@ -1,10 +1,24 @@
+/**
+ * Module for auth tokens generator in vendors/angular/utils/auth-tokens.generator.
+ *
+ * @module vendors/angular/utils/auth-tokens.generator
+ */
 import * as path from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 
+/** Generator/utility class `AuthTokensGenerator`. */
 export class AuthTokensGenerator {
+	/**
+	 * Creates a new `AuthTokensGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Executes `generate` on `AuthTokensGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(outputDir: string): void {
 		const authDir = path.join(outputDir, "auth");
 

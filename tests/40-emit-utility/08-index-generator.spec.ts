@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import path from "node:path";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
@@ -9,7 +7,7 @@ import {
 } from "@src/vendors/angular/utils/index.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 import { emptySpec, securitySpec } from "../shared/specs.js";
 
 describe("Emitter: IndexGenerators", () => {
@@ -29,10 +27,7 @@ describe("Emitter: IndexGenerators", () => {
 					...options,
 				},
 			};
-			const parser = new SwaggerParser(
-				spec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			const parser = new SwaggerParser(testCast(spec), config);
 			new MainIndexGenerator(project, config, parser).generateMainIndex("/out");
 			return project.getSourceFileOrThrow("/out/index.ts").getText();
 		};
@@ -294,14 +289,11 @@ describe("Emitter: IndexGenerators", () => {
 
 		it("should handle missing services dir when generateServices is false", () => {
 			const project = createTestProject();
-			const config: GeneratorConfig = {
+			const config: GeneratorConfig = testCast({
 				output: "/",
 				options: { framework: "angular", generateServices: false },
-			} as string | number | boolean | object | undefined | null;
-			const parser = new SwaggerParser(
-				emptySpec as string | number | boolean | object | undefined | null,
-				config,
-			);
+			});
+			const parser = new SwaggerParser(testCast(emptySpec), config);
 			new MainIndexGenerator(project, parser.config, parser).generateMainIndex(
 				"/",
 			);

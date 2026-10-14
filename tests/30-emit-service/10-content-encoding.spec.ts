@@ -1,11 +1,10 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { type TestValue, testCast } from "../shared/helpers.js";
 
 const encodingSpec = {
 	openapi: "3.1.0",
@@ -102,10 +101,7 @@ describe("Emitter: ServiceMethodGenerator (Request Encoding)", () => {
 			options: { enumStyle: "enum", framework: "angular" },
 		};
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(
-			encodingSpec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(encodingSpec), config);
 
 		new TypeGenerator(parser, project, config).generate("/out");
 
@@ -138,15 +134,17 @@ describe("Emitter: ServiceMethodGenerator (Request Encoding)", () => {
 	it("should apply ContentEncoder.encode to request body with encoded properties", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: string | number | boolean | object | undefined | null = {
-			method: "POST",
-			path: "/encode-request",
-			methodName: "postEncodedData",
-			requestBody: encodingSpec.paths["/encode-request"].post.requestBody,
-			responses: encodingSpec.paths["/encode-request"].post.responses,
-		};
+		const op: TestValue = testCast({
+			method: testCast("POST"),
+			path: testCast("/encode-request"),
+			methodName: testCast("postEncodedData"),
+			requestBody: testCast(
+				encodingSpec.paths["/encode-request"].post.requestBody,
+			),
+			responses: testCast(encodingSpec.paths["/encode-request"].post.responses),
+		});
 
-		methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, testCast(op));
 
 		const body = serviceClass
 			.getMethodOrThrow("postEncodedData")
@@ -163,15 +161,19 @@ describe("Emitter: ServiceMethodGenerator (Request Encoding)", () => {
 	it("should apply ContentEncoder.encode recursively for nested arrays", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: string | number | boolean | object | undefined | null = {
-			method: "POST",
-			path: "/nested-encoding",
-			methodName: "postNested",
-			requestBody: encodingSpec.paths["/nested-encoding"].post.requestBody,
-			responses: encodingSpec.paths["/nested-encoding"].post.responses,
-		};
+		const op: TestValue = testCast({
+			method: testCast("POST"),
+			path: testCast("/nested-encoding"),
+			methodName: testCast("postNested"),
+			requestBody: testCast(
+				encodingSpec.paths["/nested-encoding"].post.requestBody,
+			),
+			responses: testCast(
+				encodingSpec.paths["/nested-encoding"].post.responses,
+			),
+		});
 
-		methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, testCast(op));
 
 		const body = serviceClass.getMethodOrThrow("postNested").getBodyText()!;
 
@@ -185,15 +187,17 @@ describe("Emitter: ServiceMethodGenerator (Request Encoding)", () => {
 	it("should include contentEncoding in ContentEncoder config", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: string | number | boolean | object | undefined | null = {
-			method: "POST",
-			path: "/base64-request",
-			methodName: "postBase64",
-			requestBody: encodingSpec.paths["/base64-request"].post.requestBody,
-			responses: encodingSpec.paths["/base64-request"].post.responses,
-		};
+		const op: TestValue = testCast({
+			method: testCast("POST"),
+			path: testCast("/base64-request"),
+			methodName: testCast("postBase64"),
+			requestBody: testCast(
+				encodingSpec.paths["/base64-request"].post.requestBody,
+			),
+			responses: testCast(encodingSpec.paths["/base64-request"].post.responses),
+		});
 
-		methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, testCast(op));
 
 		const body = serviceClass.getMethodOrThrow("postBase64").getBodyText()!;
 		expect(body).toContain("ContentEncoder.encode(body,");

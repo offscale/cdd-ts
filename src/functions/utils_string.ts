@@ -1,6 +1,13 @@
 /**
+ * Case conversion, pluralization, and URI/URL validation string utilities.
+ *
+ * @module functions/utils_string
+ */
+
+/**
  * A simple singularization function for English words. Handles common plural endings.
- * @param str The plural string to singularize.
+ *
+ * @param str - The plural string to singularize.
  * @returns The singular form of the string.
  */
 export function singular(str: string): string {
@@ -15,6 +22,12 @@ export function singular(str: string): string {
 	return str;
 }
 
+/**
+ * Normalizes an arbitrary string into space-separated lowercase words.
+ *
+ * @param str - Input string to normalize.
+ * @returns Normalized space-delimited lowercase words.
+ */
 function normalizeString(str: string): string {
 	if (!str) return "";
 
@@ -30,7 +43,10 @@ function normalizeString(str: string): string {
 }
 
 /**
- * Converts a string to camelCase.
+ * Converts a string to `camelCase`.
+ *
+ * @param str - Input string.
+ * @returns The `camelCase` identifier (prefixed with `api` if starting with a digit).
  */
 export function camelCase(str: string): string {
 	const normalized = normalizeString(str);
@@ -49,7 +65,10 @@ export function camelCase(str: string): string {
 }
 
 /**
- * Converts a string to snake_case.
+ * Converts a string to `snake_case`.
+ *
+ * @param str - Input string.
+ * @returns The `snake_case` string.
  */
 export function snakeCase(str: string): string {
 	const normalized = normalizeString(str);
@@ -58,7 +77,10 @@ export function snakeCase(str: string): string {
 }
 
 /**
- * Converts a string to PascalCase (UpperCamelCase).
+ * Converts a string to `PascalCase` (`UpperCamelCase`).
+ *
+ * @param str - Input string.
+ * @returns The `PascalCase` identifier (prefixed with `Api` if starting with a digit).
  */
 export function pascalCase(str: string): string {
 	const normalized = normalizeString(str);
@@ -77,20 +99,27 @@ export function pascalCase(str: string): string {
 }
 
 /**
- * Converts a string to kebab-case.
+ * Converts a string to `kebab-case`.
+ *
+ * @param str - Input string.
+ * @returns The `kebab-case` string.
  */
 export function kebabCase(str: string): string {
 	if (!str) return "";
 
 	return str
 		.replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+		.replace(/([A-Z])([A-Z][a-z])/g, "$1-$2")
 		.toLowerCase()
 		.replace(/[\s_]+/g, "-")
 		.replace(/^-+|-+$/g, "");
 }
 
 /**
- * Checks if a string is a valid URL.
+ * Checks if a string is a valid absolute URL.
+ *
+ * @param input - String to test.
+ * @returns `true` if `input` is a valid URL; otherwise `false`.
  */
 export function isUrl(input: string): boolean {
 	if (typeof URL !== "undefined") {
@@ -111,6 +140,9 @@ export function isUrl(input: string): boolean {
 /**
  * Checks if a string looks like a URI reference (absolute, fragment, or relative).
  * Useful for distinguishing Security Requirement keys from component names (OAS 3.2).
+ *
+ * @param input - Candidate string to inspect.
+ * @returns `true` if `input` looks like a URI reference; otherwise `false`.
  */
 export function isUriReference(input: string): boolean {
 	if (!input) return false;

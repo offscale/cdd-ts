@@ -3,11 +3,12 @@ import { describe, expect, it } from "vitest";
 import type { GeneratorConfig } from "../../src/core/types/index.js";
 import type { SwaggerParser } from "../../src/openapi/parse.js";
 import { McpGenerator } from "../../src/vendors/mcp/emit.js";
+import { testCast } from "../shared/helpers.js";
 
 describe("McpGenerator", () => {
 	it("should generate mcp server file based on parser operations", async () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = {
+		const parser = testCast<SwaggerParser>({
 			spec: {
 				info: { title: "Test API", version: "2.0.0" },
 			},
@@ -41,7 +42,7 @@ describe("McpGenerator", () => {
 					path: "/objnoname",
 				},
 			],
-		} as unknown as SwaggerParser;
+		});
 
 		const config = {} as GeneratorConfig;
 		const generator = new McpGenerator();
@@ -126,10 +127,10 @@ describe("McpGenerator", () => {
 
 	it("should handle missing info object completely", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = {
+		const parser = testCast<SwaggerParser>({
 			spec: {},
 			operations: [],
-		} as unknown as SwaggerParser;
+		});
 
 		const generator = new McpGenerator();
 		generator.generate(project, parser, {} as GeneratorConfig, "/out2");
@@ -141,10 +142,10 @@ describe("McpGenerator", () => {
 
 	it("should handle partial info object", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = {
+		const parser = testCast<SwaggerParser>({
 			spec: { info: {} },
 			operations: [],
-		} as unknown as SwaggerParser;
+		});
 
 		const generator = new McpGenerator();
 		generator.generate(project, parser, {} as GeneratorConfig, "/out3");

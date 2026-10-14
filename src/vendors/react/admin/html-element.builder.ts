@@ -1,4 +1,9 @@
 /**
+ * Module for html element builder in vendors/react/admin/html-element.builder.
+ *
+ * @module vendors/react/admin/html-element.builder
+ */
+/**
  * Utility for building React TSX/JSX UI elements securely.
  */
 export class ReactElementBuilder {

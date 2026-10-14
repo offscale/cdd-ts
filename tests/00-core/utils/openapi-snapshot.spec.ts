@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -11,6 +9,7 @@ import {
 	writeOpenApiSnapshot,
 } from "@src/openapi/parse_snapshot.js";
 import { afterEach, describe, expect, it } from "vitest";
+import { testCast } from "../../shared/helpers.js";
 
 const tempDirs: string[] = [];
 
@@ -41,7 +40,7 @@ describe("Core Utils: OpenAPI Snapshot", () => {
 		const { jsonPath, yamlPath } = writeOpenApiSnapshot(
 			baseSpec,
 			dir,
-			fs as string | number | boolean | object | undefined | null,
+			testCast(fs),
 		);
 
 		expect(fs.existsSync(jsonPath)).toBe(true);
@@ -54,81 +53,54 @@ describe("Core Utils: OpenAPI Snapshot", () => {
 
 	it("should read a snapshot from a directory", () => {
 		const dir = makeTempDir();
-		writeOpenApiSnapshot(
-			baseSpec,
-			dir,
-			fs as string | number | boolean | object | undefined | null,
-		);
+		writeOpenApiSnapshot(baseSpec, dir, testCast(fs));
 
-		const result = readOpenApiSnapshot(
-			dir,
-			fs as string | number | boolean | object | undefined | null,
-		);
+		const result = readOpenApiSnapshot(dir, testCast(fs));
 		expect(result.spec.openapi).toBe("3.2.0");
 		expect(result.sourcePath).toContain(SNAPSHOT_FILENAMES.json);
 	});
 
 	it("should read a snapshot from an explicit JSON file", () => {
 		const dir = makeTempDir();
-		writeOpenApiSnapshot(
-			baseSpec,
-			dir,
-			fs as string | number | boolean | object | undefined | null,
-		);
+		writeOpenApiSnapshot(baseSpec, dir, testCast(fs));
 
 		const jsonPath = path.join(dir, SNAPSHOT_FILENAMES.json);
-		const result = readOpenApiSnapshot(
-			jsonPath,
-			fs as string | number | boolean | object | undefined | null,
-		);
+		const result = readOpenApiSnapshot(jsonPath, testCast(fs));
 		expect(result.spec.info.version).toBe("1.0");
 		expect(result.format).toBe("json");
 	});
 
 	it("should read a snapshot from an explicit YAML file", () => {
 		const dir = makeTempDir();
-		writeOpenApiSnapshot(
-			baseSpec,
-			dir,
-			fs as string | number | boolean | object | undefined | null,
-		);
+		writeOpenApiSnapshot(baseSpec, dir, testCast(fs));
 
 		const yamlPath = path.join(dir, SNAPSHOT_FILENAMES.yaml);
-		const result = readOpenApiSnapshot(
-			yamlPath,
-			fs as string | number | boolean | object | undefined | null,
-		);
+		const result = readOpenApiSnapshot(yamlPath, testCast(fs));
 		expect(result.spec.info.title).toBe("Snapshot");
 		expect(result.format).toBe("yaml");
 	});
 
 	it("should throw if no snapshot file exists in directory", () => {
 		const dir = makeTempDir();
-		expect(() =>
-			readOpenApiSnapshot(
-				dir,
-				fs as string | number | boolean | object | undefined | null,
-			),
-		).toThrow(/No OpenAPI snapshot found/);
+		expect(() => readOpenApiSnapshot(dir, testCast(fs))).toThrow(
+			/No OpenAPI snapshot found/,
+		);
 	});
 
 	it("should throw on unsupported snapshot file extension", () => {
 		const dir = makeTempDir();
 		const filePath = path.join(dir, "openapi.snapshot.txt");
 		fs.writeFileSync(filePath, "text");
-		expect(() =>
-			readOpenApiSnapshot(
-				filePath,
-				fs as string | number | boolean | object | undefined | null,
-			),
-		).toThrow(/Unsupported snapshot file extension/);
+		expect(() => readOpenApiSnapshot(filePath, testCast(fs))).toThrow(
+			/Unsupported snapshot file extension/,
+		);
 	});
 
 	it("should throw if json snapshot does not contain an object", () => {
 		const dir = makeTempDir();
 		const filePath = path.join(dir, "openapi.snapshot.json");
 		fs.writeFileSync(filePath, "true");
-		expect(() => readOpenApiSnapshot(filePath, fs as any)).toThrow(
+		expect(() => readOpenApiSnapshot(filePath, testCast(fs))).toThrow(
 			"Parsed JSON snapshot did not produce an object.",
 		);
 	});
@@ -137,7 +109,7 @@ describe("Core Utils: OpenAPI Snapshot", () => {
 		const dir = makeTempDir();
 		const filePath = path.join(dir, "openapi.snapshot.yaml");
 		fs.writeFileSync(filePath, "true");
-		expect(() => readOpenApiSnapshot(filePath, fs as any)).toThrow(
+		expect(() => readOpenApiSnapshot(filePath, testCast(fs))).toThrow(
 			"Parsed YAML snapshot did not produce an object.",
 		);
 	});
@@ -147,7 +119,7 @@ describe("Core Utils: OpenAPI Snapshot", () => {
 		const ymlPath = path.join(dir, "openapi.snapshot.yml");
 		fs.writeFileSync(ymlPath, "openapi: 3.0.0");
 
-		const result = readOpenApiSnapshot(dir, fs as any);
+		const result = readOpenApiSnapshot(dir, testCast(fs));
 		expect(result.format).toBe("yaml");
 		expect(result.spec.openapi).toBe("3.0.0");
 	});
@@ -160,7 +132,7 @@ describe("Core Utils: OpenAPI Snapshot", () => {
 			statSync: () => ({ isFile: () => false, isDirectory: () => false }),
 			readFileSync: () => "",
 		};
-		expect(() => readOpenApiSnapshot(fifoPath, customFs as any)).toThrow(
+		expect(() => readOpenApiSnapshot(fifoPath, testCast(customFs))).toThrow(
 			/Input path is neither a file nor a directory/,
 		);
 	});
@@ -169,7 +141,7 @@ describe("Core Utils: OpenAPI Snapshot", () => {
 		const dir = makeTempDir();
 		const yamlPath = path.join(dir, "openapi.snapshot.yaml");
 		fs.writeFileSync(yamlPath, "openapi: 3.0.0");
-		const result = readOpenApiSnapshot(dir, fs as any);
+		const result = readOpenApiSnapshot(dir, testCast(fs));
 		expect(result.format).toBe("yaml");
 	});
 });

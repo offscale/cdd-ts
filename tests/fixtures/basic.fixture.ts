@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { info } from "./common.js";
 
 export const emptySpec = { openapi: "3.0.0", info, paths: {} };

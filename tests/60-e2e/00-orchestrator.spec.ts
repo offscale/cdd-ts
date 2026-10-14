@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type { GeneratorConfig } from "@src/core/types/index.js";
 
 import { generateFromConfigSync } from "@src/index.js";
@@ -7,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	createTestProject,
 	runGeneratorWithConfig,
+	testCast,
 } from "../shared/helpers.js";
 import { coverageSpec, securitySpec } from "../shared/specs.js";
 
@@ -29,13 +28,7 @@ describe("E2E: Full Generation Orchestrator", () => {
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/generated",
-			options: { generateServices: true, framework: "angular" } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			options: testCast({ generateServices: true, framework: "angular" }),
 		};
 		generateFromConfigSync(config, project, { spec: coverageSpec });
 
@@ -57,13 +50,7 @@ describe("E2E: Full Generation Orchestrator", () => {
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/generated",
-			options: { generateServices: true, framework: "angular" } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			options: testCast({ generateServices: true, framework: "angular" }),
 		};
 		generateFromConfigSync(config, project, { spec: securitySpec });
 
@@ -78,13 +65,7 @@ describe("E2E: Full Generation Orchestrator", () => {
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/generated",
-			options: { generateServices: true, framework: "angular" } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			options: testCast({ generateServices: true, framework: "angular" }),
 		};
 		const cookieSecuritySpec = {
 			openapi: "3.0.0",
@@ -120,7 +101,7 @@ describe("E2E: Full Generation Orchestrator", () => {
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/generated",
-			options: {} as any,
+			options: testCast({}),
 		};
 		generateFromConfigSync(config, project, { spec: coverageSpec });
 
@@ -181,8 +162,8 @@ describe("E2E: Full Generation Orchestrator", () => {
 		});
 		const logCalls = consoleSpy.mock.calls.flat();
 
-		const hasAdminTestLog = logCalls.some((log) =>
-			log.includes("Generating tests for admin UI..."),
+		const hasAdminTestLog = logCalls.some((log: unknown) =>
+			String(log).includes("Generating tests for admin UI..."),
 		);
 		expect(hasAdminTestLog).toBe(false);
 

@@ -1,26 +1,41 @@
+/**
+ * Emits the `webhooks.ts` file containing TypeScript payload type aliases and runtime metadata for OpenAPI webhooks.
+ *
+ * @module functions/emit_webhook
+ */
 import * as path from "node:path";
-import type {
-	OpenApiValue,
-	PathInfo,
-	PathItem,
-} from "@src/core/types/index.js";
+import { type Project, VariableDeclarationKind } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { OpenApiValue, PathInfo, PathItem } from "../core/types/index.js";
+import type { SwaggerParser } from "../openapi/parse.js";
 import {
 	extractPaths,
 	getRequestBodyType,
 	getResponseType,
 	pascalCase,
-} from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+} from "./utils.js";
 
+/**
+ * Generates the `webhooks.ts` file containing webhook payload types and `API_WEBHOOKS` metadata.
+ */
 export class WebhookGenerator {
+	/**
+	 * Creates a new `WebhookGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The `ts-morph` project to create `webhooks.ts` in.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates the `webhooks.ts` file in the specified output directory.
+	 *
+	 * @param outputDir - Target directory where `webhooks.ts` will be emitted.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "webhooks.ts");
 
@@ -181,6 +196,13 @@ export class WebhookGenerator {
 		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 	}
 
+	/**
+	 * Extracts `PathInfo` operations from a webhook `PathItem`.
+	 *
+	 * @param name - Webhook key name.
+	 * @param pathItem - Webhook `PathItem` definition.
+	 * @returns Array of extracted `PathInfo` operations.
+	 */
 	private processWebhookPathItem(name: string, pathItem: PathItem): PathInfo[] {
 		const tempMap = { [name]: pathItem };
 		// Pass the main components to ensure strict resolution if webhooks define security

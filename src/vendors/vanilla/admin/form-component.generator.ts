@@ -1,10 +1,25 @@
-import type { Resource } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
+/**
+ * Module for form component generator in vendors/vanilla/admin/form-component.generator.
+ *
+ * @module vendors/vanilla/admin/form-component.generator
+ */
 import type { Project } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import { camelCase, pascalCase } from "../../../functions/utils.js";
 
+/** Generator/utility class `FormComponentGenerator`. */
 export class FormComponentGenerator {
+	/**
+	 * Creates a new `FormComponentGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private readonly project: Project) {}
 
+	/**
+	 * Executes `generate` on `FormComponentGenerator`.
+	 * @param resource - Analyzed API resource descriptor.
+	 * @param outDir - Target output directory path.
+	 */
 	public generate(resource: Resource, outDir: string): void {
 		const componentName = `${pascalCase(resource.name)}FormComponent`;
 

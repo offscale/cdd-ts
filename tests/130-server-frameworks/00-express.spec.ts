@@ -1,15 +1,22 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { ExpressServerGenerator } from "../../src/vendors/express/express-server.generator.js";
+import { testCast } from "../shared/helpers.js";
 
 describe("ExpressServerGenerator", () => {
 	it("should generate routes, route tests, and E2E tests for TypeORM configuration", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
 
-		generator.generateEntityRoutes(project, "User", "/out/routes", "typeorm", {
-			options: { tests: true },
-		} as any);
+		generator.generateEntityRoutes(
+			project,
+			"User",
+			"/out/routes",
+			"typeorm",
+			testCast({
+				options: { tests: true },
+			}),
+		);
 
 		// Check router file generation
 		const routeFile = project.getSourceFileOrThrow(
@@ -49,7 +56,7 @@ describe("ExpressServerGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
 
-		const mockParser = {
+		const mockParser = testCast({
 			schemas: [
 				{
 					name: "User",
@@ -73,17 +80,17 @@ describe("ExpressServerGenerator", () => {
 					},
 				},
 			],
-		} as any;
+		});
 
 		generator.generateEntityRoutes(
 			project,
 			"User",
 			"/out/routes",
 			undefined,
-			{
+			testCast({
 				options: { tests: true },
-			} as any,
-			mockParser,
+			}),
+			testCast(mockParser),
 		);
 
 		// Check mock file generation
@@ -129,14 +136,14 @@ describe("ExpressServerGenerator", () => {
 	it("should respect config.options.tests being false", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
-		const config: any = { options: { tests: false } };
+		const config = testCast({ options: { tests: false } });
 
 		generator.generateEntityRoutes(
 			project,
 			"User",
 			"/out/routes",
 			undefined,
-			config,
+			testCast(config),
 		);
 
 		// route file generated
@@ -212,7 +219,7 @@ describe("ExpressServerGenerator", () => {
 				},
 			],
 		};
-		generator.generateMcpRoutes(project, parser as any, "/output");
+		generator.generateMcpRoutes(project, testCast(parser), "/output");
 
 		const mcpFile = project.getSourceFile("/output/mcp.routes.ts");
 		expect(mcpFile).toBeDefined();
@@ -236,7 +243,7 @@ describe("ExpressServerGenerator", () => {
 			spec: { info: {} },
 			operations: [],
 		};
-		generator.generateMcpRoutes(project, parser as any, "/output2");
+		generator.generateMcpRoutes(project, testCast(parser), "/output2");
 		const mcpFile = project.getSourceFile("/output2/mcp.routes.ts");
 		const text = mcpFile?.getFullText();
 		expect(text).toContain("name: 'api-mcp'");
@@ -249,9 +256,14 @@ describe("ExpressServerGenerator", () => {
 		const parser = {
 			operations: [{ operationId: "getSomeData" }],
 		};
-		generator.generateMcpRoutes(project, parser as any, "/output3", {
-			options: { generateServices: true },
-		} as any);
+		generator.generateMcpRoutes(
+			project,
+			testCast(parser),
+			"/output3",
+			testCast({
+				options: { generateServices: true },
+			}),
+		);
 		const mcpFile = project.getSourceFile("/output3/mcp.routes.ts");
 		expect(mcpFile?.getFullText()).toContain(
 			'import * as services from "../services/index.js";',
@@ -261,7 +273,7 @@ describe("ExpressServerGenerator", () => {
 	it("should generate the server entrypoint with CLI options and imports", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
-		const dummyParser = {
+		const dummyParser = testCast({
 			spec: {
 				info: { title: "Test", version: "1.0" },
 				openapi: "3.0",
@@ -269,12 +281,12 @@ describe("ExpressServerGenerator", () => {
 			},
 			schemas: [],
 			operations: [],
-		} as any;
+		});
 		generator.generateServerEntrypoint(
 			project,
 			["User", "Post"],
 			"/out",
-			dummyParser,
+			testCast(dummyParser),
 		);
 
 		const entrypointFile = project.getSourceFileOrThrow("/out/server.ts");

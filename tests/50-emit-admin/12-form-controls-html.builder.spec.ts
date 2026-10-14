@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type { Resource } from "@src/core/types/index.js";
 import type {
 	FormAnalysisResult,
@@ -8,6 +6,7 @@ import type {
 import { generateFormComponentHtml } from "@src/vendors/angular/admin/html/form-component-html.builder.js";
 import { buildFormControl } from "@src/vendors/angular/admin/html/form-controls-html.builder.js";
 import { describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 describe("Admin: Form HTML Builders", () => {
 	const baseControl = {
@@ -19,89 +18,81 @@ describe("Admin: Form HTML Builders", () => {
 	} as const;
 
 	it("should return null when control or schema is missing", () => {
+		expect(buildFormControl(testCast(null))).toBeNull();
 		expect(
 			buildFormControl(
-				null as string | number | boolean | object | undefined | null,
+				testCast({ ...baseControl, name: "missing", schema: undefined }),
 			),
-		).toBeNull();
-		expect(
-			buildFormControl({ ...baseControl, name: "missing", schema: undefined } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null),
 		).toBeNull();
 	});
 
 	it("should render a readonly textarea", () => {
-		const control: FormControlModel = {
+		const control: FormControlModel = testCast({
 			...baseControl,
 			name: "notes",
 			schema: { type: "string", format: "textarea", readOnly: true },
-		} as string | number | boolean | object | undefined | null;
+		});
 		const html = buildFormControl(control)?.render();
 		expect(html).toContain("textarea");
 		expect(html).toContain("[readonly]");
 	});
 
 	it("should skip null nested controls in form groups and arrays", () => {
-		const nullNested: FormControlModel = {
+		const nullNested: FormControlModel = testCast({
 			...baseControl,
 			name: "nested",
 			schema: { type: "object" },
 			controlType: "control",
-		} as string | number | boolean | object | undefined | null;
+		});
 
-		const groupControl: FormControlModel = {
+		const groupControl: FormControlModel = testCast({
 			...baseControl,
 			name: "group",
 			schema: { type: "object" },
 			controlType: "group",
 			nestedControls: [nullNested],
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		const groupHtml = buildFormControl(groupControl)?.render();
 		expect(groupHtml).not.toContain("nested");
 
-		const arrayControl: FormControlModel = {
+		const arrayControl: FormControlModel = testCast({
 			...baseControl,
 			name: "items",
 			schema: { type: "array", items: { type: "object" } },
 			controlType: "array",
 			nestedControls: [nullNested],
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		const arrayHtml = buildFormControl(arrayControl)?.render();
 		expect(arrayHtml).not.toContain("nested");
 	});
 
 	it("should handle map editor without value control and with null value builder", () => {
-		const mapControlNoValue: FormControlModel = {
+		const mapControlNoValue: FormControlModel = testCast({
 			...baseControl,
 			name: "meta",
 			schema: { type: "object" },
 			controlType: "map",
 			mapValueControl: undefined,
-		} as string | number | boolean | object | undefined | null;
+		});
 
 		const mapHtml = buildFormControl(mapControlNoValue)?.render();
 		expect(mapHtml).not.toContain("map-key-field");
 		expect(mapHtml).not.toContain('formControlName="value"');
 
-		const mapControlNullValue: FormControlModel = {
+		const mapControlNullValue: FormControlModel = testCast({
 			...baseControl,
 			name: "meta2",
 			schema: { type: "object" },
 			controlType: "map",
 
-			mapValueControl: {
+			mapValueControl: testCast({
 				...baseControl,
 				name: "value",
 				schema: { type: "object" },
-			} as string | number | boolean | object | undefined | null,
-		} as string | number | boolean | object | undefined | null;
+			}),
+		});
 
 		const mapHtmlNullValue = buildFormControl(mapControlNullValue)?.render();
 		expect(mapHtmlNullValue).not.toContain("map-key-field");
@@ -112,30 +103,24 @@ describe("Admin: Form HTML Builders", () => {
 		const analysis: FormAnalysisResult = {
 			interfaces: [],
 			topLevelControls: [
-				{
+				testCast({
 					...baseControl,
 					name: "kind",
 					schema: { type: "object" },
 					controlType: "group",
-				} as string | number | boolean | object | undefined | null,
+				}),
 			],
 			usesCustomValidators: false,
 			hasFormArrays: false,
 			hasFileUploads: false,
 			isPolymorphic: true,
 			polymorphicProperties: [
-				{
+				testCast({
 					propertyName: "kind",
 					discriminatorOptions: [],
 
-					options: undefined as
-						| string
-						| number
-						| boolean
-						| object
-						| undefined
-						| null,
-				} as string | number | boolean | object | undefined | null,
+					options: testCast(undefined),
+				}),
 			],
 			dependencyRules: [],
 		};

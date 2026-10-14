@@ -1,10 +1,24 @@
+/**
+ * Module for date transformer generator in vendors/angular/utils/date-transformer.generator.
+ *
+ * @module vendors/angular/utils/date-transformer.generator
+ */
 import * as path from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 
+/** Generator/utility class `DateTransformerGenerator`. */
 export class DateTransformerGenerator {
+	/**
+	 * Creates a new `DateTransformerGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Executes `generate` on `DateTransformerGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(outputDir: string): void {
 		const utilsDir = path.join(outputDir, "utils");
 

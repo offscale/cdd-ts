@@ -1,8 +1,22 @@
+/**
+ * Module for request context generator in vendors/angular/utils/request-context.generator.
+ *
+ * @module vendors/angular/utils/request-context.generator
+ */
 import type { Project } from "ts-morph";
 
+/** Generator/utility class `RequestContextGenerator`. */
 export class RequestContextGenerator {
+	/**
+	 * Creates a new `RequestContextGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private readonly project: Project) {}
 
+	/**
+	 * Executes `generate` on `RequestContextGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	generate(outputDir: string): void {
 		const sourceFile = this.project.createSourceFile(
 			`${outputDir}/utils/request-context.ts`,

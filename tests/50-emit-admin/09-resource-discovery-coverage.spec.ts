@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type {
 	FormProperty,
 	GeneratorConfig,
@@ -10,79 +8,62 @@ import type {
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
 import { describe, expect, it } from "vitest";
-
+import { type TestValue, testCast } from "../shared/helpers.js";
 import { branchCoverageSpec } from "../shared/specs.js";
 
 describe("Admin: resource-discovery (Coverage)", () => {
-	const ensureResponses = (
-		spec: string | number | boolean | object | undefined | null,
-	) => {
-		if (!spec?.paths) return spec;
-		const methods = [
-			"get",
-			"post",
-			"put",
-			"delete",
-			"options",
-			"head",
-			"patch",
-			"trace",
-			"query",
-		];
+	const ensureResponses = testCast(
+		testCast((spec: TestValue) => {
+			if (!spec?.paths) return spec;
+			const methods = [
+				"get",
+				"post",
+				"put",
+				"delete",
+				"options",
+				"head",
+				"patch",
+				"trace",
+				"query",
+			];
 
-		for (const pathItem of Object.values(spec.paths)) {
-			if (!pathItem || typeof pathItem !== "object") continue;
-			for (const method of methods) {
-				const operation = (
-					pathItem as string | number | boolean | object | undefined | null
-				)[method];
+			for (const pathItem of Object.values(spec.paths)) {
+				if (!pathItem || typeof pathItem !== "object") continue;
+				for (const method of methods) {
+					const operation = testCast(pathItem)[method];
 
-				if (operation && operation.responses === undefined) {
-					operation.responses = { "200": { description: "ok" } };
+					if (operation && operation.responses === undefined) {
+						operation.responses = testCast({
+							"200": testCast({ description: testCast("ok") }),
+						});
+					}
 				}
-			}
 
-			if (
-				(pathItem as string | number | boolean | object | undefined | null)
-					.additionalOperations
-			) {
-				for (const operation of Object.values(
-					(pathItem as string | number | boolean | object | undefined | null)
-						.additionalOperations,
-				)) {
-					if (
-						operation &&
-						(operation as string | number | boolean | object | undefined | null)
-							.responses === undefined
-					) {
-						(
-							operation as string | number | boolean | object | undefined | null
-						).responses = {
-							"200": { description: "ok" },
-						};
+				if (testCast(pathItem).additionalOperations) {
+					for (const operation of Object.values(
+						testCast(pathItem).additionalOperations,
+					)) {
+						if (operation && testCast(operation).responses === undefined) {
+							testCast(operation).responses = testCast({
+								"200": testCast({ description: testCast("ok") }),
+							});
+						}
 					}
 				}
 			}
-		}
 
-		return spec;
-	};
+			return spec;
+		}),
+	);
 
 	const runDiscovery = (spec: object) => {
-		const config: GeneratorConfig = { options: { admin: true } } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
+		const config: GeneratorConfig = testCast({ options: { admin: true } });
 
-		const specClone = ensureResponses(JSON.parse(JSON.stringify(spec)));
-
-		const parser = new SwaggerParser(
-			specClone as string | number | boolean | object | undefined | null,
-			config,
+		const specClone = ensureResponses(
+			testCast(JSON.parse(JSON.stringify(spec))),
 		);
+
+		const parser = new SwaggerParser(testCast(specClone), config);
 		return discoverAdminResources(parser);
 	};
 

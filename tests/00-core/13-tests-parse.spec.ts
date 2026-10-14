@@ -1,10 +1,11 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { parseTests } from "../../src/tests/parse.js";
+import { testCast } from "../shared/helpers.js";
 
 describe("parseTests", () => {
 	it("should return an empty array if sourceFile is missing", () => {
-		expect(parseTests(null as any)).toEqual([]);
+		expect(parseTests(testCast(null))).toEqual([]);
 	});
 
 	it("should return an empty array if no tests are present", () => {

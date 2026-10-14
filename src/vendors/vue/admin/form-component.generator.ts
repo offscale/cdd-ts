@@ -1,11 +1,26 @@
+/**
+ * Module for form component generator in vendors/vue/admin/form-component.generator.
+ *
+ * @module vendors/vue/admin/form-component.generator
+ */
 import * as path from "node:path";
-import type { Resource } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
 import type { Project } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import { camelCase, pascalCase } from "../../../functions/utils.js";
 
+/** Generator/utility class `FormComponentGenerator`. */
 export class FormComponentGenerator {
+	/**
+	 * Creates a new `FormComponentGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Executes `generate` on `FormComponentGenerator`.
+	 * @param resource - Analyzed API resource descriptor.
+	 * @param adminDir - Parameter `adminDir` (string).
+	 */
 	public generate(resource: Resource, adminDir: string): void {
 		const componentName = `${pascalCase(resource.name)}Form`;
 		const fileName = `${componentName}.vue`;

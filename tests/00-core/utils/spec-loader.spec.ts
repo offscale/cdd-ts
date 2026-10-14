@@ -6,7 +6,6 @@ import { ReferenceResolver } from "@src/openapi/parse_reference_resolver.js";
 
 import { SpecLoader } from "@src/openapi/parse_spec_loader.js";
 import { validateSpec } from "@src/openapi/parse_validator.js";
-// @ts-nocheck
 import {
 	afterEach,
 	beforeEach,
@@ -16,6 +15,7 @@ import {
 	type Mock,
 	vi,
 } from "vitest";
+import { type TestValue, testCast } from "../../shared/helpers.js";
 
 vi.mock("@src/openapi/parse_validator.js");
 vi.mock("node:fs");
@@ -166,16 +166,20 @@ properties:
 		const result = await SpecLoader.load("http://api.com/spec");
 		expect(result.entrySpec).toBeDefined();
 
-		expect((result.entrySpec as any).type).toBe("object");
+		expect(testCast(result.entrySpec).type).toBe("object");
 
-		expect((result.entrySpec as any).properties?.name?.type).toBe("string");
+		expect(
+			testCast<TestValue>(
+				testCast<TestValue>(result.entrySpec).properties?.name,
+			).type,
+		).toBe("string");
 	});
 
 	it("should handle non-url paths when calling loadContent directly", async () => {
 		(fs.existsSync as Mock).mockReturnValue(true);
 		(fs.readFileSync as Mock).mockReturnValue('{"openapi":"3.0.0"}');
 
-		const content = await (SpecLoader as any).loadContent("plain.json");
+		const content = await testCast(SpecLoader).loadContent("plain.json");
 
 		expect(content).toBe('{"openapi":"3.0.0"}');
 	});
@@ -509,7 +513,7 @@ properties:
 
 	it("should throw if load does not populate entry spec", async () => {
 		vi.spyOn(
-			SpecLoader as any,
+			testCast(SpecLoader),
 			"loadAndCacheSpecRecursive",
 		).mockResolvedValueOnce(undefined as never);
 		await expect(SpecLoader.load("http://empty.com/spec.json")).rejects.toThrow(

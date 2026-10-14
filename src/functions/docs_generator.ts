@@ -1,3 +1,8 @@
+/**
+ * Generates API documentation usage snippets in JSON format for Angular, React, and Vue clients.
+ *
+ * @module functions/docs_generator
+ */
 import type { PathInfo } from "../core/types/analysis.js";
 import type { GeneratorConfig } from "../core/types/index.js";
 import type { SwaggerParser } from "../openapi/parse.js";
@@ -11,6 +16,18 @@ export interface DocsOptions {
 	wrapping?: boolean;
 }
 
+/** Code snippet parts for a documented operation. */
+export interface DocOperationCode {
+	/** Import statements */
+	imports?: string;
+	/** Wrapper start code */
+	wrapper_start?: string;
+	/** Main code snippet */
+	snippet: string;
+	/** Wrapper end code */
+	wrapper_end?: string;
+}
+
 /** Represents a single documented operation. */
 export interface DocOperation {
 	/** HTTP Method */
@@ -20,16 +37,13 @@ export interface DocOperation {
 	/** Operation ID */
 	operationId?: string;
 	/** Code snippets */
-	code: {
-		/** Import statements */
-		imports?: string;
-		/** Wrapper start code */
-		wrapper_start?: string;
-		/** Main code snippet */
-		snippet: string;
-		/** Wrapper end code */
-		wrapper_end?: string;
-	};
+	code: DocOperationCode;
+}
+
+/** Result structure containing endpoint documentation snippets by path and method. */
+export interface DocsJsonResult {
+	/** Map of endpoint paths to HTTP methods and generated code snippets. */
+	endpoints: Record<string, Record<string, string>>;
 }
 
 /** Represents a language and its operations. */
@@ -105,7 +119,7 @@ export function generateDocsJson(
 	parser: SwaggerParser,
 	config: GeneratorConfig,
 	options: DocsOptions,
-): { endpoints: Record<string, Record<string, string>> } {
+): DocsJsonResult {
 	const useImports = options.imports ?? false;
 	const useWrapping = options.wrapping ?? false;
 

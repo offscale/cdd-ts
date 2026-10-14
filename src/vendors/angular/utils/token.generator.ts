@@ -1,16 +1,27 @@
+/**
+ * Module for token generator in vendors/angular/utils/token.generator.
+ *
+ * @module vendors/angular/utils/token.generator
+ */
 import * as path from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
+import { type Project, VariableDeclarationKind } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 import {
 	getBasePathTokenName,
 	getClientContextTokenName,
 	getInterceptorsTokenName,
 	getServerVariablesTokenName,
-} from "@src/functions/utils.js";
-import { type Project, VariableDeclarationKind } from "ts-morph";
+} from "../../../functions/utils.js";
 
+/** Generator/utility class `TokenGenerator`. */
 export class TokenGenerator {
 	private readonly clientName: string;
 
+	/**
+	 * Creates a new `TokenGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 * @param clientName - Parameter `clientName` (string).
+	 */
 	constructor(
 		private project: Project,
 		clientName?: string,
@@ -18,6 +29,10 @@ export class TokenGenerator {
 		this.clientName = clientName || "default";
 	}
 
+	/**
+	 * Executes `generate` on `TokenGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(outputDir: string): void {
 		const tokensDir = path.join(outputDir, "tokens");
 

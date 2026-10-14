@@ -1,14 +1,41 @@
 {
 	"$schema": "https://typedoc.org/schema.json",
-	"entryPoints": ["src/index.ts"],
+	"entryPoints": ["src/**/*.ts"],
+	"entryPointStrategy": "expand",
 	"out": "docs",
 	"tsconfig": "tsconfig.build.json",
 	"readme": "README.md",
 	"name": "cdd-ts API Documentation",
 	"includeVersion": true,
+	"treatWarningsAsErrors": true,
+	"highlightLanguages": ["typescript", "javascript", "json", "yaml", "bash", "sh", "html", "css", "mermaid"],
 	"validation": {
-		"notExported": false,
+		"notExported": true,
 		"invalidLink": true,
 		"notDocumented": true
-	}
+	},
+	"requiredToBeDocumented": [
+		"Module",
+		"Namespace",
+		"Enum",
+		"EnumMember",
+		"Variable",
+		"Function",
+		"Class",
+		"Interface",
+		"Constructor",
+		"Property",
+		"Method",
+		"CallSignature",
+		"IndexSignature",
+		"ConstructorSignature",
+		"Parameter",
+		"TypeLiteral",
+		"TypeParameter",
+		"Accessor",
+		"GetSignature",
+		"SetSignature",
+		"TypeAlias",
+		"Reference"
+	]
 }

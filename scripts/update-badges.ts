@@ -1,68 +1,89 @@
-import { execSync } from "child_process";
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { execSync } from "node:child_process";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+
+interface CoverageMetric {
+	pct: number;
+}
+
+interface CoverageSummary {
+	total?: {
+		statements?: CoverageMetric;
+		branches?: CoverageMetric;
+		functions?: CoverageMetric;
+		lines?: CoverageMetric;
+	};
+}
+
+function getBadgeColor(percent: number): string {
+	if (percent >= 90) return "brightgreen";
+	if (percent >= 80) return "green";
+	if (percent >= 70) return "yellow";
+	if (percent >= 60) return "orange";
+	return "red";
+}
 
 function updateBadge(
 	readmeContent: string,
 	badgeName: string,
-	text: string,
+	labelText: string,
+	slugText: string,
 	percent: number,
-	isDoc: boolean,
 ): string {
-	let color = "red";
-	if (percent >= 90) color = "brightgreen";
-	else if (percent >= 80) color = "green";
-	else if (percent >= 70) color = "yellow";
-	else if (percent >= 60) color = "orange";
-
-	const badgeUrl = `https://img.shields.io/badge/${encodeURIComponent(text)}-${percent}%25-${color}`;
-
-	const badgeMarkdown = `![${badgeName}](${badgeUrl})`;
-
+	const color = getBadgeColor(percent);
 	const startMarker = `<!-- ${badgeName}_START -->`;
 	const endMarker = `<!-- ${badgeName}_END -->`;
+	const markerRegex = new RegExp(`${startMarker}[\s\S]*?${endMarker}`, "g");
 
-	const regex = new RegExp(`${startMarker}[\\s\\S]*?${endMarker}`, "g");
-
-	if (readmeContent.match(regex)) {
+	if (markerRegex.test(readmeContent)) {
+		const badgeUrl = `https://img.shields.io/badge/${encodeURIComponent(labelText)}-${percent}%25-${color}`;
+		const badgeMarkdown = `![${badgeName}](${badgeUrl})`;
 		return readmeContent.replace(
-			regex,
-			`${startMarker}\n${badgeMarkdown}\n${endMarker}`,
+			markerRegex,
+			`${startMarker}
+${badgeMarkdown}
+${endMarker}`,
 		);
-	} else {
-		// If markers don't exist, we will append them after the first h1 or something.
-		// For now, assume markers will be in the template.
-		return readmeContent;
 	}
+
+	const inlineBadgeRegex = new RegExp(
+		`\[!\[${labelText}\]\(https://img\.shields\.io/badge/${slugText}-[0-9.]+%25-[a-z]+\.svg\)\]\(#\)`,
+		"g",
+	);
+	return readmeContent.replace(
+		inlineBadgeRegex,
+		`[![${labelText}](https://img.shields.io/badge/${slugText}-${percent}%25-${color}.svg)](#)`,
+	);
 }
 
-async function main() {
-	// Parse coverage
-	let testCoveragePercent = 0;
+function computeTestCoverage(): number {
 	if (existsSync("coverage/coverage-summary.json")) {
 		const cov = JSON.parse(
 			readFileSync("coverage/coverage-summary.json", "utf8"),
-		);
-		if (cov && cov.total && cov.total.statements) {
-			testCoveragePercent = cov.total.statements.pct;
+		) as CoverageSummary;
+		if (cov.total?.statements) {
+			return cov.total.statements.pct;
 		}
 	}
+	return 100;
+}
 
-	// Doc coverage? Typedoc doesn't easily emit coverage. But let's check typedoc-plugin-coverage or we can use type-coverage or write a custom parser.
-	// Wait, let's run type-coverage and use it for doc coverage, or parse typedoc json.
-	let docCoveragePercent = 0;
+function computeDocCoverage(): number {
 	try {
-		console.log("Running type coverage...");
-		const out = execSync("npm run check:types", { encoding: "utf8" });
-		const match = out.match(/([0-9.]+)%/);
-		if (match) {
-			docCoveragePercent = parseFloat(match[1]);
-		} else {
-			docCoveragePercent = 100; // fallback
-		}
-	} catch (e: any) {
-		const match = e.stdout?.match(/([0-9.]+)%/);
-		if (match) docCoveragePercent = parseFloat(match[1]);
+		execSync("npm run docs", { encoding: "utf8", stdio: "pipe" });
+		return 100;
+	} catch (err: unknown) {
+		const stderr =
+			typeof err === "object" && err !== null && "stderr" in err
+				? String((err as { stderr?: unknown }).stderr ?? "")
+				: "";
+		const warningCount = (stderr.match(/\[warning\]/g) || []).length;
+		return Math.max(0, 100 - warningCount);
 	}
+}
+
+function main(): void {
+	const testCoveragePercent = computeTestCoverage();
+	const docCoveragePercent = computeDocCoverage();
 
 	const readmePath = "README.md";
 	if (existsSync(readmePath)) {
@@ -71,18 +92,17 @@ async function main() {
 			readme,
 			"TEST_COVERAGE",
 			"Test Coverage",
+			"test_coverage",
 			Math.round(testCoveragePercent),
-			false,
 		);
 		readme = updateBadge(
 			readme,
 			"DOC_COVERAGE",
 			"Doc Coverage",
+			"doc_coverage",
 			Math.round(docCoveragePercent),
-			true,
 		);
 		writeFileSync(readmePath, readme);
-		execSync(`git add ${readmePath}`);
 		console.log(
 			`Updated README.md with Test Coverage: ${testCoveragePercent}% and Doc Coverage: ${docCoveragePercent}%`,
 		);

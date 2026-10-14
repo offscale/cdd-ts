@@ -1,26 +1,15 @@
-// @ts-nocheck
-
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { AuthInterceptorGenerator } from "@src/vendors/angular/utils/auth-interceptor.generator.js";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 import { emptySpec, securitySpec } from "../shared/specs.js";
 
 describe("Emitter: AuthInterceptorGenerator", () => {
 	const runGenerator = (spec: object) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = { output: "/out" } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const config: GeneratorConfig = testCast({ output: "/out" });
+		const parser = new SwaggerParser(testCast(spec), config);
 		const generator = new AuthInterceptorGenerator(parser, project);
 		const result = generator.generate("/out");
 		return { ...result, project };
@@ -243,38 +232,23 @@ describe("Emitter: AuthInterceptorGenerator", () => {
 
 	it("should default auth prefix to Bearer for non-http schemes", () => {
 		const project = createTestProject();
-		const config: GeneratorConfig = { output: "/out" } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
-		const parser = new SwaggerParser(
-			emptySpec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const config: GeneratorConfig = testCast({ output: "/out" });
+		const parser = new SwaggerParser(testCast(emptySpec), config);
 		const generator = new AuthInterceptorGenerator(parser, project);
 
-		const prefix = (
-			generator as string | number | boolean | object | undefined | null
-		).getAuthPrefix({
+		const prefix = generator.getAuthPrefix({
 			type: "apiKey",
 		});
 
 		expect(prefix).toBe("Bearer");
 
-		const bearerDefault = (
-			generator as string | number | boolean | object | undefined | null
-		).getAuthPrefix({
+		const bearerDefault = generator.getAuthPrefix({
 			type: "http",
 		});
 
 		expect(bearerDefault).toBe("Bearer");
 
-		const basicPrefix = (
-			generator as string | number | boolean | object | undefined | null
-		).getAuthPrefix({
+		const basicPrefix = generator.getAuthPrefix({
 			type: "http",
 			scheme: "basic",
 		});

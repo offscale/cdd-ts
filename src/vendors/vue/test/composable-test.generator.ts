@@ -1,10 +1,22 @@
+/**
+ * Module for composable test generator in vendors/vue/test/composable-test.generator.
+ *
+ * @module vendors/vue/test/composable-test.generator
+ */
 import * as path from "node:path";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
+import type { GeneratorConfig } from "../../../core/types/index.js";
+import { camelCase, pascalCase } from "../../../functions/utils.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
+/** Generator/utility class `VueComposableTestGenerator`. */
 export class VueComposableTestGenerator {
+	/**
+	 * Creates a new `VueComposableTestGenerator` instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param project - Target `ts-morph` project instance.
+	 * @param config - Active generator configuration.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 		private readonly project: Project,
@@ -15,6 +27,11 @@ export class VueComposableTestGenerator {
 		this.config;
 	}
 
+	/**
+	 * Executes `generateComposableTestFile` on `VueComposableTestGenerator`.
+	 * @param controllerName - Logical controller or tag group name.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generateComposableTestFile(
 		controllerName: string,
 		outputDir: string,

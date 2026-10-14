@@ -1,10 +1,28 @@
+/**
+ * Generates `utils/parameter-serializer.ts` for OpenAPI parameter and form-urlencoded serialization.
+ *
+ * @module functions/emit_parameter_serializer
+ */
 import * as path from "node:path";
 import { type Project, Scope } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 
+/**
+ * Generates the `utils/parameter-serializer.ts` file.
+ */
 export class ParameterSerializerGenerator {
+	/**
+	 * Creates a new `ParameterSerializerGenerator`.
+	 *
+	 * @param project - The `ts-morph` project to create `utils/parameter-serializer.ts` in.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Generates `utils/parameter-serializer.ts` inside the target output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const utilsDir = path.join(outputDir, "utils");
 		// Ensure directory exists
@@ -173,7 +191,7 @@ export class ParameterSerializerGenerator {
 				{ name: "key", type: "string" },
 				{
 					name: "value",
-					type: "string | number | boolean | object | undefined | null",
+					type: "unknown",
 				},
 				{ name: "style", type: "string", initializer: "'simple'" },
 				{ name: "explode", type: "boolean", initializer: "false" },
@@ -265,7 +283,7 @@ export class ParameterSerializerGenerator {
 				{ name: "config", type: "SerializeQueryParamConfig" },
 				{
 					name: "value",
-					type: "string | number | boolean | object | undefined | null",
+					type: "unknown",
 				},
 			],
 			returnType: "SerializedQueryParam[]",
@@ -311,18 +329,18 @@ export class ParameterSerializerGenerator {
         const explode = config.explode ?? true;
         
         if (style === 'deepObject' && typeof value === 'object' && value !== null) {
-             const processDeep = (obj: string | number | boolean | object | undefined | null, prefix: string) => {
-                 Object.keys(obj as Record<string, string | number | boolean | object | undefined | null>).forEach(k => {
+             const processDeep = (obj: Record<string, unknown>, prefix: string) => {
+                 Object.keys(obj).forEach(k => {
                      const keyPath = \`\${prefix}[\${k}]\`;
-                     const v = (obj as Record<string, string | number | boolean | object | undefined | null>)[k];
+                     const v = obj[k];
                      if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
-                         processDeep(v, keyPath);
+                         processDeep(v as Record<string, unknown>, keyPath);
                      } else {
                          result.push({ key: encode(keyPath), value: encode(String(v)) });
                      }
                  });
              };
-             processDeep(value, name);
+             processDeep(value as Record<string, unknown>, name);
              return result;
         }
 
@@ -383,7 +401,7 @@ export class ParameterSerializerGenerator {
 			parameters: [
 				{
 					name: "value",
-					type: "string | number | boolean | object | undefined | null",
+					type: "unknown",
 				},
 				{ name: "explode", type: "boolean", initializer: "false" },
 				{
@@ -453,7 +471,7 @@ export class ParameterSerializerGenerator {
 				{ name: "key", type: "string" },
 				{
 					name: "value",
-					type: "string | number | boolean | object | undefined | null",
+					type: "unknown",
 				},
 				{ name: "style", type: "string", initializer: "'form'" },
 				{ name: "explode", type: "boolean", initializer: "true" },
@@ -478,7 +496,7 @@ export class ParameterSerializerGenerator {
         if (serialization === 'json') return \`\${key}=\${encodeURIComponent(JSON.stringify(value))}\`;
         
         const isCookieStyle = style === 'cookie';
-        const encode = (v: string | number | boolean | object | undefined | null) => {
+        const encode = (v: unknown) => {
             if (isCookieStyle) return String(v);
             if (allowReserved) return this.encodeReserved(String(v));
             return encodeURIComponent(String(v));
@@ -517,7 +535,7 @@ export class ParameterSerializerGenerator {
 			parameters: [
 				{
 					name: "value",
-					type: "string | number | boolean | object | undefined | null",
+					type: "unknown",
 				},
 				{
 					name: "serialization",
@@ -583,7 +601,7 @@ export class ParameterSerializerGenerator {
 			parameters: [
 				{
 					name: "body",
-					type: "string | number | boolean | object | undefined | null",
+					type: "unknown",
 				},
 				{
 					name: "encodings",

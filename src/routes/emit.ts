@@ -1,20 +1,36 @@
+/**
+ * Generates the `paths.ts` module capturing path-level OpenAPI metadata.
+ *
+ * @module routes/emit
+ */
 import * as path from "node:path";
-import type { OpenApiValue, PathItem } from "@src/core/types/index.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { OpenApiValue, PathItem } from "../core/types/index.js";
+import type { SwaggerParser } from "../openapi/parse.js";
 
 /**
  * Generates the `paths.ts` file.
  * Captures path-level metadata (summary/description/parameters/servers/$ref/x-*) for reverse generation.
  */
 export class PathsGenerator {
+	/**
+	 * Creates a new `PathsGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification wrapper.
+	 * @param project - The target `ts-morph` project.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates `paths.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Root directory for generated output files.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "paths.ts");
 

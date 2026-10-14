@@ -1,40 +1,20 @@
+/**
+ * Orchestrates the generation of an Angular SDK client, services, interceptors, tokens, tests, and Admin UI.
+ *
+ * @module vendors/angular/angular-client.generator
+ */
 import { posix as path } from "node:path";
-// Core Generators
-import { TypeGenerator } from "@src/classes/emit.js";
-import { DiscriminatorGenerator } from "@src/classes/emit_discriminator.js";
-import type { PathInfo } from "@src/core/types/analysis.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import { CallbackGenerator } from "@src/functions/emit_callback.js";
-import { WebhookGenerator } from "@src/functions/emit_webhook.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
-import { ExamplesGenerator } from "@src/mocks/emit.js";
-import { DocumentMetaGenerator } from "@src/openapi/emit_document_meta.js";
-import { HeadersGenerator } from "@src/openapi/emit_headers.js";
-import { LinkGenerator } from "@src/openapi/emit_link.js";
-import { MediaTypesGenerator } from "@src/openapi/emit_media_types.js";
-import { RequestBodiesGenerator } from "@src/openapi/emit_request_bodies.js";
-import { ResponsesGenerator } from "@src/openapi/emit_responses.js";
-import { SecurityGenerator } from "@src/openapi/emit_security.js";
-import { SpecSnapshotGenerator } from "@src/openapi/emit_snapshot.js";
-import { TagGenerator } from "@src/openapi/emit_tag.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import { PathsGenerator } from "@src/routes/emit.js";
-import { ParametersGenerator } from "@src/routes/emit_parameters.js";
-import { PathItemsGenerator } from "@src/routes/emit_path_items.js";
 import type { Project } from "ts-morph";
 import { AbstractClientGenerator } from "../../core/generator.js";
+import type { GeneratorConfig } from "../../core/types/index.js";
 import { MultipartBuilderGenerator } from "../../functions/emit_multipart.js";
-// Shared Utilities
-import { ParameterSerializerGenerator } from "../../functions/emit_parameter_serializer.js";
+import { camelCase } from "../../functions/utils.js";
 import { ContentDecoderGenerator } from "../../openapi/emit_content_decoder.js";
 import { ContentEncoderGenerator } from "../../openapi/emit_content_encoder.js";
-import { InfoGenerator } from "../../openapi/emit_info.js";
 import { ResponseHeaderRegistryGenerator } from "../../openapi/emit_response_header_registry.js";
 import { XmlBuilderGenerator } from "../../openapi/emit_xml_builder.js";
 import { XmlParserGenerator } from "../../openapi/emit_xml_parser.js";
-import { ServerGenerator } from "../../routes/emit_server.js";
-import { ServerUrlGenerator } from "../../routes/emit_server_url.js";
-// Angular Generators
+import type { SwaggerParser } from "../../openapi/parse.js";
 import { AdminGenerator } from "./admin/admin.generator.js";
 import { AdminTestGenerator } from "./admin/admin-test.generator.js";
 import { discoverAdminResources } from "./admin/resource-discovery.js";
@@ -47,9 +27,6 @@ import { BaseInterceptorGenerator } from "./utils/base-interceptor.generator.js"
 import { DateTransformerGenerator } from "./utils/date-transformer.generator.js";
 import { ExtensionTokensGenerator } from "./utils/extension-tokens.generator.js";
 import { FileDownloadGenerator } from "./utils/file-download.generator.js";
-// NOTE: HttpParamsBuilderGenerator is replaced/gutted, ensuring only Codec generation if present,
-// but typically for full abstraction we assume logic moved to shared.
-// We keep it if it generates the ApiParameterCodec only.
 import { HttpParamsBuilderGenerator } from "./utils/http-params-builder.generator.js";
 import {
 	MainIndexGenerator,
@@ -61,99 +38,35 @@ import { OAuthHelperGenerator } from "./utils/oauth-helper.generator.js";
 import { ProviderGenerator } from "./utils/provider.generator.js";
 import { RequestContextGenerator } from "./utils/request-context.generator.js";
 import { ResponseHeaderParserGenerator } from "./utils/response-header-parser.generator.js";
-// Angular Utilities
 import { TokenGenerator } from "./utils/token.generator.js";
 import { WebhookHelperGenerator } from "./utils/webhook-helper.generator.js";
 
-function getControllerCanonicalName(op: PathInfo): string {
-	if (Array.isArray(op.tags) && op.tags[0]) {
-		return pascalCase(op.tags[0].toString());
-	}
-
-	const firstSegment = op.path.split("/").filter(Boolean)[0];
-
-	return firstSegment ? pascalCase(firstSegment) : "Default";
-}
-
-function groupPathsByCanonicalController(
-	parser: SwaggerParser,
-): Record<string, PathInfo[]> {
-	const groups: Record<string, PathInfo[]> = {};
-
-	for (const op of parser.operations) {
-		const group = getControllerCanonicalName(op);
-
-		if (!groups[group]) groups[group] = [];
-
-		groups[group].push(op);
-	}
-
-	return groups;
-}
-
+/**
+ * Generates an Angular-based API client SDK.
+ */
 export class AngularClientGenerator extends AbstractClientGenerator {
+	/**
+	 * Executes the generation pipeline for the Angular client.
+	 *
+	 * @param project - The ts-morph Project to use for generation.
+	 * @param parser - The parsed Swagger/OpenAPI model.
+	 * @param config - The generator configuration options.
+	 * @param outputRoot - The target output directory.
+	 */
 	public generate(
 		project: Project,
 		parser: SwaggerParser,
 		config: GeneratorConfig,
 		outputRoot: string,
 	): void {
-		// 1. Models
-
-		new TypeGenerator(parser, project, config).generate(outputRoot);
-
+		// 1 & 2. Shared Models and Core OpenAPI Metadata
+		this.generateSharedCore(project, parser, config, outputRoot);
 		console.log("✅ Models generated.");
 
-		// 2. Shared Utilities
-
-		new InfoGenerator(parser, project).generate(outputRoot);
-
-		new ServerGenerator(parser, project).generate(outputRoot);
-
-		new ServerUrlGenerator(parser, project).generate(outputRoot);
-
-		new ParameterSerializerGenerator(project).generate(outputRoot); // NEW
-
-		new CallbackGenerator(parser, project).generate(outputRoot);
-
-		new WebhookGenerator(parser, project).generate(outputRoot);
-
-		new LinkGenerator(parser, project).generate(outputRoot);
-
-		new DiscriminatorGenerator(parser, project).generate(outputRoot);
-
-		new SecurityGenerator(parser, project).generate(outputRoot);
-
-		new TagGenerator(parser, project).generate(outputRoot);
-
-		new ExamplesGenerator(parser, project).generate(outputRoot);
-
-		new MediaTypesGenerator(parser, project).generate(outputRoot);
-
-		new PathsGenerator(parser, project).generate(outputRoot);
-
-		new PathItemsGenerator(parser, project).generate(outputRoot);
-
-		new HeadersGenerator(parser, project).generate(outputRoot);
-
-		new ParametersGenerator(parser, project).generate(outputRoot);
-
-		new RequestBodiesGenerator(parser, project).generate(outputRoot);
-
-		new ResponsesGenerator(parser, project).generate(outputRoot);
-
-		new DocumentMetaGenerator(parser, project).generate(outputRoot);
-
-		new SpecSnapshotGenerator(parser, project).generate(outputRoot);
-
 		// 3. Services and Angular Specifics
-
 		if (config.options.generateServices ?? true) {
 			const servicesDir = path.join(outputRoot, "services");
-
-			const controllerGroups = groupPathsByCanonicalController(parser);
-
-			// Generate Services using the Refactored Service Generator
+			const controllerGroups = this.groupOperationsByController(parser);
 
 			new ServiceGenerator(parser, project, config).generate(
 				servicesDir,
@@ -161,41 +74,22 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 			);
 
 			new ServiceIndexGenerator(project).generateIndex(outputRoot);
-
 			console.log("✅ Services generated.");
 
-			// Generate Utilities (tokens, helpers, etc)
-
 			new TokenGenerator(project, config.clientName).generate(outputRoot);
-
 			new RequestContextGenerator(project).generate(outputRoot);
-
 			new ExtensionTokensGenerator(project).generate(outputRoot);
-
-			// Note: This now likely only generates the ApiParameterCodec
-
 			new HttpParamsBuilderGenerator(project).generate(outputRoot);
-
 			new FileDownloadGenerator(project).generate(outputRoot);
-
 			new XmlBuilderGenerator(project).generate(outputRoot);
-
 			new XmlParserGenerator(project).generate(outputRoot);
-
 			new ContentDecoderGenerator(project).generate(outputRoot);
-
 			new ContentEncoderGenerator(project).generate(outputRoot);
-
 			new MultipartBuilderGenerator(project).generate(outputRoot);
-
 			new LinkServiceGenerator(parser, project).generate(outputRoot);
-
 			new ResponseHeaderRegistryGenerator(parser, project).generate(outputRoot);
-
 			new LinkSetParserGenerator(project).generate(outputRoot);
-
 			new ResponseHeaderParserGenerator(project).generate(outputRoot);
-
 			new WebhookHelperGenerator(parser, project).generate(outputRoot);
 
 			if (config.options.dateType === "Date") {
@@ -203,7 +97,6 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 			}
 
 			const securitySchemes = parser.getSecuritySchemes();
-
 			let tokenNames: string[] = [];
 
 			if (Object.keys(securitySchemes).length > 0) {
@@ -213,9 +106,7 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 					parser,
 					project,
 				);
-
 				const interceptorResult = interceptorGenerator.generate(outputRoot);
-
 				tokenNames = interceptorResult?.tokenNames || [];
 
 				if (Object.values(securitySchemes).some((s) => s.type === "oauth2")) {
@@ -226,9 +117,7 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 			new BaseInterceptorGenerator(project, config.clientName).generate(
 				outputRoot,
 			);
-
 			new ProviderGenerator(parser, project, tokenNames).generate(outputRoot);
-
 			console.log("✅ Utilities and providers generated.");
 
 			const shouldGenerateTests =
@@ -242,14 +131,15 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 					project,
 				);
 
-				const controllerGroupsForTest = groupPathsByCanonicalController(parser);
+				const controllerGroupsForTest =
+					this.groupOperationsByController(parser);
 
 				for (const [controllerName, operations] of Object.entries(
 					controllerGroupsForTest,
 				)) {
 					for (const op of operations) {
-						if (!op.methodName) {
-							if (op.operationId) op.methodName = camelCase(op.operationId);
+						if (!op.methodName && op.operationId) {
+							op.methodName = camelCase(op.operationId);
 						}
 					}
 
@@ -272,14 +162,13 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 			if (config.options.admin) {
 				new AdminGenerator(parser, project, config).generate(outputRoot);
 
-				const shouldGenerateTests =
+				const shouldGenerateAdminTests =
 					config.options.tests ?? config.options.generateAdminTests ?? false;
 
-				if (shouldGenerateTests) {
+				if (shouldGenerateAdminTests) {
 					console.log("📝 Generating tests for admin UI...");
 
 					const adminTestGen = new AdminTestGenerator(project);
-
 					const adminResources = discoverAdminResources(parser);
 
 					for (const resource of adminResources) {

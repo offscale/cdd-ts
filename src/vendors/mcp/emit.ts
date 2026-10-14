@@ -1,3 +1,8 @@
+/**
+ * Module for emit in vendors/mcp/emit.
+ *
+ * @module vendors/mcp/emit
+ */
 import { posix as path } from "node:path";
 import type { Project } from "ts-morph";
 import type { GeneratorConfig } from "../../core/types/index.js";
@@ -5,7 +10,15 @@ import type { Parameter } from "../../core/types/openapi.js";
 import { snakeCase } from "../../functions/utils_string.js";
 import type { SwaggerParser } from "../../openapi/parse.js";
 
+/** Generator/utility class `McpGenerator`. */
 export class McpGenerator {
+	/**
+	 * Executes `generate` on `McpGenerator`.
+	 * @param project - Target `ts-morph` project instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param _config - Parameter `_config` (GeneratorConfig).
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(
 		project: Project,
 		parser: SwaggerParser,
@@ -30,7 +43,6 @@ export class McpGenerator {
 			moduleSpecifier: "@modelcontextprotocol/sdk/server/sse.js",
 			namedImports: ["SSEServerTransport"],
 		});
-		mcpFile.addStatements("// @ts-ignore");
 		mcpFile.addImportDeclaration({
 			moduleSpecifier: "express",
 			defaultImport: "express",

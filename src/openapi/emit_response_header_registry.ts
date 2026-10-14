@@ -1,22 +1,40 @@
-// src/generators/shared/response-header-registry.generator.ts
+/**
+ * Generates `response-headers.ts` exporting response header type registries (`API_RESPONSE_HEADERS`, `API_RESPONSE_HEADER_OBJECTS`, `API_HEADER_XML_CONFIGS`).
+ *
+ * @module openapi/emit_response_header_registry
+ */
 import * as path from "node:path";
+import { type Project, VariableDeclarationKind } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 import type {
 	HeaderObject,
 	OpenApiValue,
 	PathInfo,
 	SwaggerDefinition,
-} from "@src/core/types/index.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+} from "../core/types/index.js";
+import type { SwaggerParser } from "./parse.js";
 
+/**
+ * Generates the `response-headers.ts` file containing response header metadata registries.
+ */
 export class ResponseHeaderRegistryGenerator {
+	/**
+	 * Creates a new `ResponseHeaderRegistryGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The `ts-morph` project to create `response-headers.ts` in.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates `response-headers.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "response-headers.ts");
 
@@ -238,7 +256,14 @@ export class ResponseHeaderRegistryGenerator {
 		return { typeHint: "string" };
 	}
 
-	private getXmlConfig(
+	/**
+	 * Extracts recursive XML serialization metadata from a schema definition.
+	 *
+	 * @param schema - Schema definition to inspect.
+	 * @param depth - Maximum recursion depth.
+	 * @returns Extracted XML configuration dictionary.
+	 */
+	public getXmlConfig(
 		schema: SwaggerDefinition | undefined,
 		depth: number,
 	): Record<string, OpenApiValue> {

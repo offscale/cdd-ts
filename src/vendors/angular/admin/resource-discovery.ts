@@ -1,3 +1,8 @@
+/**
+ * Module for resource discovery in vendors/angular/admin/resource-discovery.
+ *
+ * @module vendors/angular/admin/resource-discovery
+ */
 // src/generators/angular/admin/resource-discovery.ts
 
 import type {
@@ -8,9 +13,9 @@ import type {
 	Resource,
 	ResourceOperation,
 	SwaggerDefinition,
-} from "@src/core/types/index.js";
-import { camelCase, pascalCase, singular } from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
+} from "../../../core/types/index.js";
+import { camelCase, pascalCase, singular } from "../../../functions/utils.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
 function getMethodName(op: PathInfo): string {
 	const pathToMethodName = (path: string): string =>
@@ -124,6 +129,12 @@ function findSchema(
 	return schema as SwaggerDefinition;
 }
 
+/**
+ * Executes `getFormProperties`.
+ * @param operations - Operations belonging to the controller or resource.
+ * @param parser - Parsed OpenAPI specification instance.
+ * @returns Generated result (FormProperty[]).
+ */
 export function getFormProperties(
 	operations: PathInfo[],
 	parser: SwaggerParser,
@@ -330,6 +341,12 @@ export function getFormProperties(
 		: [{ name: "id", schema: { type: "string" } }];
 }
 
+/**
+ * Executes `getModelName`.
+ * @param resourceName - Parameter `resourceName` (string).
+ * @param operations - Operations belonging to the controller or resource.
+ * @returns Generated result (string).
+ */
 export function getModelName(
 	resourceName: string,
 	operations: PathInfo[],
@@ -341,7 +358,7 @@ export function getModelName(
 
 	const schema = (op?.requestBody?.content?.["application/json"]?.schema ??
 		op?.responses?.["200"]?.content?.["application/json"]?.schema) as
-		| Record<string, string | number | boolean | object | undefined | null>
+		| Record<string, OpenApiValue>
 		| undefined;
 
 	if (schema && typeof schema === "object") {
@@ -353,11 +370,7 @@ export function getModelName(
 			schema.type === "array" &&
 			schema.items &&
 			!Array.isArray(schema.items) &&
-			"$ref" in
-				(schema.items as Record<
-					string,
-					string | number | boolean | object | undefined | null
-				>)
+			"$ref" in (schema.items as Record<string, OpenApiValue>)
 		) {
 			ref = (schema.items as { $ref?: string }).$ref;
 		}
@@ -368,6 +381,11 @@ export function getModelName(
 	return singular(pascalCase(resourceName));
 }
 
+/**
+ * Executes `discoverAdminResources`.
+ * @param parser - Parsed OpenAPI specification instance.
+ * @returns Generated result (Resource[]).
+ */
 export function discoverAdminResources(parser: SwaggerParser): Resource[] {
 	const resourceMap = new Map<
 		string,

@@ -1,10 +1,9 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 	it("should emit schema identifier JSDoc tags for round-trip", () => {
@@ -27,10 +26,7 @@ describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 			},
 		};
 
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(spec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 
 		const sourceFile = project.createSourceFile(
@@ -189,10 +185,7 @@ describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 			},
 		};
 
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(spec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 
 		const sourceFile = project.createSourceFile(

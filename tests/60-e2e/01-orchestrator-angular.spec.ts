@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import * as path from "node:path";
 import type { Project } from "ts-morph";
 

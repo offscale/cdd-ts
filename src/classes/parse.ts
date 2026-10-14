@@ -1,4 +1,8 @@
-// src/core/utils/openapi-reverse-models.ts
+/**
+ * Reconstructs OpenAPI/JSON Schema definitions from generated TypeScript model interfaces, enums, and type aliases.
+ *
+ * @module classes/parse
+ */
 import path from "node:path";
 import {
 	type EnumDeclaration,
@@ -15,15 +19,42 @@ import type { OpenApiValue, SwaggerDefinition } from "../core/types/index.js";
 /** Map of schema names to reconstructed schema definitions. */
 export type ReverseSchemaMap = Record<string, SwaggerDefinition | boolean>;
 
+/** File or directory status entry returned by `ReverseModelFileSystem.statSync`. */
+export interface ReverseModelFileStat {
+	/**
+	 * Returns `true` when the path refers to a regular file.
+	 * @returns `true` if file.
+	 */
+	isFile(): boolean;
+	/**
+	 * Returns `true` when the path refers to a directory.
+	 * @returns `true` if directory.
+	 */
+	isDirectory(): boolean;
+}
+
 /** File system requirements for reverse model parsing helpers. */
-export type ReverseModelFileSystem = {
-	statSync: (filePath: string) => {
-		isFile: () => boolean;
-		isDirectory: () => boolean;
-	};
-	readFileSync: (filePath: string, encoding: string) => string;
-	readdirSync: (dirPath: string) => string[];
-};
+export interface ReverseModelFileSystem {
+	/**
+	 * Synchronous `fs.statSync` equivalent.
+	 * @param filePath - Path to inspect.
+	 * @returns File status metadata.
+	 */
+	statSync(filePath: string): ReverseModelFileStat;
+	/**
+	 * Synchronous `fs.readFileSync` equivalent.
+	 * @param filePath - Path to read.
+	 * @param encoding - Text encoding (e.g. `"utf8"`).
+	 * @returns File contents string.
+	 */
+	readFileSync(filePath: string, encoding: BufferEncoding): string;
+	/**
+	 * Synchronous `fs.readdirSync` equivalent.
+	 * @param dirPath - Directory path to list.
+	 * @returns Array of entry names in the directory.
+	 */
+	readdirSync(dirPath: string): string[];
+}
 
 const MODEL_FILE_SUFFIX = ".ts";
 
@@ -33,6 +64,10 @@ const MODEL_DECL_SUFFIX = ".d.ts";
 
 /**
  * Parses a generated model source file and returns reconstructed schema definitions.
+ *
+ * @param sourceText - TypeScript source text of the model file.
+ * @param filePath - Virtual file path for AST creation.
+ * @returns Map of model names to reconstructed `SwaggerDefinition` or boolean schemas.
  */
 export function parseGeneratedModelSource(
 	sourceText: string,
@@ -56,6 +91,11 @@ export function parseGeneratedModelSource(
 
 /**
  * Parses generated model files from a file path or directory, returning reconstructed schemas.
+ *
+ * @param inputPath - Path to a single `.ts` model file or directory of model files.
+ * @param fileSystem - File system adapter providing `statSync`, `readFileSync`, and `readdirSync`.
+ * @returns Map of model names to reconstructed `SwaggerDefinition` or boolean schemas.
+ * @throws {Error} When the input path is invalid or contains no exported model declarations.
  */
 export function parseGeneratedModels(
 	inputPath: string,
@@ -486,8 +526,21 @@ function schemaFromInterface(
 
 function schemaFromTypeAlias(
 	aliasDecl: TypeAliasDeclaration,
-): SwaggerDefinition {
+): SwaggerDefinition | boolean {
+	for (const doc of aliasDecl.getJsDocs()) {
+		for (const tag of doc.getTags()) {
+			if (tag.getTagName().toLowerCase() === "booleanschema") {
+				const text = (tag.getCommentText() || "").trim().toLowerCase();
+				if (text === "true") return true;
+				if (text === "false") return false;
+			}
+		}
+	}
+
 	const typeNode = aliasDecl.getTypeNode();
+	if (typeNode && typeNode.getKind() === SyntaxKind.VoidKeyword) {
+		return false;
+	}
 
 	const schema = typeNode ? schemaFromTypeNode(typeNode) : {};
 
@@ -556,6 +609,12 @@ function normalizePropertyName(prop: PropertySignature): string {
 	return prop.getName();
 }
 
+/**
+ * Converts a `ts-morph` `TypeNode` into an equivalent OpenAPI `SwaggerDefinition` schema.
+ *
+ * @param node - The TypeScript AST type node to convert.
+ * @returns The reconstructed `SwaggerDefinition`.
+ */
 export function schemaFromTypeNode(node: TypeNode): SwaggerDefinition {
 	switch (node.getKind()) {
 		case SyntaxKind.StringKeyword:
@@ -715,25 +774,15 @@ function schemaFromTupleType(
 			}
 
 			typeNode = element.getTypeNode();
-		} else if (Node.isRestTypeNode(element as Node)) {
-			restSchema = schemaFromTypeNode(
-				(element as unknown as { getTypeNode: () => TypeNode }).getTypeNode(),
-			);
+		} else if (Node.isRestTypeNode(element)) {
+			restSchema = schemaFromTypeNode(element.getTypeNode());
 
 			continue;
 		} else if (element.getKind() === SyntaxKind.OptionalType) {
 			isOptional = true;
 
-			const elementNode = element.compilerNode as unknown as { type?: unknown };
-			if (elementNode.type) {
-				typeNode = (
-					element as unknown as {
-						_getNodeFromCompilerNode: (node: unknown) => TypeNode;
-					}
-				)._getNodeFromCompilerNode(elementNode.type);
-			} else {
-				typeNode = element as TypeNode;
-			}
+			const innerType = element.getChildren().find((c) => Node.isTypeNode(c));
+			typeNode = innerType ?? element;
 		} else {
 			typeNode = element as TypeNode;
 		}

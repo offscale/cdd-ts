@@ -1,22 +1,36 @@
+/**
+ * Module for admin generator in vendors/vanilla/admin/admin.generator.
+ *
+ * @module vendors/vanilla/admin/admin.generator
+ */
 import * as path from "node:path";
-import type { Resource } from "@src/core/types/index.js";
-
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
 import type { Project } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
+import { discoverAdminResources } from "../../angular/admin/resource-discovery.js";
 import { AppShellGenerator } from "./app-shell.generator.js";
 import { FormComponentGenerator } from "./form-component.generator.js";
 import { ListComponentGenerator } from "./list-component.generator.js";
 
+/** Generator/utility class `VanillaAdminGenerator`. */
 export class VanillaAdminGenerator {
 	private allResources: Resource[] = [];
 
+	/**
+	 * Creates a new `VanillaAdminGenerator` instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(
 		private parser: SwaggerParser,
 
 		private project: Project,
 	) {}
 
+	/**
+	 * Executes `generate` on `VanillaAdminGenerator`.
+	 * @param outputRoot - Parameter `outputRoot` (string).
+	 */
 	public generate(outputRoot: string): void {
 		console.log("🚀 Generating Vanilla Web Components Admin UI...");
 

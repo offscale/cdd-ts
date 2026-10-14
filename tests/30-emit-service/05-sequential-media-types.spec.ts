@@ -1,11 +1,10 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 const sequentialSpec = {
 	openapi: "3.0.0",
@@ -110,10 +109,7 @@ describe("Emitter: ServiceMethodGenerator (Sequential Media Types)", () => {
 			options: { dateType: "Date", enumStyle: "enum" },
 		};
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(
-			sequentialSpec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(sequentialSpec), config);
 
 		new TypeGenerator(parser, project, config).generate("/out");
 

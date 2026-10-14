@@ -1,12 +1,12 @@
+import { Project } from "ts-morph";
 import { describe, expect, it, vi } from "vitest";
 import { SwaggerParser } from "../../src/openapi/parse.js";
 import { VueAdminGenerator } from "../../src/vendors/vue/admin/admin.generator.js";
-import { runGeneratorWithConfig } from "../shared/helpers.js";
+import { runGeneratorWithConfig, testCast } from "../shared/helpers.js";
 import { coverageSpec, polymorphismSpec } from "../shared/specs.js";
 
 describe("Vue Admin Generation", () => {
 	it("should create admin directory when missing", () => {
-		const { Project } = require("ts-morph");
 		const project = new Project({ useInMemoryFileSystem: true });
 		const dirSpy = vi
 			.spyOn(project.getFileSystem(), "directoryExistsSync")
@@ -16,7 +16,7 @@ describe("Vue Admin Generation", () => {
 			.mockImplementation(() => {});
 
 		const parser = new SwaggerParser(
-			{
+			testCast({
 				openapi: "3.0.0",
 				info: { title: "Test API", version: "1.0.0" },
 				paths: {
@@ -27,13 +27,17 @@ describe("Vue Admin Generation", () => {
 						},
 					},
 				},
-			} as any,
-			{} as any,
+			}),
+			testCast({}),
 		);
 
-		const adminGen = new VueAdminGenerator(parser, project, {
-			options: { tests: true },
-		} as any);
+		const adminGen = new VueAdminGenerator(
+			parser,
+			project,
+			testCast({
+				options: { tests: true },
+			}),
+		);
 		adminGen.generate("/out");
 
 		expect(dirSpy).toHaveBeenCalled();
@@ -48,10 +52,14 @@ describe("Vue Admin Generation", () => {
 		});
 
 		// Call a second time to cover directoryExistsSync(dir) branch
-		const parser = new SwaggerParser(coverageSpec as any, {} as any);
-		const adminGen = new VueAdminGenerator(parser, project, {
-			options: { tests: true },
-		} as any);
+		const parser = new SwaggerParser(testCast(coverageSpec), testCast({}));
+		const adminGen = new VueAdminGenerator(
+			parser,
+			project,
+			testCast({
+				options: { tests: true },
+			}),
+		);
 		await adminGen.generate("/generated");
 
 		// 1. Check generated main admin files

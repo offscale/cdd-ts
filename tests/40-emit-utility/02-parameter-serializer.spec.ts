@@ -1,10 +1,12 @@
-// @ts-nocheck
-
 import { ParameterSerializerGenerator } from "@src/functions/emit_parameter_serializer.js";
 import { ContentEncoderGenerator } from "@src/openapi/emit_content_encoder.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import {
+	createTestProject,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 
 function getSerializerContext() {
 	const project = createTestProject();
@@ -31,27 +33,21 @@ function getSerializerContext() {
 		module: ts.ModuleKind.CommonJS,
 	});
 
-	const exportsMock: Record<
-		string,
-		string | number | boolean | object | undefined | null
-	> = {};
-	const encoderExports: Record<
-		string,
-		string | number | boolean | object | undefined | null
-	> = {};
-	new Function("exports", encoderJsCode)(encoderExports);
+	const exportsMock: Record<string, TestValue> = {};
+	const encoderExports: Record<string, TestValue> = {};
+	testCast(new Function("exports", encoderJsCode)(encoderExports));
 
 	const ContentEncoder = encoderExports.ContentEncoder;
 
-	new Function("exports", "ContentEncoder", jsCode)(
-		exportsMock,
-		ContentEncoder,
+	testCast(
+		new Function("exports", "ContentEncoder", jsCode)(
+			exportsMock,
+			ContentEncoder,
+		),
 	);
 
 	return {
-		ParameterSerializer: (
-			exportsMock as string | number | boolean | object | undefined | null
-		).ParameterSerializer,
+		ParameterSerializer: testCast(exportsMock).ParameterSerializer,
 	};
 }
 

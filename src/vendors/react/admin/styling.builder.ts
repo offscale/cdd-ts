@@ -1,3 +1,8 @@
+/**
+ * Module for styling builder in vendors/react/admin/styling.builder.
+ *
+ * @module vendors/react/admin/styling.builder
+ */
 import * as path from "node:path";
 import type { Project, SourceFile } from "ts-morph";
 

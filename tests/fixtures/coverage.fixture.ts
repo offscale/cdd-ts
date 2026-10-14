@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { fullCRUD_Users } from "./basic.fixture.js";
 import { info as originalInfo } from "./common.js";
 

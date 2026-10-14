@@ -1,7 +1,18 @@
+/**
+ * Module for tests in vendors/typeorm/tests.
+ *
+ * @module vendors/typeorm/tests
+ */
 import path from "node:path";
 import type { Project } from "ts-morph";
 import type { SwaggerDefinition } from "../../core/types/openapi.js";
 
+/**
+ * Executes `generateIntegrationTests`.
+ * @param project - Target `ts-morph` project instance.
+ * @param schemas - Parameter `schemas` ({ name: string; definition: SwaggerDefinition }[]).
+ * @param outputDir - Target output directory path.
+ */
 export function generateIntegrationTests(
 	project: Project,
 	schemas: { name: string; definition: SwaggerDefinition }[],

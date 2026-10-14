@@ -1,4 +1,9 @@
-import type { FormProperty, Resource } from "@src/core/types/index.js";
+/**
+ * Module for form renderer in vendors/react/admin/form.renderer.
+ *
+ * @module vendors/react/admin/form.renderer
+ */
+import type { FormProperty, Resource } from "../../../core/types/index.js";
 
 /**
  * Handles generating form models and field configurations for React.

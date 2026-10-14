@@ -1,7 +1,12 @@
+/**
+ * Module for routing generator in vendors/react/admin/routing.generator.
+ *
+ * @module vendors/react/admin/routing.generator
+ */
 import * as path from "node:path";
-import type { Resource } from "@src/core/types/index.js";
-import { pascalCase } from "@src/functions/utils.js";
 import type { Project, SourceFile } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import { pascalCase } from "../../../functions/utils.js";
 
 /**
  * Generates routing configurations and the App Shell for a React Admin UI.

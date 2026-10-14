@@ -1,46 +1,45 @@
+/**
+ * Orchestrates the generation of a Vue 3 Composable & Plugin API client SDK.
+ *
+ * @module vendors/vue/vue-client.generator
+ */
 import * as path from "node:path";
-import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import { AbstractClientGenerator } from "../../core/generator.js";
+import {
+	AbstractClientGenerator,
+	type IClientGenerator,
+} from "../../core/generator.js";
+import type { GeneratorConfig } from "../../core/types/index.js";
+import { camelCase, pascalCase } from "../../functions/utils.js";
+import type { SwaggerParser } from "../../openapi/parse.js";
 import { FetchClientGenerator } from "../fetch/fetch-client.generator.js";
 import { VueAdminGenerator } from "./admin/admin.generator.js";
 import { VueComposableTestGenerator } from "./test/composable-test.generator.js";
 
-function getControllerCanonicalName(op: PathInfo): string {
-	if (Array.isArray(op.tags) && op.tags[0]) {
-		return pascalCase(op.tags[0].toString());
-	}
-	const firstSegment = op.path.split("/").filter(Boolean)[0];
-	return firstSegment ? pascalCase(firstSegment) : "Default";
-}
-
-function groupPathsByCanonicalController(
-	parser: SwaggerParser,
-): Record<string, PathInfo[]> {
-	const groups: Record<string, PathInfo[]> = {};
-	for (const op of parser.operations) {
-		const group = getControllerCanonicalName(op);
-		if (!groups[group]) groups[group] = [];
-		groups[group].push(op);
-	}
-	return groups;
-}
-
 /**
  * Generates a Vue-based API client.
- * It delegates to the Fetch client generation as the foundation,
+ * It delegates to the Fetch client generation (or an injected `IClientGenerator`) as the foundation,
  * and then generates Vue-specific composables for each service.
  */
 export class VueClientGenerator extends AbstractClientGenerator {
+	private readonly baseGenerator: IClientGenerator;
+
+	/**
+	 * Creates a new `VueClientGenerator`.
+	 *
+	 * @param baseGenerator - Optional underlying HTTP client generator delegate (defaults to `FetchClientGenerator`).
+	 */
+	constructor(baseGenerator?: IClientGenerator) {
+		super();
+		this.baseGenerator = baseGenerator ?? new FetchClientGenerator();
+	}
+
 	/**
 	 * Executes the generation pipeline for the Vue client.
-	 * @param project The ts-morph Project to use for generation.
-	 * @param parser The parsed Swagger/OpenAPI model.
-	 * @param config The generator configuration options.
-	 * @param outputRoot The target output directory.
-	 * @returns A promise that resolves when generation finishes.
+	 * @param project - The ts-morph Project to use for generation.
+	 * @param parser - The parsed Swagger/OpenAPI model.
+	 * @param config - The generator configuration options.
+	 * @param outputRoot - The target output directory.
 	 */
 	public generate(
 		project: Project,
@@ -48,9 +47,7 @@ export class VueClientGenerator extends AbstractClientGenerator {
 		config: GeneratorConfig,
 		outputRoot: string,
 	): void {
-		// Vue utilizes the Fetch client primitives
-		const baseGenerator = new FetchClientGenerator();
-		baseGenerator.generate(project, parser, config, outputRoot);
+		this.baseGenerator.generate(project, parser, config, outputRoot);
 
 		if (config.options.admin) {
 			new VueAdminGenerator(parser, project, config).generate(outputRoot);
@@ -74,7 +71,7 @@ export class VueClientGenerator extends AbstractClientGenerator {
 			{ moduleSpecifier: "vue", namedImports: ["App", "InjectionKey"] },
 		]);
 
-		const operationsByController = groupPathsByCanonicalController(parser);
+		const operationsByController = this.groupOperationsByController(parser);
 
 		const serviceImports: string[] = [];
 		const injectionKeys: string[] = [];
@@ -131,7 +128,7 @@ export class VueClientGenerator extends AbstractClientGenerator {
 					`    }`,
 					`    return service;`,
 					`}`,
-				].join("\n"),
+				].join(String.fromCharCode(10)),
 			);
 			hookFile.formatText();
 
@@ -159,18 +156,18 @@ export class VueClientGenerator extends AbstractClientGenerator {
 		}
 
 		pluginFile.addStatements(`
-${serviceImports.join("\n")}
+${serviceImports.join(String.fromCharCode(10))}
 
-${injectionKeys.join("\n")}
+${injectionKeys.join(String.fromCharCode(10))}
 
 /**
  * Configuration options for the API Client Plugin.
  */
 export interface ApiClientPluginOptions {
     /**
-     * Optional configuration object to pass to the services.
+     * Optional base path configuration to pass to the services.
      */
-    config?: any; // Replace with actual config type if available
+    config?: string;
 }
 
 /**
@@ -178,7 +175,7 @@ export interface ApiClientPluginOptions {
  */
 export const ApiClientPlugin = {
     install(app: App, options?: ApiClientPluginOptions) {
-${provideStatements.map((stmt) => `        ${stmt}`).join("\n")}
+${provideStatements.map((stmt) => `        ${stmt}`).join(String.fromCharCode(10))}
     }
 };
         `);

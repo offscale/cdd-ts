@@ -1,15 +1,34 @@
+/**
+ * Generates the `utils/server-url.ts` utility for resolving OpenAPI server URLs and variables.
+ *
+ * @module routes/emit_server_url
+ */
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerParser } from "../openapi/parse.js";
 
+/**
+ * Generator for the `utils/server-url.ts` module.
+ */
 export class ServerUrlGenerator {
+	/**
+	 * Creates a new `ServerUrlGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification wrapper.
+	 * @param project - The target `ts-morph` project.
+	 */
 	constructor(
 		private parser: SwaggerParser,
 
 		private project: Project,
 	) {}
 
+	/**
+	 * Generates `utils/server-url.ts` inside the specified output directory.
+	 *
+	 * @param outputDir - Root directory for generated output files.
+	 */
 	public generate(outputDir: string): void {
 		// Note: We generate even if 0, because SwaggerParser defaults to '/' if empty,
 		// ensuring API_SERVERS is always available for the ServiceGenerator.
@@ -41,7 +60,7 @@ export class ServerUrlGenerator {
 				{
 					keyName: "key",
 					keyType: "string",
-					returnType: "string | number | boolean | object | undefined | null",
+					returnType: "unknown",
 				},
 			],
 			docs: ["Server variable definition (OAS Server Variable Object)."],
@@ -64,7 +83,7 @@ export class ServerUrlGenerator {
 				{
 					keyName: "key",
 					keyType: "string",
-					returnType: "string | number | boolean | object | undefined | null",
+					returnType: "unknown",
 				},
 			],
 			docs: ["Server configuration entries declared in the OpenAPI document."],

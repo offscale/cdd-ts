@@ -1,15 +1,11 @@
-// @ts-nocheck
-
 import { groupPathsByController } from "@src/functions/utils.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 describe("Service Parser: groupPathsByController", () => {
 	const createParser = (spec: object) =>
-		new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
-		);
+		new SwaggerParser(testCast(spec), testCast({ options: {} }));
 	const info = { title: "Test", version: "1.0" };
 
 	it("should group untagged paths by path segment", () => {

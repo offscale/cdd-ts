@@ -1,8 +1,7 @@
-// @ts-nocheck
-
 import type { SwaggerDefinition } from "@src/core/types/index.js";
 import { analyzeValidationRules } from "@src/vendors/angular/admin/analysis/validation.analyzer.js";
 import { describe, expect, it } from "vitest";
+import { type TestValue, testCast } from "../shared/helpers.js";
 
 describe("Analysis: validation.analyzer", () => {
 	it("should return empty array for readOnly properties", () => {
@@ -12,16 +11,8 @@ describe("Analysis: validation.analyzer", () => {
 	});
 
 	it("should return empty array for a null or undefined schema", () => {
-		expect(
-			analyzeValidationRules(
-				null as string | number | boolean | object | undefined | null,
-			),
-		).toEqual([]);
-		expect(
-			analyzeValidationRules(
-				undefined as string | number | boolean | object | undefined | null,
-			),
-		).toEqual([]);
+		expect(analyzeValidationRules(testCast(null))).toEqual([]);
+		expect(analyzeValidationRules(testCast(undefined))).toEqual([]);
 	});
 
 	it("should map all standard validation keywords", () => {
@@ -41,56 +32,46 @@ describe("Analysis: validation.analyzer", () => {
 
 	it("should handle contentEncoding patterns", () => {
 		expect(
-			analyzeValidationRules({ contentEncoding: "base64" } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null),
+			analyzeValidationRules(testCast({ contentEncoding: "base64" })),
 		).toContainEqual(expect.objectContaining({ type: "pattern" }));
 		expect(
-			analyzeValidationRules({ contentEncoding: "base64url" } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null),
+			analyzeValidationRules(testCast({ contentEncoding: "base64url" })),
 		).toContainEqual(expect.objectContaining({ type: "pattern" }));
 	});
 
 	it("should ignore unsupported contentEncoding values", () => {
-		const rules = analyzeValidationRules({
-			contentEncoding: "quoted-printable",
-		} as string | number | boolean | object | undefined | null);
+		const rules = analyzeValidationRules(
+			testCast({
+				contentEncoding: "quoted-printable",
+			}),
+		);
 		expect(rules).toEqual([]);
 	});
 
 	it("should map numeric constraints (exclusive vs standard)", () => {
-		const standard = analyzeValidationRules({ minimum: 5, maximum: 10 } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null);
+		const standard = analyzeValidationRules(
+			testCast({ minimum: 5, maximum: 10 }),
+		);
 		expect(standard).toContainEqual({ type: "min", value: 5 });
 		expect(standard).toContainEqual({ type: "max", value: 10 });
 
-		const exclusive30 = analyzeValidationRules({
-			minimum: 5,
-			exclusiveMinimum: true,
-			maximum: 10,
-			exclusiveMaximum: true,
-		} as string | number | boolean | object | undefined | null);
+		const exclusive30 = analyzeValidationRules(
+			testCast({
+				minimum: 5,
+				exclusiveMinimum: true,
+				maximum: 10,
+				exclusiveMaximum: true,
+			}),
+		);
 		expect(exclusive30).toContainEqual({ type: "exclusiveMinimum", value: 5 });
 		expect(exclusive30).toContainEqual({ type: "exclusiveMaximum", value: 10 });
 
-		const exclusive31 = analyzeValidationRules({
-			exclusiveMinimum: 5,
-			exclusiveMaximum: 10,
-		} as string | number | boolean | object | undefined | null);
+		const exclusive31 = analyzeValidationRules(
+			testCast({
+				exclusiveMinimum: 5,
+				exclusiveMaximum: 10,
+			}),
+		);
 		expect(exclusive31).toContainEqual({ type: "exclusiveMinimum", value: 5 });
 		expect(exclusive31).toContainEqual({ type: "exclusiveMaximum", value: 10 });
 	});
@@ -149,9 +130,9 @@ describe("Analysis: validation.analyzer", () => {
 	});
 
 	it("should map required property (denormalized)", () => {
-		const schema: string | number | boolean | object | undefined | null = {
-			required: ["true"],
-		}; // Logic checks if required exists/truthy
+		const schema: TestValue = testCast({
+			required: testCast(["true"]),
+		}); // Logic checks if required exists/truthy
 		expect(analyzeValidationRules(schema)).toContainEqual({ type: "required" });
 	});
 
@@ -178,13 +159,7 @@ describe("Analysis: validation.analyzer", () => {
 		};
 		const rules = analyzeValidationRules(schema);
 
-		const notRule = rules.find((r) => r.type === "not") as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
+		const notRule = testCast(rules.find((r) => r.type === "not"));
 
 		expect(notRule).toBeDefined();
 
@@ -196,13 +171,7 @@ describe("Analysis: validation.analyzer", () => {
 	it("should skip not rules when inner schema yields no validations", () => {
 		const schema: SwaggerDefinition = {
 			type: "string",
-			not: { readOnly: true } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			not: testCast({ readOnly: true }),
 		};
 		const rules = analyzeValidationRules(schema);
 		expect(rules.find((r) => r.type === "not")).toBeUndefined();

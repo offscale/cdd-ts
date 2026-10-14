@@ -1,10 +1,9 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
-import { type GeneratorConfig, OpenApiValue } from "@src/core/types/index.js";
+import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { type TestValue, testCast } from "../shared/helpers.js";
 
 const linkSpec = {
 	openapi: "3.0.0",
@@ -30,16 +29,14 @@ const linkSpec = {
 };
 
 describe("Emitter: Link Interface Generation", () => {
-	const runGenerator = (
-		spec: string | number | boolean | object | undefined | null,
-	) => {
+	const runGenerator = (spec: TestValue) => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/out",
 			options: { enumStyle: "enum" },
 		};
-		const parser = new SwaggerParser(spec, config);
+		const parser = new SwaggerParser(testCast(spec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 		return project.createSourceFile(
 			"/out/combined.ts",
@@ -53,7 +50,7 @@ describe("Emitter: Link Interface Generation", () => {
 	};
 
 	it("should generate generic interface for named links", () => {
-		const sourceFile = runGenerator(linkSpec);
+		const sourceFile = runGenerator(testCast(linkSpec));
 
 		const userAddressParams = sourceFile.getInterfaceOrThrow(
 			"UserAddressLinkParameters",
@@ -75,7 +72,7 @@ describe("Emitter: Link Interface Generation", () => {
 	});
 
 	it("should handle multiple links", () => {
-		const sourceFile = runGenerator(linkSpec);
+		const sourceFile = runGenerator(testCast(linkSpec));
 
 		const anotherLinkParams = sourceFile.getInterfaceOrThrow(
 			"AnotherLinkLinkParameters",
@@ -91,7 +88,7 @@ describe("Emitter: Link Interface Generation", () => {
 			info: { title: "Old API", version: "1.0" },
 			paths: {},
 		};
-		const sourceFile = runGenerator(spec2);
+		const sourceFile = runGenerator(testCast(spec2));
 
 		const interfaces = sourceFile.getInterfaces();
 		const linkInterfaces = interfaces.filter((i) =>

@@ -1,61 +1,39 @@
-// @ts-nocheck
 // Mocks to satisfy both runtime execution AND TypeScript static checks.
-// Uses 'string | number | boolean | object | undefined | null' to avoid strict signature mismatches with legacy experiment decorators.
-export function Controller(
-	_path: string,
-): string | number | boolean | object | undefined | null {
+export function Controller(_path: string): ClassDecorator {
 	void _path;
 	return () => {};
 }
 
-export function Get(
-	_path?: string,
-): string | number | boolean | object | undefined | null {
+export function Get(_path?: string): MethodDecorator {
 	void _path;
 	return () => {};
 }
 
-export function Post(
-	_path?: string,
-): string | number | boolean | object | undefined | null {
+export function Post(_path?: string): MethodDecorator {
 	void _path;
 	return () => {};
 }
 
-export function Param(
-	_name?: string,
-): string | number | boolean | object | undefined | null {
+export function Param(_name?: string): ParameterDecorator {
 	void _name;
 	return () => {};
 }
 
-export function Query(
-	_name?: string,
-): string | number | boolean | object | undefined | null;
-export function Query(
-	_path?: string,
-): string | number | boolean | object | undefined | null;
-export function Query(
-	_arg?: string,
-): string | number | boolean | object | undefined | null {
+export function Query(_arg?: string): MethodDecorator & ParameterDecorator {
 	void _arg;
 	return () => {};
 }
 
-export function Header(
-	_name?: string,
-): string | number | boolean | object | undefined | null {
+export function Header(_name?: string): ParameterDecorator {
 	void _name;
 	return () => {};
 }
 
-export function Body(): string | number | boolean | object | undefined | null {
+export function Body(): ParameterDecorator {
 	return () => {};
 }
 
-export function HttpCode(
-	_code: number,
-): string | number | boolean | object | undefined | null {
+export function HttpCode(_code: number): MethodDecorator {
 	void _code;
 	return () => {};
 }

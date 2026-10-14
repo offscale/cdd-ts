@@ -1,9 +1,11 @@
-// @ts-nocheck
-
 import { XmlParserGenerator } from "@src/openapi/emit_xml_parser.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import {
+	createTestProject,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 
 /**
  * Helper to compile and return the XmlParser class from the generated code.
@@ -25,7 +27,7 @@ function getXmlParser() {
 	});
 
 	const moduleScope = {
-		exports: {} as string | number | boolean | object | undefined | null,
+		exports: testCast({}),
 	};
 
 	// Mock DOMParser environment
@@ -35,13 +37,7 @@ function getXmlParser() {
 		}
 	};
 
-	global.DOMParser = DOMParserMock as
-		| string
-		| number
-		| boolean
-		| object
-		| undefined
-		| null;
+	global.DOMParser = testCast(DOMParserMock);
 
 	// Very basic XML parser mock for unit testing traversal logic
 	function parseXmlSimple(xml: string) {
@@ -54,39 +50,38 @@ function getXmlParser() {
 
 		const createNode = (
 			tagName: string,
-
-			attributes: string | number | boolean | object | undefined | null,
-			children: string | number | boolean | object | undefined | null[],
+			attributes: Record<string, unknown>,
+			children: unknown,
 			textContent: string | null,
-			childNodes?: string | number | boolean | object | undefined | null[],
-		) => ({
-			tagName,
-			nodeType: 1,
-
-			attributes,
-			children,
-			childNodes: childNodes ?? children,
-			textContent,
-
-			hasAttribute: (k: string) => k in attributes,
-
-			getAttribute: (k: string) => attributes[k],
-
-			getAttributeNS: (_ns: string, k: string) => attributes[k], // ignore NS for simple mock
-
-			hasAttributeNS: (_ns: string, k: string) => k in attributes,
-		});
+			childNodes?: unknown,
+		): TestValue =>
+			testCast({
+				tagName,
+				nodeType: 1,
+				attributes,
+				children,
+				childNodes: childNodes ?? children,
+				textContent,
+				hasAttribute: (k: string) => k in attributes,
+				getAttribute: (k: string) => attributes[k],
+				getAttributeNS: (_ns: string, k: string) => attributes[k], // ignore NS for simple mock
+				hasAttributeNS: (_ns: string, k: string) => k in attributes,
+			});
 
 		// Hardcoded object creation based on expected test inputs
 		// Case 1: Simple
 		if (xml.includes("<root><val>123</val></root>")) {
 			return {
 				getElementsByTagName: () => parserError,
-				documentElement: createNode(
-					"root",
-					{},
-					[createNode("val", {}, [], "123")],
-					null,
+				documentElement: testCast(
+					testCast(
+						createNode(
+							"root",
+							testCast({}),
+							[testCast(createNode("val", testCast({}), testCast([]), "123"))],
+							null,
+						),
+					),
 				),
 			};
 		}
@@ -94,28 +89,41 @@ function getXmlParser() {
 		if (xml.includes('<root id="5">text</root>')) {
 			return {
 				getElementsByTagName: () => parserError,
-				documentElement: createNode("root", { id: "5" }, [], "text"),
+				documentElement: createNode(
+					"root",
+					testCast({ id: testCast("5") }),
+					testCast([]),
+					"text",
+				),
 			};
 		}
 		// Case 3: Wrapped Array
 		if (xml.includes("<list><item>A</item><item>B</item></list>")) {
 			return {
 				getElementsByTagName: () => parserError,
-				documentElement: createNode(
-					"root",
-					{},
-					[
+				documentElement: testCast(
+					testCast(
 						createNode(
-							"list",
-							{},
+							"root",
+							testCast({}),
 							[
-								createNode("item", {}, [], "A"),
-								createNode("item", {}, [], "B"),
+								createNode(
+									"list",
+									testCast({}),
+									[
+										testCast(
+											createNode("item", testCast({}), testCast([]), "A"),
+										),
+										testCast(
+											createNode("item", testCast({}), testCast([]), "B"),
+										),
+									],
+									"",
+								),
 							],
-							"",
+							null,
 						),
-					],
-					null,
+					),
 				),
 			};
 		}
@@ -123,35 +131,59 @@ function getXmlParser() {
 		if (xml.includes("<root><tag>A</tag><tag>B</tag></root>")) {
 			return {
 				getElementsByTagName: () => parserError,
-				documentElement: createNode(
-					"root",
-					{},
-					[createNode("tag", {}, [], "A"), createNode("tag", {}, [], "B")],
-					null,
+				documentElement: testCast(
+					testCast(
+						createNode(
+							"root",
+							testCast({}),
+							[
+								testCast(createNode("tag", testCast({}), testCast([]), "A")),
+								testCast(createNode("tag", testCast({}), testCast([]), "B")),
+							],
+							null,
+						),
+					),
 				),
 			};
 		}
 		// Case 5: PrefixItems with text nodes
 		if (xml.includes("<report>start<data>42</data>end</report>")) {
-			const dataNode = createNode("data", {}, [], "42");
+			const dataNode = createNode("data", testCast({}), testCast([]), "42");
 			return {
 				getElementsByTagName: () => parserError,
-				documentElement: createNode("report", {}, [dataNode], null, [
-					createTextNode("start"),
-					dataNode,
-					createTextNode("end"),
-				]),
+				documentElement: testCast(
+					testCast(
+						testCast(
+							createNode("report", testCast({}), [dataNode], null, [
+								createTextNode("start"),
+								dataNode,
+								createTextNode("end"),
+							]),
+						),
+					),
+				),
 			};
 		}
 		// Case 5: Null
 		if (xml.includes('nil="true"') && xml.includes("empty")) {
 			return {
 				getElementsByTagName: () => parserError,
-				documentElement: createNode(
-					"root",
-					{},
-					[createNode("empty", { nil: "true" }, [], "")],
-					null,
+				documentElement: testCast(
+					createNode(
+						"root",
+						testCast({}),
+						[
+							testCast(
+								createNode(
+									"empty",
+									testCast({ nil: testCast("true") }),
+									testCast([]),
+									"",
+								),
+							),
+						],
+						null,
+					),
 				),
 			};
 		}
@@ -159,28 +191,37 @@ function getXmlParser() {
 		if (xml.includes("<root><child>hidden</child></root>")) {
 			return {
 				getElementsByTagName: () => parserError,
-				documentElement: createNode(
-					"root",
-					{},
-					[createNode("child", {}, [], "hidden")],
-					null,
+				documentElement: testCast(
+					testCast(
+						createNode(
+							"root",
+							testCast({}),
+							[
+								testCast(
+									createNode("child", testCast({}), testCast([]), "hidden"),
+								),
+							],
+							null,
+						),
+					),
 				),
 			};
 		}
 
 		return {
 			getElementsByTagName: () => parserError,
-			documentElement: createNode("unknown", {}, [], null),
+			documentElement: createNode("unknown", testCast({}), testCast([]), null),
 		};
 	}
 
 	const finalCode = `${jsCode}\nmoduleScope.exports.XmlParser = XmlParser;`;
 
-	new Function("moduleScope", "exports", "require", finalCode)(
-		moduleScope,
-		(moduleScope as string | number | boolean | object | undefined | null)
-			.exports,
-		() => ({}),
+	testCast(
+		new Function("moduleScope", "exports", "require", finalCode)(
+			moduleScope,
+			moduleScope.exports,
+			() => ({}),
+		),
 	);
 
 	return moduleScope.exports.XmlParser;

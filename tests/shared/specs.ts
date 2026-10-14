@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @fileoverview
  * This file acts as a barrel, re-exporting data fixtures from the `tests/fixtures/` directory.

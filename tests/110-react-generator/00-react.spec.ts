@@ -4,6 +4,7 @@ import type { GeneratorConfig } from "../../src/core/types/index.js";
 import { SwaggerParser } from "../../src/openapi/parse.js";
 import { FetchClientGenerator } from "../../src/vendors/fetch/fetch-client.generator.js";
 import { ReactClientGenerator } from "../../src/vendors/react/react-client.generator.js";
+import { testCast } from "../shared/helpers.js";
 
 describe("React Implementation", () => {
 	beforeEach(() => {
@@ -113,7 +114,6 @@ describe("React Implementation", () => {
 		const hookFile = project.getSourceFile("/output/hooks/users.hook.ts");
 		expect(hookFile).toBeDefined();
 		const hookText = hookFile?.getFullText();
-		console.log("HOOK TEXT:", hookText);
 		expect(hookText).toContain(`import { useState } from "react";`);
 		expect(hookText).toContain(
 			`import { useApiContext } from "../provider.js";`,
@@ -128,13 +128,13 @@ describe("React Implementation", () => {
 		expect(hookText).toContain(`return service;`);
 
 		expect(hookText).toContain(
-			`export function useGetUsers(config?: SWRConfiguration<string | number | boolean | object | undefined | null, any>)`,
+			`export function useGetUsers(config?: SWRConfiguration<string | number | boolean | object | undefined | null, Error>)`,
 		);
 		expect(hookText).toContain(`useSWR(`);
 		expect(hookText).toContain(`() => service.getUsers(apiConfig)`);
 
 		expect(hookText).toContain(
-			`export function useCreateUser(config?: SWRMutationConfiguration<string | number | boolean | object | undefined | null, any, any, any>)`,
+			`export function useCreateUser(config?: SWRMutationConfiguration<string | number | boolean | object | undefined | null, Error, string, { body: string }>)`,
 		);
 		expect(hookText).toContain(`useSWRMutation(`);
 		expect(hookText).toContain(`'createUser',`);
@@ -156,7 +156,7 @@ describe("React Implementation", () => {
 
 	it("should generate admin UI if config.options.admin is true", async () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const config = { options: { admin: true } } as unknown as GeneratorConfig;
+		const config = testCast<GeneratorConfig>({ options: { admin: true } });
 
 		const spec = {
 			openapi: "3.1.0",
@@ -173,7 +173,7 @@ describe("React Implementation", () => {
 				},
 			},
 		};
-		const parser = new SwaggerParser(spec, {} as any);
+		const parser = new SwaggerParser(spec, testCast({}));
 
 		const generator = new ReactClientGenerator();
 		await generator.generate(project, parser, config, "/out");
@@ -184,7 +184,7 @@ describe("React Implementation", () => {
 
 	it("should respect config.options.tests being false in hook generation", async () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const config = { options: { tests: false } } as unknown as GeneratorConfig;
+		const config = testCast<GeneratorConfig>({ options: { tests: false } });
 
 		const spec = {
 			openapi: "3.1.0",
@@ -201,7 +201,7 @@ describe("React Implementation", () => {
 				},
 			},
 		};
-		const parser = new SwaggerParser(spec, {} as any);
+		const parser = new SwaggerParser(spec, testCast({}));
 
 		const generator = new ReactClientGenerator();
 		await generator.generate(project, parser, config, "/out");

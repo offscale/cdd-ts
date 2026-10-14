@@ -1,14 +1,28 @@
+/**
+ * Module for form controls html builder in vendors/angular/admin/html/form-controls-html.builder.
+ *
+ * @module vendors/angular/admin/html/form-controls-html.builder
+ */
 // src/generators/angular/admin/html/form-controls-html.builder.ts
 
-import type { SwaggerDefinition } from "@src/core/types/index.js";
-import { camelCase, pascalCase, singular } from "@src/functions/utils.js";
-import type { FormControlModel } from "@src/vendors/angular/admin/analysis/form-types.js";
+import type { SwaggerDefinition } from "../../../../core/types/index.js";
+import {
+	camelCase,
+	pascalCase,
+	singular,
+} from "../../../../functions/utils.js";
+import type { FormControlModel } from "../analysis/form-types.js";
 
 import {
 	HtmlElementBuilder as _,
 	type HtmlElementBuilder,
 } from "../html-element.builder.js";
 
+/**
+ * Executes `buildErrorMessages`.
+ * @param control - Analyzed form control model.
+ * @returns Generated result (HtmlElementBuilder[]).
+ */
 export function buildErrorMessages(
 	control: FormControlModel,
 ): HtmlElementBuilder[] {
@@ -172,6 +186,11 @@ export function buildErrorMessages(
 	return errors;
 }
 
+/**
+ * Executes `buildFormControl`.
+ * @param control - Analyzed form control model.
+ * @returns Generated result (HtmlElementBuilder | null).
+ */
 export function buildFormControl(
 	control: FormControlModel,
 ): HtmlElementBuilder | null {

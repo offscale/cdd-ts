@@ -1,15 +1,20 @@
+/**
+ * Module for admin generator in vendors/angular/admin/admin.generator.
+ *
+ * @module vendors/angular/admin/admin.generator
+ */
 import * as path from "node:path";
-import type { GeneratorConfig } from "@src/core/types/config.js";
-import type { Resource } from "@src/core/types/index.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
 import type { Project } from "ts-morph";
+import type { GeneratorConfig } from "../../../core/types/config.js";
+import type { Resource } from "../../../core/types/index.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 import { AdminTestGenerator } from "./admin-test.generator.js";
 import { CustomValidatorsGenerator } from "./custom-validators.generator.js";
 import { ElementsGenerator } from "./elements.generator.js";
 import { FormComponentGenerator } from "./form-component.generator.js";
 import { I18nGenerator } from "./i18n.generator.js";
 import { ListComponentGenerator } from "./list-component.generator.js";
+import { discoverAdminResources } from "./resource-discovery.js";
 import { RoutingGenerator } from "./routing.generator.js";
 
 /**
@@ -19,6 +24,12 @@ import { RoutingGenerator } from "./routing.generator.js";
 export class AdminGenerator {
 	private allResources: Resource[] = [];
 
+	/**
+	 * Creates a new `AdminGenerator` instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param project - Target `ts-morph` project instance.
+	 * @param config - Active generator configuration.
+	 */
 	constructor(
 		private parser: SwaggerParser,
 

@@ -1,8 +1,13 @@
+/**
+ * Module for oauth helper generator in vendors/angular/utils/oauth-helper.generator.
+ *
+ * @module vendors/angular/utils/oauth-helper.generator
+ */
 // src/generators/angular/utils/oauth-helper.generator.ts
 import * as path from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type ClassDeclaration, type Project, Scope } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
 interface OAuthFlowConfig {
 	type: "oauth2" | "openIdConnect";
@@ -16,13 +21,23 @@ interface OAuthFlowConfig {
 	tokenUrl?: string;
 }
 
+/** Generator/utility class `OAuthHelperGenerator`. */
 export class OAuthHelperGenerator {
+	/**
+	 * Creates a new `OAuthHelperGenerator` instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(
 		private parser: SwaggerParser,
 
 		private project: Project,
 	) {}
 
+	/**
+	 * Executes `generate` on `OAuthHelperGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(outputDir: string): void {
 		const securitySchemes = Object.values(this.parser.getSecuritySchemes());
 

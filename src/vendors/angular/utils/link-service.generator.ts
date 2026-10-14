@@ -1,15 +1,30 @@
+/**
+ * Module for link service generator in vendors/angular/utils/link-service.generator.
+ *
+ * @module vendors/angular/utils/link-service.generator
+ */
 import * as path from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, Scope } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
+/** Generator/utility class `LinkServiceGenerator`. */
 export class LinkServiceGenerator {
+	/**
+	 * Creates a new `LinkServiceGenerator` instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Executes `generate` on `LinkServiceGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(outputDir: string): void {
 		const hasLinks =
 			this.parser.operations.some(

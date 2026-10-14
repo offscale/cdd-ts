@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type { GeneratorConfig } from "@src/core/types/index.js";
 
 import { SwaggerParser } from "@src/openapi/parse.js";
@@ -12,17 +10,17 @@ import {
 	coverageSpec,
 	finalCoveragePushSpec,
 } from "../fixtures/coverage.fixture.js";
+import { type TestValue, testCast } from "../shared/helpers.js";
 
 const config: GeneratorConfig = { input: "", output: "", options: {} };
 
-const createParser = (
-	spec: string | number | boolean | object | undefined | null,
-) => new SwaggerParser(spec, config);
+const createParser = (spec: TestValue) =>
+	new SwaggerParser(testCast(spec), config);
 const validBase = { openapi: "3.0.0", info: { title: "Test", version: "1.0" } };
 
 describe("Admin: discoverAdminResources", () => {
 	it("should discover basic CRUD resources", () => {
-		const parser = createParser(coverageSpec);
+		const parser = createParser(testCast(coverageSpec));
 		const resources = discoverAdminResources(parser);
 		const usersResource = resources.find((r) => r.name === "users");
 
@@ -34,7 +32,7 @@ describe("Admin: discoverAdminResources", () => {
 	});
 
 	it("should correctly identify non-editable resources (GET only)", () => {
-		const parser = createParser(coverageSpec);
+		const parser = createParser(testCast(coverageSpec));
 		const resources = discoverAdminResources(parser);
 		const logsResource = resources.find((r) => r.name === "logs");
 
@@ -43,7 +41,7 @@ describe("Admin: discoverAdminResources", () => {
 	});
 
 	it("should find resource properties for both list and form views", () => {
-		const parser = createParser(coverageSpec);
+		const parser = createParser(testCast(coverageSpec));
 		const resources = discoverAdminResources(parser);
 		const usersResource = resources.find((r) => r.name === "users");
 
@@ -61,7 +59,7 @@ describe("Admin: discoverAdminResources", () => {
 	});
 
 	it("should mark resources with only a delete operation as non-editable", () => {
-		const parser = createParser(finalCoveragePushSpec);
+		const parser = createParser(testCast(finalCoveragePushSpec));
 		const resources = discoverAdminResources(parser);
 		const deleteOnlyResource = resources.find((r) => r.name === "deleteOnly");
 
@@ -70,7 +68,7 @@ describe("Admin: discoverAdminResources", () => {
 	});
 
 	it("should correctly handle collection actions with hyphens in the name", () => {
-		const parser = createParser(coverageSpec);
+		const parser = createParser(testCast(coverageSpec));
 		const resources = discoverAdminResources(parser);
 		const serversResource = resources.find((r) => r.name === "servers");
 		const customAction = serversResource?.operations.find(
@@ -82,7 +80,7 @@ describe("Admin: discoverAdminResources", () => {
 	});
 
 	it("should correctly handle item actions that might be misclassified", () => {
-		const parser = createParser(coverageSpec);
+		const parser = createParser(testCast(coverageSpec));
 		const resources = discoverAdminResources(parser);
 		const serversResource = resources.find((r) => r.name === "servers");
 		const customAction = serversResource?.operations.find(
@@ -103,7 +101,7 @@ describe("Admin: discoverAdminResources", () => {
 				},
 			},
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		const polySchema = parser.getDefinition("PolyReadonly")!;
 		// emulate finding properties for the form - usually getFormProperties takes operations
 		// but we are testing the property aggregation logic via the helper if exported,
@@ -111,18 +109,16 @@ describe("Admin: discoverAdminResources", () => {
 		// Here we rely on `resourceDiscovery` exporting `getFormProperties` for testability based on previous prompts
 		const props = resourceDiscovery.getFormProperties(
 			[
-				{
+				testCast({
 					requestBody: {
 						content: { "application/json": { schema: polySchema } },
 					},
-				} as string | number | boolean | object | undefined | null,
+				}),
 			],
 			parser,
 		);
 
-		const propNames = props.map(
-			(p: string | number | boolean | object | undefined | null) => p.name,
-		);
+		const propNames = props.map((p) => p.name);
 
 		// Ideally 'petType' is found. 'name' is in the subclass (Cat) and is NOT merged into the top level
 		// because oneOf implies mutually exclusive sets handled by the form generator's dynamic logic.
@@ -140,10 +136,10 @@ describe("Admin: discoverAdminResources", () => {
 				},
 			},
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		const schemaWithInline = parser.getDefinition("InlineSchemaProperty")!;
 
-		const fakeOps = [
+		const fakeOps = testCast([
 			{
 				method: "GET",
 				responses: {
@@ -151,23 +147,18 @@ describe("Admin: discoverAdminResources", () => {
 						description: "ok",
 						content: {
 							"application/json": {
-								schema: (
-									schemaWithInline as
-										| string
-										| number
-										| boolean
-										| object
-										| undefined
-										| null
-								).properties?.inline,
+								schema: testCast(schemaWithInline).properties?.inline,
 							},
 						},
 					},
 				},
 			},
-		] as string | number | boolean | object | undefined | null;
+		]);
 
-		const modelName = resourceDiscovery.getModelName("inline", fakeOps);
+		const modelName = resourceDiscovery.getModelName(
+			"inline",
+			testCast(fakeOps),
+		);
 		expect(modelName).toBe("Inline");
 	});
 
@@ -187,7 +178,7 @@ describe("Admin: discoverAdminResources", () => {
 				},
 			},
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		const resources = discoverAdminResources(parser);
 		const resource = resources.find((r) => r.name === "search");
 
@@ -218,7 +209,7 @@ describe("Admin: discoverAdminResources", () => {
 				},
 			},
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		const resources = discoverAdminResources(parser);
 		const resource = resources.find((r) => r.name === "items");
 
@@ -261,7 +252,7 @@ describe("Admin: discoverAdminResources", () => {
 				},
 			},
 		};
-		const parser = createParser(spec);
+		const parser = createParser(testCast(spec));
 		const resources = discoverAdminResources(parser);
 		const resource = resources.find((r) => r.name === "pureQuery");
 

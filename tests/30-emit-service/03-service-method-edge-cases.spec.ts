@@ -1,10 +1,9 @@
-// @ts-nocheck
-
 import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it, vi } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 const specEdgeTests = {
 	openapi: "3.0.0",
@@ -78,10 +77,7 @@ describe("Emitter: ServiceMethodGenerator (Edge Cases)", () => {
 			output: "/out",
 			options: { dateType: "Date", enumStyle: "enum", ...configOverrides },
 		};
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(spec), config);
 		const methodGen = new ServiceMethodGenerator(config, parser);
 		const sourceFile = project.createSourceFile("/out/tmp.service.ts");
 		const serviceClass = sourceFile.addClass({ name: "TmpService" });
@@ -133,10 +129,7 @@ describe("Emitter: ServiceMethodGenerator (Edge Cases)", () => {
 		const { methodGen, serviceClass, parser } =
 			createTestEnvironment(specEdgeTests);
 
-		const op = parser.operations.find(
-			(o: string | number | boolean | object | undefined | null) =>
-				o.operationId === "getPublic",
-		)!;
+		const op = parser.operations.find((o) => o.operationId === "getPublic")!;
 		op.methodName = "getPublic";
 		methodGen.addServiceMethod(serviceClass, op);
 
@@ -150,8 +143,7 @@ describe("Emitter: ServiceMethodGenerator (Edge Cases)", () => {
 			createTestEnvironment(specEdgeTests);
 
 		const op = parser.operations.find(
-			(o: string | number | boolean | object | undefined | null) =>
-				o.operationId === "getOauthProtected",
+			(o) => o.operationId === "getOauthProtected",
 		)!;
 		op.methodName = "getOauthProtected";
 		methodGen.addServiceMethod(serviceClass, op);

@@ -1,19 +1,35 @@
+/**
+ * Generates `info.ts` exporting API metadata (`API_INFO`, `API_TAGS`, `API_EXTERNAL_DOCS`).
+ *
+ * @module openapi/emit_info
+ */
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerParser } from "./parse.js";
 
 /**
  * Generates the `info.ts` file.
  * Exports API metadata (info, tags, externalDocs).
  */
 export class InfoGenerator {
+	/**
+	 * Creates a new `InfoGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The `ts-morph` project to create `info.ts` in.
+	 */
 	constructor(
 		private parser: SwaggerParser,
 
 		private project: Project,
 	) {}
 
+	/**
+	 * Generates `info.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "info.ts");
 

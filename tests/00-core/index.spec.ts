@@ -1,3 +1,4 @@
+import { parseFrameworkOption, parseServerFrameworkOption } from "@src/cli.js";
 import { getGeneratorFactory } from "@src/index.js";
 import { AngularClientGenerator } from "@src/vendors/angular/angular-client.generator.js";
 import { AxiosClientGenerator } from "@src/vendors/axios/axios-client.generator.js";
@@ -13,7 +14,13 @@ describe("Index", () => {
 			AngularClientGenerator,
 		);
 		expect(getGeneratorFactory("react")).toBeInstanceOf(ReactClientGenerator);
+		expect(getGeneratorFactory("react", "axios")).toBeInstanceOf(
+			ReactClientGenerator,
+		);
 		expect(getGeneratorFactory("vue")).toBeInstanceOf(VueClientGenerator);
+		expect(getGeneratorFactory("vue", "node")).toBeInstanceOf(
+			VueClientGenerator,
+		);
 		expect(getGeneratorFactory("vanilla")).toBeInstanceOf(FetchClientGenerator);
 		expect(getGeneratorFactory("vanilla js")).toBeInstanceOf(
 			FetchClientGenerator,
@@ -34,5 +41,17 @@ describe("Index", () => {
 		expect(getGeneratorFactory("angular", "node")).toBeInstanceOf(
 			NodeClientGenerator,
 		);
+	});
+
+	it("should validate framework and serverFramework options", () => {
+		expect(parseFrameworkOption("angular")).toBe("angular");
+		expect(parseFrameworkOption("react")).toBe("react");
+		expect(parseFrameworkOption("vue")).toBe("vue");
+		expect(parseFrameworkOption("vanilla")).toBe("vanilla");
+		expect(parseFrameworkOption("Vanilla JS")).toBe("Vanilla JS");
+		expect(parseFrameworkOption("other")).toBe("vanilla");
+
+		expect(parseServerFrameworkOption("express")).toBe("express");
+		expect(parseServerFrameworkOption("other")).toBe("express");
 	});
 });

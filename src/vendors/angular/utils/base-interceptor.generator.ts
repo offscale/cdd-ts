@@ -1,17 +1,28 @@
+/**
+ * Module for base interceptor generator in vendors/angular/utils/base-interceptor.generator.
+ *
+ * @module vendors/angular/utils/base-interceptor.generator
+ */
 import * as path from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
+import type { Project } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 import {
 	camelCase,
 	getClientContextTokenName,
 	getInterceptorsTokenName,
 	pascalCase,
-} from "@src/functions/utils.js";
-import type { Project } from "ts-morph";
+} from "../../../functions/utils.js";
 
+/** Generator/utility class `BaseInterceptorGenerator`. */
 export class BaseInterceptorGenerator {
 	private readonly clientName: string;
 	private readonly capitalizedClientName: string;
 
+	/**
+	 * Creates a new `BaseInterceptorGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 * @param clientName - Parameter `clientName` (string).
+	 */
 	constructor(
 		private project: Project,
 		clientName?: string,
@@ -21,6 +32,10 @@ export class BaseInterceptorGenerator {
 		this.capitalizedClientName = pascalCase(this.clientName);
 	}
 
+	/**
+	 * Executes `generate` on `BaseInterceptorGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(outputDir: string): void {
 		const utilsDir = path.join(outputDir, "utils");
 

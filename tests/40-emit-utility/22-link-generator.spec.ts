@@ -1,12 +1,10 @@
-// @ts-nocheck
-
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { LinkGenerator } from "@src/openapi/emit_link.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
 import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 
 const linksSpec: SwaggerSpec = {
 	openapi: "3.0.0",
@@ -267,10 +265,10 @@ const sparseSpec: SwaggerSpec = {
 		},
 		// Missing responses (technically invalid OAS but parser handles it)
 		"/no-responses": {
-			get: {
+			get: testCast({
 				operationId: "actionNoResp",
 				responses: { "200": { description: "ok" } },
-			} as string | number | boolean | object | undefined | null,
+			}),
 		},
 	},
 };
@@ -278,13 +276,7 @@ const sparseSpec: SwaggerSpec = {
 describe("Emitter: LinkGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = { output: "/out", options: {} } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
+		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
 		const parser = new SwaggerParser(spec, config);
 		new LinkGenerator(parser, project).generate("/out");
 		return project;
@@ -299,10 +291,10 @@ describe("Emitter: LinkGenerator", () => {
 		});
 
 		const moduleHelper = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		new Function("exports", jsCode)(moduleHelper.exports);
+		testCast(new Function("exports", jsCode)(moduleHelper.exports));
 
 		return moduleHelper.exports;
 	};
@@ -466,13 +458,7 @@ describe("Emitter: LinkGenerator", () => {
 		};
 
 		const project = createTestProject();
-		const config: GeneratorConfig = { output: "/out", options: {} } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
+		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
 		const entryUri = "http://api.com/spec.json";
 		const externalUri = "http://api.com/other.json";
 		const specCache = new Map<string, SwaggerSpec>([
@@ -561,12 +547,12 @@ describe("Emitter: LinkGenerator", () => {
 			},
 		};
 		const project = runGenerator(spec);
-		const { API_LINKS } = compileGeneratedFile(project) as {
+		const { API_LINKS } = testCast<{
 			API_LINKS: Record<
 				string,
 				Record<string, Record<string, { operationId?: string }>>
 			>;
-		};
+		}>(compileGeneratedFile(project));
 		const linkBlock = API_LINKS.getTest["200"];
 		expect(linkBlock.MalformedLink.operationId).toBeUndefined();
 		expect(linkBlock.NoFragment.operationId).toBeUndefined();
@@ -598,10 +584,13 @@ describe("Emitter: LinkGenerator", () => {
 			},
 			components: { links: {} },
 		};
-		const parser = new SwaggerParser(spec, {
-			output: "/out",
-			options: {},
-		} as any);
+		const parser = new SwaggerParser(
+			spec,
+			testCast({
+				output: "/out",
+				options: {},
+			}),
+		);
 		parser.operations.push({
 			path: "/foo",
 			method: "report",
@@ -611,12 +600,12 @@ describe("Emitter: LinkGenerator", () => {
 		});
 		const project = createTestProject();
 		new LinkGenerator(parser, project).generate("/out");
-		const { API_LINKS } = compileGeneratedFile(project) as {
+		const { API_LINKS } = testCast<{
 			API_LINKS: Record<
 				string,
 				Record<string, Record<string, { operationId?: string }>>
 			>;
-		};
+		}>(compileGeneratedFile(project));
 		expect(API_LINKS.createFoo["200"].myLink.operationId).toBe("customReport");
 	});
 
@@ -644,12 +633,12 @@ describe("Emitter: LinkGenerator", () => {
 			components: { links: {} },
 		};
 		const project = runGenerator(spec);
-		const { API_LINKS } = compileGeneratedFile(project) as {
+		const { API_LINKS } = testCast<{
 			API_LINKS: Record<
 				string,
 				Record<string, Record<string, { operationId?: string }>>
 			>;
-		};
+		}>(compileGeneratedFile(project));
 		expect(API_LINKS.createFoo["200"].myLink.operationId).toBeUndefined();
 	});
 
@@ -677,12 +666,12 @@ describe("Emitter: LinkGenerator", () => {
 			components: { links: {} },
 		};
 		const project = runGenerator(spec);
-		const { API_LINKS } = compileGeneratedFile(project) as {
+		const { API_LINKS } = testCast<{
 			API_LINKS: Record<
 				string,
 				Record<string, Record<string, { operationId?: string }>>
 			>;
-		};
+		}>(compileGeneratedFile(project));
 		expect(API_LINKS.createFoo["200"].myLink.operationId).toBeUndefined();
 	});
 
@@ -722,7 +711,7 @@ describe("Emitter: LinkGenerator", () => {
 			components: { links: {} },
 		};
 		const project = runGenerator(spec);
-		const { API_LINKS } = compileGeneratedFile(project) as any;
+		const { API_LINKS } = testCast(compileGeneratedFile(project));
 		expect(API_LINKS.myOp["200"].myLink.operationId).toBe("myOp");
 		expect(API_LINKS.myOp["200"].shortLink.operationId).toBeUndefined();
 		expect(API_LINKS.myOp["200"].missingLink.operationId).toBeUndefined();

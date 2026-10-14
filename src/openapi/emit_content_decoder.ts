@@ -1,10 +1,28 @@
+/**
+ * Generates `utils/content-decoder.ts` for decoding OAS 3.1 `contentSchema` and `contentEncoding` strings.
+ *
+ * @module openapi/emit_content_decoder
+ */
 import * as path from "node:path";
 import { type Project, Scope } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 
+/**
+ * Generates the `utils/content-decoder.ts` utility file.
+ */
 export class ContentDecoderGenerator {
+	/**
+	 * Creates a new `ContentDecoderGenerator`.
+	 *
+	 * @param project - The `ts-morph` project to create `utils/content-decoder.ts` in.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Generates `utils/content-decoder.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const utilsDir = path.join(outputDir, "utils");
 
@@ -21,6 +39,12 @@ export class ContentDecoderGenerator {
 		sourceFile.addImportDeclaration({
 			moduleSpecifier: "./xml-parser",
 			namedImports: ["XmlParser"],
+		});
+
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "./xml-builder",
+			namedImports: ["XmlPropertyConfig"],
+			isTypeOnly: true,
 		});
 
 		sourceFile.addInterface({
@@ -45,7 +69,7 @@ export class ContentDecoderGenerator {
 				},
 				{
 					name: "xmlConfig",
-					type: "string | number | boolean | object | undefined | null",
+					type: "XmlPropertyConfig",
 					hasQuestionToken: true,
 					docs: ["Configuration for XmlParser when decode is 'xml'."],
 				},
@@ -122,7 +146,7 @@ export class ContentDecoderGenerator {
 			parameters: [
 				{
 					name: "data",
-					type: "string | number | boolean | object | undefined | null",
+					type: "unknown",
 				},
 				{
 					name: "config",
@@ -130,13 +154,13 @@ export class ContentDecoderGenerator {
 					hasQuestionToken: true,
 				},
 			],
-			returnType: "string | number | boolean | object | undefined | null",
+			returnType: "unknown",
 			statements: `
         if (data === null || data === undefined || !config) {
             return data;
         }
 
-        let current = data;
+        let current: unknown = data;
         if (config.contentEncoding && typeof current === 'string') {
             const urlSafe = String(config.contentEncoding).toLowerCase() === 'base64url';
             const bytes = this.base64ToBytes(current, urlSafe);
@@ -152,14 +176,11 @@ export class ContentDecoderGenerator {
             try {
                 if (config.decode === 'xml') {
                     // Use XmlParser for XML content
-                    return XmlParser.parse(current, (config.xmlConfig as Record<string, string | number | boolean | object | undefined | null>) || {});
+                    return XmlParser.parse(current, config.xmlConfig || {});
                 }
 
                 // Default to JSON parsing
-                const parsed = JSON.parse(current);
-                // If parsed, we might need to recurse into the parsed structure if deeper config exists
-                // (though typically contentSchema is a boundary condition).
-                // If properties/items exist in config, apply them to the parsed result.
+                const parsed: unknown = JSON.parse(current);
                 if (config.properties || config.items) {
                     return this.decode(parsed, { ...config, decode: false });
                 }
@@ -176,12 +197,13 @@ export class ContentDecoderGenerator {
         }
 
         // 3. Objects
-        if (typeof current === 'object') {
+        if (typeof current === 'object' && current !== null) {
             if (config.properties) {
-                const result: Record<string, string | number | boolean | object | undefined | null> = { ...current };
+                const record = current as Record<string, unknown>;
+                const result: Record<string, unknown> = { ...record };
                 Object.keys(config.properties).forEach(key => {
-                    if (Object.prototype.hasOwnProperty.call(current, key)) {
-                        result[key] = this.decode((current as string | number | boolean | object | undefined | null)[key], config.properties![key]);
+                    if (Object.prototype.hasOwnProperty.call(record, key)) {
+                        result[key] = this.decode(record[key], config.properties![key]);
                     }
                 });
                 return result;

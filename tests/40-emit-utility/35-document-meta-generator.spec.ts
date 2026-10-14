@@ -1,19 +1,14 @@
-// @ts-nocheck
-
 import { DocumentMetaGenerator } from "@src/openapi/emit_document_meta.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 
 describe("Emitter: DocumentMetaGenerator", () => {
 	const runGenerator = (spec: object) => {
 		const project = createTestProject();
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
-		);
+		const parser = new SwaggerParser(testCast(spec), testCast({ options: {} }));
 		new DocumentMetaGenerator(parser, project).generate("/out");
 		return project;
 	};
@@ -27,10 +22,10 @@ describe("Emitter: DocumentMetaGenerator", () => {
 		});
 
 		const moduleHelper = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		new Function("exports", jsCode)(moduleHelper.exports);
+		testCast(new Function("exports", jsCode)(moduleHelper.exports));
 
 		return moduleHelper.exports;
 	};

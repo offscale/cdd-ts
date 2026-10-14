@@ -1,10 +1,12 @@
-// @ts-nocheck
-
 import { ContentEncoderGenerator } from "@src/openapi/emit_content_encoder.js";
 import { HttpParamsBuilderGenerator } from "@src/vendors/angular/utils/http-params-builder.generator.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import {
+	createTestProject,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 
 /**
  * Mock implementation of Angular's HttpParams for the test context.
@@ -13,22 +15,26 @@ import { createTestProject } from "../shared/helpers.js";
 class MockHttpParams {
 	map = new Map<string, string[]>();
 
-	encoder: string | number | boolean | object | undefined | null;
+	encoder: TestValue;
 
 	constructor(options?: {
-		fromObject?: string | number | boolean | object | undefined | null;
-		encoder?: string | number | boolean | object | undefined | null;
+		fromObject?: TestValue;
+		encoder?: TestValue;
 	}) {
 		// Mock default encoder behavior: encodeURIComponent
 
-		this.encoder = options?.encoder || {
-			encodeKey: (k: string) => encodeURIComponent(k),
-			encodeValue: (v: string) => encodeURIComponent(v),
-		};
+		this.encoder = testCast(
+			options?.encoder || {
+				encodeKey: (k: string) => encodeURIComponent(k),
+				encodeValue: (v: string) => encodeURIComponent(v),
+			},
+		);
 
 		if (options?.fromObject) {
 			Object.entries(
-				options.fromObject as Record<string, string | number | boolean | null>,
+				testCast<Record<string, string | number | boolean | null>>(
+					options.fromObject,
+				),
 			).forEach(([k, v]) => {
 				this.map.set(k, [String(v)]);
 			});
@@ -45,8 +51,11 @@ class MockHttpParams {
 
 		const encodedValue = this.encoder.encodeValue(value);
 
-		const current = clone.map.get(encodedKey) || [];
-		clone.map.set(encodedKey, [...current, encodedValue]);
+		const current = clone.map.get(testCast(encodedKey)) || [];
+		clone.map.set(testCast(encodedKey), [
+			...current,
+			testCast<string>(encodedValue),
+		]);
 		return clone;
 	}
 
@@ -94,29 +103,24 @@ function getBuilderContext() {
 	});
 
 	const exportsMock = {};
-	const encoderExports: Record<
-		string,
-		string | number | boolean | object | undefined | null
-	> = {};
+	const encoderExports: Record<string, TestValue> = {};
 
-	new Function("exports", encoderJsCode)(encoderExports);
+	testCast(new Function("exports", encoderJsCode)(encoderExports));
 
 	const ContentEncoder = encoderExports.ContentEncoder;
 
-	new Function("exports", "HttpParams", "ContentEncoder", jsCode)(
-		exportsMock,
-		MockHttpParams,
-		ContentEncoder,
+	testCast(
+		new Function("exports", "HttpParams", "ContentEncoder", jsCode)(
+			exportsMock,
+			MockHttpParams,
+			ContentEncoder,
+		),
 	);
 
 	return {
-		Builder: (
-			exportsMock as string | number | boolean | object | undefined | null
-		).HttpParamsBuilder,
+		Builder: testCast(exportsMock).HttpParamsBuilder,
 
-		ApiParameterCodec: (
-			exportsMock as string | number | boolean | object | undefined | null
-		).ApiParameterCodec,
+		ApiParameterCodec: testCast(exportsMock).ApiParameterCodec,
 	};
 }
 

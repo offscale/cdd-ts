@@ -1,10 +1,28 @@
+/**
+ * Generates `utils/xml-builder.ts` for serializing objects into XML payloads according to OpenAPI XML metadata.
+ *
+ * @module openapi/emit_xml_builder
+ */
 import * as path from "node:path";
 import { type Project, Scope } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 
+/**
+ * Generates the `utils/xml-builder.ts` utility file.
+ */
 export class XmlBuilderGenerator {
+	/**
+	 * Creates a new `XmlBuilderGenerator`.
+	 *
+	 * @param project - The `ts-morph` project to create `utils/xml-builder.ts` in.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Generates `utils/xml-builder.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const utilsDir = path.join(outputDir, "utils");
 
@@ -59,7 +77,7 @@ export class XmlBuilderGenerator {
 			parameters: [
 				{
 					name: "data",
-					type: "string | number | boolean | object | undefined | null",
+					type: "unknown",
 				},
 				{ name: "rootTag", type: "string" },
 				{ name: "config", type: "XmlPropertyConfig", hasQuestionToken: true },
@@ -81,7 +99,7 @@ export class XmlBuilderGenerator {
 				{ name: "tagName", type: "string" },
 				{
 					name: "data",
-					type: "string | number | boolean | object | undefined | null",
+					type: "unknown",
 				},
 				{ name: "config", type: "XmlPropertyConfig" },
 			],
@@ -123,7 +141,7 @@ export class XmlBuilderGenerator {
         const isWrapped = config.wrapped || nodeType === 'element'; 
 
         const resolveItemConfig = (index: number) => (index < prefixItems.length ? prefixItems[index] : itemConfig); 
-        const resolveItemName = (cfg: string | number | boolean | object | undefined | null, fallback: string) => (cfg && cfg.name ? cfg.name : fallback); 
+        const resolveItemName = (cfg: XmlPropertyConfig | undefined, fallback: string) => (cfg && cfg.name ? cfg.name : fallback); 
 
         if (isWrapped && !isNone) { 
              const defaultItemName = resolveItemName(itemConfig, name); 
@@ -165,9 +183,10 @@ export class XmlBuilderGenerator {
 
         let children = ''; 
         let textContent = ''; 
+        const record = data as Record<string, unknown>;
         
-        Object.keys(data).forEach(key => { 
-            const val = data[key]; 
+        Object.keys(record).forEach(key => { 
+            const val = record[key]; 
             if (val === undefined) return; 
             
             const propConfig = config.properties?.[key] || {}; 

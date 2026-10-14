@@ -3,7 +3,6 @@ import * as path from "node:path";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { generateFromConfigSync } from "@src/index.js";
 import { Project } from "ts-morph";
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 
 describe("Node Implementation", () => {
@@ -91,9 +90,10 @@ describe("Node Implementation", () => {
 			};
 
 			const project = new Project();
-			expect(() => {
-				generateFromConfigSync(config, project, { spec });
-			}).not.toThrow();
+			generateFromConfigSync(config, project, { spec });
+			expect(
+				project.getSourceFile(path.join(os.tmpdir(), "test-output/index.ts")),
+			).toBeDefined();
 		});
 	});
 
@@ -345,28 +345,22 @@ describe("Node Implementation", () => {
 					?.getMethod("getBlob")
 					?.getStatements()
 					.map((s) => s.getText())
-					.join("\\n"),
-			).toContain(
-				"resolve(buffer as string | number | boolean | object | undefined | null as Blob)",
-			);
+					.join("\n"),
+			).toContain("resolve(new Blob([buffer]) as Blob)");
 			expect(
 				serviceClass
 					?.getMethod("getBuffer")
 					?.getStatements()
 					.map((s) => s.getText())
-					.join("\\n"),
-			).toContain(
-				"resolve(buffer as string | number | boolean | object | undefined | null as Blob)",
-			);
+					.join("\n"),
+			).toContain("resolve(new Blob([buffer]) as Blob)");
 			expect(
 				serviceClass
 					?.getMethod("getText")
 					?.getStatements()
 					.map((s) => s.getText())
-					.join("\\n"),
-			).toContain(
-				"resolve(buffer.toString('utf-8') as string | number | boolean | object | undefined | null as string)",
-			);
+					.join("\n"),
+			).toContain("resolve(buffer.toString('utf-8') as string)");
 		});
 
 		it("should generate properly without services when generateServices is false", async () => {

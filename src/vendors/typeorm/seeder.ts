@@ -1,7 +1,18 @@
+/**
+ * Module for seeder in vendors/typeorm/seeder.
+ *
+ * @module vendors/typeorm/seeder
+ */
 import path from "node:path";
 import type { Project } from "ts-morph";
 import type { SwaggerDefinition } from "../../core/types/openapi.js";
 
+/**
+ * Executes `generateSeeder`.
+ * @param project - Target `ts-morph` project instance.
+ * @param schemas - Parameter `schemas` ({ name: string; definition: SwaggerDefinition }[]).
+ * @param outputDir - Target output directory path.
+ */
 export function generateSeeder(
 	project: Project,
 	schemas: { name: string; definition: SwaggerDefinition }[],

@@ -1,8 +1,7 @@
-// @ts-nocheck
 // tests/fixtures/ast/querystring.examples.ts
 
 const app = {
-	get: (..._args: string | number | boolean | object | undefined | null[]) => {
+	get: (..._args: unknown[]) => {
 		void _args;
 	},
 };

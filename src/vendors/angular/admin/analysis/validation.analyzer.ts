@@ -1,8 +1,18 @@
+/**
+ * Module for validation analyzer in vendors/angular/admin/analysis/validation.analyzer.
+ *
+ * @module vendors/angular/admin/analysis/validation.analyzer
+ */
 // src/analysis/validation.analyzer.ts
-import type { SwaggerDefinition } from "@src/core/types/index.js";
+import type { SwaggerDefinition } from "../../../../core/types/index.js";
 import type { JsonValue } from "./form-types.js";
 import type { ValidationRule } from "./validation-types.js";
 
+/**
+ * Executes `analyzeValidationRules`.
+ * @param schema - OpenAPI schema definition.
+ * @returns Generated result (ValidationRule[]).
+ */
 export function analyzeValidationRules(
 	schema: SwaggerDefinition | boolean,
 ): ValidationRule[] {

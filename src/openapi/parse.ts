@@ -1,8 +1,8 @@
-// src/core/parser.ts
 /**
- * @fileoverview
- * This file contains the SwaggerParser class, the central component responsible for loading,
- * parsing, and providing a unified interface to OpenAPI (3.x) and Swagger (2.x) specifications.
+ * Contains `SwaggerParser`, the central component responsible for loading, parsing,
+ * and providing a unified interface to OpenAPI (3.x) and Swagger (2.x) specifications.
+ *
+ * @module openapi/parse
  */
 
 import { OAS_3_1_DIALECT } from "../core/constants.js";
@@ -28,32 +28,73 @@ import { ReferenceResolver } from "./parse_reference_resolver.js";
 import { SpecLoader } from "./parse_spec_loader.js";
 import { SpecValidationError, validateSpec } from "./parse_validator.js";
 
+/**
+ * Represents a resolved polymorphic discriminator variant (`oneOf` / `anyOf` mapping entry).
+ */
 export interface PolymorphicOption {
+	/** Discriminator value or schema name. */
 	name: string;
+	/** Resolved schema definition for this variant. */
 	schema: SwaggerDefinition;
+}
+
+/**
+ * Named schema entry collected from an OpenAPI or Swagger specification.
+ */
+export interface NamedSchemaEntry {
+	/** Schema identifier name. */
+	name: string;
+	/** Schema definition or boolean schema. */
+	definition: SwaggerDefinition | boolean;
+}
+
+/**
+ * Specification family and version descriptor returned by `SwaggerParser.getSpecVersion()`.
+ */
+export interface SpecVersionInfo {
+	/** Specification family (`"swagger"` or `"openapi"`). */
+	type: "swagger" | "openapi";
+	/** Specification version string (e.g. `"2.0"`, `"3.1.0"`). */
+	version: string;
 }
 
 /**
  * A wrapper class for a raw OpenAPI/Swagger specification object.
  */
 export class SwaggerParser {
+	/** Raw validated OpenAPI/Swagger specification object. */
 	public readonly spec: SwaggerSpec;
+	/** Generator configuration options. */
 	public readonly config: GeneratorConfig;
+	/** Canonical document URI of the root specification. */
 	public readonly documentUri: string;
 
-	public readonly schemas: {
-		name: string;
-		definition: SwaggerDefinition | boolean;
-	}[];
+	/** Collected and deduplicated schema definitions across the specification and referenced documents. */
+	public readonly schemas: NamedSchemaEntry[];
+	/** Resolved server objects for the specification. */
 	public readonly servers: ServerObject[];
+	/** Extracted and normalized HTTP path operations. */
 	public readonly operations: PathInfo[];
+	/** Extracted and normalized webhook operations. */
 	public readonly webhooks: PathInfo[];
+	/** Resolved security scheme definitions. */
 	public readonly security: Record<string, SecurityScheme>;
+	/** Resolved reusable link definitions from `components.links`. */
 	public readonly links: Record<string, LinkObject>;
 
 	private readonly specCache: Map<string, SwaggerSpec>;
 	private readonly resolver: ReferenceResolver;
 
+	/**
+	 * Creates a new `SwaggerParser` instance from an in-memory `SwaggerSpec`.
+	 *
+	 * @param spec - Raw OpenAPI or Swagger specification object.
+	 * @param config - Generator configuration options.
+	 * @param specCache - Optional pre-populated cache of referenced specification documents.
+	 * @param documentUri - Base document URI for resolving relative references.
+	 * @throws {SpecValidationError} When `spec` fails OpenAPI/Swagger validation.
+	 * @throws {Error} When `config.validateInput` returns `false`.
+	 */
 	public constructor(
 		spec: SwaggerSpec,
 		config: GeneratorConfig,
@@ -167,6 +208,13 @@ export class SwaggerParser {
 		this.links = this.getLinks();
 	}
 
+	/**
+	 * Asynchronously loads an OpenAPI/Swagger specification from a file path or URL and constructs a `SwaggerParser`.
+	 *
+	 * @param inputPath - File path or URL to the specification.
+	 * @param config - Generator configuration options.
+	 * @returns Promise resolving to the initialized `SwaggerParser`.
+	 */
 	static async create(
 		inputPath: string,
 		config: GeneratorConfig,
@@ -176,6 +224,13 @@ export class SwaggerParser {
 		return new SwaggerParser(entrySpec, config, cache, documentUri);
 	}
 
+	/**
+	 * Synchronously loads an OpenAPI/Swagger specification from a local file path and constructs a `SwaggerParser`.
+	 *
+	 * @param inputPath - Local file path to the specification.
+	 * @param config - Generator configuration options.
+	 * @returns The initialized `SwaggerParser`.
+	 */
 	static createSync(inputPath: string, config: GeneratorConfig): SwaggerParser {
 		const { entrySpec, cache, documentUri } = SpecLoader.loadSync(inputPath);
 
@@ -286,10 +341,20 @@ export class SwaggerParser {
 		return undefined;
 	}
 
+	/**
+	 * Returns the underlying raw `SwaggerSpec` object.
+	 *
+	 * @returns The raw `SwaggerSpec`.
+	 */
 	public getSpec(): SwaggerSpec {
 		return this.spec;
 	}
 
+	/**
+	 * Returns the effective JSON Schema dialect URI for the specification (OAS 3.1+).
+	 *
+	 * @returns The `jsonSchemaDialect` URI, or `undefined` for Swagger 2.0 / OAS 3.0.
+	 */
 	public getJsonSchemaDialect(): string | undefined {
 		if (this.spec.jsonSchemaDialect) {
 			return this.spec.jsonSchemaDialect;
@@ -312,10 +377,21 @@ export class SwaggerParser {
 		return undefined;
 	}
 
+	/**
+	 * Returns the map of schema definitions from `definitions` (Swagger 2.0) or `components.schemas` (OAS 3.x).
+	 *
+	 * @returns Record mapping schema names to `SwaggerDefinition` or boolean schemas.
+	 */
 	public getDefinitions(): Record<string, SwaggerDefinition | boolean> {
 		return this.spec.definitions || this.spec.components?.schemas || {};
 	}
 
+	/**
+	 * Looks up a single schema definition by name.
+	 *
+	 * @param name - Schema name to look up.
+	 * @returns The `SwaggerDefinition`, boolean schema, or `undefined`.
+	 */
 	public getDefinition(name: string): SwaggerDefinition | boolean | undefined {
 		return this.getDefinitions()[name];
 	}
@@ -468,6 +544,11 @@ export class SwaggerParser {
 		return name || `Schema${fallbackIndex}`;
 	}
 
+	/**
+	 * Collects all security scheme definitions from `components.securitySchemes`, `securityDefinitions`, and URI security references.
+	 *
+	 * @returns Record mapping security scheme names to `SecurityScheme` objects.
+	 */
 	public getSecuritySchemes(): Record<string, SecurityScheme> {
 		const schemes = {
 			...(this.spec.components?.securitySchemes || {}),
@@ -568,6 +649,11 @@ export class SwaggerParser {
 		return schemes;
 	}
 
+	/**
+	 * Resolves and returns all reusable `LinkObject` definitions from `components.links`.
+	 *
+	 * @returns Record mapping link names to resolved `LinkObject` definitions.
+	 */
 	public getLinks(): Record<string, LinkObject> {
 		if (!this.spec.components?.links) return {};
 
@@ -588,12 +674,27 @@ export class SwaggerParser {
 		return links;
 	}
 
+	/**
+	 * Resolves an object that may be a direct definition, a `$ref`, or a `$dynamicRef`.
+	 *
+	 * @template T - Expected resolved object type.
+	 * @param obj - Value or reference object to resolve.
+	 * @returns The resolved target of type `T`, or `undefined`.
+	 */
 	public resolve<T>(
 		obj: T | { $ref: string } | { $dynamicRef: string } | null | undefined,
 	): T | undefined {
 		return this.resolver.resolve(obj);
 	}
 
+	/**
+	 * Resolves a reference URI or JSON Pointer string against the specification cache.
+	 *
+	 * @template T - Expected resolved target type.
+	 * @param ref - Reference string (e.g., `"#/components/schemas/User"`).
+	 * @param currentDocUri - Optional base document URI override.
+	 * @returns The resolved target of type `T`, or `undefined`.
+	 */
 	public resolveReference<T = SwaggerDefinition>(
 		ref: string,
 		currentDocUri?: string,
@@ -601,6 +702,12 @@ export class SwaggerParser {
 		return this.resolver.resolveReference(ref, currentDocUri);
 	}
 
+	/**
+	 * Extracts polymorphic discriminator options (`oneOf` / `anyOf` variants) for a schema with a `discriminator`.
+	 *
+	 * @param schema - Schema definition containing a `discriminator`.
+	 * @returns Array of resolved `PolymorphicOption` entries.
+	 */
 	public getPolymorphicSchemaOptions(
 		schema: SwaggerDefinition,
 	): PolymorphicOption[] {
@@ -681,16 +788,23 @@ export class SwaggerParser {
 			.filter((opt): opt is PolymorphicOption => !!opt);
 	}
 
+	/**
+	 * Checks whether the specification has a valid Swagger `2.x` or OpenAPI `3.x` version string.
+	 *
+	 * @returns `true` if `swagger` starts with `"2."` or `openapi` starts with `"3."`.
+	 */
 	public isValidSpec(): boolean {
 		return !!(
 			this.spec.swagger?.startsWith("2.") || this.spec.openapi?.startsWith("3.")
 		);
 	}
 
-	public getSpecVersion(): {
-		type: "swagger" | "openapi";
-		version: string;
-	} | null {
+	/**
+	 * Returns the specification family (`"swagger"` or `"openapi"`) and version string.
+	 *
+	 * @returns Object `{ type, version }` or `null` if neither header is present.
+	 */
+	public getSpecVersion(): SpecVersionInfo | null {
 		if (this.spec.swagger)
 			return { type: "swagger", version: this.spec.swagger };
 

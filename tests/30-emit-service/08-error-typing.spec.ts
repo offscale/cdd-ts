@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
@@ -7,6 +5,7 @@ import { ServiceGenerator } from "@src/vendors/angular/service/service.generator
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 const errorTypingSpec = {
 	openapi: "3.0.0",
@@ -105,10 +104,7 @@ describe("Emitter: Error Typing Support", () => {
 			options: { dateType: "string", enumStyle: "enum" },
 		};
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(
-			errorTypingSpec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(errorTypingSpec), config);
 
 		// Generate models first so TypeGenerator behavior is present (names are known)
 		new TypeGenerator(parser, project, config).generate("/out");
@@ -204,7 +200,7 @@ describe("Emitter: Error Typing Support", () => {
 				d.getModuleSpecifierValue().includes("models"),
 			)
 			?.getNamedImports();
-		const names = namedImports.map((n) => n.getName());
+		const names = (namedImports ?? []).map((n) => n.getName());
 
 		// Should include NotFoundError and ServerError because they are used in error response types
 		expect(names).toContain("NotFoundError");

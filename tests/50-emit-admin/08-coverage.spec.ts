@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type { Resource, SwaggerDefinition } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { FormComponentGenerator } from "@src/vendors/angular/admin/form-component.generator.js";
@@ -10,7 +8,7 @@ import {
 } from "@src/vendors/angular/admin/resource-discovery.js";
 import type { Project } from "ts-morph";
 import { beforeAll, describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 import { coverageSpecPart2 } from "../shared/specs.js";
 
 /**
@@ -229,14 +227,8 @@ const formGenCoverageSpec = {
 describe("Admin Generators (Coverage)", () => {
 	it("resource-discovery should use fallback action name when no operationId is present", () => {
 		const parser = new SwaggerParser(
-			coverageSpecPart2 as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
+			testCast(coverageSpecPart2),
+			testCast({ options: {} }),
 		);
 		const resources = discoverAdminResources(parser);
 		const resource = resources.find((r: Resource) => r.name === "noIdOpId");
@@ -247,14 +239,8 @@ describe("Admin Generators (Coverage)", () => {
 
 	it("resource-discovery should handle resources with no defined schemas", () => {
 		const parser = new SwaggerParser(
-			coverageSpecPart2 as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
+			testCast(coverageSpecPart2),
+			testCast({ options: {} }),
 		);
 		const resources = discoverAdminResources(parser);
 		const resource = resources.find(
@@ -277,10 +263,7 @@ describe("Admin Generators (Coverage)", () => {
 				},
 			},
 		};
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
-		);
+		const parser = new SwaggerParser(testCast(spec), testCast({ options: {} }));
 		const resources = discoverAdminResources(parser);
 		expect(resources[0].name).toBe("default");
 	});
@@ -342,10 +325,7 @@ describe("Admin Generators (Coverage)", () => {
 				},
 			},
 		};
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
-		);
+		const parser = new SwaggerParser(testCast(spec), testCast({ options: {} }));
 		const ops = parser.operations.filter((op) => op.path === "/upload");
 		const props = getFormProperties(ops, parser);
 		const fileProp = props.find((p) => p.name === "file");
@@ -397,10 +377,7 @@ describe("Admin Generators (Coverage)", () => {
 			},
 			components: { schemas: {} },
 		};
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
-		);
+		const parser = new SwaggerParser(testCast(spec), testCast({ options: {} }));
 		const ops = parser.operations.filter((op) => op.path === "/upload");
 		const props = getFormProperties(ops, parser);
 		const metaProp = props.find((p) => p.name === "meta");
@@ -409,19 +386,11 @@ describe("Admin Generators (Coverage)", () => {
 
 	it("resource-discovery should handle operations without parameters or method names", () => {
 		const parser = new SwaggerParser(
-			coverageSpecPart2 as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
+			testCast(coverageSpecPart2),
+			testCast({ options: {} }),
 		);
 
-		(
-			parser.operations as string | number | boolean | object | undefined | null
-		).push({
+		parser.operations.push({
 			path: "",
 			method: "",
 			tags: [],
@@ -487,14 +456,8 @@ describe("Admin Generators (Coverage)", () => {
 		};
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			{ options: { admin: true } } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast(spec),
+			testCast({ options: { admin: true } }),
 		);
 		const resource = discoverAdminResources(parser).find(
 			(r: Resource) => r.name === "reports",
@@ -551,14 +514,8 @@ describe("Admin Generators (Coverage)", () => {
 		};
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			{ options: { admin: true } } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast(spec),
+			testCast({ options: { admin: true } }),
 		);
 		const resource = discoverAdminResources(parser).find(
 			(r: Resource) => r.name === "diagnostics",
@@ -590,20 +547,8 @@ describe("Admin: FormComponentGenerator (Coverage)", () => {
 	beforeAll(() => {
 		project = createTestProject();
 		parser = new SwaggerParser(
-			formGenCoverageSpec as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
-			{ options: { admin: true } } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast(formGenCoverageSpec),
+			testCast({ options: { admin: true } }),
 		);
 		const resources = discoverAdminResources(parser);
 		const formGen = new FormComponentGenerator(project, parser);

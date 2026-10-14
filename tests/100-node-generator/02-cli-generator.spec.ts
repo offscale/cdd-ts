@@ -1,15 +1,45 @@
-// @ts-nocheck
-
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import type { GeneratorConfig, PathInfo } from "../../src/core/types/index.js";
+import type { SwaggerParser } from "../../src/openapi/parse.js";
 import { CliGenerator } from "../../src/vendors/cli/emit.js";
+import { testCast } from "../shared/helpers.js";
 
 describe("CliGenerator", () => {
+	const defaultConfig: GeneratorConfig = {
+		input: "memory://spec.json",
+		output: "/out",
+		options: {},
+	};
+
 	it("should generate cli.ts with correct imports and commands", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new CliGenerator();
 
-		const mockParser = {
+		const operations: PathInfo[] = [
+			{
+				tags: ["Users"],
+				operationId: "getUser",
+				path: "/users/{id}",
+				method: "GET",
+				summary: "Get User",
+				parameters: [{ name: "id", in: "path", required: true }],
+			},
+			{
+				tags: [testCast<string>(testCast<object>({ name: "Posts" }))],
+				path: "/posts",
+				method: "GET",
+				description: "List Posts",
+			},
+			{
+				path: "/no-tag",
+				method: "POST",
+				summary: "No Tag",
+				requestBody: { content: {} },
+			},
+		];
+
+		const mockParser: Pick<SwaggerParser, "spec" | "operations"> = {
 			spec: {
 				openapi: "3.1.0",
 				info: { title: "api-cli", version: "1.0.0", description: "Test CLI" },
@@ -20,33 +50,13 @@ describe("CliGenerator", () => {
 					},
 				},
 			},
-			operations: [
-				{
-					tags: ["Users"],
-					operationId: "getUser",
-					path: "/users/{id}",
-					summary: "Get User",
-					parameters: [{ name: "id", in: "path", required: true }],
-				},
-				{
-					tags: [{ name: "Posts" }],
-					path: "/posts",
-					description: "List Posts",
-				},
-				{ path: "/no-tag", summary: "No Tag", requestBody: { content: {} } },
-			],
-		} as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null as import("../../src/openapi/parse.js").SwaggerParser;
+			operations,
+		};
 
 		generator.generate(
 			project,
-			mockParser,
-			{} as string | number | boolean | object | undefined | null,
+			mockParser as SwaggerParser,
+			defaultConfig,
 			"/out",
 		);
 
@@ -69,7 +79,20 @@ describe("CliGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new CliGenerator();
 
-		const mockParser = {
+		const operations: PathInfo[] = [
+			{
+				tags: ["Complex"],
+				operationId: "complexOp",
+				path: "/complex",
+				method: "POST",
+				summary: "Complex Operation",
+				externalDocs: { description: "Docs", url: "https://docs.com" },
+				deprecated: true,
+				callbacks: { myCallback: {} },
+			},
+		];
+
+		const mockParser: Pick<SwaggerParser, "spec" | "operations"> = {
 			spec: {
 				openapi: "3.1.0",
 				info: {
@@ -117,20 +140,15 @@ describe("CliGenerator", () => {
 					},
 				},
 			},
-			operations: [
-				{
-					tags: ["Complex"],
-					operationId: "complexOp",
-					path: "/complex",
-					summary: "Complex Operation",
-					externalDocs: { description: "Docs", url: "https://docs.com" },
-					deprecated: true,
-					callbacks: { myCallback: {} },
-				},
-			],
-		} as any;
+			operations,
+		};
 
-		generator.generate(project, mockParser, {} as any, "/out");
+		generator.generate(
+			project,
+			mockParser as SwaggerParser,
+			defaultConfig,
+			"/out",
+		);
 
 		const cliFile = project.getSourceFileOrThrow("/out/cli.ts");
 		const text = cliFile.getFullText();

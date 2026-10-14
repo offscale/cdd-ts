@@ -1,5 +1,6 @@
 import { Project } from "ts-morph";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { TypeGenerator } from "../../src/classes/emit.js";
 import type { GeneratorConfig } from "../../src/core/types/index.js";
 import * as utils from "../../src/functions/utils.js";
 import {
@@ -9,33 +10,55 @@ import {
 import { SwaggerParser } from "../../src/openapi/parse.js";
 import { AngularClientGenerator } from "../../src/vendors/angular/angular-client.generator.js";
 import { AxiosClientGenerator } from "../../src/vendors/axios/axios-client.generator.js";
+import { ExpressServerGenerator } from "../../src/vendors/express/express-server.generator.js";
 import { FetchClientGenerator } from "../../src/vendors/fetch/fetch-client.generator.js";
+import { McpGenerator } from "../../src/vendors/mcp/emit.js";
 import { NodeClientGenerator } from "../../src/vendors/node/node-client.generator.js";
 import { ReactClientGenerator } from "../../src/vendors/react/react-client.generator.js";
+import { TypeOrmGenerator } from "../../src/vendors/typeorm/emit.js";
 import { VueClientGenerator } from "../../src/vendors/vue/vue-client.generator.js";
+import { testCast } from "../shared/helpers.js";
 
 vi.mock("../../src/openapi/parse.js", () => {
-	const MockSwaggerParser = vi.fn();
-	(MockSwaggerParser as unknown as Record<string, unknown>).createSync = vi
-		.fn()
-		.mockReturnValue({
+	const MockSwaggerParser = vi.fn().mockImplementation(function (
+		this: unknown,
+	) {
+		void this;
+		return {
 			spec: {
 				openapi: "3.0.0",
 				info: { title: "Test", version: "1" },
 				paths: {},
 			},
+			schemas: [],
+			operations: [],
 			getSpec: vi.fn().mockReturnValue({}),
-		});
-	(MockSwaggerParser as unknown as Record<string, unknown>).create = vi
-		.fn()
-		.mockResolvedValue({
+			getSecuritySchemes: vi.fn().mockReturnValue({}),
+			getDocumentServers: vi.fn().mockReturnValue([]),
+		};
+	});
+	Object.assign(MockSwaggerParser, {
+		createSync: vi.fn().mockReturnValue({
 			spec: {
 				openapi: "3.0.0",
 				info: { title: "Test", version: "1" },
 				paths: {},
 			},
+			schemas: [],
+			operations: [],
 			getSpec: vi.fn().mockReturnValue({}),
-		});
+		}),
+		create: vi.fn().mockResolvedValue({
+			spec: {
+				openapi: "3.0.0",
+				info: { title: "Test", version: "1" },
+				paths: {},
+			},
+			schemas: [],
+			operations: [],
+			getSpec: vi.fn().mockReturnValue({}),
+		}),
+	});
 	return { SwaggerParser: MockSwaggerParser };
 });
 
@@ -75,6 +98,18 @@ describe("index.ts", () => {
 				NodeClientGenerator,
 			);
 		});
+		it("returns FetchClientGenerator for vanilla, vanillajs, and Vanilla JS", () => {
+			expect(getGeneratorFactory("vanilla")).toBeInstanceOf(
+				FetchClientGenerator,
+			);
+			expect(getGeneratorFactory("vanillajs")).toBeInstanceOf(
+				FetchClientGenerator,
+			);
+			expect(getGeneratorFactory("Vanilla JS")).toBeInstanceOf(
+				FetchClientGenerator,
+			);
+			expect(getGeneratorFactory("")).toBeInstanceOf(AngularClientGenerator);
+		});
 	});
 
 	describe("generateFromConfigSync", () => {
@@ -85,14 +120,14 @@ describe("index.ts", () => {
 
 		beforeEach(() => {
 			project = new Project({ useInMemoryFileSystem: true });
-			config = {
+			config = testCast<GeneratorConfig>({
 				input: "http://example.com/spec.json",
 				output: "/out",
 				options: {
 					framework: "angular",
 				},
 				compilerOptions: {},
-			} as unknown as GeneratorConfig;
+			});
 			consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 			consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 		});
@@ -165,11 +200,11 @@ describe("index.ts", () => {
 		it("should default framework to vanilla if not provided", async () => {
 			delete config.options.framework;
 			const testConfig = {
-				spec: {
+				spec: testCast<SwaggerParser>({
 					openapi: "3.0.0",
 					info: { title: "Test", version: "1" },
 					paths: {},
-				} as unknown as SwaggerParser,
+				}),
 			};
 			const activeProjectSaveSpy = vi
 				.spyOn(project, "saveSync")
@@ -217,11 +252,11 @@ describe("index.ts", () => {
 
 			// Should pass without project argument
 			generateFromConfigSync(config, undefined, {
-				spec: {
+				spec: testCast<SwaggerParser>({
 					openapi: "3.0.0",
 					info: { title: "Test", version: "1" },
 					paths: {},
-				} as unknown as SwaggerParser,
+				}),
 			});
 
 			expect(generateSpy).toHaveBeenCalled();
@@ -277,10 +312,171 @@ describe("index.ts", () => {
 
 			try {
 				// Pass testConfig to simulate isTestEnv = true
-				generateFromConfigSync(config, project, {} as unknown as SwaggerParser);
+				generateFromConfigSync(config, project, {
+					spec: {
+						openapi: "3.0.0",
+						info: { title: "Test", version: "1" },
+						paths: {},
+					},
+				});
 				expect.unreachable("Should have thrown");
 			} catch (_e) {
 				expect(consoleErrorSpy).not.toHaveBeenCalled();
+			}
+		});
+
+		it("should generate server with typeorm and express when targetScope is to_server", () => {
+			config.options.orm = "typeorm";
+			config.options.serverFramework = "express";
+			const typeOrmSpy = vi
+				.spyOn(TypeOrmGenerator.prototype, "generate")
+				.mockReturnValue(undefined);
+			const typeGenSpy = vi
+				.spyOn(TypeGenerator.prototype, "generate")
+				.mockReturnValue(undefined);
+
+			generateFromConfigSync(
+				config,
+				project,
+				{
+					spec: {
+						openapi: "3.0.0",
+						info: { title: "Test", version: "1" },
+						paths: {},
+					},
+				},
+				"to_server",
+			);
+			expect(config.options.generateServices).toBe(false);
+			expect(typeOrmSpy).toHaveBeenCalled();
+			expect(typeGenSpy).toHaveBeenCalled();
+		});
+
+		it("should generate server entity routes when schemas exist in SwaggerParser", () => {
+			delete config.options.serverFramework;
+			vi.spyOn(TypeGenerator.prototype, "generate").mockReturnValue(undefined);
+			const entitySpy = vi
+				.spyOn(ExpressServerGenerator.prototype, "generateEntityRoutes")
+				.mockReturnValue(undefined);
+			const mcpRoutesSpy = vi
+				.spyOn(ExpressServerGenerator.prototype, "generateMcpRoutes")
+				.mockReturnValue(undefined);
+			const entrySpy = vi
+				.spyOn(ExpressServerGenerator.prototype, "generateServerEntrypoint")
+				.mockReturnValue(undefined);
+
+			const parserInstance = {
+				spec: {
+					openapi: "3.0.0",
+					info: { title: "Test", version: "1" },
+					paths: {},
+				},
+				schemas: [
+					{
+						name: "User",
+						definition: {
+							type: "object",
+							properties: { id: { type: "string" } },
+						},
+					},
+					{
+						name: "Item",
+						definition: { properties: { name: { type: "string" } } },
+					},
+					{
+						name: "EmptyObj",
+						definition: { properties: {} },
+					},
+					{
+						name: "Flag",
+						definition: true,
+					},
+				],
+				getSpec: () => ({}),
+				getSecuritySchemes: () => ({}),
+				getDocumentServers: () => [],
+				operations: [],
+			};
+			testCast<import("vitest").Mock>(SwaggerParser).mockImplementationOnce(
+				function (this: unknown) {
+					void this;
+					return parserInstance;
+				},
+			);
+
+			generateFromConfigSync(
+				config,
+				project,
+				{
+					spec: {
+						openapi: "3.0.0",
+						info: { title: "Test", version: "1" },
+						paths: {},
+					},
+				},
+				"to_server",
+			);
+			expect(entitySpy).toHaveBeenCalledTimes(2);
+			expect(mcpRoutesSpy).toHaveBeenCalled();
+			expect(entrySpy).toHaveBeenCalled();
+		});
+
+		it("should skip express server generation when serverFramework is not express", () => {
+			(config.options as Record<string, unknown>).serverFramework = "other";
+			generateFromConfigSync(
+				config,
+				project,
+				{
+					spec: {
+						openapi: "3.0.0",
+						info: { title: "Test", version: "1" },
+						paths: {},
+					},
+				},
+				"to_server",
+			);
+			expect(config.options.generateServices).toBe(false);
+		});
+
+		it("should invoke McpGenerator when targetScope is to_sdk_cli and mcp is true", () => {
+			config.options.mcp = true;
+			vi.spyOn(AngularClientGenerator.prototype, "generate").mockReturnValue(
+				undefined,
+			);
+			const mcpSpy = vi
+				.spyOn(McpGenerator.prototype, "generate")
+				.mockReturnValue(undefined);
+
+			generateFromConfigSync(
+				config,
+				project,
+				{
+					spec: {
+						openapi: "3.0.0",
+						info: { title: "Test", version: "1" },
+						paths: {},
+					},
+				},
+				"to_sdk_cli",
+			);
+			expect(mcpSpy).toHaveBeenCalled();
+		});
+
+		it("should use Javy fsPolyfill when globalThis.__FsData is defined and project is omitted", () => {
+			(globalThis as { __FsData?: unknown }).__FsData = {};
+			vi.spyOn(AngularClientGenerator.prototype, "generate").mockReturnValue(
+				undefined,
+			);
+			try {
+				generateFromConfigSync(config, undefined, {
+					spec: {
+						openapi: "3.0.0",
+						info: { title: "Test", version: "1" },
+						paths: {},
+					},
+				});
+			} finally {
+				delete (globalThis as { __FsData?: unknown }).__FsData;
 			}
 		});
 	});

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";
 import { ParameterSerializerGenerator } from "@src/functions/emit_parameter_serializer.js";
@@ -7,6 +5,7 @@ import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { type TestValue, testCast } from "../shared/helpers.js";
 
 const encodedContentSpec = {
 	openapi: "3.1.0",
@@ -125,16 +124,7 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 			options: { enumStyle: "enum", framework: "angular" },
 		};
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(
-			encodedContentSpec as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(encodedContentSpec), config);
 
 		new TypeGenerator(parser, project, config).generate("/out");
 		new ParameterSerializerGenerator(project).generate("/out");
@@ -168,14 +158,14 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 	it("should generate ContentDecoder.decode call for contentSchema fields", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: string | number | boolean | object | undefined | null = {
-			method: "GET",
-			path: "/blob-data",
-			methodName: "getBlobData",
-			responses: encodedContentSpec.paths["/blob-data"].get.responses,
-		};
+		const op: TestValue = testCast({
+			method: testCast("GET"),
+			path: testCast("/blob-data"),
+			methodName: testCast("getBlobData"),
+			responses: testCast(encodedContentSpec.paths["/blob-data"].get.responses),
+		});
 
-		methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, testCast(op));
 
 		const body = serviceClass.getMethodOrThrow("getBlobData").getBodyText()!;
 
@@ -190,14 +180,14 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 	it("should generate correct return type signature for contentSchema", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: string | number | boolean | object | undefined | null = {
-			method: "GET",
-			path: "/blob-data",
-			methodName: "getBlobData",
-			responses: encodedContentSpec.paths["/blob-data"].get.responses,
-		};
+		const op: TestValue = testCast({
+			method: testCast("GET"),
+			path: testCast("/blob-data"),
+			methodName: testCast("getBlobData"),
+			responses: testCast(encodedContentSpec.paths["/blob-data"].get.responses),
+		});
 
-		methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, testCast(op));
 
 		const method = serviceClass.getMethodOrThrow("getBlobData");
 		const returnType = method.getReturnType().getText();
@@ -211,14 +201,16 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 	it('should generate XML decoding config for contentMediaType="application/xml"', () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: string | number | boolean | object | undefined | null = {
-			method: "GET",
-			path: "/xml-embedded",
-			methodName: "getXmlEmbedded",
-			responses: encodedContentSpec.paths["/xml-embedded"].get.responses,
-		};
+		const op: TestValue = testCast({
+			method: testCast("GET"),
+			path: testCast("/xml-embedded"),
+			methodName: testCast("getXmlEmbedded"),
+			responses: testCast(
+				encodedContentSpec.paths["/xml-embedded"].get.responses,
+			),
+		});
 
-		methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, testCast(op));
 
 		const body = serviceClass.getMethodOrThrow("getXmlEmbedded").getBodyText()!;
 
@@ -234,13 +226,9 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 			method: "GET",
 			path: "/json-param",
 			methodName: "getWithJsonParam",
-			parameters: encodedContentSpec.paths["/json-param"].get.parameters as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			parameters: testCast(
+				encodedContentSpec.paths["/json-param"].get.parameters,
+			),
 			responses: encodedContentSpec.paths["/json-param"].get.responses,
 		};
 
@@ -258,14 +246,16 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 	it("should include contentEncoding in response decoding config", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: string | number | boolean | object | undefined | null = {
-			method: "GET",
-			path: "/base64-response",
-			methodName: "getBase64Response",
-			responses: encodedContentSpec.paths["/base64-response"].get.responses,
-		};
+		const op: TestValue = testCast({
+			method: testCast("GET"),
+			path: testCast("/base64-response"),
+			methodName: testCast("getBase64Response"),
+			responses: testCast(
+				encodedContentSpec.paths["/base64-response"].get.responses,
+			),
+		});
 
-		methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, testCast(op));
 
 		const body = serviceClass
 			.getMethodOrThrow("getBase64Response")

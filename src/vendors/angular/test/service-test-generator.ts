@@ -1,6 +1,12 @@
+/**
+ * Module for service test generator in vendors/angular/test/service-test-generator.
+ *
+ * @module vendors/angular/test/service-test-generator
+ */
 // src/generators/angular/test/service-test-generator.ts
 
 import * as path from "node:path";
+import type { Project, SourceFile } from "ts-morph";
 import type {
 	ExampleObject,
 	GeneratorConfig,
@@ -9,22 +15,28 @@ import type {
 	PathInfo,
 	ReferenceLike,
 	SwaggerDefinition,
-} from "@src/core/types/index.js";
+} from "../../../core/types/index.js";
 import {
 	camelCase,
 	getBasePathTokenName,
 	getTypeScriptType,
 	isDataTypeInterface,
 	pascalCase,
-} from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import type { Project, SourceFile } from "ts-morph";
+} from "../../../functions/utils.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
 import { MockDataGenerator } from "./mock-data.generator.js";
 
+/** Generator/utility class `ServiceTestGenerator`. */
 export class ServiceTestGenerator {
 	private mockDataGenerator: MockDataGenerator;
 
+	/**
+	 * Creates a new `ServiceTestGenerator` instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param project - Target `ts-morph` project instance.
+	 * @param config - Active generator configuration.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
@@ -35,6 +47,12 @@ export class ServiceTestGenerator {
 		this.mockDataGenerator = new MockDataGenerator(parser);
 	}
 
+	/**
+	 * Executes `generateServiceTestFile` on `ServiceTestGenerator`.
+	 * @param controllerName - Logical controller or tag group name.
+	 * @param operations - Operations belonging to the controller or resource.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generateServiceTestFile(
 		controllerName: string,
 		operations: PathInfo[],
@@ -85,7 +103,12 @@ export class ServiceTestGenerator {
 		sourceFile.formatText();
 	}
 
-	private generateMethodTests(operations: PathInfo[]): string[] {
+	/**
+	 * Executes `generateMethodTests`.
+	 * @param operations - Parameter `operations`.
+	 * @returns Result of `generateMethodTests`.
+	 */
+	public generateMethodTests(operations: PathInfo[]): string[] {
 		const tests: string[] = [];
 
 		const knownTypes = this.parser.schemas.map((s) => s.name);
@@ -296,7 +319,13 @@ export class ServiceTestGenerator {
 		return tests;
 	}
 
-	private generateDefaultPrimitiveValue(
+	/**
+	 * Executes `generateDefaultPrimitiveValue`.
+	 * @param schema - Parameter `schema`.
+	 * @param tsType - Parameter `tsType`.
+	 * @returns Result of `generateDefaultPrimitiveValue`.
+	 */
+	public generateDefaultPrimitiveValue(
 		schema: SwaggerDefinition | { $ref: string } | boolean | undefined,
 		tsType?: string,
 	): string {
@@ -320,77 +349,43 @@ export class ServiceTestGenerator {
 		}
 	}
 
-	private getParameterExampleValue(param: Parameter): string | undefined {
+	/**
+	 * Executes `getParameterExampleValue`.
+	 * @param param - Parameter `param`.
+	 * @returns Result of `getParameterExampleValue`.
+	 */
+	public getParameterExampleValue(param: Parameter): string | undefined {
 		let potentialValue: OpenApiValue;
 
 		const pickExampleValue = (
 			example: OpenApiValue,
 		): {
 			found: boolean;
-			value:
-				| Record<string, string | number | boolean | object | undefined | null>
-				| string
-				| number
-				| boolean
-				| null;
+			value: OpenApiValue;
 		} => {
 			if (!example || typeof example !== "object")
 				return { found: false, value: null };
 
-			if (Object.hasOwn(example, "dataValue")) {
+			const exRecord = example as Record<string, OpenApiValue>;
+
+			if (Object.hasOwn(exRecord, "dataValue")) {
 				return {
 					found: true,
-					value: (
-						example as Record<
-							string,
-							| string
-							| number
-							| boolean
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| null
-						>
-					).dataValue,
+					value: exRecord.dataValue,
 				};
 			}
 
-			if (Object.hasOwn(example, "value")) {
+			if (Object.hasOwn(exRecord, "value")) {
 				return {
 					found: true,
-					value: (
-						example as Record<
-							string,
-							| string
-							| number
-							| boolean
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| null
-						>
-					).value,
+					value: exRecord.value,
 				};
 			}
 
-			if (Object.hasOwn(example, "serializedValue")) {
+			if (Object.hasOwn(exRecord, "serializedValue")) {
 				return {
 					found: true,
-					value: (
-						example as Record<
-							string,
-							| string
-							| number
-							| boolean
-							| Record<
-									string,
-									string | number | boolean | object | undefined | null
-							  >
-							| null
-						>
-					).serializedValue,
+					value: exRecord.serializedValue,
 				};
 			}
 
@@ -455,12 +450,9 @@ export class ServiceTestGenerator {
 					const keys = Object.keys(media.examples);
 
 					if (keys.length > 0) {
-						const ex = (
-							media.examples as Record<
-								string,
-								string | number | boolean | object | undefined | null
-							>
-						)[keys[0]!];
+						const ex = (media.examples as Record<string, OpenApiValue>)[
+							keys[0]!
+						];
 
 						const contentValue = pickExampleValue(ex);
 
@@ -574,7 +566,12 @@ export class ServiceTestGenerator {
 		};
 	}
 
-	private collectModelImports(operations: PathInfo[]): Set<string> {
+	/**
+	 * Executes `collectModelImports`.
+	 * @param operations - Parameter `operations`.
+	 * @returns Result of `collectModelImports`.
+	 */
+	public collectModelImports(operations: PathInfo[]): Set<string> {
 		const modelImports = new Set<string>();
 
 		const knownTypes = this.parser.schemas.map((s) => s.name);

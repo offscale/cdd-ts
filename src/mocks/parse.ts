@@ -1,15 +1,21 @@
+/**
+ * Reverse parser for extracting OpenAPI `components.examples` metadata from generated `examples.ts` files.
+ *
+ * @module mocks/parse
+ */
 import type { SourceFile } from "ts-morph";
 import type { ExampleObject } from "../core/types/index.js";
+import { evaluateAstLiteral } from "../openapi/parse_ast_literal.js";
 
 /**
- * Parses the \`examples.ts\` file to extract mock/example data that was previously emitted.
- * This supports the bidirectionality feature of CDD for examples.
+ * Parses the `examples.ts` file to extract mock/example data that was previously emitted.
+ * This supports the bidirectionality feature of CDD for examples without executing code.
  *
- * @param sourceFile - The ts-morph SourceFile representing \`examples.ts\`.
- * @returns A record of example names to ExampleObject metadata, or undefined if the \`API_EXAMPLES\` variable is not found.
+ * @param sourceFile - The ts-morph SourceFile representing `examples.ts`.
+ * @returns A record of example names to ExampleObject metadata, or undefined if the `API_EXAMPLES` variable is not found or is not a valid object literal.
  */
 export function parseExamplesMetadata(
-	sourceFile: SourceFile,
+	sourceFile: SourceFile | undefined | null,
 ): Record<string, ExampleObject> | undefined {
 	if (!sourceFile) {
 		return undefined;
@@ -25,18 +31,9 @@ export function parseExamplesMetadata(
 		return undefined;
 	}
 
-	try {
-		const text = initializer.getText();
-
-		// Similarly to API_PATHS, API_EXAMPLES is generated using JSON.stringify.
-		// We use Function constructor for safe, localized evaluation of the literal.
-		const parsed: unknown = new Function(`return ${text}`)();
-
-		if (typeof parsed === "object" && parsed !== null) {
-			return parsed as Record<string, ExampleObject>;
-		}
-		return undefined;
-	} catch (_e) {
-		return undefined;
+	const parsed = evaluateAstLiteral(initializer);
+	if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+		return parsed as Record<string, ExampleObject>;
 	}
+	return undefined;
 }

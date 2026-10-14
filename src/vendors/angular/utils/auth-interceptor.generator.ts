@@ -1,18 +1,46 @@
+/**
+ * Module for auth interceptor generator in vendors/angular/utils/auth-interceptor.generator.
+ *
+ * @module vendors/angular/utils/auth-interceptor.generator
+ */
 import * as path from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
-import type { SecurityScheme } from "@src/core/types/index.js";
-import { pascalCase } from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
+import type { SecurityScheme } from "../../../core/types/index.js";
+import { pascalCase } from "../../../functions/utils.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
+/** Result returned when `AuthInterceptorGenerator.generate` emits an auth interceptor. */
+export interface AuthInterceptorGenerateResult {
+	/** Generated Angular injection token names for authentication schemes. */
+	tokenNames: string[];
+}
+
+/**
+ * Generates the Angular `AuthInterceptor` (`auth/auth.interceptor.ts`) for configured OpenAPI security schemes.
+ */
 export class AuthInterceptorGenerator {
+	/**
+	 * Creates a new `AuthInterceptorGenerator`.
+	 *
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param project - Target `ts-morph` project.
+	 */
 	constructor(
 		private parser: SwaggerParser,
 
 		private project: Project,
 	) {}
 
-	public generate(outputDir: string): { tokenNames: string[] } | undefined {
+	/**
+	 * Emits `auth/auth.interceptor.ts` if any supported authentication schemes exist in the specification.
+	 *
+	 * @param outputDir - Root output directory for the generated Angular client.
+	 * @returns Generated auth token names, or `undefined` if no supported auth schemes exist.
+	 */
+	public generate(
+		outputDir: string,
+	): AuthInterceptorGenerateResult | undefined {
 		const securitySchemes = Object.values(this.parser.getSecuritySchemes());
 
 		const hasApiKeyHeader = securitySchemes.some(
@@ -222,7 +250,12 @@ export class AuthInterceptorGenerator {
 		);
 	}
 
-	private getAuthPrefix(s: SecurityScheme): string {
+	/**
+	 * Executes `getAuthPrefix`.
+	 * @param s - Parameter `s`.
+	 * @returns Result of `getAuthPrefix`.
+	 */
+	public getAuthPrefix(s: SecurityScheme): string {
 		if (s.type === "oauth2" || s.type === "openIdConnect") return "Bearer";
 
 		if (s.type === "http") {

@@ -1,9 +1,7 @@
-// @ts-nocheck
-
 import { LinkSetParserGenerator } from "@src/vendors/angular/utils/link-set-parser.generator.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 
 function getLinkSetParser() {
 	const project = createTestProject();
@@ -19,11 +17,11 @@ function getLinkSetParser() {
 	});
 
 	const moduleScope = {
-		exports: {} as string | number | boolean | object | undefined | null,
+		exports: testCast({}),
 	};
 	const finalCode = `${jsCode}; exports.LinkSetParser = LinkSetParser;`;
 
-	new Function("exports", finalCode)(moduleScope.exports);
+	testCast(new Function("exports", finalCode)(moduleScope.exports));
 
 	return moduleScope.exports.LinkSetParser;
 }

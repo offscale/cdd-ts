@@ -1,25 +1,17 @@
-// @ts-nocheck
-
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { AdminGenerator } from "@src/vendors/angular/admin/admin.generator.js";
 import { CustomValidatorsGenerator } from "@src/vendors/angular/admin/custom-validators.generator.js";
 import * as resourceDiscovery from "@src/vendors/angular/admin/resource-discovery.js";
 import { describe, expect, it, vi } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 import { adminFormSpec, coverageSpec } from "../shared/specs.js";
 
 describe("Admin: AdminGenerator (Orchestrator)", () => {
 	it("should call specialist generators for each suitable resource", async () => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			coverageSpec as string | number | boolean | object | undefined | null,
-			{ options: { admin: true } } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast(coverageSpec),
+			testCast({ options: { admin: true } }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 
@@ -64,14 +56,8 @@ describe("Admin: AdminGenerator (Orchestrator)", () => {
 	it("should generate a master routing file", async () => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			coverageSpec as string | number | boolean | object | undefined | null,
-			{ options: { admin: true } } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast(coverageSpec),
+			testCast({ options: { admin: true } }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 
@@ -82,14 +68,8 @@ describe("Admin: AdminGenerator (Orchestrator)", () => {
 	it("should NOT generate custom validators file if not needed", async () => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			coverageSpec as string | number | boolean | object | undefined | null,
-			{ options: { admin: true } } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast(coverageSpec),
+			testCast({ options: { admin: true } }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 
@@ -105,14 +85,8 @@ describe("Admin: AdminGenerator (Orchestrator)", () => {
 	it("should generate custom validators file WHEN needed", async () => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			adminFormSpec as string | number | boolean | object | undefined | null,
-			{ options: { admin: true } } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast(adminFormSpec),
+			testCast({ options: { admin: true } }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 
@@ -138,8 +112,8 @@ describe("Admin: AdminGenerator (Orchestrator)", () => {
 			paths: {},
 		};
 		const parser = new SwaggerParser(
-			validEmptySpec as string | number | boolean | object | undefined | null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
+			testCast(validEmptySpec),
+			testCast({ options: {} }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 
@@ -156,26 +130,12 @@ describe("Admin: AdminGenerator (Orchestrator)", () => {
 		const fsHost = project.getFileSystem();
 		const dirSpy = vi
 			.spyOn(fsHost, "directoryExistsSync")
-			.mockReturnValue(
-				false as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null as Promise<boolean>,
-			);
+			.mockReturnValue(testCast(testCast<Promise<boolean>>(false)));
 		const mkdirSpy = vi.spyOn(fsHost, "mkdirSync");
 
 		const parser = new SwaggerParser(
-			coverageSpec as string | number | boolean | object | undefined | null,
-			{ options: { admin: true } } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast(coverageSpec),
+			testCast({ options: { admin: true } }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 		await adminGen.generate("/out");

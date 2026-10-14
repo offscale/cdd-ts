@@ -3,30 +3,32 @@ import * as path from "node:path";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { generateFromConfigSync } from "@src/index.js";
 import { Project } from "ts-morph";
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 
 describe("Axios Implementation", () => {
 	describe("Config Validation", () => {
 		it("should execute axios client generator and attempt admin UI generation when requested", async () => {
+			const outDir = path.join(os.tmpdir(), "test-axios-admin");
 			const config: GeneratorConfig = {
 				input: "dummy",
-				output: "dummy",
+				output: outDir,
 				options: {
 					implementation: "axios",
 					admin: true,
 				},
 			};
 
-			expect(() =>
-				generateFromConfigSync(config, new Project(), {
-					spec: {
-						openapi: "3.0.0",
-						info: { title: "Test API", version: "1.0" },
-						paths: {},
-					},
-				}),
-			).not.toThrow();
+			const project = new Project({ useInMemoryFileSystem: true });
+			generateFromConfigSync(config, project, {
+				spec: {
+					openapi: "3.0.0",
+					info: { title: "Test API", version: "1.0" },
+					paths: {},
+				},
+			});
+			expect(
+				project.getSourceFile(path.join(outDir, "index.ts")),
+			).toBeDefined();
 		});
 
 		it("should execute AxiosClientGenerator successfully when admin is false", async () => {
@@ -336,21 +338,21 @@ describe("Axios Implementation", () => {
 					?.getMethod("getBlob")
 					?.getStatements()
 					.map((s) => s.getText())
-					.join("\\n"),
+					.join(String.fromCharCode(10)),
 			).toContain("responseType = 'blob'");
 			expect(
 				serviceClass
 					?.getMethod("getBuffer")
 					?.getStatements()
 					.map((s) => s.getText())
-					.join("\\n"),
+					.join(String.fromCharCode(10)),
 			).toContain("responseType = 'blob'"); // Octet/PDF translates to Blob by default parser mapping unless overriden, but wait, the parser logic dictates arraybuffer/blob.
 			expect(
 				serviceClass
 					?.getMethod("getText")
 					?.getStatements()
 					.map((s) => s.getText())
-					.join("\\n"),
+					.join(String.fromCharCode(10)),
 			).toContain("responseType = 'text'");
 		});
 

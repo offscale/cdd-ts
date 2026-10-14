@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { AuthTokensGenerator } from "@src/vendors/angular/utils/auth-tokens.generator.js";
 
 import { Project } from "ts-morph";

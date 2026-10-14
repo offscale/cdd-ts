@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 // Using ParameterSerializerGenerator instead of HttpParamsBuilderGenerator
@@ -11,7 +9,11 @@ import { AuthTokensGenerator } from "@src/vendors/angular/utils/auth-tokens.gene
 import { TokenGenerator } from "@src/vendors/angular/utils/token.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it, vi } from "vitest";
-
+import {
+	type TestCallable,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 import {
 	branchCoverageSpec,
 	coverageSpec,
@@ -19,62 +21,52 @@ import {
 } from "../shared/specs.js";
 
 describe("Generators (Angular): ServiceGenerator", () => {
-	const ensureResponses = (
-		spec: string | number | boolean | object | undefined | null,
-	) => {
-		if (!spec?.paths) return spec;
-		const methods = [
-			"get",
-			"post",
-			"put",
-			"delete",
-			"options",
-			"head",
-			"patch",
-			"trace",
-			"query",
-		];
+	const ensureResponses = testCast(
+		testCast((spec: TestValue) => {
+			if (!spec?.paths) return spec;
+			const methods = [
+				"get",
+				"post",
+				"put",
+				"delete",
+				"options",
+				"head",
+				"patch",
+				"trace",
+				"query",
+			];
 
-		for (const pathItem of Object.values(spec.paths)) {
-			if (!pathItem || typeof pathItem !== "object") continue;
-			for (const method of methods) {
-				const operation = (
-					pathItem as string | number | boolean | object | undefined | null
-				)[method];
+			for (const pathItem of Object.values(spec.paths)) {
+				if (!pathItem || typeof pathItem !== "object") continue;
+				for (const method of methods) {
+					const operation = testCast(pathItem)[method];
 
-				if (operation && operation.responses === undefined) {
-					operation.responses = { "200": { description: "ok" } };
+					if (operation && operation.responses === undefined) {
+						operation.responses = testCast({
+							"200": testCast({ description: testCast("ok") }),
+						});
+					}
 				}
-			}
 
-			if (
-				(pathItem as string | number | boolean | object | undefined | null)
-					.additionalOperations
-			) {
-				for (const operation of Object.values(
-					(pathItem as string | number | boolean | object | undefined | null)
-						.additionalOperations,
-				)) {
-					if (
-						operation &&
-						(operation as string | number | boolean | object | undefined | null)
-							.responses === undefined
-					) {
-						(
-							operation as string | number | boolean | object | undefined | null
-						).responses = {
-							"200": { description: "ok" },
-						};
+				if (testCast(pathItem).additionalOperations) {
+					for (const operation of Object.values(
+						testCast(pathItem).additionalOperations,
+					)) {
+						if (operation && testCast(operation).responses === undefined) {
+							testCast(operation).responses = testCast({
+								"200": testCast({ description: testCast("ok") }),
+							});
+						}
 					}
 				}
 			}
-		}
 
-		return spec;
-	};
+			return spec;
+		}),
+	);
 
 	const createTestEnvironment = (
-		spec: string | number | boolean | object | undefined | null,
+		spec: TestValue,
 		configOverrides: Partial<GeneratorConfig["options"]> = {},
 	) => {
 		const project = new Project({ useInMemoryFileSystem: true });
@@ -90,7 +82,9 @@ describe("Generators (Angular): ServiceGenerator", () => {
 			},
 		};
 
-		const specClone = ensureResponses(JSON.parse(JSON.stringify(spec)));
+		const specClone = testCast<TestCallable>(ensureResponses)(
+			JSON.parse(JSON.stringify(spec)),
+		);
 
 		const safeSpec = {
 			openapi: "3.0.0",
@@ -120,15 +114,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 		const fsHost = project.getFileSystem();
 		const dirSpy = vi
 			.spyOn(fsHost, "directoryExistsSync")
-			.mockReturnValue(
-				false as
-					| string
-					| number
-					| boolean
-					| object
-					| undefined
-					| null as Promise<boolean>,
-			);
+			.mockReturnValue(testCast(testCast<Promise<boolean>>(false)));
 		const mkdirSpy = vi.spyOn(fsHost, "mkdirSync");
 
 		new ParameterSerializerGenerator(project).generate("/out");
@@ -138,7 +124,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 	});
 
 	it("should handle methods with query, path, and body parameters", () => {
-		const project = createTestEnvironment(coverageSpec);
+		const project = createTestEnvironment(testCast(coverageSpec));
 		const serviceClass = project
 			.getSourceFileOrThrow("/out/services/users.service.ts")
 			.getClassOrThrow("UsersService");
@@ -183,7 +169,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 			},
 		};
 
-		const project = createTestEnvironment(specWithOpServer);
+		const project = createTestEnvironment(testCast(specWithOpServer));
 		const serviceClass = project
 			.getSourceFileOrThrow("/out/services/op.service.ts")
 			.getClassOrThrow("OpService");
@@ -196,7 +182,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 	});
 
 	it("should generate a void return type for 204 responses", () => {
-		const project = createTestEnvironment(coverageSpec);
+		const project = createTestEnvironment(testCast(coverageSpec));
 		const serviceClass = project
 			.getSourceFileOrThrow("/out/services/noContent.service.ts")
 			.getClassOrThrow("NoContentService");
@@ -206,7 +192,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 	});
 
 	it("should use a custom method name when provided in config", () => {
-		const project = createTestEnvironment(coverageSpec, {
+		const project = createTestEnvironment(testCast(coverageSpec), {
 			customizeMethodName: (opId: string) =>
 				`custom_${opId.replace(/-/g, "_")}`,
 		});
@@ -218,7 +204,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 	});
 
 	it("should fall back to path-based name if customizer exists but op has no ID", () => {
-		const project = createTestEnvironment(branchCoverageSpec, {
+		const project = createTestEnvironment(testCast(branchCoverageSpec), {
 			customizeMethodName: (opId: string) => `custom_${opId}`,
 		});
 		const serviceFile = project.getSourceFileOrThrow(
@@ -229,7 +215,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 	});
 
 	it("should sanitize invalid method names (e.g. separated by hyphens)", () => {
-		const project = createTestEnvironment(coverageSpec);
+		const project = createTestEnvironment(testCast(coverageSpec));
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/customName.service.ts",
 		);
@@ -255,7 +241,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 			},
 		};
 
-		const project = createTestEnvironment(conflictSpec, {
+		const project = createTestEnvironment(testCast(conflictSpec), {
 			customizeMethodName: () => "getName",
 		});
 		const serviceFile = project.getSourceFileOrThrow(
@@ -267,7 +253,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 	});
 
 	it("should import a model used in a request body", () => {
-		const project = createTestEnvironment(fullCRUD_Users);
+		const project = createTestEnvironment(testCast(fullCRUD_Users));
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/users.service.ts",
 		);
@@ -279,7 +265,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 	});
 
 	it("should not add primitive array types to model imports", () => {
-		const project = createTestEnvironment(coverageSpec);
+		const project = createTestEnvironment(testCast(coverageSpec));
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/stringArray.service.ts",
 		);
@@ -293,7 +279,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 	});
 
 	it("should not add primitive parameter types to model imports", () => {
-		const project = createTestEnvironment(coverageSpec);
+		const project = createTestEnvironment(testCast(coverageSpec));
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/users.service.ts",
 		);
@@ -304,7 +290,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 	});
 
 	it("should generate a correct create-context method", () => {
-		const project = createTestEnvironment(coverageSpec);
+		const project = createTestEnvironment(testCast(coverageSpec));
 		const serviceClass = project
 			.getSourceFileOrThrow("/out/services/users.service.ts")
 			.getClassOrThrow("UsersService");
@@ -340,7 +326,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 			security: [{ Basic: [] }],
 		};
 
-		const project = createTestEnvironment(specWithOverride);
+		const project = createTestEnvironment(testCast(specWithOverride));
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/public.service.ts",
 		);
@@ -371,7 +357,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 			components: {},
 		};
 
-		const project = createTestEnvironment(specWithoutGlobalSec);
+		const project = createTestEnvironment(testCast(specWithoutGlobalSec));
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/public.service.ts",
 		);
@@ -445,7 +431,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 			},
 		};
 
-		const project = createTestEnvironment(spec);
+		const project = createTestEnvironment(testCast(spec));
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/mixed.service.ts",
 		);
@@ -497,7 +483,7 @@ describe("Generators (Angular): ServiceGenerator", () => {
 			},
 		};
 
-		const project = createTestEnvironment(spec);
+		const project = createTestEnvironment(testCast(spec));
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/encoded.service.ts",
 		);

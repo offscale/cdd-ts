@@ -1,9 +1,7 @@
-// @ts-nocheck
-
 import { ContentEncoderGenerator } from "@src/openapi/emit_content_encoder.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 
 function getContentEncoder() {
 	const project = createTestProject();
@@ -19,12 +17,12 @@ function getContentEncoder() {
 	});
 
 	const moduleScope = {
-		exports: {} as string | number | boolean | object | undefined | null,
+		exports: testCast({}),
 	};
 	// Fix: Manually attach the class to exports since we stripped the keyword
 	const finalCode = `${jsCode}; exports.ContentEncoder = ContentEncoder;`;
 
-	new Function("exports", finalCode)(moduleScope.exports);
+	testCast(new Function("exports", finalCode)(moduleScope.exports));
 
 	return moduleScope.exports.ContentEncoder;
 }

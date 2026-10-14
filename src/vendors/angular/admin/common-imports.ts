@@ -1,4 +1,9 @@
 /**
+ * Module for common imports in vendors/angular/admin/common-imports.
+ *
+ * @module vendors/angular/admin/common-imports
+ */
+/**
  * A centralized list of Angular and Material modules commonly required by standalone
  * components in the generated admin UI. This avoids duplicating the import list
  * in every component generator.

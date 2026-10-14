@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import * as naming from "@src/functions/utils_naming.js";
 
 import type { MethodDeclaration } from "ts-morph";

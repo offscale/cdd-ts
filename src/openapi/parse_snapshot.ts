@@ -1,25 +1,79 @@
+/**
+ * Reads and writes `openapi.snapshot.json` and `openapi.snapshot.yaml` files.
+ *
+ * @module openapi/parse_snapshot
+ */
 import path from "node:path";
 import yaml from "js-yaml";
 import type { SwaggerSpec } from "../core/types/index.js";
 
-export type SnapshotFileSystem = {
-	existsSync?: (filePath: string) => boolean;
-	mkdirSync: (dirPath: string, options?: { recursive?: boolean }) => void;
-	writeFileSync: (filePath: string, data: string) => void;
-	readFileSync: (filePath: string, encoding: string) => string;
-	statSync: (filePath: string) => {
-		isFile: () => boolean;
-		isDirectory: () => boolean;
-	};
-};
+/** Directory creation options for `SnapshotFileSystem.mkdirSync`. */
+export interface SnapshotMkdirOptions {
+	/** Whether parent directories should be created recursively. */
+	recursive?: boolean;
+}
+
+/** File status entry returned by `SnapshotFileSystem.statSync`. */
+export interface SnapshotFileStat {
+	/**
+	 * Returns `true` if the path is a regular file.
+	 * @returns `true` if file.
+	 */
+	isFile(): boolean;
+	/**
+	 * Returns `true` if the path is a directory.
+	 * @returns `true` if directory.
+	 */
+	isDirectory(): boolean;
+}
+
+/**
+ * File system abstraction required for reading and writing OpenAPI snapshots.
+ */
+export interface SnapshotFileSystem {
+	/**
+	 * Optional existence check.
+	 * @param filePath - Path to check.
+	 * @returns `true` if the path exists.
+	 */
+	existsSync?(filePath: string): boolean;
+	/**
+	 * Creates a directory synchronously.
+	 * @param dirPath - Directory path to create.
+	 * @param options - Optional recursive creation options.
+	 */
+	mkdirSync(dirPath: string, options?: SnapshotMkdirOptions): void;
+	/**
+	 * Writes UTF-8 text to a file synchronously.
+	 * @param filePath - Destination file path.
+	 * @param data - Text content to write.
+	 */
+	writeFileSync(filePath: string, data: string): void;
+	/**
+	 * Reads a file synchronously using the given encoding.
+	 * @param filePath - Source file path.
+	 * @param encoding - Text encoding string.
+	 * @returns File text content.
+	 */
+	readFileSync(filePath: string, encoding: BufferEncoding): string;
+	/**
+	 * Returns file or directory status synchronously.
+	 * @param filePath - Path to inspect.
+	 * @returns File status entry.
+	 */
+	statSync(filePath: string): SnapshotFileStat;
+}
 
 /** Supported snapshot serialization formats. */
 export type SnapshotFormat = "json" | "yaml";
 
 /** Result returned by snapshot reader functions. */
 export type SnapshotReadResult = {
+	/** Parsed OpenAPI/Swagger specification object. */
 	spec: SwaggerSpec;
+	/** Resolved file path of the snapshot. */
 	sourcePath: string;
+	/** Format of the snapshot (`"json"` or `"yaml"`). */
 	format: SnapshotFormat;
 };
 
@@ -113,6 +167,11 @@ function resolveSnapshotFile(
 /**
  * Reads an OpenAPI snapshot from a file path or directory.
  * Accepts either a direct snapshot file or a directory containing snapshot files.
+ *
+ * @param inputPath - Path to a snapshot file or directory containing a snapshot.
+ * @param fileSystem - File system adapter.
+ * @returns The parsed `SnapshotReadResult`.
+ * @throws {Error} When no valid snapshot file is found or parsing fails.
  */
 export function readOpenApiSnapshot(
 	inputPath: string,
@@ -127,14 +186,27 @@ export function readOpenApiSnapshot(
 	return { spec, sourcePath: resolved.filePath, format: resolved.format };
 }
 
+/** Paths written by `writeOpenApiSnapshot`. */
+export interface SnapshotWriteResult {
+	/** Path to the written JSON snapshot file. */
+	jsonPath: string;
+	/** Path to the written YAML snapshot file. */
+	yamlPath: string;
+}
+
 /**
  * Writes OpenAPI snapshot files (JSON and YAML) to an output directory.
+ *
+ * @param spec - OpenAPI/Swagger specification object to serialize.
+ * @param outputDir - Target directory where snapshot files will be written.
+ * @param fileSystem - File system adapter.
+ * @returns Object containing the written `jsonPath` and `yamlPath`.
  */
 export function writeOpenApiSnapshot(
 	spec: SwaggerSpec,
 	outputDir: string,
 	fileSystem: SnapshotFileSystem,
-): { jsonPath: string; yamlPath: string } {
+): SnapshotWriteResult {
 	if (!fileExists(fileSystem, outputDir)) {
 		fileSystem.mkdirSync(outputDir, { recursive: true });
 	}
@@ -153,9 +225,18 @@ export function writeOpenApiSnapshot(
 	return { jsonPath, yamlPath };
 }
 
-/** Standard snapshot filenames used by the generator. */
+/** Standard snapshot filenames by extension key. */
+export interface SnapshotFilenamesMap {
+	/** JSON snapshot filename. */
+	json: string;
+	/** YAML (`.yaml`) snapshot filename. */
+	yaml: string;
+	/** YAML (`.yml`) snapshot filename. */
+	yml: string;
+}
 
-export const SNAPSHOT_FILENAMES = {
+/** Standard snapshot filenames used by the generator. */
+export const SNAPSHOT_FILENAMES: SnapshotFilenamesMap = {
 	json: SNAPSHOT_JSON,
 	yaml: SNAPSHOT_YAML,
 	yml: SNAPSHOT_YML,

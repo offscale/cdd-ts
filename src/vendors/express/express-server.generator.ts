@@ -1,5 +1,10 @@
+/**
+ * Generates Express.js routers, MCP SSE endpoints, server entrypoints, and route unit/E2E tests using ts-morph AST builders.
+ *
+ * @module vendors/express/express-server.generator
+ */
 import path from "node:path";
-import type { Project } from "ts-morph";
+import type { CodeBlockWriter, Project } from "ts-morph";
 import type { IServerFrameworkGenerator } from "../../core/server/index.js";
 import type { GeneratorConfig } from "../../core/types/config.js";
 import type { Parameter } from "../../core/types/openapi.js";
@@ -8,16 +13,16 @@ import { generateAdvancedMiddlewares } from "./advanced-mock-middlewares.js";
 
 /**
  * Express framework generator implementation.
- * Generates Express.js routers and tests.
+ * Generates Express.js routers, MCP SSE endpoints, server entrypoints, and tests.
  */
 export class ExpressServerGenerator implements IServerFrameworkGenerator {
 	/**
-	 * Generates Express routes and corresponding tests for a given entity.
-	 * @param project The ts-morph project.
-	 * @param schemaName The name of the schema/entity.
-	 * @param outputDir The directory to save the route in.
-	 * @param orm The ORM being used, if any.
-	 * @param config The generator configuration options.
+	 * Generates Express routes for Model Context Protocol (MCP) SSE and message handling.
+	 *
+	 * @param project - The `ts-morph` project.
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param outputDir - Target directory for `mcp.routes.ts`.
+	 * @param _config - Optional generator configuration.
 	 */
 	public generateMcpRoutes(
 		project: Project,
@@ -57,142 +62,217 @@ export class ExpressServerGenerator implements IServerFrameworkGenerator {
 		const title = info.title || "api-mcp";
 		const version = info.version || "1.0.0";
 
-		let statements = `
-export function createMcpRouter() {
-    const router = Router();
-    const server = new McpServer({
-        name: '${title}',
-        version: '${version}',
-    });
+		sourceFile.addFunction({
+			isExported: true,
+			name: "createMcpRouter",
+			statements: (writer: CodeBlockWriter) => {
+				writer.writeLine("const router = Router();");
+				writer.writeLine("const server = new McpServer({");
+				writer.indent(() => {
+					writer.writeLine(`name: '${title}',`);
+					writer.writeLine(`version: '${version}',`);
+				});
+				writer.writeLine("});");
+				writer.blankLine();
+				writer.writeLine("server.resource(");
+				writer.indent(() => {
+					writer.writeLine("'openapi_spec',");
+					writer.writeLine("'openapi://spec',");
+					writer.writeLine(
+						"{ mimeType: 'application/json', description: 'The complete OpenAPI specification' },",
+					);
+					writer.writeLine("async (uri) => ({");
+					writer.indent(() => {
+						writer.writeLine("contents: [{");
+						writer.indent(() => {
+							writer.writeLine("uri: uri.href,");
+							writer.writeLine("mimeType: 'application/json',");
+							writer.writeLine('text: "{}"');
+						});
+						writer.writeLine("}]");
+					});
+					writer.writeLine("})");
+				});
+				writer.writeLine(");");
+				writer.blankLine();
+				writer.writeLine("server.prompt(");
+				writer.indent(() => {
+					writer.writeLine("'analyze_spec',");
+					writer.writeLine("{");
+					writer.indent(() => {
+						writer.writeLine(
+							"query: z.string().optional().describe('Specific query about the API (optional)'),",
+						);
+					});
+					writer.writeLine("} as any,");
+					writer.writeLine("async (args: any) => ({");
+					writer.indent(() => {
+						writer.writeLine("messages: [");
+						writer.indent(() => {
+							writer.writeLine("{");
+							writer.indent(() => {
+								writer.writeLine("role: 'user',");
+								writer.writeLine("content: {");
+								writer.indent(() => {
+									writer.writeLine("type: 'text',");
+									writer.writeLine(
+										"text: `Please analyze this OpenAPI specification. ${args.query ? `Focus on: ${args.query}` : 'Provide a general summary.'}` + ' {}',",
+									);
+								});
+								writer.writeLine("}");
+							});
+							writer.writeLine("}");
+						});
+						writer.writeLine("]");
+					});
+					writer.writeLine("} as any)");
+				});
+				writer.writeLine(");");
 
-    server.resource(
-        'openapi_spec',
-        'openapi://spec',
-        { mimeType: 'application/json', description: 'The complete OpenAPI specification' },
-        async (uri) => ({
-            contents: [{
-                uri: uri.href,
-                mimeType: 'application/json',
-                text: "{}"
-            }]
-        })
-    );
+				for (const op of parser.operations) {
+					const group = op.tags?.[0]
+						? typeof op.tags[0] === "string"
+							? op.tags[0]
+							: (op.tags[0] as object as { name?: string }).name ||
+								String(op.tags[0])
+						: "Default";
+					const serviceName = `${group}Service`;
+					const methodName =
+						op.operationId || op.path.replace(/\//g, "_").replace(/^_/, "");
 
-    server.prompt(
-        'analyze_spec',
-        {
-            query: z.string().optional().describe('Specific query about the API (optional)'),
-        } as any,
-        async (args: any) => ({
-            messages: [
-                {
-                    role: 'user',
-                    content: {
-                        type: 'text',
-                        text: \`Please analyze this OpenAPI specification. \${args.query ? \`Focus on: \${args.query}\` : 'Provide a general summary.'}
+					let toolName = methodName.replace(
+						/[A-Z]/g,
+						(letter: string) => `_${letter.toLowerCase()}`,
+					);
+					if (toolName.startsWith("_")) toolName = toolName.slice(1);
 
-        Spec:\\n\` + "{}"
-                    }
-                }
-            ]
-        } as any)
-    );
-`;
+					const opDesc = (op.summary || op.description || "").replace(
+						/'/g,
+						"'",
+					);
 
-		for (const op of parser.operations) {
-			const group = op.tags?.[0]
-				? typeof op.tags[0] === "string"
-					? op.tags[0]
-					: (op.tags[0] as object as { name?: string }).name ||
-						String(op.tags[0])
-				: "Default";
-			const serviceName = `${group}Service`;
-			const methodName =
-				op.operationId || op.path.replace(/\//g, "_").replace(/^_/, "");
-
-			// basic snake_case
-			let toolName = methodName.replace(
-				/[A-Z]/g,
-				(letter: string) => `_${letter.toLowerCase()}`,
-			);
-			if (toolName.startsWith("_")) toolName = toolName.slice(1);
-
-			const opDesc = (op.summary || op.description || "").replace(/'/g, "\\'");
-
-			statements += `
-    server.tool(
-        '${toolName}',
-        '${opDesc}',
-        {`;
-
-			if (op.parameters) {
-				for (const param of op.parameters) {
-					const p = param as Parameter;
-					if (p.name) {
-						const zodType = p.required ? "z.string()" : "z.string().optional()";
-						const desc = (p.description || "").replace(/'/g, "\\'");
-						statements += `\n            ${p.name}: ${zodType}${desc ? `.describe('${desc}')` : ""},`;
-					}
-				}
-			}
-			if (op.requestBody) {
-				statements += `\n            body: z.any().optional().describe('JSON request body'),`;
-			}
-
-			statements += `
-        } as any,
-        async (args: any) => {
-            try {
-                ${
-									_config?.options?.generateServices
-										? `const client = new services.${serviceName}();
-                const res = await client.${methodName}(args as any);`
-										: `const res = { message: "Mock MCP execution. Enable --generateServices to bind real clients." };`
+					writer.blankLine();
+					writer.writeLine("server.tool(");
+					writer.indent(() => {
+						writer.writeLine(`'${toolName}',`);
+						writer.writeLine(`'${opDesc}',`);
+						writer.writeLine("{");
+						writer.indent(() => {
+							if (op.parameters) {
+								for (const param of op.parameters) {
+									const p = param as Parameter;
+									if (p.name) {
+										const zodType = p.required
+											? "z.string()"
+											: "z.string().optional()";
+										const desc = (p.description || "").replace(/'/g, "'");
+										writer.writeLine(
+											`${p.name}: ${zodType}${desc ? `.describe('${desc}')` : ""},`,
+										);
+									}
 								}
-                return {
-                    content: [{ type: 'text', text: JSON.stringify(res, null, 2) }]
-                } as any;
-            } catch (err) {
-                return {
-                    isError: true,
-                    content: [{ type: 'text', text: err instanceof Error ? err.message : String(err) }]
-                } as any;
-            }
-        }
-    );
-`;
-		}
+							}
+							if (op.requestBody) {
+								writer.writeLine(
+									"body: z.any().optional().describe('JSON request body'),",
+								);
+							}
+						});
+						writer.writeLine("} as any,");
+						writer.writeLine("async (args: any) => {");
+						writer.indent(() => {
+							writer.writeLine("try {");
+							writer.indent(() => {
+								if (_config?.options?.generateServices) {
+									writer.writeLine(
+										`const client = new services.${serviceName}();`,
+									);
+									writer.writeLine(
+										`const res = await client.${methodName}(args as any);`,
+									);
+								} else {
+									writer.writeLine(
+										'const res = { message: "Mock MCP execution. Enable --generateServices to bind real clients." };',
+									);
+								}
+								writer.writeLine("return {");
+								writer.indent(() => {
+									writer.writeLine(
+										"content: [{ type: 'text', text: JSON.stringify(res, null, 2) }]",
+									);
+								});
+								writer.writeLine("} as any;");
+							});
+							writer.writeLine("} catch (err) {");
+							writer.indent(() => {
+								writer.writeLine("return {");
+								writer.indent(() => {
+									writer.writeLine("isError: true,");
+									writer.writeLine(
+										"content: [{ type: 'text', text: err instanceof Error ? err.message : String(err) }]",
+									);
+								});
+								writer.writeLine("} as any;");
+							});
+							writer.writeLine("}");
+						});
+						writer.writeLine("}");
+					});
+					writer.writeLine(");");
+				}
 
-		statements += `
-    let transport: SSEServerTransport;
-
-    router.get('/mcp/sse', async (req: Request, res: Response) => {
-        transport = new SSEServerTransport('/mcp/messages', res);
-        await server.connect(transport);
-        
-        if (req.headers.authorization) {
-            // Forward basic auth/bearer token to context if needed
-            (server as any).auth = req.headers.authorization;
-        }
-        
-        await transport.start();
-    });
-
-    router.post('/mcp/messages', async (req: Request, res: Response) => {
-        if (!transport) {
-            res.status(503).json({ error: 'SSE connection not established' });
-            return;
-        }
-        await transport.handlePostMessage(req, res);
-    });
-
-    return router;
-}
-`;
-		sourceFile.addStatements(statements);
+				writer.blankLine();
+				writer.writeLine("let transport: SSEServerTransport;");
+				writer.blankLine();
+				writer.writeLine(
+					"router.get('/mcp/sse', async (req: Request, res: Response) => {",
+				);
+				writer.indent(() => {
+					writer.writeLine(
+						"transport = new SSEServerTransport('/mcp/messages', res);",
+					);
+					writer.writeLine("await server.connect(transport);");
+					writer.writeLine("if (req.headers.authorization) {");
+					writer.indent(() => {
+						writer.writeLine(
+							"(server as any).auth = req.headers.authorization;",
+						);
+					});
+					writer.writeLine("}");
+					writer.writeLine("await transport.start();");
+				});
+				writer.writeLine("});");
+				writer.blankLine();
+				writer.writeLine(
+					"router.post('/mcp/messages', async (req: Request, res: Response) => {",
+				);
+				writer.indent(() => {
+					writer.writeLine("if (!transport) {");
+					writer.indent(() => {
+						writer.writeLine(
+							"res.status(503).json({ error: 'SSE connection not established' });",
+						);
+						writer.writeLine("return;");
+					});
+					writer.writeLine("}");
+					writer.writeLine("await transport.handlePostMessage(req, res);");
+				});
+				writer.writeLine("});");
+				writer.blankLine();
+				writer.writeLine("return router;");
+			},
+		});
 		sourceFile.formatText();
 	}
 
+	/**
+	 * Generates the Express server entrypoint (`server.ts`) and its test suite (`server.spec.ts`).
+	 *
+	 * @param project - The `ts-morph` project.
+	 * @param schemas - Entity schema names to wire into Express routes.
+	 * @param outputDir - Target directory for `server.ts`.
+	 * @param parser - Optional parsed OpenAPI specification for middleware generation.
+	 */
 	public generateServerEntrypoint(
 		project: Project,
 		schemas: string[],
@@ -252,92 +332,128 @@ export function createMcpRouter() {
 			});
 		}
 
-		sourceFile.addStatements(`
-	/**
-	* Main server entrypoint.
-	* Handles CLI flags, database connection, fake data seeding, and router initialization.
-	*/
-	export async function startServer(args: string[] = process.argv): Promise<express.Application> {
-	const program = new Command();
+		sourceFile.addFunction({
+			isExported: true,
+			isAsync: true,
+			name: "startServer",
+			returnType: "Promise<express.Application>",
+			docs: [
+				{
+					description:
+						"Main server entrypoint. Handles CLI flags, database connection, fake data seeding, and router initialization.",
+				},
+			],
+			parameters: [
+				{
+					name: "args",
+					type: "string[]",
+					initializer: "process.argv",
+				},
+			],
+			statements: (writer: CodeBlockWriter) => {
+				writer.writeLine("const program = new Command();");
+				writer.blankLine();
+				writer.writeLine("program");
+				writer.indent(() => {
+					writer.writeLine('.name("cdd-server")');
+					writer.writeLine('.description("CDD Mock Server")');
+					writer.writeLine(
+						'.option("--ephemeral", "Triggers the Concrete DAOs and overrides DATABASE_URL with a throwaway database.")',
+					);
+					writer.writeLine(
+						'.option("--seed", "Runs the fake data seeder on startup (requires a concrete DB connection).")',
+					);
+					writer.writeLine(
+						'.option("--strict-validation", "Enables strict OpenAPI request validation.")',
+					);
+					writer.writeLine(
+						'.option("--enforce-auth", "Enables strict authentication validation.");',
+					);
+				});
+				writer.blankLine();
+				writer.writeLine("program.parse(args);");
+				writer.writeLine("const options = program.opts();");
+				writer.blankLine();
+				writer.writeLine("const app = express();");
+				writer.writeLine("app.use(express.json());");
+				writer.writeLine("app.use(corsMiddleware);");
+				writer.blankLine();
+				writer.writeLine("const isEphemeral = !!options.ephemeral;");
+				writer.writeLine("const isSeed = !!options.seed;");
+				writer.writeLine("const isStrict = !!options['strict-validation'];");
+				writer.writeLine("const isAuth = !!options['enforce-auth'];");
+				writer.writeLine("const dbUrl = process.env.DATABASE_URL;");
+				writer.blankLine();
+				writer.writeLine("app.use(createValidationMiddleware(isStrict));");
+				writer.writeLine("app.use(createAuthMiddleware(isAuth, isEphemeral));");
+				writer.blankLine();
+				writer.writeLine("const dataSource = await createDatabaseConnection({");
+				writer.indent(() => {
+					writer.writeLine("databaseUrl: dbUrl,");
+					writer.writeLine("ephemeral: isEphemeral");
+				});
+				writer.writeLine("});");
+				writer.blankLine();
+				writer.writeLine("if (isSeed && dataSource) {");
+				writer.indent(() => {
+					writer.writeLine("const seeder = new DatabaseSeeder();");
+					writer.writeLine("await seeder.seedDatabase(dataSource);");
+					writer.writeLine('console.log("Database seeded successfully.");');
+				});
+				writer.writeLine("}");
+				writer.blankLine();
+				writer.writeLine("app.locals.dataSource = dataSource;");
+				writer.writeLine("const factory = new DaoFactory();");
+				writer.writeLine("app.use(createWebhooksRouter());");
 
-	program
-	.name("cdd-server")
-	.description("CDD Mock Server")
-	.option("--ephemeral", "Triggers the Concrete DAOs and overrides DATABASE_URL with a throwaway database.")
-	.option("--seed", "Runs the fake data seeder on startup (requires a concrete DB connection).")
-        .option("--strict-validation", "Enables strict OpenAPI request validation.")
-        .option("--enforce-auth", "Enables strict authentication validation.");
+				for (const schema of schemas) {
+					writer.blankLine();
+					writer.writeLine("if (dataSource) {");
+					writer.indent(() => {
+						writer.writeLine(
+							`app.use('/${schema.toLowerCase()}', create${schema}Router(dataSource));`,
+						);
+					});
+					writer.writeLine("} else {");
+					writer.indent(() => {
+						writer.writeLine(
+							`app.use('/${schema.toLowerCase()}', express.Router().use((req, res) => res.status(501).json({ error: "Not Implemented (No DB)" })));`,
+						);
+					});
+					writer.writeLine("}");
+				}
 
-	program.parse(args);
-	const options = program.opts();
+				writer.blankLine();
+				writer.writeLine("return app;");
+			},
+		});
 
-	const app = express();
-	app.use(express.json());
-        app.use(corsMiddleware);
-
-	const isEphemeral = !!options.ephemeral;
-	const isSeed = !!options.seed;
-        const isStrict = !!options['strict-validation'];
-        const isAuth = !!options['enforce-auth'];
-	const dbUrl = process.env.DATABASE_URL;
-
-        app.use(createValidationMiddleware(isStrict));
-        app.use(createAuthMiddleware(isAuth, isEphemeral));
-
-	// 1. Database Initialization
-	const dataSource = await createDatabaseConnection({
-	databaseUrl: dbUrl,
-	ephemeral: isEphemeral
-	});
-
-	// 2. Data Seeding
-	if (isSeed && dataSource) {
-	const seeder = new DatabaseSeeder();
-	await seeder.seedDatabase(dataSource);
-	console.log("Database seeded successfully.");
-	}
-
-	// 3. Resolve DAOs
-	app.locals.dataSource = dataSource;
-    const factory = new DaoFactory();
-
-	// In a full DI implementation, the DAO factory would be passed to routers or services.
-	// For now, we pass dataSource directly to the generated TypeORM routes if it exists,
-	// otherwise the routes should handle null or we just mock them.
-	// (Our routers currently expect a DataSource or use Stubs).
-
-        app.use(createWebhooksRouter());
-
-	${schemas
-		.map((schema) => {
-			return `
-	if (dataSource) {
-	    app.use('/${schema.toLowerCase()}', create${schema}Router(dataSource));
-	} else {
-	    // Fallback to stub routes or no-op if no DB
-	    app.use('/${schema.toLowerCase()}', express.Router().use((req, res) => res.status(501).json({ error: "Not Implemented (No DB)" })));
-	}`;
-		})
-		.join("\n")}
-
-	return app;
-	}
-
-	if (require.main === module) {
-	startServer().then(app => {
-	const port = process.env.PORT || 3000;
-	app.listen(port, () => {
-	    console.log(\`Server is listening on port \${port}\`);
-	});
-	}).catch(err => {
-	console.error("Failed to start server", err);
-	process.exit(1);
-	});
-	}
-	`);
+		sourceFile.addStatements((writer: CodeBlockWriter) => {
+			writer.blankLine();
+			writer.writeLine("if (require.main === module) {");
+			writer.indent(() => {
+				writer.writeLine("startServer().then(app => {");
+				writer.indent(() => {
+					writer.writeLine("const port = process.env.PORT || 3000;");
+					writer.writeLine("app.listen(port, () => {");
+					writer.indent(() => {
+						writer.writeLine(
+							"console.log(`Server is listening on port ${port}`);",
+						);
+					});
+					writer.writeLine("});");
+				});
+				writer.writeLine("}).catch(err => {");
+				writer.indent(() => {
+					writer.writeLine('console.error("Failed to start server", err);');
+					writer.writeLine("process.exit(1);");
+				});
+				writer.writeLine("});");
+			});
+			writer.writeLine("}");
+		});
 		sourceFile.formatText();
 
-		// Generate Test
 		const testPath = path.join(outputDir, "server.spec.ts");
 		const testFile = project.createSourceFile(testPath, "", {
 			overwrite: true,
@@ -352,29 +468,66 @@ export function createMcpRouter() {
 			namedImports: ["startServer"],
 		});
 
-		testFile.addStatements(`
-	describe('Server Entrypoint', () => {
-	it('should initialize stub mode when no DB args are provided', async () => {
-	const app = await startServer(['node', 'script.js']);
-	expect(app).toBeDefined();
-        if ((app as any).locals && (app as any).locals.dataSource) await (app as any).locals.dataSource.destroy();
-	});
-
-	it('should initialize ephemeral mode with --ephemeral', async () => {
-	const app = await startServer(['node', 'script.js', '--ephemeral']);
-	expect(app).toBeDefined();
-        if ((app as any).locals && (app as any).locals.dataSource) await (app as any).locals.dataSource.destroy();
-	});
-
-	it('should seed data when --seed and --ephemeral are provided', async () => {
-	const app = await startServer(['node', 'script.js', '--ephemeral', '--seed']);
-	expect(app).toBeDefined();
-        if ((app as any).locals && (app as any).locals.dataSource) await (app as any).locals.dataSource.destroy();
-	});
-	});
-	`);
+		testFile.addStatements((writer: CodeBlockWriter) => {
+			writer.writeLine("describe('Server Entrypoint', () => {");
+			writer.indent(() => {
+				writer.writeLine(
+					"it('should initialize stub mode when no DB args are provided', async () => {",
+				);
+				writer.indent(() => {
+					writer.writeLine(
+						"const app = await startServer(['node', 'script.js']);",
+					);
+					writer.writeLine("expect(app).toBeDefined();");
+					writer.writeLine(
+						"if ((app as any).locals && (app as any).locals.dataSource) await (app as any).locals.dataSource.destroy();",
+					);
+				});
+				writer.writeLine("});");
+				writer.blankLine();
+				writer.writeLine(
+					"it('should initialize ephemeral mode with --ephemeral', async () => {",
+				);
+				writer.indent(() => {
+					writer.writeLine(
+						"const app = await startServer(['node', 'script.js', '--ephemeral']);",
+					);
+					writer.writeLine("expect(app).toBeDefined();");
+					writer.writeLine(
+						"if ((app as any).locals && (app as any).locals.dataSource) await (app as any).locals.dataSource.destroy();",
+					);
+				});
+				writer.writeLine("});");
+				writer.blankLine();
+				writer.writeLine(
+					"it('should seed data when --seed and --ephemeral are provided', async () => {",
+				);
+				writer.indent(() => {
+					writer.writeLine(
+						"const app = await startServer(['node', 'script.js', '--ephemeral', '--seed']);",
+					);
+					writer.writeLine("expect(app).toBeDefined();");
+					writer.writeLine(
+						"if ((app as any).locals && (app as any).locals.dataSource) await (app as any).locals.dataSource.destroy();",
+					);
+				});
+				writer.writeLine("});");
+			});
+			writer.writeLine("});");
+		});
 		testFile.formatText();
 	}
+
+	/**
+	 * Generates Express entity routes, mock data factories, and optional unit/E2E route test suites.
+	 *
+	 * @param project - The `ts-morph` project.
+	 * @param schemaName - The name of the entity schema.
+	 * @param outputDir - Target directory for route files.
+	 * @param orm - Optional ORM identifier (`"typeorm"`).
+	 * @param config - Optional generator configuration.
+	 * @param parser - Optional parsed OpenAPI specification.
+	 */
 	public generateEntityRoutes(
 		project: Project,
 		schemaName: string,
@@ -393,6 +546,14 @@ export function createMcpRouter() {
 		}
 	}
 
+	/**
+	 * Generates a Faker-based mock entity factory (`<entity>.mock.ts`).
+	 *
+	 * @param project - The `ts-morph` project.
+	 * @param schemaName - The name of the entity schema.
+	 * @param outputDir - Target routes directory.
+	 * @param _parser - Optional parsed OpenAPI specification.
+	 */
 	private generateMock(
 		project: Project,
 		schemaName: string,
@@ -415,7 +576,7 @@ export function createMcpRouter() {
 			namedImports: [schemaName],
 		});
 
-		let fakeFields = "";
+		const fieldLines: string[] = [];
 		const schemaDef = _parser?.schemas.find(
 			(s) => s.name === schemaName,
 		)?.definition;
@@ -426,42 +587,60 @@ export function createMcpRouter() {
 
 				if (propDef.type === "string") {
 					if (propDef.format === "date" || propDef.format === "date-time") {
-						fakeFields += `\n        ${propName}: faker.date.past().toISOString() as any,`;
+						fieldLines.push(
+							`${propName}: faker.date.past().toISOString() as any,`,
+						);
 					} else if (propName.toLowerCase().includes("email")) {
-						fakeFields += `\n        ${propName}: faker.internet.email() as any,`;
+						fieldLines.push(`${propName}: faker.internet.email() as any,`);
 					} else if (
 						propName.toLowerCase().includes("name") ||
 						propName.toLowerCase() === "first" ||
 						propName.toLowerCase() === "last"
 					) {
-						fakeFields += `\n        ${propName}: faker.person.firstName() as any,`;
+						fieldLines.push(`${propName}: faker.person.firstName() as any,`);
 					} else {
-						fakeFields += `\n        ${propName}: faker.lorem.word() as any,`;
+						fieldLines.push(`${propName}: faker.lorem.word() as any,`);
 					}
 				} else if (propDef.type === "integer" || propDef.type === "number") {
-					fakeFields += `\n        ${propName}: faker.number.int({ min: 1, max: 1000 }) as any,`;
+					fieldLines.push(
+						`${propName}: faker.number.int({ min: 1, max: 1000 }) as any,`,
+					);
 				} else if (propDef.type === "boolean") {
-					fakeFields += `\n        ${propName}: faker.datatype.boolean() as any,`;
+					fieldLines.push(`${propName}: faker.datatype.boolean() as any,`);
 				} else if (propDef.type === "array") {
-					fakeFields += `\n        ${propName}: [] as any,`;
+					fieldLines.push(`${propName}: [] as any,`);
 				} else {
-					fakeFields += `\n        ${propName}: {} as any,`;
+					fieldLines.push(`${propName}: {} as any,`);
 				}
 			}
 		}
 
-		sourceFile.addStatements(`
-	/**
-	* Generates a fake ${schemaName} mock.
-	*/
-	export function fake${schemaName}(): Partial<${schemaName}> {
-	return {${fakeFields}
-	};
-	}
-	`);
+		sourceFile.addFunction({
+			isExported: true,
+			name: `fake${schemaName}`,
+			returnType: `Partial<${schemaName}>`,
+			docs: [{ description: `Generates a fake ${schemaName} mock.` }],
+			statements: (writer: CodeBlockWriter) => {
+				writer.writeLine("return {");
+				writer.indent(() => {
+					for (const line of fieldLines) {
+						writer.writeLine(line);
+					}
+				});
+				writer.writeLine("};");
+			},
+		});
 		sourceFile.formatText();
 	}
 
+	/**
+	 * Generates the Express router file (`<entity>.routes.ts`) for an entity.
+	 *
+	 * @param project - The `ts-morph` project.
+	 * @param schemaName - The name of the entity schema.
+	 * @param outputDir - Target routes directory.
+	 * @param orm - Optional ORM identifier (`"typeorm"`).
+	 */
 	private generateEntityRoute(
 		project: Project,
 		schemaName: string,
@@ -490,81 +669,118 @@ export function createMcpRouter() {
 				namedImports: [schemaName],
 			});
 
-			sourceFile.addStatements(`
-/**
- * Creates an Express Router for the ${schemaName} entity.
- * @param dataSource The active TypeORM DataSource.
- * @returns An Express Router instance.
- */
-export function create${schemaName}Router(dataSource: DataSource): Router {
-    const router = Router();
-    const repository = dataSource.getRepository(${schemaName});
-
-    /**
-     * GET /
-     * Retrieves all ${schemaName} entities.
-     */
-    router.get('/', async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const entities = await repository.find();
-            res.json(entities);
-        } catch (error) {
-            next(error);
-        }
-    });
-
-    /**
-     * POST /
-     * Creates a new ${schemaName} entity.
-     */
-    router.post('/', async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            // TODO: Validate req.body against the ${schemaName} schema before saving to prevent Mass Assignment
-            const entity = repository.create(req.body);
-            const saved = await repository.save(entity);
-            res.status(201).json(saved);
-        } catch (error) {
-            next(error);
-        }
-    });
-
-    return router;
-}
-            `);
+			sourceFile.addFunction({
+				isExported: true,
+				name: `create${schemaName}Router`,
+				returnType: "Router",
+				parameters: [{ name: "dataSource", type: "DataSource" }],
+				docs: [
+					{
+						description: `Creates an Express Router for the ${schemaName} entity.`,
+						tags: [
+							{
+								tagName: "param",
+								text: "dataSource The active TypeORM DataSource.",
+							},
+							{ tagName: "returns", text: "An Express Router instance." },
+						],
+					},
+				],
+				statements: (writer: CodeBlockWriter) => {
+					writer.writeLine("const router = Router();");
+					writer.writeLine(
+						`const repository = dataSource.getRepository(${schemaName});`,
+					);
+					writer.blankLine();
+					writer.writeLine(
+						"router.get('/', async (req: Request, res: Response, next: NextFunction) => {",
+					);
+					writer.indent(() => {
+						writer.writeLine("try {");
+						writer.indent(() => {
+							writer.writeLine("const entities = await repository.find();");
+							writer.writeLine("res.json(entities);");
+						});
+						writer.writeLine("} catch (error) {");
+						writer.indent(() => {
+							writer.writeLine("next(error);");
+						});
+						writer.writeLine("}");
+					});
+					writer.writeLine("});");
+					writer.blankLine();
+					writer.writeLine(
+						"router.post('/', async (req: Request, res: Response, next: NextFunction) => {",
+					);
+					writer.indent(() => {
+						writer.writeLine("try {");
+						writer.indent(() => {
+							writer.writeLine("const entity = repository.create(req.body);");
+							writer.writeLine("const saved = await repository.save(entity);");
+							writer.writeLine("res.status(201).json(saved);");
+						});
+						writer.writeLine("} catch (error) {");
+						writer.indent(() => {
+							writer.writeLine("next(error);");
+						});
+						writer.writeLine("}");
+					});
+					writer.writeLine("});");
+					writer.blankLine();
+					writer.writeLine("return router;");
+				},
+			});
 		} else {
 			sourceFile.addImportDeclaration({
 				moduleSpecifier: `../mocks/${fileName}.mock.js`,
 				namedImports: [`fake${schemaName}`],
 			});
 
-			sourceFile.addStatements(`
-/**
- * Creates an Express Router for the ${schemaName} entity.
- * @returns An Express Router instance.
- */
-export function create${schemaName}Router(): Router {
-    const router = Router();
-
-    /**
-     * GET /
-     * Retrieves all ${schemaName} entities.
-     */
-    router.get('/', async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            res.json([fake${schemaName}()]);
-        } catch (error) {
-            next(error);
-        }
-    });
-
-    return router;
-}
-            `);
+			sourceFile.addFunction({
+				isExported: true,
+				name: `create${schemaName}Router`,
+				returnType: "Router",
+				docs: [
+					{
+						description: `Creates an Express Router for the ${schemaName} entity.`,
+						tags: [{ tagName: "returns", text: "An Express Router instance." }],
+					},
+				],
+				statements: (writer: CodeBlockWriter) => {
+					writer.writeLine("const router = Router();");
+					writer.blankLine();
+					writer.writeLine(
+						"router.get('/', async (req: Request, res: Response, next: NextFunction) => {",
+					);
+					writer.indent(() => {
+						writer.writeLine("try {");
+						writer.indent(() => {
+							writer.writeLine(`res.json([fake${schemaName}()]);`);
+						});
+						writer.writeLine("} catch (error) {");
+						writer.indent(() => {
+							writer.writeLine("next(error);");
+						});
+						writer.writeLine("}");
+					});
+					writer.writeLine("});");
+					writer.blankLine();
+					writer.writeLine("return router;");
+				},
+			});
 		}
 
 		sourceFile.formatText();
 	}
 
+	/**
+	 * Generates the unit test suite (`<entity>.routes.spec.ts`) for an entity's Express router.
+	 *
+	 * @param project - The `ts-morph` project.
+	 * @param schemaName - The name of the entity schema.
+	 * @param outputDir - Target routes directory.
+	 * @param orm - Optional ORM identifier (`"typeorm"`).
+	 */
 	private generateRouteTest(
 		project: Project,
 		schemaName: string,
@@ -577,73 +793,139 @@ export function create${schemaName}Router(): Router {
 			overwrite: true,
 		});
 
-		sourceFile.addStatements(`import { describe, it, expect, vi, beforeEach } from 'vitest';
-import request from 'supertest';
-import express from 'express';
-import { create${schemaName}Router } from './${fileName}.routes.js';\n`);
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "vitest",
+			namedImports: ["describe", "it", "expect", "vi", "beforeEach"],
+		});
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "supertest",
+			defaultImport: "request",
+		});
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "express",
+			defaultImport: "express",
+		});
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: `./${fileName}.routes.js`,
+			namedImports: [`create${schemaName}Router`],
+		});
 
 		if (orm === "typeorm") {
-			sourceFile.addStatements(`import { DataSource } from 'typeorm';
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: "typeorm",
+				namedImports: ["DataSource"],
+			});
 
-describe('${schemaName} Routes (Unit)', () => {
-    let app: express.Application;
-    let mockRepository: any;
-    let mockDataSource: any;
-
-    beforeEach(() => {
-        mockRepository = {
-            find: vi.fn().mockResolvedValue([{ id: 1 }]),
-            create: vi.fn().mockImplementation((data: any) => data),
-            save: vi.fn().mockImplementation(async (data: any) => ({ id: 1, ...data }))
-        };
-
-        mockDataSource = {
-            getRepository: vi.fn().mockReturnValue(mockRepository)
-        } as unknown as DataSource;
-
-        app = express();
-        app.use(express.json());
-        app.use('/${fileName}', create${schemaName}Router(mockDataSource));
-    });
-
-    it('GET /${fileName} should return entities', async () => {
-        const res = await request(app).get('/${fileName}');
-        expect(res.status).toBe(200);
-        expect(res.body).toEqual([{ id: 1 }]);
-        expect(mockRepository.find).toHaveBeenCalled();
-    });
-
-    it('POST /${fileName} should create an entity', async () => {
-        const res = await request(app).post('/${fileName}').send({ someData: 'test' });
-        expect(res.status).toBe(201);
-        expect(res.body).toMatchObject({ id: 1, someData: 'test' });
-        expect(mockRepository.save).toHaveBeenCalled();
-    });
-});
-            `);
+			sourceFile.addStatements((writer: CodeBlockWriter) => {
+				writer.writeLine(`describe('${schemaName} Routes (Unit)', () => {`);
+				writer.indent(() => {
+					writer.writeLine("let app: express.Application;");
+					writer.writeLine("let mockRepository: any;");
+					writer.writeLine("let mockDataSource: any;");
+					writer.blankLine();
+					writer.writeLine("beforeEach(() => {");
+					writer.indent(() => {
+						writer.writeLine("mockRepository = {");
+						writer.indent(() => {
+							writer.writeLine("find: vi.fn().mockResolvedValue([{ id: 1 }]),");
+							writer.writeLine(
+								"create: vi.fn().mockImplementation((data: any) => data),",
+							);
+							writer.writeLine(
+								"save: vi.fn().mockImplementation(async (data: any) => ({ id: 1, ...data }))",
+							);
+						});
+						writer.writeLine("};");
+						writer.blankLine();
+						writer.writeLine("mockDataSource = {");
+						writer.indent(() => {
+							writer.writeLine(
+								"getRepository: vi.fn().mockReturnValue(mockRepository)",
+							);
+						});
+						writer.writeLine("} as Partial<DataSource> as DataSource;");
+						writer.blankLine();
+						writer.writeLine("app = express();");
+						writer.writeLine("app.use(express.json());");
+						writer.writeLine(
+							`app.use('/${fileName}', create${schemaName}Router(mockDataSource));`,
+						);
+					});
+					writer.writeLine("});");
+					writer.blankLine();
+					writer.writeLine(
+						`it('GET /${fileName} should return entities', async () => {`,
+					);
+					writer.indent(() => {
+						writer.writeLine(
+							`const res = await request(app).get('/${fileName}');`,
+						);
+						writer.writeLine("expect(res.status).toBe(200);");
+						writer.writeLine("expect(res.body).toEqual([{ id: 1 }]);");
+						writer.writeLine("expect(mockRepository.find).toHaveBeenCalled();");
+					});
+					writer.writeLine("});");
+					writer.blankLine();
+					writer.writeLine(
+						`it('POST /${fileName} should create an entity', async () => {`,
+					);
+					writer.indent(() => {
+						writer.writeLine(
+							`const res = await request(app).post('/${fileName}').send({ someData: 'test' });`,
+						);
+						writer.writeLine("expect(res.status).toBe(201);");
+						writer.writeLine(
+							"expect(res.body).toMatchObject({ id: 1, someData: 'test' });",
+						);
+						writer.writeLine("expect(mockRepository.save).toHaveBeenCalled();");
+					});
+					writer.writeLine("});");
+				});
+				writer.writeLine("});");
+			});
 		} else {
-			sourceFile.addStatements(`
-describe('${schemaName} Routes (Unit)', () => {
-    let app: express.Application;
-
-    beforeEach(() => {
-        app = express();
-        app.use(express.json());
-        app.use('/${fileName}', create${schemaName}Router());
-    });
-
-    it('GET /${fileName} should return entities', async () => {
-        const res = await request(app).get('/${fileName}');
-        expect(res.status).toBe(200);
-        expect(res.body).toEqual([expect.any(Object)]);
-    });
-});
-            `);
+			sourceFile.addStatements((writer: CodeBlockWriter) => {
+				writer.writeLine(`describe('${schemaName} Routes (Unit)', () => {`);
+				writer.indent(() => {
+					writer.writeLine("let app: express.Application;");
+					writer.blankLine();
+					writer.writeLine("beforeEach(() => {");
+					writer.indent(() => {
+						writer.writeLine("app = express();");
+						writer.writeLine("app.use(express.json());");
+						writer.writeLine(
+							`app.use('/${fileName}', create${schemaName}Router());`,
+						);
+					});
+					writer.writeLine("});");
+					writer.blankLine();
+					writer.writeLine(
+						`it('GET /${fileName} should return entities', async () => {`,
+					);
+					writer.indent(() => {
+						writer.writeLine(
+							`const res = await request(app).get('/${fileName}');`,
+						);
+						writer.writeLine("expect(res.status).toBe(200);");
+						writer.writeLine("expect(res.body).toEqual([expect.any(Object)]);");
+					});
+					writer.writeLine("});");
+				});
+				writer.writeLine("});");
+			});
 		}
 
 		sourceFile.formatText();
 	}
 
+	/**
+	 * Generates the E2E test suite (`<entity>.e2e.spec.ts`) for an entity's Express router.
+	 *
+	 * @param project - The `ts-morph` project.
+	 * @param schemaName - The name of the entity schema.
+	 * @param outputDir - Target routes directory.
+	 * @param orm - Optional ORM identifier (`"typeorm"`).
+	 */
 	private generateE2ETest(
 		project: Project,
 		schemaName: string,
@@ -657,76 +939,141 @@ describe('${schemaName} Routes (Unit)', () => {
 		});
 
 		if (orm === "typeorm") {
-			sourceFile.addStatements(`
-		import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-		import request from 'supertest';
-		import express from 'express';
-		import { DataSource } from 'typeorm';
-		import { ${schemaName} } from '../entities/${fileName}.entity.js';
-		import { create${schemaName}Router } from './${fileName}.routes.js';
-		import { fake${schemaName} } from '../mocks/${fileName}.mock.js';
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: "vitest",
+				namedImports: ["describe", "it", "expect", "beforeAll", "afterAll"],
+			});
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: "supertest",
+				defaultImport: "request",
+			});
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: "express",
+				defaultImport: "express",
+			});
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: "typeorm",
+				namedImports: ["DataSource"],
+			});
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: `../entities/${fileName}.entity.js`,
+				namedImports: [schemaName],
+			});
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: `./${fileName}.routes.js`,
+				namedImports: [`create${schemaName}Router`],
+			});
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: `../mocks/${fileName}.mock.js`,
+				namedImports: [`fake${schemaName}`],
+			});
 
-		describe('${schemaName} E2E (Routes + Storage)', () => {
-		let app: express.Application;
-		let dataSource: DataSource;
-
-		beforeAll(async () => {
-		dataSource = new DataSource({
-		type: 'better-sqlite3',
-		database: ':memory:',
-		entities: [${schemaName}],
-		synchronize: true,
-		logging: false
-		});
-		await dataSource.initialize();
-
-		app = express();
-		app.use(express.json());
-		app.use('/${fileName}', create${schemaName}Router(dataSource));
-		});
-
-		afterAll(async () => {
-		await dataSource.destroy();
-		});
-
-		it('should perform CRUD operations on ${schemaName}', async () => {
-		let res = await request(app).get('/${fileName}');
-		expect(res.status).toBe(200);
-		expect(res.body).toEqual([]);
-
-		res = await request(app).post('/${fileName}').send(fake${schemaName}());
-		expect(res.status).toBe(201);
-		expect(res.body).toHaveProperty('id');
-
-		res = await request(app).get('/${fileName}');
-		expect(res.status).toBe(200);
-		expect(res.body.length).toBe(1);
-		});
-		});
-		`);
+			sourceFile.addStatements((writer: CodeBlockWriter) => {
+				writer.writeLine(
+					`describe('${schemaName} E2E (Routes + Storage)', () => {`,
+				);
+				writer.indent(() => {
+					writer.writeLine("let app: express.Application;");
+					writer.writeLine("let dataSource: DataSource;");
+					writer.blankLine();
+					writer.writeLine("beforeAll(async () => {");
+					writer.indent(() => {
+						writer.writeLine("dataSource = new DataSource({");
+						writer.indent(() => {
+							writer.writeLine("type: 'better-sqlite3',");
+							writer.writeLine("database: ':memory:',");
+							writer.writeLine(`entities: [${schemaName}],`);
+							writer.writeLine("synchronize: true,");
+							writer.writeLine("logging: false");
+						});
+						writer.writeLine("});");
+						writer.writeLine("await dataSource.initialize();");
+						writer.blankLine();
+						writer.writeLine("app = express();");
+						writer.writeLine("app.use(express.json());");
+						writer.writeLine(
+							`app.use('/${fileName}', create${schemaName}Router(dataSource));`,
+						);
+					});
+					writer.writeLine("});");
+					writer.blankLine();
+					writer.writeLine("afterAll(async () => {");
+					writer.indent(() => {
+						writer.writeLine("await dataSource.destroy();");
+					});
+					writer.writeLine("});");
+					writer.blankLine();
+					writer.writeLine(
+						`it('should perform CRUD operations on ${schemaName}', async () => {`,
+					);
+					writer.indent(() => {
+						writer.writeLine(
+							`let res = await request(app).get('/${fileName}');`,
+						);
+						writer.writeLine("expect(res.status).toBe(200);");
+						writer.writeLine("expect(res.body).toEqual([]);");
+						writer.blankLine();
+						writer.writeLine(
+							`res = await request(app).post('/${fileName}').send(fake${schemaName}());`,
+						);
+						writer.writeLine("expect(res.status).toBe(201);");
+						writer.writeLine("expect(res.body).toHaveProperty('id');");
+						writer.blankLine();
+						writer.writeLine(`res = await request(app).get('/${fileName}');`);
+						writer.writeLine("expect(res.status).toBe(200);");
+						writer.writeLine("expect(res.body.length).toBe(1);");
+					});
+					writer.writeLine("});");
+				});
+				writer.writeLine("});");
+			});
 		} else {
-			sourceFile.addStatements(`
-import { describe, it, expect, beforeAll } from 'vitest';
-import request from 'supertest';
-import express from 'express';
-import { create${schemaName}Router } from './${fileName}.routes.js';
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: "vitest",
+				namedImports: ["describe", "it", "expect", "beforeAll"],
+			});
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: "supertest",
+				defaultImport: "request",
+			});
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: "express",
+				defaultImport: "express",
+			});
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: `./${fileName}.routes.js`,
+				namedImports: [`create${schemaName}Router`],
+			});
 
-describe('${schemaName} E2E (Routes)', () => {
-    let app: express.Application;
-
-    beforeAll(() => {
-        app = express();
-        app.use(express.json());
-        app.use('/${fileName}', create${schemaName}Router());
-    });
-
-    it('should perform GET on ${schemaName}', async () => {
-        const res = await request(app).get('/${fileName}');
-        expect(res.status).toBe(200);
-        expect(res.body).toEqual([expect.any(Object)]);
-    });
-});
-            `);
+			sourceFile.addStatements((writer: CodeBlockWriter) => {
+				writer.writeLine(`describe('${schemaName} E2E (Routes)', () => {`);
+				writer.indent(() => {
+					writer.writeLine("let app: express.Application;");
+					writer.blankLine();
+					writer.writeLine("beforeAll(() => {");
+					writer.indent(() => {
+						writer.writeLine("app = express();");
+						writer.writeLine("app.use(express.json());");
+						writer.writeLine(
+							`app.use('/${fileName}', create${schemaName}Router());`,
+						);
+					});
+					writer.writeLine("});");
+					writer.blankLine();
+					writer.writeLine(
+						`it('should perform GET on ${schemaName}', async () => {`,
+					);
+					writer.indent(() => {
+						writer.writeLine(
+							`const res = await request(app).get('/${fileName}');`,
+						);
+						writer.writeLine("expect(res.status).toBe(200);");
+						writer.writeLine("expect(res.body).toEqual([expect.any(Object)]);");
+					});
+					writer.writeLine("});");
+				});
+				writer.writeLine("});");
+			});
 		}
 
 		sourceFile.formatText();

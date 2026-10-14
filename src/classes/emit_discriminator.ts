@@ -1,23 +1,37 @@
-// src/generators/shared/discriminator.generator.ts
+/**
+ * Generates the `discriminators.ts` runtime registry for polymorphic OpenAPI schemas.
+ *
+ * @module classes/emit_discriminator
+ */
 import * as path from "node:path";
-import type { SwaggerDefinition } from "@src/core/types/openapi.js";
-
-import { pascalCase } from "@src/functions/utils.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerDefinition } from "../core/types/openapi.js";
+import { pascalCase } from "../functions/utils.js";
+import type { SwaggerParser } from "../openapi/parse.js";
 
 /**
  * Generates the `discriminators.ts` file.
  * This file acts as a runtime registry for handling polymorphism.
  */
 export class DiscriminatorGenerator {
+	/**
+	 * Creates a new `DiscriminatorGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification wrapper.
+	 * @param project - The target `ts-morph` project.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates `discriminators.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Root directory for generated output files.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "discriminators.ts");
 
@@ -122,6 +136,12 @@ export class DiscriminatorGenerator {
 		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 	}
 
+	/**
+	 * Resolves a PascalCase model name from an OpenAPI `$ref` or schema URI.
+	 *
+	 * @param ref - Reference URI or schema name.
+	 * @returns Resolved model name string.
+	 */
 	private resolveModelNameFromRef(ref: string): string {
 		const resolvedSchema = this.parser.resolveReference(ref);
 

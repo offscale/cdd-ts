@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { HeadersGenerator } from "@src/openapi/emit_headers.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
@@ -7,7 +5,7 @@ import type { Project } from "ts-morph";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 
 const specWithHeaders: SwaggerSpec = {
 	openapi: "3.2.0",
@@ -26,13 +24,7 @@ const specWithHeaders: SwaggerSpec = {
 describe("Emitter: HeadersGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = { output: "/out", options: {} } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null;
+		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
 		const parser = new SwaggerParser(spec, config);
 		new HeadersGenerator(parser, project).generate("/out");
 		return project;
@@ -47,10 +39,10 @@ describe("Emitter: HeadersGenerator", () => {
 		});
 
 		const moduleHelper = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		new Function("exports", jsCode)(moduleHelper.exports);
+		testCast(new Function("exports", jsCode)(moduleHelper.exports));
 
 		return moduleHelper.exports;
 	};

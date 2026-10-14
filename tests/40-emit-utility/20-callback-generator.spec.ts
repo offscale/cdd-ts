@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type {
 	GeneratorConfig,
 	SwaggerDefinition,
@@ -10,7 +8,11 @@ import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import {
+	createTestProject,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 
 const mockSpec: SwaggerSpec = {
 	openapi: "3.0.0",
@@ -122,10 +124,10 @@ const refRequestBodyCallbackSpec: SwaggerSpec = {
 describe("Emitter: CallbackGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = {
+		const config: GeneratorConfig = testCast({
 			output: "/out",
 			options: { dateType: "string", enumStyle: "enum" },
-		} as string | number | boolean | object | undefined | null;
+		});
 		const parser = new SwaggerParser(spec, config);
 		if (spec.components?.schemas?.EventPayload) {
 			parser.schemas.push({
@@ -146,10 +148,10 @@ describe("Emitter: CallbackGenerator", () => {
 		});
 
 		const moduleHelper = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		new Function("exports", jsCode)(moduleHelper.exports);
+		testCast(new Function("exports", jsCode)(moduleHelper.exports));
 
 		return moduleHelper.exports;
 	};
@@ -171,13 +173,11 @@ describe("Emitter: CallbackGenerator", () => {
 		expect(API_CALLBACKS).toHaveLength(2);
 
 		const opCallback = API_CALLBACKS.find(
-			(c: string | number | boolean | object | undefined | null) =>
-				c.name === "myWebhook",
+			(c: TestValue) => c.name === "myWebhook",
 		);
 
 		const componentCallback = API_CALLBACKS.find(
-			(c: string | number | boolean | object | undefined | null) =>
-				c.name === "MyCallback",
+			(c: TestValue) => c.name === "MyCallback",
 		);
 
 		expect(opCallback).toBeDefined();
@@ -201,8 +201,7 @@ describe("Emitter: CallbackGenerator", () => {
 		// Should NOT contain brokenWebhook because it resolves to undefined
 
 		const broken = API_CALLBACKS.find(
-			(c: string | number | boolean | object | undefined | null) =>
-				c.name === "brokenWebhook",
+			(c: TestValue) => c.name === "brokenWebhook",
 		);
 
 		expect(broken).toBeUndefined();

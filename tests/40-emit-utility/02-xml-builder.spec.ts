@@ -1,9 +1,7 @@
-// @ts-nocheck
-
 import { XmlBuilderGenerator } from "@src/openapi/emit_xml_builder.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 
 function getXmlBuilder() {
 	const project = createTestProject();
@@ -14,11 +12,9 @@ function getXmlBuilder() {
 		module: ts.ModuleKind.CommonJS,
 	});
 	const moduleScope = { exports: {} };
-	new Function("exports", jsCode)(moduleScope.exports);
+	testCast(new Function("exports", jsCode)(moduleScope.exports));
 
-	return (
-		moduleScope.exports as string | number | boolean | object | undefined | null
-	).XmlBuilder;
+	return testCast(moduleScope.exports).XmlBuilder;
 }
 
 describe("Utility: XmlBuilder", () => {

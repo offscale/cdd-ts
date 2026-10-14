@@ -1,15 +1,30 @@
+/**
+ * Module for webhook helper generator in vendors/angular/utils/webhook-helper.generator.
+ *
+ * @module vendors/angular/utils/webhook-helper.generator
+ */
 import * as path from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, Scope } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
+/** Generator/utility class `WebhookHelperGenerator`. */
 export class WebhookHelperGenerator {
+	/**
+	 * Creates a new `WebhookHelperGenerator` instance.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(
 		private parser: SwaggerParser,
 
 		private project: Project,
 	) {}
 
+	/**
+	 * Executes `generate` on `WebhookHelperGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(outputDir: string): void {
 		// Robust check: parser.webhooks is populated via extractPaths in parser.ts
 		// We also check spec.webhooks raw object just in case parser logic changes

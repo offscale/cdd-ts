@@ -1,15 +1,21 @@
+/**
+ * Reverse parser for extracting OpenAPI path-level metadata from generated `paths.ts` files.
+ *
+ * @module routes/parse
+ */
 import type { SourceFile } from "ts-morph";
 import type { PathItem } from "../core/types/index.js";
+import { evaluateAstLiteral } from "../openapi/parse_ast_literal.js";
 
 /**
- * Parses the \`paths.ts\` file to extract path-level metadata that was previously emitted.
- * This supports the bidirectionality feature of CDD.
+ * Parses the `paths.ts` file to extract path-level metadata that was previously emitted.
+ * This supports the bidirectionality feature of CDD without executing code.
  *
- * @param sourceFile - The ts-morph SourceFile representing \`paths.ts\`.
- * @returns A record of path keys to PathItem metadata, or undefined if the \`API_PATHS\` variable is not found or cannot be parsed.
+ * @param sourceFile - The ts-morph SourceFile representing `paths.ts`.
+ * @returns A record of path keys to PathItem metadata, or undefined if the `API_PATHS` variable is not found or cannot be statically parsed.
  */
 export function parsePathsMetadata(
-	sourceFile: SourceFile,
+	sourceFile: SourceFile | undefined | null,
 ): Record<string, PathItem> | undefined {
 	if (!sourceFile) {
 		return undefined;
@@ -25,20 +31,9 @@ export function parsePathsMetadata(
 		return undefined;
 	}
 
-	try {
-		const text = initializer.getText();
-
-		// In emit.ts, it's generated as JSON.stringify(registry, null, 2) which outputs a raw object literal in TS
-		// E.g. const API_PATHS = { "/pet": { ... } };
-		// We evaluate it securely using Function constructor since we are dealing with our own generated AST node
-		// and we only extract data.
-		const parsed: unknown = new Function(`return ${text}`)();
-
-		if (typeof parsed === "object" && parsed !== null) {
-			return parsed as Record<string, PathItem>;
-		}
-		return undefined;
-	} catch (_e) {
-		return undefined;
+	const parsed = evaluateAstLiteral(initializer);
+	if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+		return parsed as Record<string, PathItem>;
 	}
+	return undefined;
 }

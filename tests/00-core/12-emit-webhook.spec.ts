@@ -2,6 +2,7 @@ import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { WebhookGenerator } from "../../src/functions/emit_webhook.js";
 import { SwaggerParser } from "../../src/openapi/parse.js";
+import { testCast } from "../shared/helpers.js";
 
 describe("WebhookGenerator", () => {
 	it("should handle duplicate type aliases and missing scopes", () => {
@@ -38,7 +39,7 @@ describe("WebhookGenerator", () => {
 			},
 		};
 
-		const parser = new SwaggerParser(spec as any, {
+		const parser = new SwaggerParser(testCast(spec), {
 			input: "memory://spec.json",
 			output: "dummy",
 			options: { framework: "vanilla" },
@@ -86,7 +87,7 @@ describe("WebhookGenerator", () => {
 			},
 		};
 
-		const parser = new SwaggerParser(spec as any, {
+		const parser = new SwaggerParser(testCast(spec), {
 			input: "memory://spec.json",
 			output: "dummy",
 			options: { framework: "vanilla" },

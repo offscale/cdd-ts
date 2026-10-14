@@ -1,10 +1,9 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { type TestCallable, testCast } from "../shared/helpers.js";
 
 const callbackSpec = {
 	openapi: "3.0.0",
@@ -86,8 +85,8 @@ const callbackSpec = {
 
 describe("Emitter: TypeGenerator (Callbacks)", () => {
 	const runGenerator = (
-		spec: string | number | boolean | object | undefined | null,
-		options: string | number | boolean | object | undefined | null = {},
+		spec: unknown,
+		options: Partial<GeneratorConfig["options"]> = {},
 	) => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const config: GeneratorConfig = {
@@ -95,7 +94,7 @@ describe("Emitter: TypeGenerator (Callbacks)", () => {
 			output: "/out",
 			options: { enumStyle: "enum", ...options },
 		};
-		const parser = new SwaggerParser(spec, config);
+		const parser = new SwaggerParser(testCast(spec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 		const sourceFile = project.createSourceFile(
 			"/out/combined.ts",
@@ -109,19 +108,24 @@ describe("Emitter: TypeGenerator (Callbacks)", () => {
 		return sourceFile;
 	};
 
-	it("should generate a request interface for a callback operation", () => {
-		const sourceFile = runGenerator(callbackSpec);
-		const interfaceName = "SubscribeOperationOnDataRequest";
-		const model = sourceFile.getInterfaceOrThrow(interfaceName);
+	testCast<TestCallable>(it)(
+		"should generate a request interface for a callback operation",
+		() => {
+			const sourceFile = runGenerator(testCast(callbackSpec));
+			const interfaceName = "SubscribeOperationOnDataRequest";
+			const model = sourceFile.getInterfaceOrThrow(interfaceName);
 
-		expect(model).toBeDefined();
-		expect(model.isExported()).toBe(true);
-		expect(model.getProperty("timestamp")).toBeDefined();
-		expect(model.getProperty("data")).toBeDefined();
-	});
+			expect(model).toBeDefined();
+			expect(model.isExported()).toBe(true);
+			expect(model.getProperty("timestamp")).toBeDefined();
+			expect(model.getProperty("data")).toBeDefined();
+		},
+	);
 
 	it("should reuse existing schemas referenced in callbacks", () => {
-		const sourceFile = runGenerator(callbackSpec);
+		const sourceFile = testCast<TestCallable>(runGenerator)(
+			testCast(callbackSpec),
+		);
 		// The name is composed of OperationId + CallbackName + Request
 		// doComplex + MyEvent + Request
 		const interfaceName = "DoComplexMyEventRequest";

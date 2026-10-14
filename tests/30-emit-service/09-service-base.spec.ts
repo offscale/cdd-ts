@@ -1,11 +1,10 @@
-// @ts-nocheck
-
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { AbstractServiceGenerator } from "@src/functions/emit_service.js";
 
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 class TestServiceGenerator extends AbstractServiceGenerator {
 	protected getFileName(controllerName: string): string {
@@ -24,34 +23,26 @@ class TestServiceGenerator extends AbstractServiceGenerator {
 describe("Generators: Service Base", () => {
 	it("should sanitize invalid provided method names", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const config: GeneratorConfig = {
+		const config: GeneratorConfig = testCast({
 			input: "",
 			output: "/out",
 			options: {},
-		} as string | number | boolean | object | undefined | null;
+		});
 		const parser = new SwaggerParser(
-			{ openapi: "3.0.0", info: { title: "Test", version: "1" }, paths: {} } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast({
+				openapi: "3.0.0",
+				info: { title: "Test", version: "1" },
+				paths: {},
+			}),
 			config,
 		);
 
 		const generator = new TestServiceGenerator(parser, project, config);
 		const operations = [
-			{ method: "get", path: "/test", methodName: "bad-name" } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast({ method: "get", path: "/test", methodName: "bad-name" }),
 		];
 
-		generator.generate("/out", { Test: operations });
+		generator.generate("/out", { Test: testCast(operations) });
 
 		expect(operations[0].methodName).toBe("badName");
 	});

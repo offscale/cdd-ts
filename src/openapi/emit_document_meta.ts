@@ -1,19 +1,35 @@
+/**
+ * Generates `document.ts` exporting document-level OpenAPI/Swagger metadata (`API_DOCUMENT_META`).
+ *
+ * @module openapi/emit_document_meta
+ */
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerParser } from "./parse.js";
 
 /**
  * Generates the `document.ts` file.
  * Exports document-level OpenAPI/Swagger metadata to support reverse generation.
  */
 export class DocumentMetaGenerator {
+	/**
+	 * Creates a new `DocumentMetaGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param project - The `ts-morph` project to create `document.ts` in.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates `document.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Target SDK output directory.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "document.ts");
 

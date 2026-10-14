@@ -1,4 +1,15 @@
-import type { ClassDeclaration, Project, PropertyDeclaration } from "ts-morph";
+/**
+ * TypeORM parser implementation extracting OpenAPI schema definitions from `@Entity()` classes using AST TypeNode inspection.
+ *
+ * @module vendors/typeorm/parse
+ */
+import {
+	type ClassDeclaration,
+	type Project,
+	type PropertyDeclaration,
+	SyntaxKind,
+	type TypeNode,
+} from "ts-morph";
 import type { IOrmParser } from "../../core/orm/index.js";
 import type { SwaggerDefinition } from "../../core/types/openapi.js";
 
@@ -9,7 +20,7 @@ import type { SwaggerDefinition } from "../../core/types/openapi.js";
 export class TypeOrmParser implements IOrmParser {
 	/**
 	 * Parses the given ts-morph project and returns extracted TypeORM entities as OpenAPI schemas.
-	 * @param project The active ts-morph project containing the TypeScript TypeORM entities.
+	 * @param project - The active ts-morph project containing the TypeScript TypeORM entities.
 	 * @returns A dictionary of OpenAPI SwaggerDefinitions extracted from the code.
 	 */
 	public parse(project: Project): Record<string, SwaggerDefinition | boolean> {
@@ -33,7 +44,7 @@ export class TypeOrmParser implements IOrmParser {
 
 	/**
 	 * Checks if a class is decorated with `@Entity`.
-	 * @param cls The class declaration to check.
+	 * @param cls - The class declaration to check.
 	 * @returns True if the class is a TypeORM entity.
 	 */
 	private isEntityClass(cls: ClassDeclaration): boolean {
@@ -42,7 +53,7 @@ export class TypeOrmParser implements IOrmParser {
 
 	/**
 	 * Parses a TypeORM entity class into a SwaggerDefinition.
-	 * @param cls The class declaration representing the entity.
+	 * @param cls - The class declaration representing the entity.
 	 * @returns An OpenAPI SwaggerDefinition representing the entity.
 	 */
 	private parseEntity(cls: ClassDeclaration): SwaggerDefinition {
@@ -52,24 +63,24 @@ export class TypeOrmParser implements IOrmParser {
 			required: [],
 		};
 
+		const requiredProps: string[] = [];
+
 		const properties = cls.getProperties();
 		for (const prop of properties) {
 			if (this.isColumnProperty(prop)) {
 				const propName = prop.getName();
-				const propType = prop.getType().getText();
-
-				const definition = this.mapTypeToDefinition(propType);
+				const definition = this.mapPropertyToDefinition(prop);
 				schema.properties![propName] = definition;
 
-				// If property is not optional (no `?`), it's required
 				if (!prop.hasQuestionToken()) {
-					schema.required?.push(propName);
+					requiredProps.push(propName);
 				}
 			}
 		}
 
-		// Clean up empty required array
-		if (schema.required && schema.required.length === 0) {
+		if (requiredProps.length > 0) {
+			schema.required = requiredProps;
+		} else {
 			delete schema.required;
 		}
 
@@ -78,7 +89,7 @@ export class TypeOrmParser implements IOrmParser {
 
 	/**
 	 * Checks if a property is a TypeORM column (decorated with `@Column`, `@PrimaryGeneratedColumn`, etc.).
-	 * @param prop The property declaration to check.
+	 * @param prop - The property declaration to check.
 	 * @returns True if the property is a TypeORM column.
 	 */
 	private isColumnProperty(prop: PropertyDeclaration): boolean {
@@ -97,22 +108,66 @@ export class TypeOrmParser implements IOrmParser {
 	}
 
 	/**
-	 * Maps a TypeScript type string to an OpenAPI schema definition.
-	 * @param tsType The TypeScript type string.
+	 * Maps a TypeORM property declaration to an OpenAPI schema definition using its AST `TypeNode`.
+	 * @param prop - The property declaration to inspect.
+	 * @returns An OpenAPI SwaggerDefinition representing the property's type.
+	 */
+	private mapPropertyToDefinition(
+		prop: PropertyDeclaration,
+	): SwaggerDefinition {
+		const typeNode = prop.getTypeNode();
+		return this.mapTypeNodeToDefinition(typeNode);
+	}
+
+	/**
+	 * Maps a TypeScript AST `TypeNode` to an OpenAPI schema definition.
+	 * @param typeNode - The AST type node (or undefined).
 	 * @returns An OpenAPI SwaggerDefinition representing the type.
 	 */
-	private mapTypeToDefinition(tsType: string): SwaggerDefinition {
-		// Basic mapping
-		const typeStr = tsType.toLowerCase();
-		if (typeStr.includes("string")) {
-			return { type: "string" };
-		} else if (typeStr.includes("number")) {
-			return { type: "number" };
-		} else if (typeStr.includes("boolean")) {
-			return { type: "boolean" };
-		} else if (typeStr.includes("date")) {
-			return { type: "string", format: "date-time" };
+	private mapTypeNodeToDefinition(
+		typeNode: TypeNode | undefined,
+	): SwaggerDefinition {
+		if (!typeNode) {
+			return { type: "object" };
 		}
-		return { type: "object" }; // Fallback
+
+		const kind = typeNode.getKind();
+		if (kind === SyntaxKind.StringKeyword) {
+			return { type: "string" };
+		}
+		if (kind === SyntaxKind.NumberKeyword) {
+			return { type: "number" };
+		}
+		if (kind === SyntaxKind.BooleanKeyword) {
+			return { type: "boolean" };
+		}
+		if (kind === SyntaxKind.ArrayType) {
+			const elemNode = (
+				typeNode as TypeNode & { getElementTypeNode: () => TypeNode }
+			).getElementTypeNode();
+			return {
+				type: "array",
+				items: this.mapTypeNodeToDefinition(elemNode),
+			};
+		}
+		if (kind === SyntaxKind.TypeReference) {
+			const refNode = typeNode as TypeNode & {
+				getTypeName: () => { getText: () => string };
+				getTypeArguments: () => TypeNode[];
+			};
+			const typeName = refNode.getTypeName().getText().trim();
+			if (typeName === "Date") {
+				return { type: "string", format: "date-time" };
+			}
+			if (typeName === "Array") {
+				const typeArgs = refNode.getTypeArguments();
+				return {
+					type: "array",
+					items: this.mapTypeNodeToDefinition(typeArgs[0]),
+				};
+			}
+		}
+
+		return { type: "object" };
 	}
 }

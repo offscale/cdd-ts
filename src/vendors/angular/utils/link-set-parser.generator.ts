@@ -1,10 +1,24 @@
+/**
+ * Module for link set parser generator in vendors/angular/utils/link-set-parser.generator.
+ *
+ * @module vendors/angular/utils/link-set-parser.generator
+ */
 import * as path from "node:path";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "@src/core/constants.js";
 import { type Project, Scope } from "ts-morph";
+import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 
+/** Generator/utility class `LinkSetParserGenerator`. */
 export class LinkSetParserGenerator {
+	/**
+	 * Creates a new `LinkSetParserGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Executes `generate` on `LinkSetParserGenerator`.
+	 * @param outputDir - Target output directory path.
+	 */
 	public generate(outputDir: string): void {
 		const utilsDir = path.join(outputDir, "utils");
 

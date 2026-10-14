@@ -1,20 +1,15 @@
-// @ts-nocheck
-
 import { InfoGenerator } from "@src/openapi/emit_info.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 import { emptySpec } from "../shared/specs.js";
 
 describe("Emitter: InfoGenerator", () => {
 	const runGenerator = (spec: object) => {
 		const project = createTestProject();
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
-		);
+		const parser = new SwaggerParser(testCast(spec), testCast({ options: {} }));
 		new InfoGenerator(parser, project).generate("/out");
 		return project;
 	};
@@ -28,10 +23,10 @@ describe("Emitter: InfoGenerator", () => {
 		});
 
 		const moduleHelper = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		new Function("exports", jsCode)(moduleHelper.exports);
+		testCast(new Function("exports", jsCode)(moduleHelper.exports));
 
 		return moduleHelper.exports;
 	};
@@ -265,14 +260,12 @@ describe("Emitter: InfoGenerator", () => {
 	it("should fall back to empty info object if parser info is missing", () => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			emptySpec as string | number | boolean | object | undefined | null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
+			testCast(emptySpec),
+			testCast({ options: {} }),
 		);
 		// Simulate a defensive fallback scenario after validation
 
-		(
-			parser as string | number | boolean | object | undefined | null
-		).spec.info = undefined;
+		parser.spec.info = testCast(undefined);
 
 		new InfoGenerator(parser, project).generate("/out");
 

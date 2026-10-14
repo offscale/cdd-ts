@@ -1,3 +1,8 @@
+/**
+ * Contracts for server framework route, MCP endpoint, and entrypoint code generation.
+ *
+ * @module core/server
+ */
 import type { Project } from "ts-morph";
 import type { GeneratorConfig } from "../types/config.js";
 
@@ -8,11 +13,12 @@ import type { GeneratorConfig } from "../types/config.js";
 export interface IServerFrameworkGenerator {
 	/**
 	 * Generates the routing logic, route tests, and E2E tests for a specific entity/model.
-	 * @param project The active ts-morph project where the files will be written.
-	 * @param schemaName The name of the schema/entity.
-	 * @param outputDir The directory where the server code should be saved.
-	 * @param orm The ORM being used, if any.
-	 * @param config The generator configuration options.
+	 * @param project - The active ts-morph project where the files will be written.
+	 * @param schemaName - The name of the schema/entity.
+	 * @param outputDir - The directory where the server code should be saved.
+	 * @param orm - The ORM being used, if any.
+	 * @param config - The generator configuration options.
+	 * @param parser - Optional parsed OpenAPI specification.
 	 */
 	generateEntityRoutes(
 		project: Project,
@@ -25,10 +31,10 @@ export interface IServerFrameworkGenerator {
 
 	/**
 	 * Generates the MCP Server Integration logic (e.g. SSE endpoints).
-	 * @param project The active ts-morph project where the files will be written.
-	 * @param parser The parsed OpenAPI specification.
-	 * @param outputDir The directory where the server code should be saved.
-	 * @param config The generator configuration options.
+	 * @param project - The active ts-morph project where the files will be written.
+	 * @param parser - The parsed OpenAPI specification.
+	 * @param outputDir - The directory where the server code should be saved.
+	 * @param config - The generator configuration options.
 	 */
 	generateMcpRoutes?(
 		project: Project,
@@ -39,9 +45,10 @@ export interface IServerFrameworkGenerator {
 
 	/**
 	 * Generates the main server entrypoint and CLI handler.
-	 * @param project The active ts-morph project where the files will be written.
-	 * @param schemas The list of schemas.
-	 * @param outputDir The directory where the server code should be saved.
+	 * @param project - The active ts-morph project where the files will be written.
+	 * @param schemas - The list of schemas.
+	 * @param outputDir - The directory where the server code should be saved.
+	 * @param parser - Optional parsed OpenAPI specification.
 	 */
 	generateServerEntrypoint?(
 		project: Project,

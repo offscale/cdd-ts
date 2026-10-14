@@ -1,3 +1,8 @@
+/**
+ * Model Context Protocol (MCP) server implementation over stdio for cdd-ts.
+ *
+ * @module mcp_server
+ */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -11,8 +16,11 @@ import {
 /**
  * Initializes and starts the Model Context Protocol (MCP) server over stdio.
  * Provides tools for schema inspection, bidirectional sync, and SDK/server generation.
+ *
+ * @returns A promise that resolves once the MCP stdio transport is connected.
+ * @throws {Error} When the stdio transport fails to connect.
  */
-export async function serveMcp() {
+export async function serveMcp(): Promise<void> {
 	const mcp = new McpServer({
 		name: "cdd-ts-mcp-server",
 		version: "1.0.0",
@@ -170,7 +178,11 @@ export async function serveMcp() {
 		async (args) => {
 			try {
 				const { SwaggerParser } = await import("./openapi/parse.js");
-				const parser = await SwaggerParser.create(args.input, {} as any);
+				const parser = await SwaggerParser.create(args.input, {
+					input: args.input,
+					output: "",
+					options: {},
+				});
 				const info = parser.spec.info || { title: "Unknown", version: "1.0.0" };
 				const pathsCount = Object.keys(parser.spec.paths || {}).length;
 				return {
@@ -210,14 +222,23 @@ export async function serveMcp() {
 					parseGeneratedMetadata,
 				} = await import("./functions/utils.js");
 				const fs = await import("node:fs");
+				const fsAdapter = {
+					statSync: fs.statSync,
+					readFileSync: fs.readFileSync as (
+						filePath: string,
+						encoding: string,
+					) => string,
+					readdirSync: fs.readdirSync,
+					existsSync: fs.existsSync,
+				};
 
 				let result: unknown;
 				if (args.queryType === "models") {
-					result = parseGeneratedModels(args.input, fs as any);
+					result = parseGeneratedModels(args.input, fsAdapter);
 				} else if (args.queryType === "services") {
-					result = parseGeneratedServices(args.input, fs as any);
+					result = parseGeneratedServices(args.input, fsAdapter);
 				} else if (args.queryType === "metadata") {
-					result = parseGeneratedMetadata(args.input, fs as any);
+					result = parseGeneratedMetadata(args.input, fsAdapter);
 				}
 
 				return {

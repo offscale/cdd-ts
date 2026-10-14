@@ -1,33 +1,35 @@
-// @ts-nocheck
-
 import { ResponseHeaderRegistryGenerator } from "@src/openapi/emit_response_header_registry.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ResponseHeaderParserGenerator } from "@src/vendors/angular/utils/response-header-parser.generator.js";
 import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import {
+	createTestProject,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 
 describe("Emitter: Response Header Utilities", () => {
 	const createParser = (
-		spec: string | number | boolean | object | undefined | null,
-		options: string | number | boolean | object | undefined | null = {},
+		spec: Record<string, unknown>,
+		options: Record<string, unknown> = {},
 	) =>
 		new SwaggerParser(
-			{
+			testCast({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
-
 				...spec,
-			} as string | number | boolean | object | undefined | null,
-
-			{ options } as string | number | boolean | object | undefined | null,
+			}),
+			testCast({ options }),
 		);
 
 	describe("Registry Generator", () => {
 		it("should skip generation if no response headers are defined", () => {
 			const project = createTestProject();
-			const parser = createParser({ paths: {} });
-			new ResponseHeaderRegistryGenerator(parser, project).generate("/out");
+			const parser = createParser({ paths: testCast({}) });
+			new ResponseHeaderRegistryGenerator(testCast(parser), project).generate(
+				"/out",
+			);
 			const file = project.getSourceFile("/out/response-headers.ts");
 			expect(file).toBeDefined();
 			expect(file?.getText()).toContain("export { };");
@@ -64,8 +66,10 @@ describe("Emitter: Response Header Utilities", () => {
 				},
 			};
 
-			const parser = createParser(spec, { dateType: "Date" });
-			new ResponseHeaderRegistryGenerator(parser, project).generate("/out");
+			const parser = createParser(testCast(spec), { dateType: "Date" });
+			new ResponseHeaderRegistryGenerator(testCast(parser), project).generate(
+				"/out",
+			);
 
 			const file = project.getSourceFileOrThrow("/out/response-headers.ts");
 			const text = file.getText().replace(/import.*;/g, "");
@@ -75,10 +79,10 @@ describe("Emitter: Response Header Utilities", () => {
 			});
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			new Function("exports", jsCode)(moduleScope.exports);
+			testCast(new Function("exports", jsCode)(moduleScope.exports));
 
 			const API_RESPONSE_HEADERS = moduleScope.exports.API_RESPONSE_HEADERS;
 
@@ -117,8 +121,10 @@ describe("Emitter: Response Header Utilities", () => {
 				},
 			};
 
-			const parser = createParser(spec);
-			new ResponseHeaderRegistryGenerator(parser, project).generate("/out");
+			const parser = createParser(testCast(spec));
+			new ResponseHeaderRegistryGenerator(testCast(parser), project).generate(
+				"/out",
+			);
 
 			const file = project.getSourceFileOrThrow("/out/response-headers.ts");
 			const text = file.getText().replace(/import.*;/g, "");
@@ -128,10 +134,10 @@ describe("Emitter: Response Header Utilities", () => {
 			});
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			new Function("exports", jsCode)(moduleScope.exports);
+			testCast(new Function("exports", jsCode)(moduleScope.exports));
 
 			const API_RESPONSE_HEADERS = moduleScope.exports.API_RESPONSE_HEADERS;
 
@@ -162,8 +168,10 @@ describe("Emitter: Response Header Utilities", () => {
 				},
 			};
 
-			const parser = createParser(spec, { dateType: "string" });
-			new ResponseHeaderRegistryGenerator(parser, project).generate("/out");
+			const parser = createParser(testCast(spec), { dateType: "string" });
+			new ResponseHeaderRegistryGenerator(testCast(parser), project).generate(
+				"/out",
+			);
 
 			const file = project.getSourceFileOrThrow("/out/response-headers.ts");
 			const text = file.getText().replace(/import.*;/g, "");
@@ -173,10 +181,10 @@ describe("Emitter: Response Header Utilities", () => {
 			});
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			new Function("exports", jsCode)(moduleScope.exports);
+			testCast(new Function("exports", jsCode)(moduleScope.exports));
 
 			const API_RESPONSE_HEADERS = moduleScope.exports.API_RESPONSE_HEADERS;
 
@@ -235,8 +243,10 @@ describe("Emitter: Response Header Utilities", () => {
 				},
 			};
 
-			const parser = createParser(spec);
-			new ResponseHeaderRegistryGenerator(parser, project).generate("/out");
+			const parser = createParser(testCast(spec));
+			new ResponseHeaderRegistryGenerator(testCast(parser), project).generate(
+				"/out",
+			);
 
 			const file = project.getSourceFileOrThrow("/out/response-headers.ts");
 			const text = file.getText().replace(/import.*;/g, "");
@@ -246,10 +256,10 @@ describe("Emitter: Response Header Utilities", () => {
 			});
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			new Function("exports", jsCode)(moduleScope.exports);
+			testCast(new Function("exports", jsCode)(moduleScope.exports));
 
 			const API_RESPONSE_HEADER_OBJECTS =
 				moduleScope.exports.API_RESPONSE_HEADER_OBJECTS;
@@ -303,8 +313,10 @@ describe("Emitter: Response Header Utilities", () => {
 					},
 				},
 			};
-			const parser = createParser(spec);
-			new ResponseHeaderRegistryGenerator(parser, project).generate("/out");
+			const parser = createParser(testCast(spec));
+			new ResponseHeaderRegistryGenerator(testCast(parser), project).generate(
+				"/out",
+			);
 
 			const file = project.getSourceFileOrThrow("/out/response-headers.ts");
 			const text = file.getText().replace(/import.*;/g, "");
@@ -314,10 +326,10 @@ describe("Emitter: Response Header Utilities", () => {
 			});
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			new Function("exports", jsCode)(moduleScope.exports);
+			testCast(new Function("exports", jsCode)(moduleScope.exports));
 
 			const { API_RESPONSE_HEADERS, API_HEADER_XML_CONFIGS } =
 				moduleScope.exports;
@@ -360,8 +372,10 @@ describe("Emitter: Response Header Utilities", () => {
 				},
 			};
 
-			const parser = createParser(spec);
-			new ResponseHeaderRegistryGenerator(parser, project).generate("/out");
+			const parser = createParser(testCast(spec));
+			new ResponseHeaderRegistryGenerator(testCast(parser), project).generate(
+				"/out",
+			);
 
 			const file = project.getSourceFileOrThrow("/out/response-headers.ts");
 			const text = file.getText().replace(/import.*;/g, "");
@@ -371,10 +385,10 @@ describe("Emitter: Response Header Utilities", () => {
 			});
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			new Function("exports", jsCode)(moduleScope.exports);
+			testCast(new Function("exports", jsCode)(moduleScope.exports));
 
 			const API_RESPONSE_HEADERS = moduleScope.exports.API_RESPONSE_HEADERS;
 
@@ -434,8 +448,10 @@ describe("Emitter: Response Header Utilities", () => {
 				components: { schemas: {} },
 			};
 
-			const parser = createParser(spec);
-			new ResponseHeaderRegistryGenerator(parser, project).generate("/out");
+			const parser = createParser(testCast(spec));
+			new ResponseHeaderRegistryGenerator(testCast(parser), project).generate(
+				"/out",
+			);
 
 			const file = project.getSourceFileOrThrow("/out/response-headers.ts");
 			const text = file.getText().replace(/import.*;/g, "");
@@ -445,10 +461,10 @@ describe("Emitter: Response Header Utilities", () => {
 			});
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			new Function("exports", jsCode)(moduleScope.exports);
+			testCast(new Function("exports", jsCode)(moduleScope.exports));
 
 			const { API_RESPONSE_HEADERS, API_HEADER_XML_CONFIGS } =
 				moduleScope.exports;
@@ -496,12 +512,14 @@ describe("Emitter: Response Header Utilities", () => {
 					},
 				},
 			};
-			const parser = createParser(spec);
-			const generator = new ResponseHeaderRegistryGenerator(parser, project);
-			vi.spyOn(
-				generator as string | number | boolean | object | undefined | null,
-				"getHeaderTypeInfo",
-			).mockReturnValue({ typeHint: undefined });
+			const parser = createParser(testCast(spec));
+			const generator = new ResponseHeaderRegistryGenerator(
+				testCast(parser),
+				project,
+			);
+			vi.spyOn(testCast(generator), "getHeaderTypeInfo").mockReturnValue(
+				testCast({ typeHint: testCast(undefined) }),
+			);
 
 			generator.generate("/out");
 			const file = project.getSourceFileOrThrow("/out/response-headers.ts");
@@ -512,10 +530,10 @@ describe("Emitter: Response Header Utilities", () => {
 			});
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			new Function("exports", jsCode)(moduleScope.exports);
+			testCast(new Function("exports", jsCode)(moduleScope.exports));
 
 			expect(moduleScope.exports.API_RESPONSE_HEADERS).toEqual({});
 
@@ -528,35 +546,21 @@ describe("Emitter: Response Header Utilities", () => {
 
 		it("should return empty XML config when schema is missing or depth limit is reached", () => {
 			const project = createTestProject();
-			const parser = createParser({ paths: {} });
-			const generator = new ResponseHeaderRegistryGenerator(parser, project);
+			const parser = createParser({ paths: testCast({}) });
+			const generator = new ResponseHeaderRegistryGenerator(
+				testCast(parser),
+				project,
+			);
+
+			expect(generator.getXmlConfig(undefined, 1)).toEqual({});
+
+			expect(generator.getXmlConfig(testCast({ type: "object" }), 0)).toEqual(
+				{},
+			);
 
 			expect(
-				(
-					generator as string | number | boolean | object | undefined | null
-				).getXmlConfig(undefined, 1),
-			).toEqual({});
-
-			expect(
-				(
-					generator as string | number | boolean | object | undefined | null
-				).getXmlConfig(
-					{ type: "object" } as
-						| string
-						| number
-						| boolean
-						| object
-						| undefined
-						| null,
-					0,
-				),
-			).toEqual({});
-
-			expect(
-				(
-					generator as string | number | boolean | object | undefined | null
-				).getXmlConfig(
-					{
+				generator.getXmlConfig(
+					testCast({
 						type: "array",
 						prefixItems: [{ type: "string" }],
 						xml: {
@@ -566,7 +570,7 @@ describe("Emitter: Response Header Utilities", () => {
 							namespace: "b",
 							nodeType: "element",
 						},
-					} as any,
+					}),
 					1,
 				),
 			).toEqual({
@@ -602,8 +606,10 @@ describe("Emitter: Response Header Utilities", () => {
 				},
 			};
 
-			const parser = createParser(spec);
-			new ResponseHeaderRegistryGenerator(parser, project).generate("/out");
+			const parser = createParser(testCast(spec));
+			new ResponseHeaderRegistryGenerator(testCast(parser), project).generate(
+				"/out",
+			);
 
 			const file = project.getSourceFileOrThrow("/out/response-headers.ts");
 			const text = file.getText().replace(/import.*;/g, "");
@@ -613,10 +619,10 @@ describe("Emitter: Response Header Utilities", () => {
 			});
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			new Function("exports", jsCode)(moduleScope.exports);
+			testCast(new Function("exports", jsCode)(moduleScope.exports));
 
 			const API_RESPONSE_HEADERS = moduleScope.exports.API_RESPONSE_HEADERS;
 
@@ -656,8 +662,10 @@ describe("Emitter: Response Header Utilities", () => {
 				},
 			};
 
-			const parser = createParser(spec);
-			new ResponseHeaderRegistryGenerator(parser, project).generate("/out");
+			const parser = createParser(testCast(spec));
+			new ResponseHeaderRegistryGenerator(testCast(parser), project).generate(
+				"/out",
+			);
 
 			const file = project.getSourceFileOrThrow("/out/response-headers.ts");
 			const text = file.getText().replace(/import.*;/g, "");
@@ -667,10 +675,10 @@ describe("Emitter: Response Header Utilities", () => {
 			});
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			new Function("exports", jsCode)(moduleScope.exports);
+			testCast(new Function("exports", jsCode)(moduleScope.exports));
 
 			const headers =
 				moduleScope.exports.API_RESPONSE_HEADERS.getEdgeCases["200"];
@@ -730,12 +738,10 @@ describe("Emitter: Response Header Utilities", () => {
 			};
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			const mockInjectable =
-				() => (target: string | number | boolean | object | undefined | null) =>
-					target;
+			const mockInjectable = () => (target: TestValue) => target;
 
 			const wrappedCode = `
                 const API_RESPONSE_HEADERS = ${JSON.stringify(API_RESPONSE_HEADERS)};
@@ -745,9 +751,11 @@ describe("Emitter: Response Header Utilities", () => {
                 ${jsCode} 
             `;
 
-			new Function("exports", "Injectable", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
+			testCast(
+				new Function("exports", "Injectable", wrappedCode)(
+					moduleScope.exports,
+					mockInjectable,
+				),
 			);
 
 			const ServiceClass = moduleScope.exports.ResponseHeaderService;
@@ -784,10 +792,7 @@ describe("Emitter: Response Header Utilities", () => {
 			});
 
 			const XmlParserMock = {
-				parse: (
-					xml: string,
-					config: string | number | boolean | object | undefined | null,
-				) => ({
+				parse: (xml: string, config: TestValue) => ({
 					parsed: true,
 					root: config.name,
 					raw: xml,
@@ -811,12 +816,10 @@ describe("Emitter: Response Header Utilities", () => {
 			};
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			const mockInjectable =
-				() => (target: string | number | boolean | object | undefined | null) =>
-					target;
+			const mockInjectable = () => (target: TestValue) => target;
 
 			const wrappedCode = `
                 const API_RESPONSE_HEADERS = ${JSON.stringify(API_RESPONSE_HEADERS)};
@@ -827,9 +830,11 @@ describe("Emitter: Response Header Utilities", () => {
                 ${jsCode} 
             `;
 
-			new Function("exports", "Injectable", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
+			testCast(
+				new Function("exports", "Injectable", wrappedCode)(
+					moduleScope.exports,
+					mockInjectable,
+				),
 			);
 
 			const ServiceClass = moduleScope.exports.ResponseHeaderService;
@@ -871,9 +876,7 @@ describe("Emitter: Response Header Utilities", () => {
 			const XmlParser = { parse: () => null };
 
 			const LinkSetParser = {
-				parseHeader: (
-					val: string | number | boolean | object | undefined | null,
-				) => [{ href: val }],
+				parseHeader: (val: TestValue) => [{ href: val }],
 			}; // Mock implementation
 
 			const headersMap = new Map<string, string>();
@@ -886,12 +889,10 @@ describe("Emitter: Response Header Utilities", () => {
 			};
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			const mockInjectable =
-				() => (target: string | number | boolean | object | undefined | null) =>
-					target;
+			const mockInjectable = () => (target: TestValue) => target;
 
 			const wrappedCode = `
                 const API_RESPONSE_HEADERS = ${JSON.stringify(API_RESPONSE_HEADERS)};
@@ -901,9 +902,11 @@ describe("Emitter: Response Header Utilities", () => {
                 ${jsCode} 
             `;
 
-			new Function("exports", "Injectable", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
+			testCast(
+				new Function("exports", "Injectable", wrappedCode)(
+					moduleScope.exports,
+					mockInjectable,
+				),
 			);
 
 			const ServiceClass = moduleScope.exports.ResponseHeaderService;
@@ -945,9 +948,7 @@ describe("Emitter: Response Header Utilities", () => {
 			const LinkSetParser = {
 				parseHeader: () => null,
 
-				parseJson: (
-					val: string | number | boolean | object | undefined | null,
-				) => [{ href: val?.[0]?.href ?? "missing" }],
+				parseJson: (val: TestValue) => [{ href: val?.[0]?.href ?? "missing" }],
 			};
 
 			const headersMap = new Map<string, string>();
@@ -960,12 +961,10 @@ describe("Emitter: Response Header Utilities", () => {
 			};
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			const mockInjectable =
-				() => (target: string | number | boolean | object | undefined | null) =>
-					target;
+			const mockInjectable = () => (target: TestValue) => target;
 
 			const wrappedCode = `
                 const API_RESPONSE_HEADERS = ${JSON.stringify(API_RESPONSE_HEADERS)};
@@ -975,9 +974,11 @@ describe("Emitter: Response Header Utilities", () => {
                 ${jsCode}
             `;
 
-			new Function("exports", "Injectable", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
+			testCast(
+				new Function("exports", "Injectable", wrappedCode)(
+					moduleScope.exports,
+					mockInjectable,
+				),
 			);
 
 			const ServiceClass = moduleScope.exports.ResponseHeaderService;
@@ -1024,12 +1025,10 @@ describe("Emitter: Response Header Utilities", () => {
 			};
 
 			const moduleScope = {
-				exports: {} as string | number | boolean | object | undefined | null,
+				exports: testCast({}),
 			};
 
-			const mockInjectable =
-				() => (target: string | number | boolean | object | undefined | null) =>
-					target;
+			const mockInjectable = () => (target: TestValue) => target;
 			const wrappedCode = `
                 const API_RESPONSE_HEADERS = ${JSON.stringify(API_RESPONSE_HEADERS)};
                 const API_HEADER_XML_CONFIGS = ${JSON.stringify(API_HEADER_XML_CONFIGS)};
@@ -1038,20 +1037,18 @@ describe("Emitter: Response Header Utilities", () => {
                 ${jsCode}
             `;
 
-			new Function("exports", "Injectable", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
+			testCast(
+				new Function("exports", "Injectable", wrappedCode)(
+					moduleScope.exports,
+					mockInjectable,
+				),
 			);
 
 			const ServiceClass = moduleScope.exports.ResponseHeaderService;
 
 			const service = new ServiceClass();
 
-			const result = service.parse(
-				mockHeaders as string | number | boolean | object | undefined | null,
-				"op1",
-				200,
-			);
+			const result = service.parse(testCast(mockHeaders), "op1", 200);
 
 			expect(result["Set-Cookie"]).toEqual(values);
 		});

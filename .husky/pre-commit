@@ -4,7 +4,7 @@ set -e
 unset DATABASE_URL
 
 echo "Running Auto-Code-Format Fix..."
-npm run format || true
+npm run format
 git add -u
 
 echo "Checking Code Formatting..."

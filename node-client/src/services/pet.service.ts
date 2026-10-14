@@ -36,7 +36,7 @@ export class PetService {
 		const headers: Record<string, string> = {
 			...(options?.headers as Record<string, string>),
 		};
-		const bodyObj: Record<string, any> = {};
+		const bodyObj: Record<string, unknown> = {};
 		if (additionalMetadata != null) {
 			bodyObj.additionalMetadata = additionalMetadata;
 		}

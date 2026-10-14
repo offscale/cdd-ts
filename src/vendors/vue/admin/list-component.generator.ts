@@ -1,11 +1,26 @@
+/**
+ * Module for list component generator in vendors/vue/admin/list-component.generator.
+ *
+ * @module vendors/vue/admin/list-component.generator
+ */
 import * as path from "node:path";
-import type { Resource } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
 import type { Project } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import { camelCase, pascalCase } from "../../../functions/utils.js";
 
+/** Generator/utility class `ListComponentGenerator`. */
 export class ListComponentGenerator {
+	/**
+	 * Creates a new `ListComponentGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Executes `generate` on `ListComponentGenerator`.
+	 * @param resource - Analyzed API resource descriptor.
+	 * @param adminDir - Parameter `adminDir` (string).
+	 */
 	public generate(resource: Resource, adminDir: string): void {
 		const componentName = `${pascalCase(resource.name)}List`;
 		const fileName = `${componentName}.vue`;

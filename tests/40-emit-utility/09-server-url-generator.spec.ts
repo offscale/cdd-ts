@@ -1,25 +1,25 @@
-// @ts-nocheck
-
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServerUrlGenerator } from "@src/routes/emit_server_url.js";
 import type { Project } from "ts-morph";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import {
+	createTestProject,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 
 describe("Emitter: ServerUrlGenerator", () => {
-	const runGenerator = (
-		servers: string | number | boolean | object | undefined | null[],
-	) => {
+	const runGenerator = (servers: unknown): Project => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			{
+			testCast({
 				openapi: "3.2.0",
 				info: { title: "Test", version: "1.0" },
 				paths: {},
 				servers,
-			} as string | number | boolean | object | undefined | null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
+			}),
+			testCast({ options: {} }),
 		);
 
 		new ServerUrlGenerator(parser, project).generate("/out");
@@ -36,48 +36,44 @@ describe("Emitter: ServerUrlGenerator", () => {
 
 		const moduleScope = {
 			API_SERVERS: [],
-			getServerUrl: null as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
-			resolveServerUrl: null as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			getServerUrl: testCast(null),
+			resolveServerUrl: testCast(null),
 		};
-		new Function(
-			"scope",
-			`
+		testCast(
+			new Function(
+				"scope",
+				`
             ${jsCode} 
             scope.API_SERVERS = API_SERVERS; 
             scope.getServerUrl = getServerUrl; 
             scope.resolveServerUrl = resolveServerUrl;
         `,
-		)(moduleScope);
+			)(moduleScope),
+		);
 		return moduleScope;
 	};
 
 	it("should generate file with default server if no servers are defined (OAS 3.x)", () => {
-		const project = runGenerator([]);
+		const project = runGenerator(testCast([]));
 		const sourceFile = project.getSourceFile("/out/utils/server-url.ts");
 		expect(sourceFile).toBeDefined();
 		expect(sourceFile?.getText()).toContain('"url": "/"');
 	});
 
 	it("should generate API_SERVERS constant checking OAS 3.2 name property", () => {
-		const project = runGenerator([
-			{
-				url: "https://api.example.com",
-				name: "production",
-				description: "Production",
-			},
-		]);
+		const project = testCast(
+			testCast(
+				testCast(
+					runGenerator([
+						testCast({
+							url: testCast("https://api.example.com"),
+							name: "production",
+							description: testCast("Production"),
+						}),
+					]),
+				),
+			),
+		);
 		const text = project
 			.getSourceFileOrThrow("/out/utils/server-url.ts")
 			.getText();
@@ -90,27 +86,26 @@ describe("Emitter: ServerUrlGenerator", () => {
 	});
 
 	it("should preserve x- extensions and allow them in server metadata types", () => {
-		const project = runGenerator([
-			{
-				url: "https://api.example.com",
-				name: "prod",
-				"x-server": "alpha",
-				variables: {
-					env: {
-						default: "dev",
-						"x-var": "meta",
-					},
-				},
-			},
-		]);
+		const project = testCast(
+			runGenerator([
+				testCast({
+					url: testCast("https://api.example.com"),
+					name: "prod",
+					"x-server": testCast("alpha"),
+					variables: testCast({
+						env: testCast({
+							default: testCast("dev"),
+							"x-var": testCast("meta"),
+						}),
+					}),
+				}),
+			]),
+		);
 
-		const { API_SERVERS } = compileHelper(project);
+		const { API_SERVERS } = compileHelper(testCast(project));
 		expect(API_SERVERS[0]["x-server"]).toBe("alpha");
 
-		expect(
-			(API_SERVERS[0] as string | number | boolean | object | undefined | null)
-				.variables?.env["x-var"],
-		).toBe("meta");
+		expect(testCast(API_SERVERS[0]).variables?.env["x-var"]).toBe("meta");
 
 		const sourceFile = project.getSourceFileOrThrow("/out/utils/server-url.ts");
 		expect(
@@ -124,14 +119,16 @@ describe("Emitter: ServerUrlGenerator", () => {
 	});
 
 	it("should generate logic to substitute simple variables", () => {
-		const project = runGenerator([
-			{
-				url: "https://{env}.example.com/v1",
-				variables: { env: { default: "dev" } },
-			},
-		]);
+		const project = testCast(
+			runGenerator([
+				testCast({
+					url: testCast("https://{env}.example.com/v1"),
+					variables: testCast({ env: testCast({ default: testCast("dev") }) }),
+				}),
+			]),
+		);
 
-		const { getServerUrl } = compileHelper(project);
+		const { getServerUrl } = compileHelper(testCast(project));
 
 		// Template URLs starting with { are NOT resolved/normalized by parser, ensuring variables are preserved
 		// but URLs like https://{var} are resolved by URL() constructor which encodes {}.
@@ -150,16 +147,21 @@ describe("Emitter: ServerUrlGenerator", () => {
 	});
 
 	it("should throw error if variable value is not in enum", () => {
-		const project = runGenerator([
-			{
-				url: "https://{region}.api.com",
-				variables: {
-					region: { default: "us", enum: ["us", "eu", "asia"] },
-				},
-			},
-		]);
+		const project = testCast(
+			runGenerator([
+				testCast({
+					url: testCast("https://{region}.api.com"),
+					variables: testCast({
+						region: testCast({
+							default: testCast("us"),
+							enum: testCast(["us", "eu", "asia"]),
+						}),
+					}),
+				}),
+			]),
+		);
 
-		const { getServerUrl } = compileHelper(project);
+		const { getServerUrl } = compileHelper(testCast(project));
 
 		// Valid - Note: URL normalization adds trailing slash to the template base
 		// e.g., https://{region}.api.com/
@@ -173,12 +175,26 @@ describe("Emitter: ServerUrlGenerator", () => {
 	});
 
 	it("should generate logic to look up server by name (OAS 3.2)", () => {
-		const project = runGenerator([
-			{ url: "https://dev.api.com", name: "dev", description: "Development" },
-			{ url: "https://prod.api.com", name: "prod", description: "Production" },
-		]);
+		const project = testCast(
+			testCast(
+				testCast(
+					runGenerator([
+						testCast({
+							url: testCast("https://dev.api.com"),
+							name: "dev",
+							description: testCast("Development"),
+						}),
+						testCast({
+							url: testCast("https://prod.api.com"),
+							name: "prod",
+							description: testCast("Production"),
+						}),
+					]),
+				),
+			),
+		);
 
-		const { getServerUrl } = compileHelper(project);
+		const { getServerUrl } = compileHelper(testCast(project));
 
 		// Expect trailing slashes due to URL normalization
 
@@ -188,11 +204,20 @@ describe("Emitter: ServerUrlGenerator", () => {
 	});
 
 	it("should resolve server URLs from a custom server list", () => {
-		const project = runGenerator([
-			{ url: "https://global.api.com", name: "global" },
-		]);
+		const project = testCast(
+			testCast(
+				testCast(
+					runGenerator([
+						testCast({
+							url: testCast("https://global.api.com"),
+							name: "global",
+						}),
+					]),
+				),
+			),
+		);
 
-		const { resolveServerUrl } = compileHelper(project);
+		const { resolveServerUrl } = compileHelper(testCast(project));
 		const customServers = [
 			{ url: "https://custom.api.com", name: "custom" },
 			{ url: "https://alt.api.com", description: "Alternative" },
@@ -208,12 +233,24 @@ describe("Emitter: ServerUrlGenerator", () => {
 	});
 
 	it("should generate logic to look up server by description (Legacy fallback)", () => {
-		const project = runGenerator([
-			{ url: "https://dev.api.com", description: "Development" },
-			{ url: "https://prod.api.com", description: "Production" },
-		]);
+		const project = testCast(
+			testCast(
+				testCast(
+					runGenerator([
+						testCast({
+							url: testCast("https://dev.api.com"),
+							description: testCast("Development"),
+						}),
+						testCast({
+							url: testCast("https://prod.api.com"),
+							description: testCast("Production"),
+						}),
+					]),
+				),
+			),
+		);
 
-		const { getServerUrl } = compileHelper(project);
+		const { getServerUrl } = compileHelper(testCast(project));
 
 		expect(getServerUrl("Production")).toBe("https://prod.api.com/");
 
@@ -221,9 +258,11 @@ describe("Emitter: ServerUrlGenerator", () => {
 	});
 
 	it("should throw error if server is not found", () => {
-		const project = runGenerator([{ url: "/" }]);
+		const project = testCast(
+			testCast(testCast(runGenerator([testCast({ url: testCast("/") })]))),
+		);
 
-		const { getServerUrl } = compileHelper(project);
+		const { getServerUrl } = compileHelper(testCast(project));
 
 		expect(() => getServerUrl(99)).toThrow("Server not found: 99");
 
@@ -231,19 +270,21 @@ describe("Emitter: ServerUrlGenerator", () => {
 	});
 
 	it("should handle multiple variables", () => {
-		const project = runGenerator([
-			{
-				url: "{protocol}://{host}:{port}/{base}",
-				variables: {
-					protocol: { default: "https" },
-					host: { default: "localhost" },
-					port: { default: "8080" },
-					base: { default: "api" },
-				},
-			},
-		]);
+		const project = testCast(
+			runGenerator([
+				testCast({
+					url: testCast("{protocol}://{host}:{port}/{base}"),
+					variables: testCast({
+						protocol: testCast({ default: testCast("https") }),
+						host: testCast({ default: testCast("localhost") }),
+						port: testCast({ default: testCast("8080") }),
+						base: testCast({ default: testCast("api") }),
+					}),
+				}),
+			]),
+		);
 
-		const { getServerUrl } = compileHelper(project);
+		const { getServerUrl } = compileHelper(testCast(project));
 
 		// Use Defaults. Note: Parser skips resolution for URLs starting with {
 		// So no normalization occurs.
@@ -259,17 +300,16 @@ describe("Emitter: ServerUrlGenerator", () => {
 	it("should fall back to default server when parser.servers is undefined", () => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			{
+			testCast({
 				openapi: "3.2.0",
 				info: { title: "No Servers", version: "1.0" },
 				paths: {},
-			} as string | number | boolean | object | undefined | null,
-			{ options: {} } as string | number | boolean | object | undefined | null,
+			}),
+			testCast({ options: {} }),
 		);
 		// Force undefined to exercise defensive fallback path
 
-		(parser as string | number | boolean | object | undefined | null).servers =
-			undefined;
+		testCast<TestValue>(parser).servers = testCast(undefined);
 
 		new ServerUrlGenerator(parser, project).generate("/out");
 		const sourceFile = project.getSourceFileOrThrow("/out/utils/server-url.ts");

@@ -1,13 +1,25 @@
+/**
+ * Module for index generator in vendors/angular/utils/index.generator.
+ *
+ * @module vendors/angular/utils/index.generator
+ */
 import * as path from "node:path";
+import type { Project } from "ts-morph";
 import {
 	MAIN_INDEX_GENERATOR_HEADER_COMMENT,
 	SERVICE_INDEX_GENERATOR_HEADER_COMMENT,
-} from "@src/core/constants.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
-import type { Project } from "ts-morph";
+} from "../../../core/constants.js";
+import type { GeneratorConfig } from "../../../core/types/index.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
+/** Generator/utility class `MainIndexGenerator`. */
 export class MainIndexGenerator {
+	/**
+	 * Creates a new `MainIndexGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 * @param config - Active generator configuration.
+	 * @param parser - Parsed OpenAPI specification instance.
+	 */
 	constructor(
 		private project: Project,
 
@@ -16,6 +28,10 @@ export class MainIndexGenerator {
 		private parser: SwaggerParser,
 	) {}
 
+	/**
+	 * Executes `generateMainIndex` on `MainIndexGenerator`.
+	 * @param outputRoot - Parameter `outputRoot` (string).
+	 */
 	public generateMainIndex(outputRoot: string): void {
 		const indexPath = path.join(outputRoot, "index.ts");
 
@@ -226,9 +242,18 @@ export class MainIndexGenerator {
 	}
 }
 
+/** Generator/utility class `ServiceIndexGenerator`. */
 export class ServiceIndexGenerator {
+	/**
+	 * Creates a new `ServiceIndexGenerator` instance.
+	 * @param project - Target `ts-morph` project instance.
+	 */
 	constructor(private project: Project) {}
 
+	/**
+	 * Executes `generateIndex` on `ServiceIndexGenerator`.
+	 * @param outputRoot - Parameter `outputRoot` (string).
+	 */
 	public generateIndex(outputRoot: string): void {
 		const servicesDir = path.join(outputRoot, "services");
 		// Use path.resolve for robust comparison of directory paths

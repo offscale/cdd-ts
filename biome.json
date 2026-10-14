@@ -17,14 +17,14 @@
 		"rules": {
 			"recommended": true,
 			"suspicious": {
-				"noExplicitAny": "off",
+				"noExplicitAny": "error",
 				"noAsyncPromiseExecutor": "off",
 				"useIterableCallbackReturn": "off",
 				"noAssignInExpressions": "off",
 				"noNonNullAssertedOptionalChain": "off",
 				"noTemplateCurlyInString": "off",
 				"noThenProperty": "off",
-				"noImplicitAnyLet": "off",
+				"noImplicitAnyLet": "error",
 				"noDoubleEquals": "off",
 				"noEmptyBlockStatements": "off",
 				"noConfusingVoidType": "off",
@@ -35,10 +35,13 @@
 			},
 			"style": {
 				"useNodejsImportProtocol": "off",
-				"noNonNullAssertion": "off"
+				"noNonNullAssertion": "off",
+				"useShorthandFunctionType": "off"
 			},
 			"correctness": {
-				"noUnusedImports": "off"
+				"noUnusedImports": "off",
+				"noUnusedVariables": "error",
+				"noUnusedPrivateClassMembers": "error"
 			}
 		}
 	},

@@ -1,11 +1,29 @@
 import { describe, expect, it, vi } from "vitest";
 import * as cli from "../../src/cli.js";
 import { serveMcp } from "../../src/mcp_server.js";
+import { type TestValue, testCast } from "../shared/helpers.js";
 
-const mockTool = vi.fn();
-const mockPrompt = vi.fn();
-const mockResource = vi.fn();
-const mockConnect = vi.fn().mockResolvedValue(undefined);
+type McpAsyncHandler = (...args: unknown[]) => Promise<TestValue>;
+type McpSyncHandler = (...args: unknown[]) => TestValue;
+
+const mockTool =
+	vi.fn<
+		(
+			name: string,
+			desc: string,
+			schema: unknown,
+			handler: McpAsyncHandler,
+		) => void
+	>();
+const mockPrompt =
+	vi.fn<(name: string, schema: unknown, handler: McpSyncHandler) => void>();
+const mockResource =
+	vi.fn<
+		(name: string, uri: string, meta: unknown, handler: McpAsyncHandler) => void
+	>();
+const mockConnect = vi
+	.fn<(...args: TestValue[]) => Promise<undefined>>()
+	.mockResolvedValue(undefined);
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
 	class MockMcpServer {
@@ -41,7 +59,7 @@ describe("serveMcp", () => {
 		expect(cdd_generate_sdk).toBeDefined();
 
 		// Simulate invoking cdd_generate_sdk
-		const sdkHandler = cdd_generate_sdk?.[3];
+		const sdkHandler = testCast<McpAsyncHandler>(cdd_generate_sdk?.[3]);
 		const resSdk = await sdkHandler({
 			input: "test.yaml",
 			output: "out",
@@ -84,7 +102,7 @@ describe("serveMcp", () => {
 		expect(cdd_generate_server).toBeDefined();
 
 		// Simulate invoking cdd_generate_server
-		const serverHandler = cdd_generate_server?.[3];
+		const serverHandler = testCast<McpAsyncHandler>(cdd_generate_server?.[3]);
 		const resServer = await serverHandler({
 			input: "test.yaml",
 			output: "out",
@@ -129,7 +147,9 @@ describe("serveMcp", () => {
 		expect(cdd_inspect_schema).toBeDefined();
 
 		// Simulate invoking cdd_inspect_schema
-		const inspectSchemaHandler = cdd_inspect_schema?.[3];
+		const inspectSchemaHandler = testCast<McpAsyncHandler>(
+			cdd_inspect_schema?.[3],
+		);
 
 		// Mock SwaggerParser to simulate success
 		vi.doMock("../../src/openapi/parse.js", () => ({
@@ -194,7 +214,7 @@ describe("serveMcp", () => {
 		vi.doUnmock("../../src/openapi/parse.js");
 
 		// Simulate invoking cdd_to_openapi
-		const toOpenApiHandler = cdd_to_openapi?.[3];
+		const toOpenApiHandler = testCast<McpAsyncHandler>(cdd_to_openapi?.[3]);
 		const resToOpenApi = await toOpenApiHandler({
 			input: "src",
 			output: "out.yaml",
@@ -231,7 +251,7 @@ describe("serveMcp", () => {
 		);
 		expect(cdd_ast_query).toBeDefined();
 
-		const astQueryHandler = cdd_ast_query?.[3];
+		const astQueryHandler = testCast<McpAsyncHandler>(cdd_ast_query?.[3]);
 
 		vi.doMock("../../src/functions/utils.js", () => ({
 			parseGeneratedModels: vi.fn().mockReturnValue({ model: "test" }),
@@ -300,7 +320,7 @@ describe("serveMcp", () => {
 
 		const resAstUnknown = await astQueryHandler({
 			input: "test",
-			queryType: "unknown" as any,
+			queryType: testCast("unknown"),
 		});
 		expect(resAstUnknown.isError).toBeUndefined();
 		expect(resAstUnknown.content[0].text).toBeUndefined();
@@ -327,7 +347,7 @@ describe("serveMcp", () => {
 		);
 		expect(cdd_instructions).toBeDefined();
 
-		const promptHandler = cdd_instructions?.[2];
+		const promptHandler = testCast<McpSyncHandler>(cdd_instructions?.[2]);
 		const resPrompt1 = promptHandler({ topic: "SDK" });
 		expect(resPrompt1.messages[0].content.text).toContain("Focus on: SDK");
 
@@ -340,20 +360,22 @@ describe("serveMcp", () => {
 		);
 		expect(cdd_architecture).toBeDefined();
 
-		const resourceHandler = cdd_architecture?.[3];
+		const resourceHandler = testCast<McpAsyncHandler>(cdd_architecture?.[3]);
 		vi.doMock("node:fs/promises", () => ({
 			readFile: vi.fn().mockResolvedValue("mock architecture content"),
 		}));
-		const resResource = await resourceHandler({
-			href: "file:///ARCHITECTURE.md",
-		} as any);
+		const resResource = await resourceHandler(
+			testCast({
+				href: "file:///ARCHITECTURE.md",
+			}),
+		);
 		expect(resResource.contents[0].text).toContain("mock architecture content");
 
 		vi.doMock("node:fs/promises", () => ({
 			readFile: vi.fn().mockRejectedValue(new Error("fail")),
 		}));
 		await expect(
-			resourceHandler({ href: "file:///ARCHITECTURE.md" } as any),
+			resourceHandler(testCast({ href: "file:///ARCHITECTURE.md" })),
 		).rejects.toThrow("Could not read ARCHITECTURE.md");
 		vi.doUnmock("node:fs/promises");
 	});

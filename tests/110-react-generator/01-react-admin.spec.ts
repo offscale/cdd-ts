@@ -12,8 +12,9 @@ import { RoutingGenerator } from "@src/vendors/react/admin/routing.generator.js"
 import { StylingBuilder } from "@src/vendors/react/admin/styling.builder.js";
 import { Project } from "ts-morph";
 import { beforeEach, describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
-const mockDoc: any = {
+const mockDoc = testCast({
 	openapi: "3.0.0",
 	info: { title: "Test API", version: "1.0.0" },
 	paths: {
@@ -34,7 +35,7 @@ const mockDoc: any = {
 			},
 		},
 	},
-};
+});
 
 describe("ReactAdminGenerator", () => {
 	let project: Project;
@@ -42,13 +43,17 @@ describe("ReactAdminGenerator", () => {
 
 	beforeEach(async () => {
 		project = new Project({ useInMemoryFileSystem: true });
-		parser = new SwaggerParser(mockDoc, {} as any);
+		parser = new SwaggerParser(testCast(mockDoc), testCast({}));
 	});
 
 	it("generates admin UI files successfully", async () => {
-		const generator = new ReactAdminGenerator(parser, project, {
-			options: { tests: true },
-		} as any);
+		const generator = new ReactAdminGenerator(
+			parser,
+			project,
+			testCast({
+				options: { tests: true },
+			}),
+		);
 		await generator.generate("/out");
 
 		expect(
@@ -70,20 +75,24 @@ describe("ReactAdminGenerator", () => {
 
 	it("handles existing admin directory", async () => {
 		project.getFileSystem().mkdirSync("/out/admin");
-		const generator = new ReactAdminGenerator(parser, project, {
-			options: { tests: true },
-		} as any);
+		const generator = new ReactAdminGenerator(
+			parser,
+			project,
+			testCast({
+				options: { tests: true },
+			}),
+		);
 		await generator.generate("/out");
 		expect(project.getSourceFile("/out/admin/app.tsx")).toBeDefined();
 	});
 
 	it("skips generation when no admin resources are found", async () => {
-		const emptyDoc: any = {
+		const emptyDoc = testCast({
 			openapi: "3.0.0",
 			info: { title: "Empty API", version: "1.0.0" },
 			paths: {},
-		};
-		const emptyParser = new SwaggerParser(emptyDoc, {} as any);
+		});
+		const emptyParser = new SwaggerParser(testCast(emptyDoc), testCast({}));
 
 		const generator = new ReactAdminGenerator(emptyParser, project);
 		await generator.generate("/out");
@@ -93,7 +102,7 @@ describe("ReactAdminGenerator", () => {
 	});
 
 	it("generates only list components and skips forms when resources are read-only", async () => {
-		const readOnlyDoc: any = {
+		const readOnlyDoc = testCast({
 			openapi: "3.0.0",
 			info: { title: "Read Only API", version: "1.0.0" },
 			paths: {
@@ -104,8 +113,11 @@ describe("ReactAdminGenerator", () => {
 					},
 				},
 			},
-		};
-		const readOnlyParser = new SwaggerParser(readOnlyDoc, {} as any);
+		});
+		const readOnlyParser = new SwaggerParser(
+			testCast(readOnlyDoc),
+			testCast({}),
+		);
 
 		const generator = new ReactAdminGenerator(readOnlyParser, project);
 		await generator.generate("/out");
@@ -124,8 +136,12 @@ describe("ReactAdminGenerator", () => {
 	});
 
 	it("should respect config.options.tests being false", () => {
-		const config: any = { options: { tests: false } };
-		const generator = new ReactAdminGenerator(parser, project, config);
+		const config = testCast({ options: { tests: false } });
+		const generator = new ReactAdminGenerator(
+			parser,
+			project,
+			testCast(config),
+		);
 		generator.generate("/out");
 
 		expect(
@@ -141,11 +157,11 @@ describe("ListComponentGenerator", () => {
 	it("generates a React list component", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const gen = new ListComponentGenerator(project);
-		const resource = {
+		const resource = testCast<Resource>({
 			name: "products",
 			operations: [],
 			isEditable: false,
-		} as unknown as Resource;
+		});
 		const file = gen.generate(resource, "/out");
 		expect(file.getText()).toContain("export const ProductsList");
 	});
@@ -153,11 +169,11 @@ describe("ListComponentGenerator", () => {
 	it("uses operation method name if provided", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const gen = new ListComponentGenerator(project);
-		const resource = {
+		const resource = testCast<Resource>({
 			name: "products",
 			operations: [{ action: "list", methodName: "fetchProducts" }],
 			isEditable: false,
-		} as unknown as Resource;
+		});
 		const file = gen.generate(resource, "/out");
 		expect(file.getText()).toContain("useFetchProducts");
 	});
@@ -167,12 +183,12 @@ describe("FormComponentGenerator", () => {
 	it("generates a React form component", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const gen = new FormComponentGenerator(project);
-		const resource = {
+		const resource = testCast<Resource>({
 			name: "products",
 			operations: [],
 			isEditable: true,
 			formProperties: [],
-		} as unknown as Resource;
+		});
 		const file = gen.generate(resource, "/out");
 		expect(file.getText()).toContain("export const ProductsForm");
 	});
@@ -180,7 +196,7 @@ describe("FormComponentGenerator", () => {
 	it("uses operation method names if provided", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const gen = new FormComponentGenerator(project);
-		const resource = {
+		const resource = testCast<Resource>({
 			name: "products",
 			operations: [
 				{ action: "getById", methodName: "fetchProduct" },
@@ -189,7 +205,7 @@ describe("FormComponentGenerator", () => {
 			],
 			isEditable: true,
 			formProperties: [{ name: "count", schema: { type: "number" } }],
-		} as unknown as Resource;
+		});
 		const file = gen.generate(resource, "/out");
 		expect(file.getText()).toContain("useFetchProduct");
 		expect(file.getText()).toContain("useMakeProduct");
@@ -202,11 +218,11 @@ describe("RoutingGenerator", () => {
 	it("generates routes and app shell", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const gen = new RoutingGenerator(project);
-		const resource = {
+		const resource = testCast<Resource>({
 			name: "products",
 			operations: [],
 			isEditable: true,
-		} as unknown as Resource;
+		});
 		const routeFile = gen.generate(resource, "/out");
 		expect(routeFile.getText()).toContain(
 			"export const productsRoutes: RouteObject[]",
@@ -270,14 +286,14 @@ describe("FormRenderer", () => {
 			isEditable: true,
 			formProperties: [{ name: "id", schema: { type: "string" } }],
 		};
-		const fields = FormRenderer.extractFields(resource as any);
+		const fields = FormRenderer.extractFields(testCast(resource));
 		expect(fields.length).toBeGreaterThan(0);
 		expect(fields[0].name).toBe("id");
 	});
 
 	it("returns an empty array if no form properties exist", () => {
 		const resource = { name: "users", operations: [], isEditable: true };
-		const fields = FormRenderer.extractFields(resource as any);
+		const fields = FormRenderer.extractFields(testCast(resource));
 		expect(fields).toEqual([]);
 	});
 });

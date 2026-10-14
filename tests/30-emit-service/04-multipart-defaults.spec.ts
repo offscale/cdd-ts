@@ -1,11 +1,10 @@
-// @ts-nocheck
-
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { type TestValue, testCast } from "../shared/helpers.js";
 
 describe("Emitter: ServiceMethodGenerator (Multipart Defaults)", () => {
 	const createTestEnv = () => {
@@ -46,10 +45,7 @@ describe("Emitter: ServiceMethodGenerator (Multipart Defaults)", () => {
 		};
 
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(
-			spec as string | number | boolean | object | undefined | null,
-			config,
-		);
+		const parser = new SwaggerParser(testCast(spec), config);
 
 		// Pre-generate types
 		new TypeGenerator(parser, project, config).generate("/out");
@@ -99,27 +95,33 @@ describe("Emitter: ServiceMethodGenerator (Multipart Defaults)", () => {
 
 		// Inject a new operation into the parser/spec that uses contentEncoding
 
-		const op: string | number | boolean | object | undefined | null = {
-			method: "POST",
-			path: "/upload-encoding",
-			methodName: "uploadWithEncoding",
+		const op: TestValue = testCast({
+			method: testCast("POST"),
+			path: testCast("/upload-encoding"),
+			methodName: testCast("uploadWithEncoding"),
 			requestBody: {
 				content: {
 					"multipart/form-data": {
-						schema: {
-							type: "object",
-							properties: {
-								file: { type: "string", format: "binary" }, // raw binary
-								secret: { type: "string", contentEncoding: "base64" }, // encoded text part
-							},
-						},
+						schema: testCast({
+							type: testCast("object"),
+							properties: testCast({
+								file: testCast({
+									type: testCast("string"),
+									format: testCast("binary"),
+								}), // raw binary
+								secret: testCast({
+									type: testCast("string"),
+									contentEncoding: testCast("base64"),
+								}), // encoded text part
+							}),
+						}),
 					},
 				},
 			},
-			responses: { "200": { description: "ok" } },
-		};
+			responses: testCast({ "200": testCast({ description: testCast("ok") }) }),
+		});
 
-		methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, testCast(op));
 
 		const body = serviceClass
 			.getMethodOrThrow("uploadWithEncoding")
@@ -133,24 +135,24 @@ describe("Emitter: ServiceMethodGenerator (Multipart Defaults)", () => {
 	it("should handle multipart/byteranges with correct media type config", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: string | number | boolean | object | undefined | null = {
-			method: "POST",
-			path: "/ranges",
-			methodName: "postRanges",
+		const op: TestValue = testCast({
+			method: testCast("POST"),
+			path: testCast("/ranges"),
+			methodName: testCast("postRanges"),
 			requestBody: {
 				content: {
-					"multipart/byteranges": {
-						schema: {
-							type: "array",
-							items: { type: "object" },
-						},
-					},
+					"multipart/byteranges": testCast({
+						schema: testCast({
+							type: testCast("array"),
+							items: testCast({ type: testCast("object") }),
+						}),
+					}),
 				},
 			},
-			responses: { "200": { description: "ok" } },
-		};
+			responses: testCast({ "200": testCast({ description: testCast("ok") }) }),
+		});
 
-		methodGen.addServiceMethod(serviceClass, op);
+		methodGen.addServiceMethod(serviceClass, testCast(op));
 
 		const body = serviceClass.getMethodOrThrow("postRanges").getBodyText()!;
 

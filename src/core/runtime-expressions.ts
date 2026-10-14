@@ -1,40 +1,60 @@
-import type { OpenApiValue } from "@src/core/types/index.js";
-
 /**
- * @fileoverview
  * Implements the OpenAPI Runtime Expression evaluator defined in OAS 3.x.
  * Used for dynamically deriving values for Links and Callbacks from HTTP messages.
- *
  * @see https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.2.0.md#runtime-expressions
+ *
+ * @module core/runtime-expressions
  */
+import type { OpenApiValue } from "./types/index.js";
+
+/**
+ * Request state within a `RuntimeContext`.
+ */
+export interface RuntimeRequestContext {
+	/** Case-insensitive HTTP request headers. */
+	headers: Record<string, string | string[] | undefined>;
+	/** Case-sensitive query parameters. */
+	query: Record<string, string | string[] | undefined>;
+	/** Extracted URL path parameters. */
+	path: Record<string, string | undefined>;
+	/** Optional parsed request payload. */
+	body?: OpenApiValue;
+}
+
+/**
+ * Response state within a `RuntimeContext`.
+ */
+export interface RuntimeResponseContext {
+	/** Case-insensitive HTTP response headers. */
+	headers: Record<string, string | string[] | undefined>;
+	/** Optional parsed response payload. */
+	body?: OpenApiValue;
+}
 
 /**
  * Context required to evaluate a runtime expression.
  * Represents the state of the HTTP interaction (Request/Response).
  */
 export interface RuntimeContext {
+	/** Full request URL. */
 	url: string;
+	/** HTTP request method. */
 	method: string;
+	/** HTTP response status code. */
 	statusCode: number;
-	request: {
-		headers: Record<string, string | string[] | undefined>;
-		query: Record<string, string | string[] | undefined>;
-		path: Record<string, string | undefined>;
-		body?: OpenApiValue;
-	};
-	response?: {
-		headers: Record<string, string | string[] | undefined>;
-		body?: OpenApiValue;
-	};
+	/** Outgoing HTTP request context. */
+	request: RuntimeRequestContext;
+	/** Optional incoming HTTP response context. */
+	response?: RuntimeResponseContext;
 }
 
 /**
  * Resolves a JSON Pointer (RFC 6901) against a target object.
  * Used internally for processing `$request.body#/foo` style expressions.
  *
- * @param data The target object (body).
- * @param pointer The JSON pointer string (e.g., "/user/0/id").
- * @returns The resolved value or undefined if not found.
+ * @param data - The target object (body).
+ * @param pointer - The JSON pointer string (e.g., `"/user/0/id"`).
+ * @returns The resolved value or `undefined` if not found.
  */
 export function evaluateJsonPointer(
 	data: OpenApiValue,
@@ -93,7 +113,11 @@ export function evaluateJsonPointer(
 }
 
 /**
- * Helper to extract a header value case-insensitively (RFC 7230).
+ * Extracts a header value case-insensitively (RFC 7230).
+ *
+ * @param headers - Header map.
+ * @param key - Header name to look up.
+ * @returns The first matching header value or `undefined`.
  */
 function getHeader(
 	headers: Record<string, string | string[] | undefined>,
@@ -113,7 +137,11 @@ function getHeader(
 }
 
 /**
- * Helper to extract a query parameter (Case-sensitive).
+ * Extracts a query parameter case-sensitively.
+ *
+ * @param query - Query parameter map.
+ * @param key - Query parameter name.
+ * @returns The first matching query parameter value or `undefined`.
  */
 function getQuery(
 	query: Record<string, string | string[] | undefined>,
@@ -125,8 +153,12 @@ function getQuery(
 }
 
 /**
- * Resolves a single, bare runtime expression (e.g. "$request.body#/id").
+ * Resolves a single, bare runtime expression (e.g. `"$request.body#/id"`).
  * Preserves the type of the referenced value (e.g. boolean, number, object).
+ *
+ * @param expr - Bare runtime expression string.
+ * @param context - HTTP interaction context.
+ * @returns Resolved OpenAPI value or `undefined`.
  */
 function resolveSingleExpression(
 	expr: string,

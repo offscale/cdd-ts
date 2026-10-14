@@ -1,16 +1,26 @@
 /**
+ * Parses raw JSDoc comment blocks into structured description and tag representations.
+ *
+ * @module docstrings/parse
+ */
+/**
+ * Represents a single JSDoc tag parsed from a comment block.
+ */
+export interface ParsedJSDocTag {
+	/** The tag name without the @ symbol. */
+	tagName: string;
+	/** The text associated with the tag. */
+	text?: string;
+}
+
+/**
  * Represents the parsed output of a JSDoc comment block.
  */
 export interface ParsedJSDoc {
 	/** The main description parsed from the JSDoc block. */
 	description?: string;
 	/** The JSDoc tags parsed from the block. */
-	tags?: Array<{
-		/** The tag name without the @ symbol. */
-		tagName: string;
-		/** The text associated with the tag. */
-		text?: string;
-	}>;
+	tags?: ParsedJSDocTag[];
 }
 
 /**

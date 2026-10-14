@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { BaseInterceptorGenerator } from "@src/vendors/angular/utils/base-interceptor.generator.js";
 
 import { Project } from "ts-morph";

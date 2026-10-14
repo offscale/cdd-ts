@@ -1,10 +1,8 @@
-// @ts-nocheck
-
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { SpecSnapshotGenerator } from "@src/openapi/emit_snapshot.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 
 const snapshotSpec: SwaggerSpec = {
 	openapi: "3.2.0",
@@ -15,7 +13,7 @@ const snapshotSpec: SwaggerSpec = {
 describe("Emitter: SpecSnapshotGenerator", () => {
 	it("should emit JSON and YAML snapshot files", async () => {
 		const project = createTestProject();
-		const config: GeneratorConfig = {
+		const config: GeneratorConfig = testCast({
 			input: "",
 			output: "/out",
 			options: {
@@ -23,7 +21,7 @@ describe("Emitter: SpecSnapshotGenerator", () => {
 				enumStyle: "enum",
 				generateServices: true,
 			},
-		} as string | number | boolean | object | undefined | null;
+		});
 		const parser = new SwaggerParser(snapshotSpec, config);
 
 		new SpecSnapshotGenerator(parser, project).generate("/out");
@@ -37,7 +35,7 @@ describe("Emitter: SpecSnapshotGenerator", () => {
 
 		const jsonPayload = fs.readFileSync(jsonPath);
 
-		const parsed = JSON.parse(jsonPayload);
+		const parsed = testCast(JSON.parse(jsonPayload));
 
 		expect(parsed.openapi).toBe("3.2.0");
 

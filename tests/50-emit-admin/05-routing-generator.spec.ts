@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js"; // Corrected Path
 
@@ -7,7 +5,7 @@ import { RoutingGenerator } from "@src/vendors/angular/admin/routing.generator.j
 import type { Project } from "ts-morph";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { createTestProject } from "../shared/helpers.js";
+import { createTestProject, testCast } from "../shared/helpers.js";
 import { coverageSpec } from "../shared/specs.js";
 
 describe("Admin: RoutingGenerator", () => {
@@ -17,14 +15,8 @@ describe("Admin: RoutingGenerator", () => {
 	beforeAll(() => {
 		project = createTestProject();
 		const parser = new SwaggerParser(
-			coverageSpec as string | number | boolean | object | undefined | null,
-			{ options: { admin: true } } as
-				| string
-				| number
-				| boolean
-				| object
-				| undefined
-				| null,
+			testCast(coverageSpec),
+			testCast({ options: { admin: true } }),
 		);
 		resources = discoverAdminResources(parser);
 		const routingGen = new RoutingGenerator(project);

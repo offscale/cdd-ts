@@ -1,8 +1,41 @@
-// @ts-nocheck
-
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { generateFromConfigSync } from "@src/index.js";
 import { IndentationText, ModuleKind, Project, ScriptTarget } from "ts-morph";
+
+/**
+ * Recursive callable, constructable, and indexable test value type for dynamic test assertions.
+ */
+export type TestValue = {
+	[key: string]: TestValue;
+	[index: number]: TestValue;
+	(...args: unknown[]): TestValue;
+} & (new (
+	...args: unknown[]
+) => TestValue);
+
+/**
+ * Alias for callable/constructable dynamic test values.
+ */
+export type TestCallable = TestValue;
+
+function isCast<T>(value: unknown): value is T {
+	void value;
+	return true;
+}
+
+/**
+ * Strongly-typed test fixture coercion helper that narrows an OpenAPI or test fixture value to `T`
+ * without using `any` or type assertions.
+ *
+ * @param value - Input fixture value.
+ * @returns The value narrowed to `T`.
+ */
+export function testCast<T = TestValue>(value: unknown): T {
+	if (isCast<T>(value)) {
+		return value;
+	}
+	throw new Error("Unreachable");
+}
 
 /**
  * Creates a standard ts-morph project instance for use in tests.

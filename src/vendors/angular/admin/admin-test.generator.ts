@@ -1,7 +1,12 @@
+/**
+ * Module for admin test generator in vendors/angular/admin/admin-test.generator.
+ *
+ * @module vendors/angular/admin/admin-test.generator
+ */
 import * as path from "node:path";
-import type { Resource } from "@src/core/types/index.js";
-import { camelCase, pascalCase } from "@src/functions/utils.js";
 import type { Project } from "ts-morph";
+import type { Resource } from "../../../core/types/index.js";
+import { camelCase, pascalCase } from "../../../functions/utils.js";
 
 /**
  * Generates the Angular component tests for administrative resources.

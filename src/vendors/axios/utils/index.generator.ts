@@ -1,7 +1,12 @@
+/**
+ * Module for index generator in vendors/axios/utils/index.generator.
+ *
+ * @module vendors/axios/utils/index.generator
+ */
 import { posix as path } from "node:path";
-import type { GeneratorConfig } from "@src/core/types/index.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
+import type { GeneratorConfig } from "../../../core/types/index.js";
+import type { SwaggerParser } from "../../../openapi/parse.js";
 
 /**
  * Discovers and writes an `index.ts` file aggregating the generated axios services.

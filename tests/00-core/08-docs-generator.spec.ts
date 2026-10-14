@@ -1,14 +1,13 @@
-// @ts-nocheck
-
 import type { PathInfo } from "@src/core/types/analysis.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { generateDocsJson } from "@src/functions/docs_generator.js";
 import type { SwaggerParser } from "@src/openapi/parse.js";
 import { describe, expect, it } from "vitest";
+import { testCast } from "../shared/helpers.js";
 
 describe("generateDocsJson", () => {
 	it("should generate concise documentation correctly without imports or wrapping", () => {
-		const parser = {
+		const parser = testCast<SwaggerParser>({
 			operations: [
 				{
 					path: "/users",
@@ -18,13 +17,13 @@ describe("generateDocsJson", () => {
 					tags: ["Users"],
 				} as PathInfo,
 			],
-		} as string | number | boolean | object | undefined | null as SwaggerParser;
+		});
 
-		const config: GeneratorConfig = {
+		const config: GeneratorConfig = testCast({
 			output: "",
 			input: "",
 			options: { imports: false, wrapping: false },
-		};
+		});
 		const result = generateDocsJson(parser, config, {});
 
 		expect(result.endpoints).toBeDefined();
@@ -35,24 +34,24 @@ describe("generateDocsJson", () => {
 	});
 
 	it("should generate documentation with imports and wrapping", () => {
-		const parser = {
+		const parser = testCast<SwaggerParser>({
 			operations: [
-				{
+				testCast<PathInfo>({
 					path: "/posts/{id}",
 					method: "post",
 					methodName: "createPost",
 					operationId: "createPost",
 					tags: [],
 					parameters: [{ name: "id", in: "path", required: true }],
-				} as string | number | boolean | object | undefined | null as PathInfo,
+				}),
 			],
-		} as string | number | boolean | object | undefined | null as SwaggerParser;
+		});
 
-		const config: GeneratorConfig = {
+		const config: GeneratorConfig = testCast({
 			output: "",
 			input: "",
 			options: { imports: false, wrapping: false },
-		};
+		});
 		const result = generateDocsJson(parser, config, {
 			imports: true,
 			wrapping: true,
@@ -71,23 +70,23 @@ describe("generateDocsJson", () => {
 	});
 
 	it("should handle imports without wrapping correctly", () => {
-		const parser = {
+		const parser = testCast<SwaggerParser>({
 			operations: [
-				{
+				testCast<PathInfo>({
 					path: "/comments",
 					method: "delete",
 					methodName: "deleteComment",
 					operationId: "deleteComment",
 					requestBody: { content: {} },
-				} as string | number | boolean | object | undefined | null as PathInfo,
+				}),
 			],
-		} as string | number | boolean | object | undefined | null as SwaggerParser;
+		});
 
-		const config: GeneratorConfig = {
+		const config: GeneratorConfig = testCast({
 			output: "",
 			input: "",
 			options: { imports: false, wrapping: false },
-		};
+		});
 		const result = generateDocsJson(parser, config, {
 			imports: true,
 			wrapping: false,
@@ -104,23 +103,27 @@ describe("generateDocsJson", () => {
 	});
 
 	it("should generate documentation with imports and wrapping for react", () => {
-		const parser = {
+		const parser = testCast<SwaggerParser>({
 			operations: [
-				{
+				testCast<PathInfo>({
 					path: "/posts/{id}",
 					method: "post",
 					methodName: "createPost",
 					operationId: "createPost",
 					tags: [],
 					parameters: [{ name: "id", in: "path", required: true }],
-				} as string | number | boolean | object | undefined | null as PathInfo,
+				}),
 			],
-		} as string | number | boolean | object | undefined | null as SwaggerParser;
+		});
 
 		const config: GeneratorConfig = {
 			output: "",
 			input: "",
-			options: { framework: "react", imports: false, wrapping: false },
+			options: testCast({
+				framework: "react",
+				imports: false,
+				wrapping: false,
+			}),
 		};
 		const result = generateDocsJson(parser, config, {
 			imports: true,
@@ -140,23 +143,23 @@ describe("generateDocsJson", () => {
 	});
 
 	it("should generate documentation with imports and wrapping for vue", () => {
-		const parser = {
+		const parser = testCast<SwaggerParser>({
 			operations: [
-				{
+				testCast<PathInfo>({
 					path: "/posts/{id}",
 					method: "post",
 					methodName: "createPost",
 					operationId: "createPost",
 					tags: [],
 					parameters: [{ name: "id", in: "path", required: true }],
-				} as string | number | boolean | object | undefined | null as PathInfo,
+				}),
 			],
-		} as string | number | boolean | object | undefined | null as SwaggerParser;
+		});
 
 		const config: GeneratorConfig = {
 			output: "",
 			input: "",
-			options: { framework: "vue", imports: false, wrapping: false },
+			options: testCast({ framework: "vue", imports: false, wrapping: false }),
 		};
 		const result = generateDocsJson(parser, config, {
 			imports: true,
@@ -176,51 +179,51 @@ describe("generateDocsJson", () => {
 	});
 
 	it("should fallback method names correctly and deduplicate", () => {
-		const parser = {
+		const parser = testCast<SwaggerParser>({
 			operations: [
-				{
+				testCast<PathInfo>({
 					path: "/test1",
 					method: "get",
 					methodName: "",
 					operationId: "",
 					tags: ["TestTag"],
-				} as string | number | boolean | object | undefined | null as PathInfo,
-				{
+				}),
+				testCast<PathInfo>({
 					path: "/test2",
 					method: "get",
 					methodName: "",
 					operationId: "Invalid-Name-Format!",
 					tags: ["TestTag"],
-				} as string | number | boolean | object | undefined | null as PathInfo,
-				{
+				}),
+				testCast<PathInfo>({
 					path: "/test3",
 					method: "get",
 					methodName: "invalidNameFormat!",
 					operationId: "Invalid-Name-Format!",
 					tags: ["TestTag"],
-				} as string | number | boolean | object | undefined | null as PathInfo,
-				{
+				}),
+				testCast<PathInfo>({
 					path: "/test4",
 					method: "get",
 					methodName: "validName",
 					operationId: "validName",
 					tags: ["TestTag"],
-				} as string | number | boolean | object | undefined | null as PathInfo,
-				{
+				}),
+				testCast<PathInfo>({
 					path: "/",
 					method: "get",
 					methodName: "rootMethod",
 					operationId: "rootMethod",
 					tags: [],
-				} as string | number | boolean | object | undefined | null as PathInfo,
+				}),
 			],
-		} as string | number | boolean | object | undefined | null as SwaggerParser;
+		});
 
-		const config: GeneratorConfig = {
+		const config: GeneratorConfig = testCast({
 			output: "",
 			input: "",
 			options: { imports: false, wrapping: false },
-		};
+		});
 
 		const result = generateDocsJson(parser, config, {});
 
@@ -230,25 +233,25 @@ describe("generateDocsJson", () => {
 	});
 
 	it("should respect custom method name from config", () => {
-		const parser = {
+		const parser = testCast<SwaggerParser>({
 			operations: [
-				{
+				testCast<PathInfo>({
 					path: "/custom",
 					method: "get",
 					methodName: "getCustom",
 					operationId: "customId",
-				} as string | number | boolean | object | undefined | null as PathInfo,
+				}),
 			],
-		} as string | number | boolean | object | undefined | null as SwaggerParser;
+		});
 
 		const config: GeneratorConfig = {
 			output: "",
 			input: "",
 			options: {
-				customizeMethodName: (id: string) => {
+				customizeMethodName: testCast((id: string) => {
 					if (id === "customId") return "myCustomMethodName";
 					return undefined;
-				},
+				}),
 			},
 		};
 		const result = generateDocsJson(parser, config, {});
@@ -257,30 +260,28 @@ describe("generateDocsJson", () => {
 	});
 
 	it("should handle multiple methods on the same path", () => {
-		const parser = {
+		const parser = testCast<SwaggerParser>({
 			operations: [
-				{
+				testCast<PathInfo>({
 					path: "/users",
 					method: "get",
 					methodName: "getUsers",
 					operationId: "getUsers",
-				} as string | number | boolean | object | undefined | null as PathInfo,
-				{
+				}),
+				testCast<PathInfo>({
 					path: "/users",
 					method: "post",
 					methodName: "createUser",
 					operationId: "createUser",
-				} as string | number | boolean | object | undefined | null as PathInfo,
+				}),
 			],
-		} as string | number | boolean | object | undefined | null as SwaggerParser;
+		});
 
-		const config = { output: "", input: "", options: {} } as
-			| string
-			| number
-			| boolean
-			| object
-			| undefined
-			| null as GeneratorConfig;
+		const config = testCast<GeneratorConfig>({
+			output: "",
+			input: "",
+			options: {},
+		});
 		const result = generateDocsJson(parser, config, { wrapping: true });
 
 		expect(result.endpoints["/users"].get).toContain("getUsers");

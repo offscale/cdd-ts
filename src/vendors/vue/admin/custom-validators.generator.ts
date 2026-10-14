@@ -1,3 +1,8 @@
+/**
+ * Module for custom validators generator in vendors/vue/admin/custom-validators.generator.
+ *
+ * @module vendors/vue/admin/custom-validators.generator
+ */
 import * as path from "node:path";
 import type { Project } from "ts-morph";
 

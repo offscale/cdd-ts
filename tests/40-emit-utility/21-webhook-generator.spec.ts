@@ -1,12 +1,14 @@
-// @ts-nocheck
-
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { WebhookGenerator } from "@src/functions/emit_webhook.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject } from "../shared/helpers.js";
+import {
+	createTestProject,
+	type TestValue,
+	testCast,
+} from "../shared/helpers.js";
 
 const simpleWebhookSpec: SwaggerSpec = {
 	openapi: "3.1.0",
@@ -134,14 +136,14 @@ const componentWebhookSpec: SwaggerSpec = {
 describe("Emitter: WebhookGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = {
+		const config: GeneratorConfig = testCast({
 			output: "/out",
 			options: {
 				dateType: "string",
 				enumStyle: "enum",
 				generateServices: true,
 			},
-		} as string | number | boolean | object | undefined | null;
+		});
 		const parser = new SwaggerParser(spec, config);
 		new WebhookGenerator(parser, project).generate("/out");
 		return project;
@@ -157,10 +159,10 @@ describe("Emitter: WebhookGenerator", () => {
 		});
 
 		const moduleHelper = {
-			exports: {} as string | number | boolean | object | undefined | null,
+			exports: testCast({}),
 		};
 
-		new Function("exports", jsCode)(moduleHelper.exports);
+		testCast(new Function("exports", jsCode)(moduleHelper.exports));
 
 		return moduleHelper.exports;
 	};
@@ -204,8 +206,7 @@ describe("Emitter: WebhookGenerator", () => {
 		expect(API_WEBHOOKS[0].pathItem?.post?.responses?.["200"]).toBeDefined();
 
 		const invalid = API_WEBHOOKS.find(
-			(w: string | number | boolean | object | undefined | null) =>
-				w.name === "invalidHook",
+			(w: TestValue) => w.name === "invalidHook",
 		);
 
 		expect(invalid).toBeUndefined();

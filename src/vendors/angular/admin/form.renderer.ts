@@ -1,9 +1,22 @@
-// src/generators/angular/admin/form.renderer.ts
+/**
+ * Renders Angular `Validators` and `FormControl`/`FormGroup`/`FormArray` initializers from analyzed form models.
+ *
+ * @module vendors/angular/admin/form.renderer
+ */
 
-import type { FormControlModel } from "@src/vendors/angular/admin/analysis/form-types.js";
-import type { ValidationRule } from "@src/vendors/angular/admin/analysis/validation-types.js";
+import type { FormControlModel } from "./analysis/form-types.js";
+import type { ValidationRule } from "./analysis/validation-types.js";
 
+/**
+ * Renders an array of `ValidationRule` descriptors into an Angular validator array expression string.
+ */
 export class ValidationRenderer {
+	/**
+	 * Renders a list of validation rules into a bracketed TypeScript array expression (e.g. `[Validators.required]`).
+	 *
+	 * @param rules - Validation rules to render.
+	 * @returns Rendered validator array expression, or `""` when `rules` is empty.
+	 */
 	public static render(rules: ValidationRule[]): string {
 		if (!rules || rules.length === 0) {
 			return "";
@@ -81,7 +94,17 @@ export class ValidationRenderer {
 	}
 }
 
+/**
+ * Renders TypeScript initializer expressions for Angular `FormControl`, `FormGroup`, and `FormArray` instances.
+ */
 export class FormInitializerRenderer {
+	/**
+	 * Renders a control initializer expression for the given `FormControlModel`.
+	 *
+	 * @param control - Analyzed form control model.
+	 * @param useFormBuilder - Whether to emit `this.fb.group`/`this.fb.array` instead of `new FormGroup`/`new FormArray`.
+	 * @returns TypeScript initializer expression string.
+	 */
 	public static renderControlInitializer(
 		control: FormControlModel,
 		useFormBuilder: boolean = true,
@@ -109,12 +132,12 @@ export class FormInitializerRenderer {
 			}
 			case "group": {
 				const nestedInits = (control.nestedControls || [])
-
 					.map(
 						(c) =>
 							`'${c.name}': ${FormInitializerRenderer.renderControlInitializer(c, useFormBuilder)}`,
 					)
-					.join(",\n      ");
+					.join(`,
+      `);
 
 				if (useFormBuilder) {
 					const finalValidatorString = fbValidatorOptions
@@ -155,6 +178,12 @@ export class FormInitializerRenderer {
 		}
 	}
 
+	/**
+	 * Renders a `new FormGroup({ ... })` initializer for an item inside a `FormArray`.
+	 *
+	 * @param controls - Child form controls of the array item group.
+	 * @returns TypeScript expression string creating the `FormGroup`.
+	 */
 	public static renderFormArrayItemInitializer(
 		controls: FormControlModel[],
 	): string {
@@ -175,11 +204,23 @@ export class FormInitializerRenderer {
 
 				return `'${c.name}': new FormControl<${dataType}>(${itemAccess}${finalValidationString})`;
 			})
-			.join(",\n      ");
+			.join(`,
+      `);
 
-		return `new FormGroup({\n      ${formControls}\n    })`;
+		return `new FormGroup({
+      ${formControls}
+    })`;
 	}
 
+	/**
+	 * Renders a `new FormGroup({ 'key': ..., 'value': ... })` initializer for a dynamic map entry.
+	 *
+	 * @param valueControl - Control model for the map entry value.
+	 * @param keyPattern - Optional regex pattern constraining the map entry key.
+	 * @param keyMinLength - Optional minimum length for the map entry key.
+	 * @param keyMaxLength - Optional maximum length for the map entry key.
+	 * @returns TypeScript expression string creating the map entry `FormGroup`.
+	 */
 	public static renderMapItemInitializer(
 		valueControl: FormControlModel,
 		keyPattern?: string,

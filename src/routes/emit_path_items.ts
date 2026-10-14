@@ -1,19 +1,35 @@
+/**
+ * Generates the `path-items.ts` module exposing reusable OpenAPI `components.pathItems`.
+ *
+ * @module routes/emit_path_items
+ */
 import * as path from "node:path";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { type Project, VariableDeclarationKind } from "ts-morph";
 import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
+import type { SwaggerParser } from "../openapi/parse.js";
 
 /**
  * Generates the `path-items.ts` file.
  * Exposes reusable Path Item Objects from components.pathItems.
  */
 export class PathItemsGenerator {
+	/**
+	 * Creates a new `PathItemsGenerator`.
+	 *
+	 * @param parser - The parsed OpenAPI specification wrapper.
+	 * @param project - The target `ts-morph` project.
+	 */
 	constructor(
 		private readonly parser: SwaggerParser,
 
 		private readonly project: Project,
 	) {}
 
+	/**
+	 * Generates `path-items.ts` in the specified output directory.
+	 *
+	 * @param outputDir - Root directory for generated output files.
+	 */
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "path-items.ts");
 

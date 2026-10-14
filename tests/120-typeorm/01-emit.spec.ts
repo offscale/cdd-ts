@@ -2,13 +2,14 @@ import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import type { SwaggerParser } from "../../src/openapi/parse.js";
 import { TypeOrmGenerator } from "../../src/vendors/typeorm/emit.js";
+import { testCast } from "../shared/helpers.js";
 
 describe("TypeOrmGenerator", () => {
 	it("should generate an entity file correctly with explicit types and JSDoc", async () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const mockParser = {
+		const mockParser = testCast<SwaggerParser>({
 			schemas: [
 				{
 					name: "User",
@@ -33,12 +34,12 @@ describe("TypeOrmGenerator", () => {
 					},
 				},
 			],
-		} as unknown as SwaggerParser;
+		});
 
 		await generator.generate(
 			project,
 			mockParser,
-			{ options: { tests: true } } as any,
+			testCast({ options: { tests: true } }),
 			"/out",
 		);
 
@@ -92,20 +93,20 @@ describe("TypeOrmGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const mockParser = { schemas: undefined } as unknown as SwaggerParser;
+		const mockParser = testCast<SwaggerParser>({ schemas: undefined });
 		await generator.generate(
 			project,
 			mockParser,
-			{ options: {} } as any,
+			testCast({ options: {} }),
 			"/out",
 		);
 		expect(project.getSourceFiles().length).toBe(0);
 
-		const mockParser2 = { schemas: [] } as unknown as SwaggerParser;
+		const mockParser2 = testCast<SwaggerParser>({ schemas: [] });
 		await generator.generate(
 			project,
 			mockParser2,
-			{ options: {} } as any,
+			testCast({ options: {} }),
 			"/out",
 		);
 		expect(project.getSourceFiles().length).toBe(0);
@@ -115,19 +116,19 @@ describe("TypeOrmGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const mockParser = {
+		const mockParser = testCast<SwaggerParser>({
 			schemas: [
 				{
 					name: "StringAlias",
 					definition: { type: "string" },
 				},
 			],
-		} as unknown as SwaggerParser;
+		});
 
 		await generator.generate(
 			project,
 			mockParser,
-			{ options: {} } as any,
+			testCast({ options: {} }),
 			"/out",
 		);
 		// It shouldn't create entities directory or files for non-object schemas
@@ -138,19 +139,19 @@ describe("TypeOrmGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const mockParser = {
+		const mockParser = testCast<SwaggerParser>({
 			schemas: [
 				{
 					name: "NoProps",
 					definition: { type: "object" }, // no properties
 				},
 			],
-		} as unknown as SwaggerParser;
+		});
 
 		await generator.generate(
 			project,
 			mockParser,
-			{ options: {} } as any,
+			testCast({ options: {} }),
 			"/out",
 		);
 		const file = project.getSourceFileOrThrow(
@@ -164,7 +165,7 @@ describe("TypeOrmGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const mockParser = {
+		const mockParser = testCast<SwaggerParser>({
 			schemas: [
 				{
 					name: "OptionalId",
@@ -178,12 +179,12 @@ describe("TypeOrmGenerator", () => {
 					},
 				},
 			],
-		} as unknown as SwaggerParser;
+		});
 
 		await generator.generate(
 			project,
 			mockParser,
-			{ options: {} } as any,
+			testCast({ options: {} }),
 			"/out",
 		);
 		const file = project.getSourceFileOrThrow(
@@ -199,9 +200,9 @@ describe("TypeOrmGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const config: any = { options: { tests: false } };
+		const config = testCast({ options: { tests: false } });
 
-		const testParser = {
+		const testParser = testCast({
 			schemas: [
 				{
 					name: "User",
@@ -213,9 +214,9 @@ describe("TypeOrmGenerator", () => {
 					},
 				},
 			],
-		} as any;
+		});
 
-		generator.generate(project, testParser, config, "/out");
+		generator.generate(project, testCast(testParser), testCast(config), "/out");
 
 		expect(project.getSourceFile("/out/entities/user.entity.ts")).toBeDefined();
 		expect(

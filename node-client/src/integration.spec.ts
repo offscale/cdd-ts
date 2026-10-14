@@ -21,15 +21,16 @@ describe("SDK Integration Tests", () => {
 					},
 				);
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -55,15 +56,16 @@ describe("SDK Integration Tests", () => {
 					},
 				);
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -89,15 +91,16 @@ describe("SDK Integration Tests", () => {
 					},
 				);
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -113,15 +116,16 @@ describe("SDK Integration Tests", () => {
 					},
 				});
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -137,15 +141,16 @@ describe("SDK Integration Tests", () => {
 					},
 				});
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -161,15 +166,16 @@ describe("SDK Integration Tests", () => {
 					},
 				});
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -190,15 +196,16 @@ describe("SDK Integration Tests", () => {
 					},
 				);
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -214,15 +221,16 @@ describe("SDK Integration Tests", () => {
 					},
 				});
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -242,15 +250,16 @@ describe("SDK Integration Tests", () => {
 					},
 				});
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -276,15 +285,16 @@ describe("SDK Integration Tests", () => {
 					},
 				);
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -300,15 +310,16 @@ describe("SDK Integration Tests", () => {
 					},
 				});
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -324,15 +335,16 @@ describe("SDK Integration Tests", () => {
 					},
 				});
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -366,15 +378,16 @@ describe("SDK Integration Tests", () => {
 					},
 				);
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -390,15 +403,16 @@ describe("SDK Integration Tests", () => {
 					},
 				});
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -427,15 +441,16 @@ describe("SDK Integration Tests", () => {
 					},
 				);
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -451,15 +466,16 @@ describe("SDK Integration Tests", () => {
 					},
 				});
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -475,15 +491,16 @@ describe("SDK Integration Tests", () => {
 					},
 				});
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -499,15 +516,16 @@ describe("SDK Integration Tests", () => {
 					},
 				});
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -537,15 +555,16 @@ describe("SDK Integration Tests", () => {
 					},
 				);
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
@@ -573,15 +592,16 @@ describe("SDK Integration Tests", () => {
 					},
 				);
 				expect(result).toBeDefined();
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const errObj = error as { code?: string } | null;
 				if (
-					error &&
-					(error.code === "ECONNREFUSED" ||
+					errObj &&
+					(errObj.code === "ECONNREFUSED" ||
 						String(error).includes("ECONNREFUSED") ||
 						String(error).includes("FormData") ||
 						String(error).includes("URLSearchParams"))
 				) {
-					expect(true).toBe(true);
+					expect(error).toBeDefined();
 				} else {
 					throw error;
 				}
