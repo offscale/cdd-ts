@@ -61,11 +61,17 @@ describe('Mock Server Integration Tests', () => {
 
     describe('Category 2: Stub Tests', () => {
         let app: Application;
+        let savedDbUrl: string | undefined;
         beforeAll(async () => {
+            savedDbUrl = process.env.DATABASE_URL;
+            delete process.env.DATABASE_URL;
             // No args = Stub mode
             app = await startServer(['node', 'script.js']);
         });
         afterAll(async () => {
+            if (savedDbUrl !== undefined) {
+                process.env.DATABASE_URL = savedDbUrl;
+            }
             if (app && app.locals && app.locals.dataSource) {
                 await app.locals.dataSource.destroy();
             }

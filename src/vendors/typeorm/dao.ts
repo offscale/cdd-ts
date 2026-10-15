@@ -344,7 +344,7 @@ export function generateDaoFactory(
 
 	testFile.addImportDeclaration({
 		moduleSpecifier: "vitest",
-		namedImports: ["describe", "it", "expect"],
+		namedImports: ["describe", "it", "expect", "vi"],
 	});
 	testFile.addImportDeclaration({
 		moduleSpecifier: "typeorm",
@@ -374,7 +374,7 @@ describe('DaoFactory', () => {
 
     it('should return concrete DAO when dataSource is provided', () => {
         const factory = new DaoFactory();
-        const mockDataSource = { getRepository: () => ({}) } as Partial<DataSource> as DataSource;
+        const mockDataSource = { getRepository: vi.fn().mockReturnValue({}) } as Partial<DataSource> as DataSource;
         ${schemas.map((s) => `expect(factory.get${s}Dao(false, mockDataSource)).toBeInstanceOf(${s}ConcreteDao);`).join("\n        ")}
     });
 });

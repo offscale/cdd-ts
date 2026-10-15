@@ -87,6 +87,18 @@ describe("TypeOrmGenerator", () => {
 		const testText = testFile.getFullText();
 		expect(testText).toContain("describe('User Entity', () => {");
 		expect(testText).toContain("const entity = new User();");
+
+		// Check DAO factory test file generation
+		const factoryTestFile = project.getSourceFileOrThrow(
+			"/out/dao/factory.spec.ts",
+		);
+		const factoryTestText = factoryTestFile.getFullText();
+		expect(factoryTestText).toContain(
+			'import { describe, it, expect, vi } from "vitest";',
+		);
+		expect(factoryTestText).toContain(
+			"const mockDataSource = { getRepository: vi.fn().mockReturnValue({}) } as Partial<DataSource> as DataSource;",
+		);
 	});
 
 	it("should handle empty schemas safely", async () => {

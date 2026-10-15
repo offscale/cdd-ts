@@ -475,13 +475,25 @@ export class ExpressServerGenerator implements IServerFrameworkGenerator {
 					"it('should initialize stub mode when no DB args are provided', async () => {",
 				);
 				writer.indent(() => {
-					writer.writeLine(
-						"const app = await startServer(['node', 'script.js']);",
-					);
-					writer.writeLine("expect(app).toBeDefined();");
-					writer.writeLine(
-						"if ((app as any).locals && (app as any).locals.dataSource) await (app as any).locals.dataSource.destroy();",
-					);
+					writer.writeLine("const savedDbUrl = process.env.DATABASE_URL;");
+					writer.writeLine("delete process.env.DATABASE_URL;");
+					writer.writeLine("try {");
+					writer.indent(() => {
+						writer.writeLine(
+							"const app = await startServer(['node', 'script.js']);",
+						);
+						writer.writeLine("expect(app).toBeDefined();");
+						writer.writeLine(
+							"if ((app as any).locals && (app as any).locals.dataSource) await (app as any).locals.dataSource.destroy();",
+						);
+					});
+					writer.writeLine("} finally {");
+					writer.indent(() => {
+						writer.writeLine(
+							"if (savedDbUrl !== undefined) process.env.DATABASE_URL = savedDbUrl;",
+						);
+					});
+					writer.writeLine("}");
 				});
 				writer.writeLine("});");
 				writer.blankLine();
