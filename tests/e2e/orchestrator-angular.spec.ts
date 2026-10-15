@@ -1,4 +1,5 @@
 import * as path from "node:path";
+import { auditAngularSourceBestPractices } from "@src/functions/utils.js";
 import type { Project } from "ts-morph";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -38,6 +39,12 @@ describe("E2E: Angular Generator Output", () => {
 		expect(hasFile(project, "users-list.component.ts")).toBe(true);
 		expect(hasFile(project, "users-form.component.ts")).toBe(true);
 		expect(hasFile(project, "i18n.service.ts")).toBe(true);
+
+		for (const sf of project.getSourceFiles()) {
+			const audit = auditAngularSourceBestPractices(sf.getFullText());
+			expect(audit.violations, `Violations in ${sf.getFilePath()}`).toEqual([]);
+			expect(audit.compliant).toBe(true);
+		}
 	});
 
 	it("should run without auth generation for a spec with no security", async () => {

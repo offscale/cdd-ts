@@ -96,7 +96,7 @@ describe("Emitter: WebhookHelperGenerator", () => {
 			exports: testCast({}),
 		};
 
-		const mockInjectable = () => (target: TestValue) => target;
+		const mockService = () => (target: TestValue) => target;
 
 		const wrappedCode = `
             ${jsDefs} 
@@ -105,9 +105,9 @@ describe("Emitter: WebhookHelperGenerator", () => {
         `;
 
 		testCast(
-			new Function("exports", "Injectable", wrappedCode)(
+			new Function("exports", "Service", wrappedCode)(
 				moduleScope.exports,
-				mockInjectable,
+				mockService,
 			),
 		);
 

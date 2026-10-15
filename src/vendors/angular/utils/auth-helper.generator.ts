@@ -33,7 +33,7 @@ export class AuthHelperGenerator {
 		sourceFile.addImportDeclarations([
 			{
 				moduleSpecifier: "@angular/core",
-				namedImports: ["Injectable", "inject"],
+				namedImports: ["Service", "inject"],
 			},
 			{ moduleSpecifier: "@angular/router", namedImports: ["Router"] },
 			{
@@ -48,8 +48,8 @@ export class AuthHelperGenerator {
 			isExported: true,
 			decorators: [
 				{
-					name: "Injectable",
-					arguments: [`{ providedIn: 'root' }`],
+					name: "Service",
+					arguments: [],
 				},
 			],
 		});

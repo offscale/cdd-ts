@@ -84,6 +84,11 @@ export {
 	extractPaths,
 	groupPathsByController,
 } from "../openapi/parse_spec_extractor.js";
+/** Re-exports `AngularBestPracticeRuleId` from `./parse.js`. */
+/** Re-exports `AngularBestPracticesAuditResult` from `./parse.js`. */
+/** Re-exports `AngularBestPracticeViolation` from `./parse.js`. */
+/** Re-exports `AngularHttpCallMatch` from `./parse.js`. */
+/** Re-exports `AngularServiceMetadata` from `./parse.js`. */
 /** Re-exports `CodeScanFileSystem` from `./parse.js`. */
 /** Re-exports `CodeScanIr` from `./parse.js`. */
 /** Re-exports `CodeScanOperation` from `./parse.js`. */
@@ -93,6 +98,11 @@ export {
 /** Re-exports `CodeScanRequestBody` from `./parse.js`. */
 /** Re-exports `CodeScanResponse` from `./parse.js`. */
 export type {
+	AngularBestPracticeRuleId,
+	AngularBestPracticesAuditResult,
+	AngularBestPracticeViolation,
+	AngularHttpCallMatch,
+	AngularServiceMetadata,
 	CodeScanFileSystem,
 	CodeScanIr,
 	CodeScanOperation,
@@ -102,11 +112,17 @@ export type {
 	CodeScanRequestBody,
 	CodeScanResponse,
 } from "./parse.js";
+/** Re-exports `auditAngularSourceBestPractices` from `./parse.js`. */
 /** Re-exports `buildOpenApiSpecFromScan` from `./parse.js`. */
+/** Re-exports `extractAngularHttpCall` from `./parse.js`. */
+/** Re-exports `extractAngularServiceMetadata` from `./parse.js`. */
 /** Re-exports `scanTypeScriptProject` from `./parse.js`. */
 /** Re-exports `scanTypeScriptSource` from `./parse.js`. */
 export {
+	auditAngularSourceBestPractices,
 	buildOpenApiSpecFromScan,
+	extractAngularHttpCall,
+	extractAngularServiceMetadata,
 	scanTypeScriptProject,
 	scanTypeScriptSource,
 } from "./parse.js";

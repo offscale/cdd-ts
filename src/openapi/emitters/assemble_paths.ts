@@ -19,7 +19,10 @@ import type {
 	SwaggerResponse,
 	SwaggerSpec,
 } from "../../core/types/index.js";
-import { extractAngularHttpCall } from "../../functions/parsers/parse_angular_service.js";
+import {
+	extractAngularHttpCall,
+	extractAngularServiceMetadata,
+} from "../../functions/parsers/parse_angular_service.js";
 import { extractPromiseHttpCall } from "../../functions/parsers/parse_promise_service.js";
 
 /** Reverse param location */
@@ -313,6 +316,8 @@ export function parseGeneratedServiceSource(
 		const serviceName = classMatch[1]!;
 
 		const classBody = classMatch[2]!;
+		const angularMeta = extractAngularServiceMetadata(classBody);
+		const httpProp = angularMeta.httpClientProperty;
 
 		const operations: ReverseOperation[] = [];
 		const methodRegex =
@@ -333,7 +338,7 @@ export function parseGeneratedServiceSource(
 			if (methodName === "helper") continue;
 
 			const callMatch =
-				extractAngularHttpCall(methodBody, returnTypeFull) ??
+				extractAngularHttpCall(methodBody, returnTypeFull, httpProp) ??
 				extractPromiseHttpCall(methodBody, returnTypeFull);
 
 			if (!callMatch) {
@@ -565,6 +570,7 @@ export function parseGeneratedServiceSource(
 				params.push({ name: "file", in: "formData" });
 			}
 
+			const escapedHttpProp = httpProp.replace(/\W/g, "");
 			const hasBody =
 				methodBody.includes("body: ") ||
 				methodBody.includes(", body") ||
@@ -572,9 +578,9 @@ export function parseGeneratedServiceSource(
 				methodBody.includes(", formBody") ||
 				methodBody.includes(", xmlBody") ||
 				methodBody.includes(", multipartResult.content") ||
-				methodBody.match(
-					/this\.http\.(post|put|patch)\(<.*>|any>\([^,]+,\s*[a-zA-Z0-9_]+,/,
-				);
+				new RegExp(
+					String.raw`this\.${escapedHttpProp}\.(post|put|patch)(?:<[^>]+>)?\([^,]+,\s*[a-zA-Z0-9_]+,`,
+				).test(methodBody);
 
 			const resolvedParams = argsStrRaw
 
@@ -944,14 +950,16 @@ export function parseGeneratedServiceSource(
 				if (responseMediaTypes.length === 0)
 					responseMediaTypes.push("application/json");
 			} else if (
-				methodBody.match(/this\.http\.\w+<[^>]+>/) &&
+				new RegExp(String.raw`this\.${escapedHttpProp}\.\w+<[^>]+>`).test(
+					methodBody,
+				) &&
 				responseMediaTypes.length === 0
 			) {
 				responseMediaTypes.push("application/json");
 			} else if (
-				methodBody.match(
-					/this\.http\.request(?:<[^>]+>)?\([^,]+,\s*[^,]+,\s*{.*body:\s*/,
-				)
+				new RegExp(
+					String.raw`this\.${escapedHttpProp}\.request(?:<[^>]+>)?\([^,]+,\s*[^,]+,\s*\{.*body:\s*`,
+				).test(methodBody)
 			) {
 				if (requestMediaTypes.length === 0)
 					requestMediaTypes.push("application/json");

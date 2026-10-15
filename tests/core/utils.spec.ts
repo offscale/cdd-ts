@@ -9,10 +9,10 @@ import { describe, expect, it } from "vitest";
  * re-exports the public API surface expected by the rest of the application.
  *
  * Detailed logic tests are located in:
- * - tests/00-core/utils/string.spec.ts
- * - tests/00-core/utils/naming.spec.ts
- * - tests/00-core/utils/type-converter.spec.ts
- * - tests/00-core/utils/spec-extractor.spec.ts
+ * - tests/core/utils/string.spec.ts
+ * - tests/core/utils/naming.spec.ts
+ * - tests/core/utils/type-converter.spec.ts
+ * - tests/core/utils/spec-extractor.spec.ts
  */
 describe("Core: Utils Public API (Index)", () => {
 	describe("Module Exports", () => {

@@ -31,10 +31,26 @@ import {
 	scanExpressRoutes,
 } from "./parsers/parse_server_routes.js";
 
+/** Re-exports `AngularBestPracticeRuleId` from `./parsers/parse_angular_service.js`. */
+/** Re-exports `AngularBestPracticesAuditResult` from `./parsers/parse_angular_service.js`. */
+/** Re-exports `AngularBestPracticeViolation` from `./parsers/parse_angular_service.js`. */
 /** Re-exports `AngularHttpCallMatch` from `./parsers/parse_angular_service.js`. */
-export type { AngularHttpCallMatch } from "./parsers/parse_angular_service.js";
+/** Re-exports `AngularServiceMetadata` from `./parsers/parse_angular_service.js`. */
+export type {
+	AngularBestPracticeRuleId,
+	AngularBestPracticesAuditResult,
+	AngularBestPracticeViolation,
+	AngularHttpCallMatch,
+	AngularServiceMetadata,
+} from "./parsers/parse_angular_service.js";
+/** Re-exports `auditAngularSourceBestPractices` from `./parsers/parse_angular_service.js`. */
 /** Re-exports `extractAngularHttpCall` from `./parsers/parse_angular_service.js`. */
-export { extractAngularHttpCall } from "./parsers/parse_angular_service.js";
+/** Re-exports `extractAngularServiceMetadata` from `./parsers/parse_angular_service.js`. */
+export {
+	auditAngularSourceBestPractices,
+	extractAngularHttpCall,
+	extractAngularServiceMetadata,
+} from "./parsers/parse_angular_service.js";
 /** Re-exports `ExtractedOperationDocMeta` from `./parsers/parse_operation_jsdoc.js`. */
 export type { ExtractedOperationDocMeta } from "./parsers/parse_operation_jsdoc.js";
 /** Re-exports `extractDocMeta` from `./parsers/parse_operation_jsdoc.js`. */

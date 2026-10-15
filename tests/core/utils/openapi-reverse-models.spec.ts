@@ -1,4 +1,4 @@
-// tests/00-core/utils/openapi-reverse-models.spec.ts
+// tests/core/utils/openapi-reverse-models.spec.ts
 
 import fs from "node:fs";
 import os from "node:os";

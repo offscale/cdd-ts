@@ -74,7 +74,7 @@ export class AdminTestGenerator {
 		});
 		sourceFile.addImportDeclaration({
 			moduleSpecifier: "@angular/platform-browser/animations",
-			namedImports: ["NoopAnimationsModule"],
+			namedImports: ["provideNoopAnimations"],
 		});
 		sourceFile.addImportDeclaration({
 			moduleSpecifier: `./${fileName}.component.js`,
@@ -88,8 +88,8 @@ export class AdminTestGenerator {
 			``,
 			`  beforeEach(async () => {`,
 			`    await TestBed.configureTestingModule({`,
-			`      imports: [${componentName}, NoopAnimationsModule],`,
-			`      providers: [provideHttpClient(), provideHttpClientTesting()]`,
+			`      imports: [${componentName}],`,
+			`      providers: [provideHttpClient(), provideHttpClientTesting(), provideNoopAnimations()]`,
 			`    }).compileComponents();`,
 			``,
 			`    fixture = TestBed.createComponent(${componentName});`,

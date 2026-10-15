@@ -109,10 +109,10 @@ export class FormComponentGenerator {
 
 		sourceFile.addStatements(
 			[
-				`import { Component, OnInit, computed, inject, signal, effect, ChangeDetectionStrategy, DestroyRef } from '@angular/core';`,
+				`import { Component, OnInit, computed, inject, signal, DestroyRef } from '@angular/core';`,
 				`import { takeUntilDestroyed } from '@angular/core/rxjs-interop';`,
-				`import { FormBuilder, FormGroup, FormArray, Validators, FormControl, ReactiveFormsModule } from '@angular/forms';`,
-				`import { ActivatedRoute, Router, RouterModule } from '@angular/router';`,
+				`import { FormBuilder, FormGroup, FormArray, Validators, FormControl } from '@angular/forms';`,
+				`import { ActivatedRoute, Router } from '@angular/router';`,
 
 				...commonStandaloneImports.map(
 					(a) => `import { ${a[0]} } from "${a[1]}";`,
@@ -239,15 +239,12 @@ export class FormComponentGenerator {
 					arguments: [
 						`{
                     selector: 'app-${resource.name}-form',
+                    host: { class: 'app-admin-form-host' },
                     imports: [
-                        ReactiveFormsModule,
-                        RouterModule,
-
                         ${commonStandaloneImports.map((a) => a[0]).join(",\n    ")}
                     ],
                     templateUrl: './${resource.name}-form.component.html',
-                    styleUrl: './${resource.name}-form.component.scss',
-                    changeDetection: ChangeDetectionStrategy.OnPush
+                    styleUrl: './${resource.name}-form.component.scss'
                 }`,
 					],
 				},
@@ -345,7 +342,6 @@ export class FormComponentGenerator {
 			{
 				name: `${camelCase(serviceName)}`,
 				isReadonly: true,
-				type: serviceName,
 				initializer: `inject(${serviceName})`,
 			},
 			{

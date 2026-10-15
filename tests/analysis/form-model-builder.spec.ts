@@ -1,4 +1,4 @@
-// tests/analysis/01-form-model-builder.spec.ts
+// tests/analysis/form-model-builder.spec.ts
 
 import type { GeneratorConfig, Resource } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";

@@ -52,7 +52,8 @@ export class IntegrationTestGenerator {
 
 		sourceFile.addStatements(`
             import { TestBed } from '@angular/core/testing';
-            import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+            import { provideHttpClient } from '@angular/common/http';
+            import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
             import { firstValueFrom } from 'rxjs';
         `);
 
@@ -77,8 +78,9 @@ export class IntegrationTestGenerator {
 
                 beforeEach(() => {
                     TestBed.configureTestingModule({
-                        imports: [HttpClientTestingModule],
                         providers: [
+                            provideHttpClient(),
+                            provideHttpClientTesting(),
                             ${serviceNames.join(`,${String.fromCharCode(10)}                            `)},
                             { provide: ${basePathTokenName}, useValue: 'http://localhost:8080/v2' }
                         ]

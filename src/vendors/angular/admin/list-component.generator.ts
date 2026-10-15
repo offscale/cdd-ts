@@ -121,7 +121,7 @@ export class ListComponentGenerator {
 		);
 
 		sourceFile.addStatements([
-			`import { Component, viewChild, AfterViewInit, effect, inject, signal, ChangeDetectionStrategy, DestroyRef } from '@angular/core';`,
+			`import { Component, viewChild, AfterViewInit, inject, signal, DestroyRef } from '@angular/core';`,
 			`import { takeUntilDestroyed } from '@angular/core/rxjs-interop';`,
 			`import { MatPaginator, PageEvent } from '@angular/material/paginator';`,
 			`import { MatTableDataSource } from '@angular/material/table';`,
@@ -147,11 +147,10 @@ export class ListComponentGenerator {
 					arguments: [
 						`{
                     selector: 'app-${model.resourceName}-list',
-
+                    host: { class: 'app-admin-list-host' },
                     imports: [ ${commonStandaloneImports.map((a) => a[0]).join(",\n")} ],
                     templateUrl: './${model.resourceName}-list.component.html',
-                    styleUrl: './${model.resourceName}-list.component.scss',
-                    changeDetection: ChangeDetectionStrategy.OnPush
+                    styleUrl: './${model.resourceName}-list.component.scss'
                 }`,
 					],
 				},
@@ -198,7 +197,6 @@ export class ListComponentGenerator {
 			{
 				name: `${camelCase(model.serviceName)}`,
 				isReadonly: true,
-				type: model.serviceName,
 				initializer: `inject(${model.serviceName})`,
 			},
 			{
@@ -213,15 +211,14 @@ export class ListComponentGenerator {
 			},
 			{
 				name: "dataSource",
-				type: `MatTableDataSource<${model.modelName}>`,
 				initializer: `new MatTableDataSource<${model.modelName}>()`,
 			},
 			{ name: "totalItems", initializer: "signal(0)" },
 			{
-				name: "displayedColumns: string[]",
+				name: "displayedColumns",
 				initializer: JSON.stringify(model.displayedColumns),
 			},
-			{ name: "idProperty: string", initializer: `'${model.idProperty}'` },
+			{ name: "idProperty", initializer: `'${model.idProperty}'` },
 		]);
 	}
 

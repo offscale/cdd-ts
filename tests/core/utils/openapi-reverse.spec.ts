@@ -1,10 +1,15 @@
-// tests/00-core/utils/openapi-reverse.spec.ts
+// tests/core/utils/openapi-reverse.spec.ts
 
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { OAS_3_1_DIALECT } from "@src/core/constants.js";
+import {
+	auditAngularSourceBestPractices,
+	extractAngularHttpCall,
+	extractAngularServiceMetadata,
+} from "@src/functions/utils.js";
 import type { ReverseMetadata } from "@src/openapi/emit.js";
 import {
 	applyReverseMetadata,
@@ -1568,5 +1573,139 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			testCast(merged.paths)["/things/{id}"].additionalOperations.COPY
 				.responses["200"].headers,
 		).toBeUndefined();
+	});
+
+	it("should extract Angular v22+ @Service() and @Injectable() metadata and custom HttpClient property", () => {
+		const serviceV22 = `
+			import { Service, inject } from '@angular/core';
+			import { HttpClient } from '@angular/common/http';
+			@Service()
+			export class PetService {
+				private readonly httpClient = inject(HttpClient);
+				getPets() {
+					const url = \`\${basePath}/pets\`;
+					return this.httpClient.get(url);
+				}
+			}
+		`;
+		const metaV22 = extractAngularServiceMetadata(serviceV22);
+		expect(metaV22).toEqual({
+			decorator: "Service",
+			providedIn: "root",
+			usesInjectFunction: true,
+			usesConstructorInjection: false,
+			httpClientProperty: "httpClient",
+		});
+
+		const parsedServices = parseGeneratedServiceSource(
+			serviceV22,
+			"/pets.service.ts",
+		);
+		expect(parsedServices).toHaveLength(1);
+		expect(parsedServices[0]?.operations[0]?.httpMethod).toBe("GET");
+		expect(parsedServices[0]?.operations[0]?.path).toBe("/pets");
+
+		const injectableRoot = `
+			@Injectable({ providedIn: 'root' })
+			export class LegacyService {
+				constructor(private readonly api: HttpClient) {}
+			}
+		`;
+		const metaLegacy = extractAngularServiceMetadata(injectableRoot);
+		expect(metaLegacy).toEqual({
+			decorator: "Injectable",
+			providedIn: "root",
+			usesInjectFunction: false,
+			usesConstructorInjection: true,
+			httpClientProperty: "api",
+		});
+
+		const bareInjectable = `
+			@Injectable()
+			export class BareService {}
+		`;
+		const metaBare = extractAngularServiceMetadata(bareInjectable);
+		expect(metaBare).toEqual({
+			decorator: "Injectable",
+			usesInjectFunction: false,
+			usesConstructorInjection: false,
+			httpClientProperty: "http",
+		});
+
+		const requestNoGeneric = extractAngularHttpCall(
+			"return this.http.request('PURGE', url, {});",
+		);
+		expect(requestNoGeneric).toEqual({ httpMethod: "PURGE" });
+	});
+
+	it("should audit Angular sources against Angular v22+ best practices", () => {
+		const compliantSource = `
+			import { Component, Service, inject, signal, computed, input, output, model } from '@angular/core';
+			import { HttpClient } from '@angular/common/http';
+
+			@Service()
+			export class ModernService {
+				private readonly http = inject(HttpClient);
+			}
+
+			@Component({
+				selector: 'app-modern',
+				host: { class: 'modern-host' },
+				template: '@if (ready()) { @for (item of items(); track item.id) { <span>{{ item.name }}</span> } }'
+			})
+			export class ModernComponent {
+				readonly title = input<string>('');
+				readonly saved = output<void>();
+				readonly active = model<boolean>(false);
+				readonly ready = signal(true);
+				readonly items = signal<{ id: number; name: string }[]>([]);
+				readonly count = computed(() => this.items().length);
+			}
+		`;
+		const compliantResult = auditAngularSourceBestPractices(compliantSource);
+		expect(compliantResult.compliant).toBe(true);
+		expect(compliantResult.violations).toHaveLength(0);
+
+		const violatingSource = `
+			import { Component, Injectable, ChangeDetectionStrategy, Input, Output, HostBinding, HostListener } from '@angular/core';
+			import { CommonModule } from '@angular/common';
+			import { HttpClientTestingModule } from '@angular/common/http/testing';
+
+			@Injectable({ providedIn: 'root' })
+			export class OldService {
+				constructor(private http: any) {}
+			}
+
+			@Component({
+				selector: 'app-old',
+				standalone: true,
+				imports: [CommonModule],
+				changeDetection: ChangeDetectionStrategy.OnPush,
+				template: '<div *ngIf="show" [ngClass]="cls"><span *ngFor="let x of list">{{ x }}</span></div>'
+			})
+			export class OldComponent {
+				@Input() show = true;
+				@Output() done: any;
+				@HostBinding('class.active') isActive = true;
+				@HostListener('click') onClick() {
+					this.state.mutate(v => v.count++);
+				}
+			}
+		`;
+		const violatingResult = auditAngularSourceBestPractices(violatingSource);
+		expect(violatingResult.compliant).toBe(false);
+		const rules = violatingResult.violations.map((v) => v.rule);
+		expect(rules).toContain("no-explicit-standalone-true");
+		expect(rules).toContain("no-explicit-onpush");
+		expect(rules).toContain("prefer-service-decorator");
+		expect(rules).toContain("prefer-inject-function");
+		expect(rules).toContain("prefer-signal-inputs-outputs");
+		expect(rules).toContain("no-host-decorators");
+		expect(rules).toContain("no-common-module");
+		expect(rules).toContain("no-ng-class-or-style");
+		expect(rules).toContain("prefer-native-control-flow");
+		expect(rules).toContain("no-signal-mutate");
+		expect(rules).toContain("no-any-type");
+		expect(rules).toContain("no-testing-ngmodules");
 	});
 });

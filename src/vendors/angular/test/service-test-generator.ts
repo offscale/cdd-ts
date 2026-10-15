@@ -79,8 +79,9 @@ export class ServiceTestGenerator {
 			"",
 			`  beforeEach(() => {`,
 			`    TestBed.configureTestingModule({`,
-			`      imports: [HttpClientTestingModule],`,
 			`      providers: [`,
+			`        provideHttpClient(),`,
+			`        provideHttpClientTesting(),`,
 			`        ${serviceName},`,
 			`        { provide: ${getBasePathTokenName(this.config.clientName)}, useValue: '/api/v1' }`,
 			`      ]`,
@@ -482,8 +483,12 @@ export class ServiceTestGenerator {
 		sourceFile.addImportDeclarations([
 			{ moduleSpecifier: "@angular/core/testing", namedImports: ["TestBed"] },
 			{
+				moduleSpecifier: "@angular/common/http",
+				namedImports: ["provideHttpClient"],
+			},
+			{
 				moduleSpecifier: "@angular/common/http/testing",
-				namedImports: ["HttpClientTestingModule", "HttpTestingController"],
+				namedImports: ["HttpTestingController", "provideHttpClientTesting"],
 			},
 			{
 				moduleSpecifier: `./${camelCase(serviceName.replace(/Service$/, ""))}.service`,

@@ -1,4 +1,4 @@
-// tests/00-core/07-extensions.spec.ts
+// tests/core/extensions.spec.ts
 
 import type {
 	GeneratorConfig,

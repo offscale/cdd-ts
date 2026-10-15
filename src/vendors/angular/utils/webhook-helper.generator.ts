@@ -48,16 +48,14 @@ export class WebhookHelperGenerator {
 		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
 		sourceFile.addImportDeclarations([
-			{ moduleSpecifier: "@angular/core", namedImports: ["Injectable"] },
+			{ moduleSpecifier: "@angular/core", namedImports: ["Service"] },
 			{ moduleSpecifier: "../webhooks", namedImports: ["API_WEBHOOKS"] },
 		]);
 
 		const serviceClass = sourceFile.addClass({
 			name: "WebhookService",
 			isExported: true,
-			decorators: [
-				{ name: "Injectable", arguments: ["{ providedIn: 'root' }"] },
-			],
+			decorators: [{ name: "Service", arguments: [] }],
 			docs: [
 				"Service to assist in identifying and matching incoming Webhook payloads to their definitions.",
 			],

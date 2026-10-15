@@ -27,15 +27,13 @@ export class I18nGenerator {
 			overwrite: true,
 		});
 
-		sourceFile.addStatements(`import { Injectable } from '@angular/core';
+		sourceFile.addStatements(`import { Service } from '@angular/core';
 
 /**
  * A lightweight translation service scaffold.
  * Replace this with @ngx-translate/core or Angular native i18n for production environments.
  */
-@Injectable({
-    providedIn: 'root'
-})
+@Service()
 export class TranslationService {
     public t(key: string, defaultValue: string): string {
         // Fallback translation logic

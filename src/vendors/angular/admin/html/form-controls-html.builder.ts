@@ -385,9 +385,10 @@ function createFile(
 		_.create("input")
 			.setAttribute("type", "file")
 			.setAttribute("id", inputId)
+			.setAttribute(`#${inputId}`, "")
 			.setAttribute("aria-labelledby", labelId)
 			.setAttribute("(change)", `onFileSelected($event, '${control.name}')`)
-			.setAttribute("style", "display: none;")
+			.addClass("hidden-file-input")
 			.selfClosing(),
 	);
 
@@ -605,8 +606,16 @@ function createFormArray(
 			.setAttribute("type", "button")
 			.setAttribute("mat-icon-button", "")
 			.setAttribute("color", "warn")
+			.setAttribute(
+				"aria-label",
+				`Remove ${pascalCase(singular(control.name))}`,
+			)
 			.setAttribute("(click)", `remove${pascalCase(singular(control.name))}(i)`)
-			.appendChild(_.create("mat-icon").setTextContent("delete")),
+			.appendChild(
+				_.create("mat-icon")
+					.setAttribute("aria-hidden", "true")
+					.setTextContent("delete"),
+			),
 	);
 
 	const innerItemHtml = itemContainer.render(1);
@@ -682,8 +691,13 @@ function createMapEditor(
 			.setAttribute("type", "button")
 			.setAttribute("mat-icon-button", "")
 			.setAttribute("color", "warn")
+			.setAttribute("aria-label", `Remove ${pascalCase(control.name)} entry`)
 			.setAttribute("(click)", `remove${pascalCase(control.name)}Entry(i)`)
-			.appendChild(_.create("mat-icon").setTextContent("delete")),
+			.appendChild(
+				_.create("mat-icon")
+					.setAttribute("aria-hidden", "true")
+					.setTextContent("delete"),
+			),
 	);
 
 	const innerLoopHtml = loopContainer.render(1);

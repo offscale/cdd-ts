@@ -51,7 +51,7 @@ export class LinkServiceGenerator {
 		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
 		sourceFile.addImportDeclarations([
-			{ moduleSpecifier: "@angular/core", namedImports: ["Injectable"] },
+			{ moduleSpecifier: "@angular/core", namedImports: ["Service"] },
 			{
 				moduleSpecifier: "@angular/common/http",
 				namedImports: ["HttpResponse", "HttpRequest"],
@@ -62,9 +62,7 @@ export class LinkServiceGenerator {
 		const linkServiceClass = sourceFile.addClass({
 			name: "LinkService",
 			isExported: true,
-			decorators: [
-				{ name: "Injectable", arguments: ["{ providedIn: 'root' }"] },
-			],
+			decorators: [{ name: "Service", arguments: [] }],
 			docs: [
 				"Service to resolve OpenAPI Links from HTTP Responses using runtime expressions.",
 			],

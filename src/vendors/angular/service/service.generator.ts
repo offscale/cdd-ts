@@ -83,7 +83,7 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 	): void {
 		sourceFile.addImportDeclaration({
 			moduleSpecifier: "@angular/core",
-			namedImports: ["Injectable", "inject"],
+			namedImports: ["Service", "inject"],
 		});
 
 		const httpImports = [
@@ -374,9 +374,7 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 		const serviceClass = sourceFile.addClass({
 			name: className,
 			isExported: true,
-			decorators: [
-				{ name: "Injectable", arguments: [`{ providedIn: 'root' }`] },
-			],
+			decorators: [{ name: "Service", arguments: [] }],
 		});
 
 		this.addPropertiesAndHelpers(serviceClass);
@@ -402,7 +400,6 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 			name: "basePath",
 			scope: Scope.Private,
 			isReadonly: true,
-			type: "string",
 			initializer: `inject(${basePathToken}, { optional: true }) || getServerUrl(0, inject(${varsToken}, { optional: true }) ?? {})`,
 		});
 
@@ -412,7 +409,6 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 
 		serviceClass.addProperty({
 			name: "clientContextToken",
-			type: `HttpContextToken<string>`,
 			scope: Scope.Private,
 			isReadonly: true,
 			initializer: clientContextTokenName,

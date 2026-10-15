@@ -10,7 +10,6 @@
  */
 
 export const commonStandaloneImports = [
-	["CommonModule", "@angular/common"],
 	["RouterModule", "@angular/router"],
 	["ReactiveFormsModule", "@angular/forms"],
 	["MatButtonModule", "@angular/material/button"],

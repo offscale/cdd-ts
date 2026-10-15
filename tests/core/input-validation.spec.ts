@@ -1,4 +1,4 @@
-// tests/00-core/06-input-validation.spec.ts
+// tests/core/input-validation.spec.ts
 
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
@@ -4454,7 +4454,7 @@ describe("Core: Security Scheme Validation", () => {
 		expect(() => validateSpec(testCast(spec))).not.toThrow();
 	});
 });
-// tests/00-core/07-example-validation.spec.ts
+// tests/core/example-validation.spec.ts
 
 // import { validateSpec } from '@src/openapi/parse_validator.js';
 // import { SwaggerSpec } from '@src/core/types/index.js';

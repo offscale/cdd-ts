@@ -100,7 +100,7 @@ describe("Emitter: LinkServiceGenerator", () => {
         `;
 
 		testCast(
-			new Function("exports", "Injectable", wrappedCode)(
+			new Function("exports", "Service", wrappedCode)(
 				moduleScope.exports,
 				mockInjectable,
 			),
@@ -173,7 +173,7 @@ describe("Emitter: LinkServiceGenerator", () => {
         `;
 
 		testCast(
-			new Function("exports", "Injectable", wrappedCode)(
+			new Function("exports", "Service", wrappedCode)(
 				moduleScope.exports,
 				mockInjectable,
 			),
@@ -252,7 +252,7 @@ describe("Emitter: LinkServiceGenerator", () => {
         `;
 
 		testCast(
-			new Function("exports", "Injectable", wrappedCode)(
+			new Function("exports", "Service", wrappedCode)(
 				moduleScope.exports,
 				mockInjectable,
 			),
@@ -344,7 +344,7 @@ describe("Emitter: LinkServiceGenerator", () => {
         `;
 
 		testCast(
-			new Function("exports", "Injectable", wrappedCode)(
+			new Function("exports", "Service", wrappedCode)(
 				moduleScope.exports,
 				mockInjectable,
 			),
@@ -423,7 +423,7 @@ describe("Emitter: LinkServiceGenerator", () => {
         `;
 
 		testCast(
-			new Function("exports", "Injectable", wrappedCode)(
+			new Function("exports", "Service", wrappedCode)(
 				moduleScope.exports,
 				mockInjectable,
 			),
@@ -487,7 +487,7 @@ describe("Emitter: LinkServiceGenerator", () => {
         `;
 
 		testCast(
-			new Function("exports", "Injectable", wrappedCode)(
+			new Function("exports", "Service", wrappedCode)(
 				moduleScope.exports,
 				mockInjectable,
 			),
@@ -553,7 +553,7 @@ describe("Emitter: LinkServiceGenerator", () => {
         `;
 
 		testCast(
-			new Function("exports", "Injectable", wrappedCode)(
+			new Function("exports", "Service", wrappedCode)(
 				moduleScope.exports,
 				mockInjectable,
 			),
@@ -621,7 +621,7 @@ describe("Emitter: LinkServiceGenerator", () => {
         `;
 
 		testCast(
-			new Function("exports", "Injectable", wrappedCode)(
+			new Function("exports", "Service", wrappedCode)(
 				moduleScope.exports,
 				mockInjectable,
 			),

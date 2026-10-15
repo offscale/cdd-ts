@@ -31,7 +31,7 @@ export class ResponseHeaderParserGenerator {
 		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
 		sourceFile.addImportDeclarations([
-			{ moduleSpecifier: "@angular/core", namedImports: ["Injectable"] },
+			{ moduleSpecifier: "@angular/core", namedImports: ["Service"] },
 			{
 				moduleSpecifier: "@angular/common/http",
 				namedImports: ["HttpHeaders"],
@@ -47,9 +47,7 @@ export class ResponseHeaderParserGenerator {
 		const serviceClass = sourceFile.addClass({
 			name: "ResponseHeaderService",
 			isExported: true,
-			decorators: [
-				{ name: "Injectable", arguments: ["{ providedIn: 'root' }"] },
-			],
+			decorators: [{ name: "Service", arguments: [] }],
 			docs: [
 				"Service to parse and coerce response headers into typed objects based on API metadata.",
 			],

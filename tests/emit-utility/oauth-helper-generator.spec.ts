@@ -61,12 +61,13 @@ describe("Emitter: OAuthHelperGenerator", () => {
 			project
 				.getFileSystem()
 				.readFileSync("/out/auth/oauth-redirect/oauth-redirect.component.html"),
-		).toBe("<p>Redirecting...</p>");
+		).toBe('<p role="status" aria-live="polite">Redirecting...</p>');
 
 		// Check content
 		const service = project
 			.getSourceFileOrThrow("/out/auth/oauth.service.ts")
 			.getClassOrThrow("OAuthHelperService");
+		expect(service.getDecorator("Service")).toBeDefined();
 		expect(service.getMethod("login")).toBeDefined();
 	});
 

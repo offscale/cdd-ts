@@ -1,4 +1,4 @@
-// tests/30-emit-service/03-service-method-precedence.spec.ts
+// tests/emit-service/service-method-precedence.spec.ts
 
 import { TypeGenerator } from "@src/classes/emit.js";
 import type { GeneratorConfig, PathInfo } from "@src/core/types/index.js";

@@ -139,7 +139,7 @@ export class OAuthHelperGenerator {
 		const imports = [
 			{
 				moduleSpecifier: "@angular/core",
-				namedImports: ["Injectable", "inject"],
+				namedImports: ["Service", "inject"],
 			},
 			{ moduleSpecifier: "@angular/router", namedImports: ["Router"] },
 			{
@@ -164,9 +164,7 @@ export class OAuthHelperGenerator {
 		const serviceClass = sourceFile.addClass({
 			name: "OAuthHelperService",
 			isExported: true,
-			decorators: [
-				{ name: "Injectable", arguments: [`{ providedIn: 'root' }`] },
-			],
+			decorators: [{ name: "Service", arguments: [] }],
 			docs: ["Service to manage OAuth2 tokens and flows."],
 		});
 
@@ -453,12 +451,7 @@ export class OAuthHelperGenerator {
 		tsFile.addImportDeclarations([
 			{
 				moduleSpecifier: "@angular/core",
-				namedImports: [
-					"Component",
-					"OnInit",
-					"inject",
-					"ChangeDetectionStrategy",
-				],
+				namedImports: ["Component", "OnInit", "inject"],
 			},
 			{
 				moduleSpecifier: "@angular/router",
@@ -480,13 +473,9 @@ export class OAuthHelperGenerator {
 					name: "Component",
 					arguments: [
 						`{ 
-
-                    selector: 'app-oauth-redirect', 
-
-                    templateUrl: './oauth-redirect.component.html', 
-
-                    changeDetection: ChangeDetectionStrategy.OnPush
-
+                    selector: 'app-oauth-redirect',
+                    host: { class: 'app-oauth-redirect-host' },
+                    template: '<p role="status" aria-live="polite">Redirecting...</p>'
                 }`,
 					],
 				},
@@ -537,6 +526,9 @@ export class OAuthHelperGenerator {
 
 		this.project
 			.getFileSystem()
-			.writeFileSync(htmlPath, `<p>Redirecting...</p>`);
+			.writeFileSync(
+				htmlPath,
+				`<p role="status" aria-live="polite">Redirecting...</p>`,
+			);
 	}
 }

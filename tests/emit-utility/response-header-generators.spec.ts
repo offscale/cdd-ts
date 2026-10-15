@@ -752,7 +752,7 @@ describe("Emitter: Response Header Utilities", () => {
             `;
 
 			testCast(
-				new Function("exports", "Injectable", wrappedCode)(
+				new Function("exports", "Service", wrappedCode)(
 					moduleScope.exports,
 					mockInjectable,
 				),
@@ -831,7 +831,7 @@ describe("Emitter: Response Header Utilities", () => {
             `;
 
 			testCast(
-				new Function("exports", "Injectable", wrappedCode)(
+				new Function("exports", "Service", wrappedCode)(
 					moduleScope.exports,
 					mockInjectable,
 				),
@@ -903,7 +903,7 @@ describe("Emitter: Response Header Utilities", () => {
             `;
 
 			testCast(
-				new Function("exports", "Injectable", wrappedCode)(
+				new Function("exports", "Service", wrappedCode)(
 					moduleScope.exports,
 					mockInjectable,
 				),
@@ -975,7 +975,7 @@ describe("Emitter: Response Header Utilities", () => {
             `;
 
 			testCast(
-				new Function("exports", "Injectable", wrappedCode)(
+				new Function("exports", "Service", wrappedCode)(
 					moduleScope.exports,
 					mockInjectable,
 				),
@@ -1038,7 +1038,7 @@ describe("Emitter: Response Header Utilities", () => {
             `;
 
 			testCast(
-				new Function("exports", "Injectable", wrappedCode)(
+				new Function("exports", "Service", wrappedCode)(
 					moduleScope.exports,
 					mockInjectable,
 				),
