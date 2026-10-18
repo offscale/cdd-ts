@@ -8,7 +8,9 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import {
 	type FromOpenApiOptions,
+	generateFromArazzoSync,
 	generateFromOpenApi,
+	generateToArazzo,
 	generateToOpenApi,
 	type ToActionOptions,
 } from "./cli.js";
@@ -251,6 +253,110 @@ export async function serveMcp(): Promise<void> {
 						{
 							type: "text",
 							text: `Failed to query AST: ${err instanceof Error ? err.message : String(err)}`,
+						},
+					],
+				};
+			}
+		},
+	);
+
+	mcp.tool(
+		"cdd_generate_arazzo_sdk",
+		"Generate a TypeScript SDK WorkflowOrchestrator from an Arazzo 1.1.0 spec",
+		{
+			input: z.string().describe("Path to the Arazzo 1.1.0 input spec"),
+			output: z.string().describe("Output directory"),
+			scope: z.enum(["sdk", "cli", "server"]).default("sdk"),
+		},
+		async (args) => {
+			try {
+				generateFromArazzoSync(args.input, args.output, args.scope);
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Successfully generated Arazzo ${args.scope} in ${args.output}`,
+						},
+					],
+				};
+			} catch (err) {
+				return {
+					isError: true,
+					content: [
+						{
+							type: "text",
+							text: `Failed to generate Arazzo ${args.scope}: ${err instanceof Error ? err.message : String(err)}`,
+						},
+					],
+				};
+			}
+		},
+	);
+
+	mcp.tool(
+		"cdd_generate_arazzo_server",
+		"Generate Server workflow routes and Vitest E2E workflow suites from an Arazzo 1.1.0 spec",
+		{
+			input: z.string().describe("Path to the Arazzo 1.1.0 input spec"),
+			output: z.string().describe("Output directory"),
+		},
+		async (args) => {
+			try {
+				generateFromArazzoSync(args.input, args.output, "server");
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Successfully generated Arazzo server in ${args.output}`,
+						},
+					],
+				};
+			} catch (err) {
+				return {
+					isError: true,
+					content: [
+						{
+							type: "text",
+							text: `Failed to generate Arazzo server: ${err instanceof Error ? err.message : String(err)}`,
+						},
+					],
+				};
+			}
+		},
+	);
+
+	mcp.tool(
+		"cdd_to_arazzo",
+		"Reverse-parse TypeScript workflows into an Arazzo 1.1.0 spec",
+		{
+			input: z
+				.string()
+				.describe("Path to TypeScript workflow file or directory"),
+			output: z.string().describe("Output Arazzo spec file path"),
+			format: z.enum(["json", "yaml"]).default("yaml"),
+		},
+		async (args) => {
+			try {
+				generateToArazzo({
+					input: args.input,
+					output: args.output,
+					format: args.format,
+				});
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Successfully extracted Arazzo spec to ${args.output}`,
+						},
+					],
+				};
+			} catch (err) {
+				return {
+					isError: true,
+					content: [
+						{
+							type: "text",
+							text: `Failed to extract Arazzo spec: ${err instanceof Error ? err.message : String(err)}`,
 						},
 					],
 				};

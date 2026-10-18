@@ -1,6 +1,6 @@
 {
   "name": "cdd-ts",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "OpenAPI ↔ TypeScript",
   "keywords": [
     "openapi",

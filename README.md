@@ -131,6 +131,8 @@ Options:
 Commands:
   from_openapi              Generate code from an OpenAPI specification
   to_openapi [options]      Generate an OpenAPI specification from source code.
+  from_arazzo               Generate TypeScript SDK orchestrators, CLI workflow runners, or Server/E2E suites from an Arazzo 1.1.0 specification.
+  to_arazzo [options]       Reverse-parse TypeScript SDK workflows, CLI runners, or Server E2E tests into an Arazzo 1.1.0 specification.
   to_docs_json [options]    Generate JSON documentation with code snippets for
                             an OpenAPI specification
   serve_json_rpc [options]  Expose CLI interface as a JSON-RPC server.

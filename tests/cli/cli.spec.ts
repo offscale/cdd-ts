@@ -32,6 +32,28 @@ vi.mock("../../src/functions/docs_generator.js", () => ({
 	generateDocsJson: vi.fn().mockReturnValue({ docs: true }),
 }));
 
+vi.mock("../../src/cli/commands/from_arazzo.js", async (importOriginal) => {
+	const actual =
+		await importOriginal<
+			typeof import("../../src/cli/commands/from_arazzo.js")
+		>();
+	return {
+		...actual,
+		generateFromArazzoSync: vi.fn(),
+	};
+});
+
+vi.mock("../../src/cli/commands/to_arazzo.js", async (importOriginal) => {
+	const actual =
+		await importOriginal<
+			typeof import("../../src/cli/commands/to_arazzo.js")
+		>();
+	return {
+		...actual,
+		generateToArazzo: vi.fn().mockReturnValue({ arazzo: "1.1.0" }),
+	};
+});
+
 vi.mock("../../src/functions/utils.js", () => ({
 	applyReverseMetadata: vi.fn((spec: unknown) => spec),
 	buildOpenApiSpecFromServices: vi.fn(() => ({
@@ -632,6 +654,51 @@ describe("cli.ts", () => {
 			expect(res.end).toHaveBeenCalledWith(
 				expect.stringContaining('"result":{"docs":true}'),
 			);
+		});
+
+		it("executes from_arazzo_to_sdk, from_arazzo_to_sdk_cli, from_arazzo_to_server, and to_arazzo", async () => {
+			await run(["node", "cli.js", "serve_json_rpc"]);
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			for (const method of [
+				"from_arazzo_to_sdk",
+				"from_arazzo_to_sdk_cli",
+				"from_arazzo_to_server",
+				"to_arazzo",
+			]) {
+				const { req, res } = createMockReqRes(
+					"POST",
+					JSON.stringify({
+						method,
+						params: { input: "arazzo.json", output: "out" },
+						id: 1,
+					}),
+				);
+				await requestHandler?.(testCast(req), testCast(res));
+				await new Promise((r) => setTimeout(r, 10));
+				expect(res.writeHead).toHaveBeenCalledWith(200, {
+					"Content-Type": "application/json",
+				});
+			}
+
+			// Also test default fallback params on from_arazzo_*
+			for (const method of [
+				"from_arazzo_to_sdk",
+				"from_arazzo_to_sdk_cli",
+				"from_arazzo_to_server",
+			]) {
+				const { req, res } = createMockReqRes(
+					"POST",
+					JSON.stringify({
+						method,
+						id: 2,
+					}),
+				);
+				await requestHandler?.(testCast(req), testCast(res));
+				await new Promise((r) => setTimeout(r, 10));
+				expect(res.writeHead).toHaveBeenCalledWith(200, {
+					"Content-Type": "application/json",
+				});
+			}
 		});
 
 		it("handles internal generation errors gracefully", async () => {

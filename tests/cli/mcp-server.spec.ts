@@ -48,10 +48,119 @@ describe("serveMcp", () => {
 		const spyGenerateToOpenApi = vi
 			.spyOn(cli, "generateToOpenApi")
 			.mockResolvedValue("");
+		const spyGenerateFromArazzo = vi
+			.spyOn(cli, "generateFromArazzoSync")
+			.mockReturnValue(testCast({}));
+		const spyGenerateToArazzo = vi
+			.spyOn(cli, "generateToArazzo")
+			.mockReturnValue(testCast({}));
 
 		await serveMcp();
 
-		expect(mockTool).toHaveBeenCalledTimes(5);
+		expect(mockTool).toHaveBeenCalledTimes(8);
+
+		const cdd_generate_arazzo_server = mockTool.mock.calls.find(
+			(call) => call[0] === "cdd_generate_arazzo_server",
+		);
+		expect(cdd_generate_arazzo_server).toBeDefined();
+		const arazzoServerHandler = testCast<McpAsyncHandler>(
+			cdd_generate_arazzo_server?.[3],
+		);
+		const resArazzoServer = await arazzoServerHandler({
+			input: "arazzo.yaml",
+			output: "out-srv",
+		});
+		expect(resArazzoServer.isError).toBeUndefined();
+
+		spyGenerateFromArazzo.mockImplementationOnce(() => {
+			throw new Error("arazzo srv err");
+		});
+		const errArazzoSrv1 = await arazzoServerHandler({
+			input: "arazzo.yaml",
+			output: "out-srv",
+		});
+		expect(errArazzoSrv1.isError).toBe(true);
+
+		spyGenerateFromArazzo.mockImplementationOnce(() => {
+			throw "arazzo srv str";
+		});
+		const errArazzoSrv2 = await arazzoServerHandler({
+			input: "arazzo.yaml",
+			output: "out-srv",
+		});
+		expect(errArazzoSrv2.isError).toBe(true);
+
+		const cdd_generate_arazzo_sdk = mockTool.mock.calls.find(
+			(call) => call[0] === "cdd_generate_arazzo_sdk",
+		);
+		expect(cdd_generate_arazzo_sdk).toBeDefined();
+		const arazzoSdkHandler = testCast<McpAsyncHandler>(
+			cdd_generate_arazzo_sdk?.[3],
+		);
+		const resArazzoSdk = await arazzoSdkHandler({
+			input: "arazzo.yaml",
+			output: "out",
+			scope: "sdk",
+		});
+		expect(resArazzoSdk.isError).toBeUndefined();
+		expect(spyGenerateFromArazzo).toHaveBeenCalledWith(
+			"arazzo.yaml",
+			"out",
+			"sdk",
+		);
+
+		spyGenerateFromArazzo.mockImplementationOnce(() => {
+			throw new Error("arazzo sdk err");
+		});
+		const errArazzoSdk1 = await arazzoSdkHandler({
+			input: "arazzo.yaml",
+			output: "out",
+			scope: "sdk",
+		});
+		expect(errArazzoSdk1.isError).toBe(true);
+
+		spyGenerateFromArazzo.mockImplementationOnce(() => {
+			throw "arazzo sdk str";
+		});
+		const errArazzoSdk2 = await arazzoSdkHandler({
+			input: "arazzo.yaml",
+			output: "out",
+			scope: "sdk",
+		});
+		expect(errArazzoSdk2.isError).toBe(true);
+
+		const cdd_to_arazzo = mockTool.mock.calls.find(
+			(call) => call[0] === "cdd_to_arazzo",
+		);
+		expect(cdd_to_arazzo).toBeDefined();
+		const toArazzoHandler = testCast<McpAsyncHandler>(cdd_to_arazzo?.[3]);
+		const resToArazzo = await toArazzoHandler({
+			input: "src",
+			output: "arazzo.yaml",
+			format: "yaml",
+		});
+		expect(resToArazzo.isError).toBeUndefined();
+		expect(spyGenerateToArazzo).toHaveBeenCalled();
+
+		spyGenerateToArazzo.mockImplementationOnce(() => {
+			throw new Error("to arazzo err");
+		});
+		const errToArazzo1 = await toArazzoHandler({
+			input: "src",
+			output: "arazzo.yaml",
+			format: "yaml",
+		});
+		expect(errToArazzo1.isError).toBe(true);
+
+		spyGenerateToArazzo.mockImplementationOnce(() => {
+			throw "to arazzo str";
+		});
+		const errToArazzo2 = await toArazzoHandler({
+			input: "src",
+			output: "arazzo.yaml",
+			format: "yaml",
+		});
+		expect(errToArazzo2.isError).toBe(true);
 
 		const cdd_generate_sdk = mockTool.mock.calls.find(
 			(call) => call[0] === "cdd_generate_sdk",

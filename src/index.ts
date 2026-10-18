@@ -260,12 +260,56 @@ export function generateFromConfigSync(
 	}
 }
 
+/** Re-exports `extractArazzoFromTypeScript` and `writeFormattedArazzoSpec` from `./arazzo/emit_arazzo.js`. */
+export {
+	extractArazzoFromTypeScript,
+	writeFormattedArazzoSpec,
+} from "./arazzo/emit_arazzo.js";
+/** Re-exports `ArazzoCliGenerator` from `./arazzo/emit_cli.js`. */
+export { ArazzoCliGenerator } from "./arazzo/emit_cli.js";
+/** Re-exports `ArazzoSdkGenerator` and `executeArazzoWorkflowRuntime` from `./arazzo/emit_sdk.js`. */
+export {
+	ArazzoSdkGenerator,
+	executeArazzoWorkflowRuntime,
+} from "./arazzo/emit_sdk.js";
+/** Re-exports `ArazzoServerGenerator` from `./arazzo/emit_server.js`. */
+export { ArazzoServerGenerator } from "./arazzo/emit_server.js";
+/** Re-exports `ArazzoSnapshotGenerator` from `./arazzo/emit_snapshot.js`. */
+export { ArazzoSnapshotGenerator } from "./arazzo/emit_snapshot.js";
+/** Re-exports `ArazzoParser` from `./arazzo/parse.js`. */
+export { ArazzoParser } from "./arazzo/parse.js";
+/** Re-exports `parseArazzoCliAst` and `parseArazzoCliSourceFile` from `./arazzo/parse_cli_ast.js`. */
+export {
+	parseArazzoCliAst,
+	parseArazzoCliSourceFile,
+} from "./arazzo/parse_cli_ast.js";
+/** Re-exports `ArazzoLoader` from `./arazzo/parse_loader.js`. */
+export { ArazzoLoader } from "./arazzo/parse_loader.js";
+/** Re-exports `parseArazzoSdkAst` and `parseArazzoSdkSourceFile` from `./arazzo/parse_sdk_ast.js`. */
+export {
+	parseArazzoSdkAst,
+	parseArazzoSdkSourceFile,
+} from "./arazzo/parse_sdk_ast.js";
+/** Re-exports `parseArazzoServerAst` and `parseArazzoServerE2eSourceFile` from `./arazzo/parse_server_ast.js`. */
+export {
+	parseArazzoServerAst,
+	parseArazzoServerE2eSourceFile,
+} from "./arazzo/parse_server_ast.js";
+/** Re-exports `ArazzoValidationError` and `validateArazzoSpec` from `./arazzo/parse_validator.js`. */
+export {
+	ArazzoValidationError,
+	validateArazzoSpec,
+} from "./arazzo/parse_validator.js";
+/** Re-exports `generateFromArazzoSync` from `./cli/commands/from_arazzo.js`. */
+export { generateFromArazzoSync } from "./cli/commands/from_arazzo.js";
 /** Re-exports `generateFromOpenApi` from `./cli/commands/from_openapi.js`. */
 export { generateFromOpenApi } from "./cli/commands/from_openapi.js";
 /** Re-exports `serveJsonRpc` from `./cli/commands/serve_json_rpc.js`. */
 export { serveJsonRpc } from "./cli/commands/serve_json_rpc.js";
 /** Re-exports `syncDir` from `./cli/commands/sync_and_github.js`. */
 export { syncDir } from "./cli/commands/sync_and_github.js";
+/** Re-exports `generateToArazzo` from `./cli/commands/to_arazzo.js`. */
+export { generateToArazzo } from "./cli/commands/to_arazzo.js";
 /** Re-exports `generateDocsJson` and `generateToOpenApi` from `./cli/commands/to_openapi.js`. */
 export {
 	generateDocsJson,

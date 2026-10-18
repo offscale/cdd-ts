@@ -14,6 +14,70 @@ export type {
 	Resource,
 	ResourceOperation,
 } from "./analysis.js";
+/** Re-exports `ArazzoComponentsObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoCriterionObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoCriterionSimpleType` from `./arazzo.js`. */
+/** Re-exports `ArazzoExpressionDialect` from `./arazzo.js`. */
+/** Re-exports `ArazzoExpressionTypeObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoFailureActionObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoFailureActionType` from `./arazzo.js`. */
+/** Re-exports `ArazzoInfoObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoIr` from `./arazzo.js`. */
+/** Re-exports `ArazzoParameterLocation` from `./arazzo.js`. */
+/** Re-exports `ArazzoParameterObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoPayloadReplacementObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoRequestBodyObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoReusableObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoSelectorObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoSourceDescriptionObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoSourceDescriptionType` from `./arazzo.js`. */
+/** Re-exports `ArazzoSpec` from `./arazzo.js`. */
+/** Re-exports `ArazzoStepActionType` from `./arazzo.js`. */
+/** Re-exports `ArazzoStepIr` from `./arazzo.js`. */
+/** Re-exports `ArazzoStepObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoStepTargetKind` from `./arazzo.js`. */
+/** Re-exports `ArazzoSuccessActionObject` from `./arazzo.js`. */
+/** Re-exports `ArazzoSuccessActionType` from `./arazzo.js`. */
+/** Re-exports `ArazzoWorkflowIr` from `./arazzo.js`. */
+/** Re-exports `ArazzoWorkflowObject` from `./arazzo.js`. */
+export type {
+	ArazzoComponentsObject,
+	ArazzoCriterionObject,
+	ArazzoCriterionSimpleType,
+	ArazzoExpressionDialect,
+	ArazzoExpressionTypeObject,
+	ArazzoFailureActionObject,
+	ArazzoFailureActionType,
+	ArazzoInfoObject,
+	ArazzoIr,
+	ArazzoParameterLocation,
+	ArazzoParameterObject,
+	ArazzoPayloadReplacementObject,
+	ArazzoRequestBodyObject,
+	ArazzoReusableObject,
+	ArazzoSelectorObject,
+	ArazzoSourceDescriptionObject,
+	ArazzoSourceDescriptionType,
+	ArazzoSpec,
+	ArazzoStepActionType,
+	ArazzoStepIr,
+	ArazzoStepObject,
+	ArazzoStepTargetKind,
+	ArazzoSuccessActionObject,
+	ArazzoSuccessActionType,
+	ArazzoWorkflowIr,
+	ArazzoWorkflowObject,
+} from "./arazzo.js";
+/** Re-exports `isArazzoExpressionTypeObject` from `./arazzo.js`. */
+/** Re-exports `isArazzoReusableObject` from `./arazzo.js`. */
+/** Re-exports `isArazzoSelectorObject` from `./arazzo.js`. */
+/** Re-exports `isArazzoSpec` from `./arazzo.js`. */
+export {
+	isArazzoExpressionTypeObject,
+	isArazzoReusableObject,
+	isArazzoSelectorObject,
+	isArazzoSpec,
+} from "./arazzo.js";
 /** Re-exports `GeneratorCompilerOptions` from `./config.js`. */
 /** Re-exports `GeneratorConfig` from `./config.js`. */
 /** Re-exports `GeneratorConfigOptions` from `./config.js`. */

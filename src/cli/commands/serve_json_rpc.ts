@@ -7,10 +7,12 @@ import * as http from "node:http";
 import { type Command, Option } from "commander";
 import type { OpenApiValue } from "../../core/types/index.js";
 import { loadPackageVersion } from "../spec_writer.js";
+import { generateFromArazzoSync } from "./from_arazzo.js";
 import {
 	type FromOpenApiOptions,
 	generateFromOpenApi,
 } from "./from_openapi.js";
+import { generateToArazzo, type ToArazzoActionOptions } from "./to_arazzo.js";
 import {
 	type DocsJsonOptions,
 	generateDocsJson,
@@ -92,6 +94,35 @@ export async function serveJsonRpc(
 								parsed.params as OpenApiValue as ToActionOptions,
 								true,
 							)) as OpenApiValue;
+							break;
+						case "from_arazzo_to_sdk":
+							generateFromArazzoSync(
+								String(parsed.params?.input ?? ""),
+								String(parsed.params?.output ?? "./arazzo-out"),
+								"sdk",
+							);
+							result = "ok";
+							break;
+						case "from_arazzo_to_sdk_cli":
+							generateFromArazzoSync(
+								String(parsed.params?.input ?? ""),
+								String(parsed.params?.output ?? "./arazzo-out"),
+								"cli",
+							);
+							result = "ok";
+							break;
+						case "from_arazzo_to_server":
+							generateFromArazzoSync(
+								String(parsed.params?.input ?? ""),
+								String(parsed.params?.output ?? "./arazzo-out"),
+								"server",
+							);
+							result = "ok";
+							break;
+						case "to_arazzo":
+							result = generateToArazzo(
+								parsed.params as OpenApiValue as ToArazzoActionOptions,
+							) as unknown as OpenApiValue;
 							break;
 						case "to_docs_json":
 							result = (await generateDocsJson(

@@ -38,7 +38,6 @@ export default defineConfig({
                                 "src/functions/parsers/**",
                                 "src/openapi/**",
 				"src/routes/**",
-				"src/core/runtime-expressions.ts",
 				"src/core/generator.ts",
 				"src/core/types/**",
 				"src/vendors/angular/admin/**",

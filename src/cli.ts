@@ -5,6 +5,7 @@
  */
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
+import { registerFromArazzoCommands } from "./cli/commands/from_arazzo.js";
 import {
 	type CliRunner,
 	registerFromOpenApiCommands,
@@ -12,8 +13,13 @@ import {
 } from "./cli/commands/from_openapi.js";
 import { registerServeJsonRpcCommand } from "./cli/commands/serve_json_rpc.js";
 import { registerSyncAndMcpCommands } from "./cli/commands/sync_and_github.js";
+import { registerToArazzoCommands } from "./cli/commands/to_arazzo.js";
 import { registerToOpenApiCommands } from "./cli/commands/to_openapi.js";
 
+/** Re-exports `FromArazzoActionOptions` from `./cli/commands/from_arazzo.js`. */
+export type { FromArazzoActionOptions } from "./cli/commands/from_arazzo.js";
+/** Re-exports `generateFromArazzoSync` from `./cli/commands/from_arazzo.js`. */
+export { generateFromArazzoSync } from "./cli/commands/from_arazzo.js";
 /** Re-exports `CliRunner` from `./cli/commands/from_openapi.js`. */
 /** Re-exports `FromOpenApiOptions` from `./cli/commands/from_openapi.js`. */
 /** Re-exports `ToSdkCliGenOptions` from `./cli/commands/from_openapi.js`. */
@@ -42,6 +48,10 @@ export { serveJsonRpc } from "./cli/commands/serve_json_rpc.js";
 export type { SyncCliOptions } from "./cli/commands/sync_and_github.js";
 /** Re-exports `syncDir` from `./cli/commands/sync_and_github.js`. */
 export { syncDir } from "./cli/commands/sync_and_github.js";
+/** Re-exports `ToArazzoActionOptions` from `./cli/commands/to_arazzo.js`. */
+export type { ToArazzoActionOptions } from "./cli/commands/to_arazzo.js";
+/** Re-exports `generateToArazzo` from `./cli/commands/to_arazzo.js`. */
+export { generateToArazzo } from "./cli/commands/to_arazzo.js";
 /** Re-exports `DocsJsonOptions` from `./cli/commands/to_openapi.js`. */
 /** Re-exports `ToActionOptions` from `./cli/commands/to_openapi.js`. */
 export type {
@@ -56,10 +66,12 @@ export {
 } from "./cli/commands/to_openapi.js";
 
 const program = new Command();
-program.name("cdd-ts").description("OpenAPI ↔ TypeScript.").version("0.0.3");
+program.name("cdd-ts").description("OpenAPI ↔ TypeScript.").version("0.0.4");
 
 registerFromOpenApiCommands(program);
 registerToOpenApiCommands(program);
+registerFromArazzoCommands(program);
+registerToArazzoCommands(program);
 registerServeJsonRpcCommand(program);
 registerSyncAndMcpCommands(program);
 

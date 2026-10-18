@@ -4,6 +4,7 @@
  * @module cli/commands/sync_and_github
  */
 import { type Command, Option } from "commander";
+import { generateToArazzo } from "./to_arazzo.js";
 import { generateToOpenApi, type ToActionOptions } from "./to_openapi.js";
 
 /** Defines the shape of the options object from the `sync` command. */
@@ -42,6 +43,12 @@ export async function syncDir(options: SyncCliOptions): Promise<void> {
 			console.error("❌ Sync failed to extract spec");
 			process.exit(1);
 		}
+	} else if (options.truth === "arazzo") {
+		generateToArazzo({
+			input: options.input,
+			output: options.output ?? "arazzo.json",
+		});
+		console.log("✅ Synced implementation to Arazzo Spec");
 	} else {
 		console.error(
 			`Sync for truth source '${options.truth}' is not fully implemented yet.`,
@@ -70,7 +77,7 @@ export function registerSyncAndMcpCommands(program: Command): void {
 				"-t, --truth <source>",
 				"Designate a single source of truth for synchronization.",
 			)
-				.choices(["class", "typeorm", "function", "openapi"])
+				.choices(["class", "typeorm", "function", "openapi", "arazzo"])
 				.makeOptionMandatory(),
 		)
 		.addOption(
