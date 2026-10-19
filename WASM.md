@@ -1,13 +1,25 @@
 # WASM Support
 
-The `cdd-ts` compiler is written in TypeScript and runs on Node.js.
+The `cdd-ts` compiler is written in TypeScript and runs on Node.js as well as WebAssembly (`WASM`/`WASI`).
 
-## Is Native WASM Support Possible?
+## WebAssembly Compilation Modes
 
-**Directly**: No. TypeScript natively compiles to JavaScript, not WebAssembly. Projects like AssemblyScript exist, but they do not support the vast majority of the standard TypeScript compiler APIs (like `ts-morph` and `typescript` which this project relies on). Furthermore, standard Node.js APIs like `fs` and `path` are heavily utilized.
+### 1. Browser JS Bundle + Javy QuickJS WASM (`make build_wasm`)
 
-**Bundling & Compiling to WASM**: Yes. We produce a browser-compatible JavaScript bundle using standard bundlers (like `esbuild`) and polyfill/externalize necessary APIs. Then, using [Javy](https://github.com/bytecodealliance/javy), we compile that JavaScript payload and the QuickJS runtime together into a fully functional standalone WebAssembly (`.wasm`) module.
+We produce a self-contained, browser-compatible JavaScript bundle using `rolldown` / `esbuild` with virtualized Node.js filesystem and path polyfills (`wasm-stubs/` and `createJavyFsPolyfill()`). Then, using [Javy](https://github.com/bytecodealliance/javy), we compile that JavaScript payload and the QuickJS runtime together into a standalone WebAssembly (`.wasm`) module:
 
-For the purpose of integrating this project into a unified web interface, you have the choice between utilizing the `.js` bundle directly (which is lighter) or executing the true `.wasm` binary in environments that require it.
+```bash
+make build_wasm
+```
 
-The `make build_wasm` step runs `esbuild` to generate the browser-compatible JS bundle and then invokes `javy-cli` to compile it to WebAssembly, ensuring both `wasm/cdd-ts.js` and `wasm/cdd-ts.wasm` are produced.
+This produces both the browser-ready bundle (`bin/cdd-ts.js`) and the standalone WASI binary (`bin/cdd-ts-javy.wasm`).
+
+### 2. TypeScript-Go + AssemblyScript AOT WASM (`make build_with_ts_go_assemblyscript`)
+
+For ahead-of-time WASI compilation, `cdd-ts` also supports building the `typescript-go` (`GOOS=wasip1 GOARCH=wasm`) compiler backend alongside the AssemblyScript bridge (`ts-morph-as/`):
+
+```bash
+make build_with_ts_go_assemblyscript
+```
+
+This emits `bin/typescript-go.wasm` and `bin/cdd-ts.wasm` for high-performance WASI execution.

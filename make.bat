@@ -3,6 +3,7 @@
 if "%1"=="" goto help
 if "%1"=="help" goto help
 if "%1"=="install_base" goto install_base
+if "%1"=="deps" goto install_deps
 if "%1"=="install_deps" goto install_deps
 if "%1"=="docs" goto docs
 if "%1"=="build_docs" goto build_docs

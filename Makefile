@@ -1,10 +1,11 @@
-.PHONY: all help install_base install_deps docs build_docs build test run build_wasm build_docker run_docker
+.PHONY: all help install_base deps install_deps docs build_docs build test run build_wasm build_docker run_docker
 
 all: help
 
 help:
 	@echo "Available commands:"
 	@echo "  make install_base  - Install Node.js"
+	@echo "  make deps          - Install dependencies (npm install)"
 	@echo "  make install_deps  - Install dependencies (npm install)"
 	@echo "  make docs          - Build API docs and create html symlink"
 	@echo "  make build_docs    - Build API docs and put them in 'docs' directory (or dir given in DOCS_DIR)"
@@ -20,6 +21,8 @@ help:
 install_base:
 	@echo "Please install Node.js >= 18.0.0 manually if not installed."
 	npm --version || echo "npm not found. Please install Node.js."
+
+deps: install_deps
 
 install_deps:
 	npm install
