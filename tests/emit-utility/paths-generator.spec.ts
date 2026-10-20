@@ -2,10 +2,15 @@ import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { PathsGenerator } from "@src/routes/emit.js";
 import { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestPaths,
+	createTestProject,
+	createTestSpec,
+} from "../shared/helpers.js";
 
 const specWithPathMeta: SwaggerSpec = {
 	openapi: "3.2.0",
@@ -27,47 +32,36 @@ const specWithPathMeta: SwaggerSpec = {
 describe("Emitter: PathsGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const parser = new SwaggerParser(spec, config);
 		new PathsGenerator(parser, project).generate("/out");
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/paths.ts");
-		const code = sourceFile.getText();
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/paths.ts");
 
 	it("should generate registry map for path-level metadata", () => {
 		const project = runGenerator(specWithPathMeta);
 
 		const { API_PATHS } = compileGeneratedFile(project);
 
-		expect(API_PATHS["/pets"]).toBeDefined();
+		expect(API_PATHS?.["/pets"]).toBeDefined();
 
-		expect(API_PATHS["/pets"].summary).toBe("Pets");
+		expect(API_PATHS?.["/pets"]?.summary).toBe("Pets");
 
-		expect(API_PATHS["/pets"].description).toBe("Pet operations");
+		expect(API_PATHS?.["/pets"]?.description).toBe("Pet operations");
 
-		expect(API_PATHS["/pets"].parameters?.[0]?.name).toBe("trace");
+		expect(API_PATHS?.["/pets"]?.parameters?.[0]?.name).toBe("trace");
 
-		expect(API_PATHS["/pets"].servers?.[0]?.url).toBe(
+		expect(API_PATHS?.["/pets"]?.servers?.[0]?.url).toBe(
 			"https://api.example.com",
 		);
 
-		expect(API_PATHS["/pets"]["x-release"]).toBe("beta");
+		expect(API_PATHS?.["/pets"]?.["x-release"]).toBe("beta");
 	});
 
 	it("should handle specs without path-level metadata", () => {
@@ -84,26 +78,61 @@ describe("Emitter: PathsGenerator", () => {
 	});
 
 	it("should skip primitive or non-object paths in the generator", () => {
-		const primitiveSpec: SwaggerSpec = {
-			openapi: "3.2.0",
-			info: { title: "Empty", version: "1.0" },
-			paths: {
-				"/ping": testCast("invalid"),
-				"/pong": testCast(null),
-			},
-		};
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
 				paths: {},
 			}),
-			testCast({ output: "/out", options: {} }),
+			createTestConfig({ output: "/out", options: {} }),
 		);
-		parser.spec.paths = testCast(primitiveSpec.paths); // bypass validation manually
+		parser.spec.paths = createTestPaths({
+			"/ping": "invalid",
+			"/pong": null,
+		}); // bypass validation manually
 		const project = new Project({ useInMemoryFileSystem: true });
 		new PathsGenerator(parser, project).generate("/out");
 		const sourceFile = project.getSourceFileOrThrow("/out/paths.ts");
 		expect(sourceFile.getText()).toContain("export { };");
+	});
+
+	it("should handle pathItem.$ref and undefined spec.paths", () => {
+		const refSpec: SwaggerSpec = {
+			openapi: "3.2.0",
+			info: { title: "RefPaths", version: "1.0" },
+			paths: {
+				"/ref-path": {
+					$ref: "#/components/pathItems/SharedPath",
+				},
+			},
+			components: {
+				pathItems: {
+					SharedPath: {
+						get: { responses: { "200": { description: "ok" } } },
+					},
+				},
+			},
+		};
+		const project = runGenerator(refSpec);
+		const { API_PATHS } = compileGeneratedFile(project);
+		expect(API_PATHS?.["/ref-path"]?.$ref).toBe(
+			"#/components/pathItems/SharedPath",
+		);
+
+		const parserNoPaths = new SwaggerParser(
+			createTestSpec({
+				openapi: "3.1.0",
+				info: { title: "NoPaths", version: "1" },
+				webhooks: {
+					hook: { post: { responses: { "200": { description: "ok" } } } },
+				},
+			}),
+			createTestConfig({ output: "/out", options: {} }),
+		);
+		const proj2 = new Project({ useInMemoryFileSystem: true });
+		new PathsGenerator(parserNoPaths, proj2).generate("/out");
+		expect(proj2.getSourceFileOrThrow("/out/paths.ts").getText()).toContain(
+			"export { };",
+		);
 	});
 });

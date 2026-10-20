@@ -42,7 +42,7 @@ export class CliGenerator {
 	 */
 	public generate(
 		project: Project,
-		parser: SwaggerParser,
+		parser: Pick<SwaggerParser, "spec" | "operations">,
 		_config: GeneratorConfig,
 		outputDir: string,
 	): void {
@@ -151,14 +151,15 @@ export class CliGenerator {
 	 */
 	private writeServerOptions(
 		writer: CodeBlockWriter,
-		parser: SwaggerParser,
+		parser: Pick<SwaggerParser, "spec" | "operations">,
 	): void {
 		const spec = parser.spec;
 		if (!spec.servers || spec.servers.length === 0) {
 			return;
 		}
+		const firstServer = spec.servers[0] as { url: string };
 		writer.writeLine(
-			`program.option('--server <url>', 'Override base server URL', '${spec.servers[0].url}');`,
+			`program.option('--server <url>', 'Override base server URL', '${firstServer.url}');`,
 		);
 		for (const server of spec.servers) {
 			if (!server.variables) continue;
@@ -184,7 +185,7 @@ export class CliGenerator {
 	 */
 	private writeSecurityOptions(
 		writer: CodeBlockWriter,
-		parser: SwaggerParser,
+		parser: Pick<SwaggerParser, "spec" | "operations">,
 	): void {
 		const securitySchemes = parser.spec.components?.securitySchemes;
 		if (!securitySchemes) {
@@ -231,15 +232,9 @@ export class CliGenerator {
 		operations: PathInfo[],
 	): Record<string, PathInfo[]> {
 		return operations.reduce((acc: Record<string, PathInfo[]>, op) => {
-			const group = op.tags?.[0]
-				? typeof op.tags[0] === "string"
-					? op.tags[0]
-					: (op.tags[0] as object as { name?: string }).name ||
-						String(op.tags[0])
-				: "Default";
+			const group = op.tags?.[0] || "Default";
 
-			if (!acc[group]) acc[group] = [];
-			acc[group].push(op);
+			acc[group] = [...(acc[group] ?? []), op];
 			return acc;
 		}, {});
 	}

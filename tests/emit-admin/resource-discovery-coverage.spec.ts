@@ -8,62 +8,21 @@ import type {
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
 import { describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	ensureTestSpecResponses,
+} from "../shared/helpers.js";
 import { branchCoverageSpec } from "../shared/specs.js";
 
 describe("Admin: resource-discovery (Coverage)", () => {
-	const ensureResponses = testCast(
-		testCast((spec: TestValue) => {
-			if (!spec?.paths) return spec;
-			const methods = [
-				"get",
-				"post",
-				"put",
-				"delete",
-				"options",
-				"head",
-				"patch",
-				"trace",
-				"query",
-			];
-
-			for (const pathItem of Object.values(spec.paths)) {
-				if (!pathItem || typeof pathItem !== "object") continue;
-				for (const method of methods) {
-					const operation = testCast(pathItem)[method];
-
-					if (operation && operation.responses === undefined) {
-						operation.responses = testCast({
-							"200": testCast({ description: testCast("ok") }),
-						});
-					}
-				}
-
-				if (testCast(pathItem).additionalOperations) {
-					for (const operation of Object.values(
-						testCast(pathItem).additionalOperations,
-					)) {
-						if (operation && testCast(operation).responses === undefined) {
-							testCast(operation).responses = testCast({
-								"200": testCast({ description: testCast("ok") }),
-							});
-						}
-					}
-				}
-			}
-
-			return spec;
-		}),
-	);
-
 	const runDiscovery = (spec: object) => {
-		const config: GeneratorConfig = testCast({ options: { admin: true } });
+		const config: GeneratorConfig = createTestConfig({
+			options: { admin: true },
+		});
 
-		const specClone = ensureResponses(
-			testCast(JSON.parse(JSON.stringify(spec))),
-		);
+		const specClone = ensureTestSpecResponses(spec);
 
-		const parser = new SwaggerParser(testCast(specClone), config);
+		const parser = new SwaggerParser(specClone, config);
 		return discoverAdminResources(parser);
 	};
 
@@ -157,7 +116,7 @@ describe("Admin: resource-discovery (Coverage)", () => {
 		const resources = runDiscovery(spec);
 		const resource = resources.find((r: Resource) => r.name === "items");
 		// This hits the `hasCustomKeyword` branch in `classifyAction`
-		expect(resource?.operations[0].action).toBe("uploadItems");
+		expect(resource?.operations[0]?.action).toBe("uploadItems");
 	});
 
 	it("should handle operations with no parameters key and schemas with no required key", () => {
@@ -255,11 +214,11 @@ describe("Admin: resource-discovery (Coverage)", () => {
 
 	it('should not classify custom actions like "addItem" as a standard "create"', () => {
 		const resources = runDiscovery(branchCoverageSpec);
-		const resource = resources.find((r): boolean => r.name === "widgets")!;
-		const addOp = resource.operations.find(
+		const resource = resources.find((r): boolean => r.name === "widgets");
+		const addOp = resource?.operations.find(
 			(op: ResourceOperation): boolean => op.operationId === "addItemToWidget",
-		)!;
-		expect(addOp.action).toBe("addItemToWidget");
+		);
+		expect(addOp?.action).toBe("addItemToWidget");
 	});
 
 	it("should handle a resource with a create op but no success response schema", () => {
@@ -286,8 +245,8 @@ describe("Admin: resource-discovery (Coverage)", () => {
 			},
 		});
 		const resource = resources[0];
-		expect(resource.formProperties.length).toBeGreaterThan(0);
-		expect(resource.formProperties[0].name).toBe("name");
+		expect(resource?.formProperties.length).toBeGreaterThan(0);
+		expect(resource?.formProperties[0]?.name).toBe("name");
 	});
 
 	it("should collect properties from swagger 2.0 formData parameters", () => {
@@ -301,7 +260,13 @@ describe("Admin: resource-discovery (Coverage)", () => {
 						consumes: ["multipart/form-data"],
 						parameters: [
 							{ name: "file", in: "formData", type: "file" },
-							{ name: "metadata", in: "formData", type: "string" },
+							{
+								name: "metadata",
+								in: "formData",
+								type: "string",
+								format: "byte",
+								description: "Metadata bytes",
+							},
 						],
 					},
 				},
@@ -381,8 +346,8 @@ describe("Admin: resource-discovery (Coverage)", () => {
 			},
 		};
 		const resources = runDiscovery(spec);
-		const resource = resources.find((r: Resource) => r.name === "badPropRef")!;
-		expect(resource.formProperties[0].schema).toEqual({
+		const resource = resources.find((r: Resource) => r.name === "badPropRef");
+		expect(resource?.formProperties[0]?.schema).toEqual({
 			$ref: "#/non/existent",
 		});
 	});
@@ -488,5 +453,102 @@ describe("Admin: resource-discovery (Coverage)", () => {
 		expect(
 			resource?.listProperties.some((p: FormProperty) => p.name === "data"),
 		).toBe(false);
+	});
+
+	it("should handle multipart/form-data array types, allOf schemas, and polymorphic discriminator merging", () => {
+		const spec = {
+			openapi: "3.1.0",
+			info: { title: "PolyAndAllOf", version: "1.0" },
+			paths: {
+				"/pets": {
+					post: {
+						tags: ["Pets"],
+						requestBody: {
+							content: {
+								"multipart/form-data": {
+									schema: {
+										type: "object",
+										properties: {
+											nullableField: { type: ["string", "null"] },
+											refField: { $ref: "#/components/schemas/BasePet" },
+											boolProp: true,
+										},
+									},
+								},
+								"application/x-www-form-urlencoded": {
+									schema: { type: "object" },
+								},
+								"application/json": {
+									schema: { $ref: "#/components/schemas/PolyPet" },
+								},
+							},
+						},
+						responses: {
+							"200": {
+								description: "ok",
+								content: {
+									"application/json": {
+										schema: {
+											type: "array",
+											items: { $ref: "#/components/schemas/AllOfPet" },
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				"/synthetic-poly": {
+					get: {
+						tags: ["SyntheticPoly"],
+						responses: {
+							"200": {
+								description: "ok",
+								content: {
+									"application/json": {
+										schema: {
+											oneOf: [{ $ref: "#/components/schemas/BasePet" }],
+											discriminator: {
+												propertyName: "missingKind",
+												defaultMapping: "#/components/schemas/BasePet",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			components: {
+				schemas: {
+					BasePet: {
+						type: "object",
+						required: ["id"],
+						properties: { id: { type: "string" } },
+					},
+					AllOfPet: {
+						allOf: [
+							{ $ref: "#/components/schemas/BasePet" },
+							{ $ref: "#/components/schemas/NonExistent" },
+						],
+					},
+					PolyPet: {
+						type: "object",
+						required: ["petType"],
+						properties: { petType: { type: "string" } },
+						oneOf: [{ $ref: "#/components/schemas/BasePet" }],
+						discriminator: { propertyName: "petType" },
+					},
+				},
+			},
+		};
+		const resources = runDiscovery(spec);
+		const pets = resources.find((r) => r.name === "pets");
+		expect(pets).toBeDefined();
+		const syn = resources.find((r) => r.name === "syntheticPoly");
+		expect(syn?.formProperties.some((p) => p.name === "missingKind")).toBe(
+			true,
+		);
 	});
 });

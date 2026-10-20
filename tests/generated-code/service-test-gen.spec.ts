@@ -1,4 +1,8 @@
-import type { GeneratorConfig } from "@src/core/types/index.js";
+import type {
+	GeneratorConfig,
+	PathInfo,
+	SwaggerSpec,
+} from "@src/core/types/index.js";
 import { ServiceMethodAnalyzer } from "@src/functions/parse_analyzer.js";
 import { camelCase } from "@src/functions/utils.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
@@ -11,15 +15,19 @@ import {
 	coverageSpec,
 	finalCoveragePushSpec,
 } from "../fixtures/coverage.fixture.js";
-import { type TestValue, testCast } from "../shared/helpers.js";
+import {
+	createTestOperation,
+	createTestParameter,
+	createTestSpec,
+} from "../shared/helpers.js";
 
 /**
  * Propagates op.operationId to op.methodName if missing
  */
-function setOperationMethodNames(operations: unknown) {
-	for (const op of testCast<TestValue[]>(operations)) {
+function setOperationMethodNames(operations: PathInfo[]) {
+	for (const op of operations) {
 		if (op?.operationId && !op.methodName) {
-			op.methodName = testCast(camelCase(testCast<string>(op.operationId)));
+			op.methodName = camelCase(op.operationId);
 		}
 	}
 }
@@ -44,9 +52,11 @@ describe("Generated Code: Service Test Generators", () => {
 	 * Setup function that always sets methodName on operations as needed.
 	 */
 
-	const setupTestGen = (specPart: TestValue) => {
-		const specClone = testCast(JSON.parse(JSON.stringify(specPart)));
-		const spec = {
+	const setupTestGen = (specPart: object) => {
+		const specClone = JSON.parse(
+			JSON.stringify(specPart),
+		) as Partial<SwaggerSpec>;
+		const spec = createTestSpec({
 			openapi: "3.0.0",
 			info: { title: "Test Gen", version: "1.0" },
 
@@ -57,8 +67,8 @@ describe("Generated Code: Service Test Generators", () => {
 			},
 
 			components: specClone.components || {},
-		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		});
+		const parser = new SwaggerParser(spec, config);
 		const analyzer = new ServiceMethodAnalyzer(config, parser);
 		const testGen = new ServiceTestGenerator(parser, project, config);
 		return { parser, analyzer, testGen };
@@ -66,17 +76,17 @@ describe("Generated Code: Service Test Generators", () => {
 
 	describe("ServiceTestGenerator", () => {
 		it("should generate a basic service test file", () => {
-			const { parser, testGen } = setupTestGen(testCast(coverageSpec));
+			const { parser, testGen } = setupTestGen(coverageSpec);
 			const userOps = parser.operations.filter((op) =>
 				op.tags?.includes("Users"),
 			);
 
-			setOperationMethodNames(testCast(userOps));
+			setOperationMethodNames(userOps);
 
 			// Check that we actually found operations to test
 			expect(userOps.length).toBeGreaterThan(0);
 
-			testGen.generateServiceTestFile("users", testCast(userOps), "/");
+			testGen.generateServiceTestFile("users", userOps, "/");
 			const sourceFile = project.getSourceFileOrThrow("/users.service.spec.ts");
 			const classText = sourceFile.getFullText();
 			expect(classText).toContain(
@@ -89,19 +99,19 @@ describe("Generated Code: Service Test Generators", () => {
 		});
 
 		it("should handle primitive request/response types and param refs", () => {
-			const { parser, testGen } = setupTestGen(testCast(finalCoveragePushSpec));
+			const { parser, testGen } = setupTestGen(finalCoveragePushSpec);
 			const operations = [
 				parser.operations.find((o) => o.operationId === "getPrimitive"),
 				parser.operations.find((o) => o.operationId === "postPrimitive"),
 				parser.operations.find(
 					(o) => o.operationId === "getWithPrimitiveParam",
 				),
-			].filter(Boolean);
-			setOperationMethodNames(testCast<TestValue>(operations));
+			].filter((o): o is PathInfo => Boolean(o));
+			setOperationMethodNames(operations);
 
 			expect(operations.length).toBe(3);
 
-			testGen.generateServiceTestFile("service", testCast(operations), "/");
+			testGen.generateServiceTestFile("service", operations, "/");
 			const sourceFile = project.getSourceFileOrThrow(
 				"/service.service.spec.ts",
 			);
@@ -114,21 +124,20 @@ describe("Generated Code: Service Test Generators", () => {
 			// postPrimitive takes string body
 			expect(text).toContain(`service.postPrimitive(body).subscribe({`);
 			// Primitive string body declaration coverage
-			expect(text).toContain(
-				"const body = 'test-body' as string | number | boolean | object | undefined | null as string;",
-			);
+			expect(text).toContain("const body = 'test-body' as string;");
 
 			expect(text).toContain(`service.getWithPrimitiveParam(id).subscribe({`);
 		});
 
 		it("should handle operations with no parameters", () => {
-			const { parser, testGen } = setupTestGen(testCast(branchCoverageSpec));
+			const { parser, testGen } = setupTestGen(branchCoverageSpec);
 			const op = parser.operations.find((op) => op.operationId === "getRoot");
 			expect(op).toBeDefined();
+			if (!op) throw new Error("Expected op");
 
-			if (!op?.methodName) op!.methodName = camelCase(op?.operationId!);
+			if (!op.methodName) op.methodName = camelCase(op.operationId ?? "");
 
-			testGen.generateServiceTestFile("no-params", testCast([op]), "/");
+			testGen.generateServiceTestFile("no-params", [op], "/");
 			const sourceFile = project.getSourceFileOrThrow(
 				"/noParams.service.spec.ts",
 			);
@@ -228,10 +237,10 @@ describe("Generated Code: Service Test Generators", () => {
 				},
 			};
 
-			const { parser, testGen } = setupTestGen(testCast(stringMockSpec));
+			const { parser, testGen } = setupTestGen(stringMockSpec);
 
 			// Direct mock data generator coverage
-			const mockGen = testCast(testGen).mockDataGenerator;
+			const mockGen = testGen.mockDataGenerator;
 			expect(mockGen.extractRefName("")).toBeUndefined();
 			expect(
 				mockGen.extractRefName("http://example.com/schema.json"),
@@ -251,10 +260,10 @@ describe("Generated Code: Service Test Generators", () => {
 					op.operationId === "testStringMocksArray",
 			);
 			ops.forEach((op) => {
-				op.methodName = testCast(op.operationId);
+				if (op.operationId) op.methodName = op.operationId;
 			});
 
-			testGen.generateServiceTestFile("default", testCast(ops), "/");
+			testGen.generateServiceTestFile("default", ops, "/");
 
 			const sourceFile = project.getSourceFileOrThrow(
 				"/default.service.spec.ts",
@@ -297,17 +306,15 @@ describe("Generated Code: Service Test Generators", () => {
 					},
 				},
 			};
-			const { parser, testGen } = setupTestGen(testCast(spec));
+			const { parser, testGen } = setupTestGen(spec);
 			const ops = parser.operations;
-			setOperationMethodNames(testCast<TestValue>(ops));
+			setOperationMethodNames(ops);
 
-			testGen.generateServiceTestFile("named", testCast(ops), "/");
+			testGen.generateServiceTestFile("named", ops, "/");
 			const sourceFile = project.getSourceFileOrThrow("/named.service.spec.ts");
 			const text = sourceFile.getFullText();
 
-			expect(text).toContain(
-				'const namedModel = { "id": 123 } as string | number | boolean | object | undefined | null as NamedModel;',
-			);
+			expect(text).toContain('const namedModel = { "id": 123 } as NamedModel;');
 			expect(text).toContain("service.postNamed(namedModel).subscribe({");
 		});
 
@@ -401,11 +408,11 @@ describe("Generated Code: Service Test Generators", () => {
 				},
 			};
 
-			const { parser, testGen } = setupTestGen(testCast(edgeCaseSpec));
+			const { parser, testGen } = setupTestGen(edgeCaseSpec);
 			const ops = parser.operations;
-			setOperationMethodNames(testCast<TestValue>(ops));
+			setOperationMethodNames(ops);
 
-			testGen.generateServiceTestFile("edge", testCast(ops), "/");
+			testGen.generateServiceTestFile("edge", ops, "/");
 			const sourceFile = project.getSourceFileOrThrow("/edge.service.spec.ts");
 			const text = sourceFile.getFullText();
 
@@ -422,20 +429,15 @@ describe("Generated Code: Service Test Generators", () => {
 			// Generic Object Body: schema is object but no interface generated -> string | number | boolean | object | undefined | null model
 			// Matches `} else if (bodyParam) {` fallback for non-primitive, non-model bodies
 			expect(text).toContain(
-				"const body = { data: 'test-body' } as string | number | boolean | object | undefined | null as { arbitrary?: string };",
+				"const body = { data: 'test-body' } as { arbitrary?: string };",
 			);
 
-			expect(text).toContain(
-				"const body = 'test-body' as string | number | boolean | object | undefined | null as string;",
-			);
+			expect(text).toContain("const body = 'test-body' as string;");
 		});
 
 		it("should safe-guard against null operations in internal imports collection method", () => {
-			// Directly access private method to test defensive coding branch without crashing public API
-			const { testGen } = setupTestGen(testCast({ paths: testCast({}) }));
-			const result = testCast<{
-				collectModelImports: (o: unknown) => Set<string>;
-			}>(testGen).collectModelImports(null);
+			const { testGen } = setupTestGen({ paths: {} });
+			const result = testGen.collectModelImports(null);
 
 			expect(result).toBeDefined();
 			expect(result.size).toBe(0);
@@ -464,20 +466,18 @@ describe("Generated Code: Service Test Generators", () => {
 				},
 			};
 
-			const { parser, testGen } = setupTestGen(testCast(exampleSpec));
+			const { parser, testGen } = setupTestGen(exampleSpec);
 			const ops = parser.operations;
-			setOperationMethodNames(testCast<TestValue>(ops));
+			setOperationMethodNames(ops);
 
-			testGen.generateServiceTestFile("example", testCast(ops), "/");
+			testGen.generateServiceTestFile("example", ops, "/");
 			const sourceFile = project.getSourceFileOrThrow(
 				"/example.service.spec.ts",
 			);
 			const text = sourceFile.getFullText();
 
 			// Should use 'user-123' instead of generic 'test-id'
-			expect(text).toContain(
-				"const id = 'user-123' as string | number | boolean | object | undefined | null as string;",
-			);
+			expect(text).toContain("const id = 'user-123' as string;");
 		});
 
 		it("should fallback to examples map if example field is missing", () => {
@@ -505,20 +505,18 @@ describe("Generated Code: Service Test Generators", () => {
 				},
 			};
 
-			const { parser, testGen } = setupTestGen(testCast(examplesSpec));
+			const { parser, testGen } = setupTestGen(examplesSpec);
 			const ops = parser.operations;
-			setOperationMethodNames(testCast<TestValue>(ops));
+			setOperationMethodNames(ops);
 
-			testGen.generateServiceTestFile("examples", testCast(ops), "/");
+			testGen.generateServiceTestFile("examples", ops, "/");
 			const sourceFile = project.getSourceFileOrThrow(
 				"/examples.service.spec.ts",
 			);
 			const text = sourceFile.getFullText();
 
 			// Should use first example 'active-status'
-			expect(text).toContain(
-				"const status = 'active-status' as string | number | boolean | object | undefined | null as string;",
-			);
+			expect(text).toContain("const status = 'active-status' as string;");
 		});
 
 		it("should use OAS 3.2 dataValue from parameter examples", () => {
@@ -549,20 +547,18 @@ describe("Generated Code: Service Test Generators", () => {
 				},
 			};
 
-			const { parser, testGen } = setupTestGen(testCast(oas32Spec));
+			const { parser, testGen } = setupTestGen(oas32Spec);
 			const ops = parser.operations;
-			setOperationMethodNames(testCast<TestValue>(ops));
+			setOperationMethodNames(ops);
 
-			testGen.generateServiceTestFile("example", testCast(ops), "/");
+			testGen.generateServiceTestFile("example", ops, "/");
 			const sourceFile = project.getSourceFileOrThrow(
 				"/example.service.spec.ts",
 			);
 			const text = sourceFile.getFullText();
 
 			// Should use 'active_filter' from dataValue
-			expect(text).toContain(
-				"const filter = 'active_filter' as string | number | boolean | object | undefined | null as string;",
-			);
+			expect(text).toContain("const filter = 'active_filter' as string;");
 			expect(text).not.toContain("ignore_me");
 		});
 
@@ -592,23 +588,21 @@ describe("Generated Code: Service Test Generators", () => {
 				},
 			};
 
-			const { parser, testGen } = setupTestGen(testCast(modelParamSpec));
+			const { parser, testGen } = setupTestGen(modelParamSpec);
 			const ops = parser.operations;
-			setOperationMethodNames(testCast<TestValue>(ops));
+			setOperationMethodNames(ops);
 
-			testGen.generateServiceTestFile("model", testCast(ops), "/");
+			testGen.generateServiceTestFile("model", ops, "/");
 			const sourceFile = project.getSourceFileOrThrow("/model.service.spec.ts");
 			const text = sourceFile.getFullText();
 
 			expect(text).toContain(
-				'const filter = { "id": "string-value" } as string | number | boolean | object | undefined | null as Filter;',
+				'const filter = { "id": "string-value" } as Filter;',
 			);
 		});
 
 		it("should cover example extraction branches directly", () => {
-			const { parser, testGen } = setupTestGen(
-				testCast({ paths: testCast({}) }),
-			);
+			const { parser, testGen } = setupTestGen({ paths: {} });
 
 			// examples map with dataValue/value/serializedValue
 			expect(
@@ -708,12 +702,14 @@ describe("Generated Code: Service Test Generators", () => {
 
 			// examples map literal value
 			expect(
-				testGen.getParameterExampleValue({
-					name: "p",
-					in: "query",
-					schema: { type: "string" },
-					examples: { a: testCast("literal") },
-				}),
+				testGen.getParameterExampleValue(
+					createTestParameter({
+						name: "p",
+						in: "query",
+						schema: { type: "string" },
+						examples: { a: "literal" },
+					}),
+				),
 			).toBe("'literal'");
 
 			// schema-based examples
@@ -788,14 +784,16 @@ describe("Generated Code: Service Test Generators", () => {
 			).toBeUndefined();
 
 			expect(
-				testGen.getParameterExampleValue({
-					name: "p",
-					in: "query",
-					schema: { type: "string" },
-					content: {
-						"application/json": { examples: { a: testCast("literal") } },
-					},
-				}),
+				testGen.getParameterExampleValue(
+					createTestParameter({
+						name: "p",
+						in: "query",
+						schema: { type: "string" },
+						content: {
+							"application/json": { examples: { a: "literal" } },
+						},
+					}),
+				),
 			).toBeUndefined();
 
 			expect(
@@ -839,13 +837,11 @@ describe("Generated Code: Service Test Generators", () => {
 		});
 
 		it("should cover example fallthroughs without value keys", () => {
-			const { parser, testGen } = setupTestGen(
-				testCast({ paths: testCast({}) }),
-			);
+			const { parser, testGen } = setupTestGen({ paths: {} });
 
-			const resolvedSerialized = testCast(Object.create(null));
+			const resolvedSerialized: Record<string, string> = Object.create(null);
 
-			resolvedSerialized.serializedValue = testCast("rser-null");
+			resolvedSerialized.serializedValue = "rser-null";
 
 			const resolveSpy = vi
 				.spyOn(parser, "resolveReference")
@@ -860,7 +856,7 @@ describe("Generated Code: Service Test Generators", () => {
 			).toBe("'rser-null'");
 			resolveSpy.mockRestore();
 
-			const emptyExamples = testCast(Object.create(null));
+			const emptyExamples: Record<string, never> = Object.create(null);
 			expect(
 				testGen.getParameterExampleValue({
 					name: "p",
@@ -871,9 +867,9 @@ describe("Generated Code: Service Test Generators", () => {
 				}),
 			).toBeUndefined();
 
-			const contentSerialized = testCast(Object.create(null));
+			const contentSerialized: Record<string, string> = Object.create(null);
 
-			contentSerialized.serializedValue = testCast("cser-null");
+			contentSerialized.serializedValue = "cser-null";
 			expect(
 				testGen.getParameterExampleValue({
 					name: "p",
@@ -889,9 +885,7 @@ describe("Generated Code: Service Test Generators", () => {
 		});
 
 		it("should cover serializedValue fallbacks for resolved and content examples", () => {
-			const { parser, testGen } = setupTestGen(
-				testCast({ paths: testCast({}) }),
-			);
+			const { parser, testGen } = setupTestGen({ paths: {} });
 
 			const resolvedSpy = vi
 				.spyOn(parser, "resolveReference")
@@ -930,7 +924,7 @@ describe("Generated Code: Service Test Generators", () => {
 		});
 
 		it("should handle undefined parameters in internal helpers", () => {
-			const { testGen } = setupTestGen(testCast({ paths: testCast({}) }));
+			const { testGen } = setupTestGen({ paths: {} });
 
 			const output = testGen.generateMethodTests([
 				{
@@ -957,7 +951,7 @@ describe("Generated Code: Service Test Generators", () => {
 		});
 
 		it("should handle primitive defaults in generateDefaultPrimitiveValue", () => {
-			const { testGen } = setupTestGen(testCast({ paths: testCast({}) }));
+			const { testGen } = setupTestGen({ paths: {} });
 
 			expect(
 				testGen.generateDefaultPrimitiveValue({
@@ -1042,17 +1036,17 @@ describe("Generated Code: Service Test Generators", () => {
 				},
 			};
 
-			const { parser, testGen } = setupTestGen(testCast(arrSpec));
+			const { parser, testGen } = setupTestGen(arrSpec);
 			const ops = parser.operations;
-			setOperationMethodNames(testCast<TestValue>(ops));
+			setOperationMethodNames(ops);
 
-			testGen.generateServiceTestFile("user", testCast(ops), "/");
+			testGen.generateServiceTestFile("user", ops, "/");
 			const sourceFile = project.getSourceFileOrThrow("/user.service.spec.ts");
 			const text = sourceFile.getFullText();
 
 			// The query arg should be generated as an array
 			expect(text).toContain(
-				'const queryUsers = [{ "name": "string-value" }] as string | number | boolean | object | undefined | null as User[];',
+				'const queryUsers = [{ "name": "string-value" }] as User[];',
 			);
 			// The body arg should be generated as an array
 			expect(text).toContain("expect(req.request.body).toEqual(user);");
@@ -1104,7 +1098,7 @@ describe("Generated Code: Service Test Generators", () => {
 				},
 			};
 
-			const { parser, testGen } = setupTestGen(testCast(spec));
+			const { parser, testGen } = setupTestGen(spec);
 
 			// Set methodNames which is needed by test generator to find the schema correctly from op properties (it simulates group behavior)
 			for (const op of parser.operations) {
@@ -1126,19 +1120,19 @@ describe("Generated Code: Service Test Generators", () => {
 				info: { title: "Test", version: "1.0" },
 				paths: {},
 			};
-			const parser = new SwaggerParser(testCast(spec), config);
+			const parser = new SwaggerParser(createTestSpec(spec), config);
 			const intGen = new IntegrationTestGenerator(parser, project);
 			intGen.generate(
 				{
 					items: [
-						testCast({
+						createTestOperation({
 							method: "post",
 							path: "/items",
 							requestBody: {
 								content: {},
 							},
 						}),
-						testCast({
+						createTestOperation({
 							method: "put",
 							path: "/items/{id}",
 							operationId: "update_item",

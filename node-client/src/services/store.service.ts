@@ -7,7 +7,7 @@ import * as https from "node:https";
 import { URL } from "node:url";
 import type { Order } from "../models";
 import { ParameterSerializer } from "../utils/parameter-serializer";
-import { getServerUrl, resolveServerUrl } from "../utils/server-url";
+import { getServerUrl } from "../utils/server-url";
 
 export class StoreService {
 	private basePath = "";
@@ -37,7 +37,7 @@ export class StoreService {
 			method: "GET",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -100,7 +100,7 @@ export class StoreService {
 			method: "POST",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -159,7 +159,7 @@ export class StoreService {
 			method: "GET",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -217,7 +217,7 @@ export class StoreService {
 			method: "DELETE",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];

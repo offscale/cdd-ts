@@ -292,9 +292,9 @@ export class ParameterSerializer {
 
 		if (Array.isArray(value)) {
 			if (style === "form" && explode) {
-				value.forEach((v) =>
-					result.push({ key: encode(name), value: encode(String(v)) }),
-				);
+				value.forEach((v) => {
+					result.push({ key: encode(name), value: encode(String(v)) });
+				});
 			} else if (style === "spaceDelimited") {
 				result.push({ key: encode(name), value: encode(value.join(" ")) });
 			} else if (style === "tabDelimited") {
@@ -311,9 +311,9 @@ export class ParameterSerializer {
 		if (typeof value === "object" && value !== null) {
 			if (style === "form") {
 				if (explode) {
-					Object.entries(value).forEach(([k, v]) =>
-						result.push({ key: encode(k), value: encode(String(v)) }),
-					);
+					Object.entries(value).forEach(([k, v]) => {
+						result.push({ key: encode(k), value: encode(String(v)) });
+					});
 				} else {
 					const flattened = Object.entries(value)
 						.map(([k, v]) => `${encode(k)},${encode(String(v))}`)

@@ -6,7 +6,6 @@
 // src/generators/angular/utils/oauth-helper.generator.ts
 import * as path from "node:path";
 import { type ClassDeclaration, type Project, Scope } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 import type { SwaggerParser } from "../../../openapi/parse.js";
 
 interface OAuthFlowConfig {
@@ -61,8 +60,9 @@ export class OAuthHelperGenerator {
 		for (const scheme of oauthSchemes) {
 			if (scheme.type === "openIdConnect") {
 				config.hasAuthorizationCode = true;
-			} else if (scheme.flows) {
-				const implicitFlow = scheme.flows.implicit as Record<string, string>;
+			} else {
+				const flows = scheme.flows as NonNullable<typeof scheme.flows>;
+				const implicitFlow = flows.implicit as Record<string, string>;
 
 				if (implicitFlow) {
 					config.hasImplicit = true;
@@ -71,7 +71,7 @@ export class OAuthHelperGenerator {
 						config.authorizationUrl = implicitFlow.authorizationUrl;
 				}
 
-				const passwordFlow = scheme.flows.password as Record<string, string>;
+				const passwordFlow = flows.password as Record<string, string>;
 
 				if (passwordFlow) {
 					config.hasPassword = true;
@@ -80,7 +80,7 @@ export class OAuthHelperGenerator {
 						config.tokenUrl = passwordFlow.tokenUrl;
 				}
 
-				const ccFlow = scheme.flows.clientCredentials as Record<string, string>;
+				const ccFlow = flows.clientCredentials as Record<string, string>;
 
 				if (ccFlow) {
 					config.hasClientCredentials = true;
@@ -89,7 +89,7 @@ export class OAuthHelperGenerator {
 						config.tokenUrl = ccFlow.tokenUrl;
 				}
 
-				const acFlow = scheme.flows.authorizationCode as Record<string, string>;
+				const acFlow = flows.authorizationCode as Record<string, string>;
 
 				if (acFlow) {
 					config.hasAuthorizationCode = true;
@@ -101,10 +101,7 @@ export class OAuthHelperGenerator {
 						config.tokenUrl = acFlow.tokenUrl;
 				}
 
-				const devFlow = scheme.flows.deviceAuthorization as Record<
-					string,
-					string
-				>;
+				const devFlow = flows.deviceAuthorization as Record<string, string>;
 
 				if (devFlow) {
 					config.hasDeviceAuthorization = true;
@@ -133,8 +130,6 @@ export class OAuthHelperGenerator {
 		const sourceFile = this.project.createSourceFile(filePath, "", {
 			overwrite: true,
 		});
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
 		const imports = [
 			{
@@ -445,8 +440,6 @@ export class OAuthHelperGenerator {
 		const tsFile = this.project.createSourceFile(tsPath, "", {
 			overwrite: true,
 		});
-
-		tsFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
 		tsFile.addImportDeclarations([
 			{

@@ -28,6 +28,7 @@ import { generateFromArazzoSync } from "../../src/cli/commands/from_arazzo.js";
 import { generateToArazzo } from "../../src/cli/commands/to_arazzo.js";
 import { run, syncDir } from "../../src/cli.js";
 import type { ArazzoSpec } from "../../src/core/types/index.js";
+import { expectZeroTypeScriptDiagnostics } from "../shared/helpers.js";
 
 const sampleSpec: ArazzoSpec = {
 	arazzo: "1.1.0",
@@ -708,6 +709,7 @@ describe("Arazzo 1.1.0 Forward & Reverse Round-Trip Suite", () => {
 				`,
 			);
 			expect(parseArazzoServerE2eSourceFile(otherE2e).workflows.length).toBe(1);
+			expectZeroTypeScriptDiagnostics(project);
 		});
 	});
 

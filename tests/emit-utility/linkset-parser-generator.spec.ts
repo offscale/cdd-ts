@@ -1,9 +1,21 @@
 import { LinkSetParserGenerator } from "@src/vendors/angular/utils/link-set-parser.generator.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import { createTestProject } from "../shared/helpers.js";
 
-function getLinkSetParser() {
+interface CompiledLinkSetParser {
+	parseHeader: (input: string | null | undefined) => Array<{
+		href: string;
+		attributes?: Record<string, string | string[]>;
+	}>;
+	parseJson: (input: unknown) => Array<{
+		href: string;
+		context?: string;
+		attributes?: Record<string, unknown>;
+	}>;
+}
+
+function getLinkSetParser(): CompiledLinkSetParser | undefined {
 	const project = createTestProject();
 	new LinkSetParserGenerator(project).generate("/");
 
@@ -16,12 +28,12 @@ function getLinkSetParser() {
 		module: ts.ModuleKind.CommonJS,
 	});
 
-	const moduleScope = {
-		exports: testCast({}),
+	const moduleScope: { exports: { LinkSetParser?: CompiledLinkSetParser } } = {
+		exports: {},
 	};
 	const finalCode = `${jsCode}; exports.LinkSetParser = LinkSetParser;`;
 
-	testCast(new Function("exports", finalCode)(moduleScope.exports));
+	new Function("exports", finalCode)(moduleScope.exports);
 
 	return moduleScope.exports.LinkSetParser;
 }
@@ -31,56 +43,56 @@ describe("Utility: LinkSetParser", () => {
 
 	describe("parseHeader (HTTP Link Header)", () => {
 		it("should return empty array for null/empty input", () => {
-			expect(LinkSetParser.parseHeader(null)).toEqual([]);
+			expect(LinkSetParser?.parseHeader?.(null)).toEqual([]);
 
-			expect(LinkSetParser.parseHeader("")).toEqual([]);
+			expect(LinkSetParser?.parseHeader?.("")).toEqual([]);
 		});
 
 		it("should parse a single link", () => {
 			const header = '<https://api.example.com/next>; rel="next"';
 
-			const result = LinkSetParser.parseHeader(header);
+			const result = LinkSetParser?.parseHeader?.(header);
 
 			expect(result).toHaveLength(1);
 
-			expect(result[0].href).toBe("https://api.example.com/next");
+			expect(result?.[0]?.href).toBe("https://api.example.com/next");
 
-			expect(result[0].attributes.rel).toBe("next");
+			expect(result?.[0]?.attributes?.rel).toBe("next");
 		});
 
 		it("should parse multiple links separated by comma", () => {
 			const header =
 				'<https://api.com/next>; rel="next", <https://api.com/prev>; rel="prev"';
 
-			const result = LinkSetParser.parseHeader(header);
+			const result = LinkSetParser?.parseHeader?.(header);
 
 			expect(result).toHaveLength(2);
 
-			expect(result[0].attributes.rel).toBe("next");
+			expect(result?.[0]?.attributes?.rel).toBe("next");
 
-			expect(result[1].attributes.rel).toBe("prev");
+			expect(result?.[1]?.attributes?.rel).toBe("prev");
 		});
 
 		it("should parse multiple attributes including unquoted boolean flags", () => {
 			const header = '</terms>; rel="copyright"; anchor="#foo"; crossorigin';
 
-			const result = LinkSetParser.parseHeader(header);
+			const result = LinkSetParser?.parseHeader?.(header);
 
-			expect(result[0].href).toBe("/terms");
+			expect(result?.[0]?.href).toBe("/terms");
 
-			expect(result[0].attributes.rel).toBe("copyright");
+			expect(result?.[0]?.attributes?.rel).toBe("copyright");
 
-			expect(result[0].attributes.anchor).toBe("#foo");
+			expect(result?.[0]?.attributes?.anchor).toBe("#foo");
 
-			expect(result[0].attributes.crossorigin).toBe(true);
+			expect(result?.[0]?.attributes?.crossorigin).toBe(true);
 		});
 
 		it("should handle spaces and quotes around attributes", () => {
 			const header = '<http://example.com>; title="Title with spaces"';
 
-			const result = LinkSetParser.parseHeader(header);
+			const result = LinkSetParser?.parseHeader?.(header);
 
-			expect(result[0].attributes.title).toBe("Title with spaces");
+			expect(result?.[0]?.attributes?.title).toBe("Title with spaces");
 		});
 	});
 
@@ -91,31 +103,31 @@ describe("Utility: LinkSetParser", () => {
 				{ href: "/prev", rel: "prev", title: "Previous" },
 			];
 
-			const result = LinkSetParser.parseJson(json);
+			const result = LinkSetParser?.parseJson?.(json);
 
 			expect(result).toHaveLength(2);
 
-			expect(result[0].href).toBe("/next");
+			expect(result?.[0]?.href).toBe("/next");
 
-			expect(result[0].attributes.rel).toBe("next");
+			expect(result?.[0]?.attributes?.rel).toBe("next");
 
-			expect(result[1].attributes.title).toBe("Previous");
+			expect(result?.[1]?.attributes?.title).toBe("Previous");
 		});
 
 		it("should handle wrapped linkset property", () => {
 			const json = { linkset: [{ href: "/a", rel: "a" }] };
 
-			const result = LinkSetParser.parseJson(json);
+			const result = LinkSetParser?.parseJson?.(json);
 
 			expect(result).toHaveLength(1);
 
-			expect(result[0].href).toBe("/a");
+			expect(result?.[0]?.href).toBe("/a");
 		});
 
 		it("should return empty array for invalid input", () => {
-			expect(LinkSetParser.parseJson(null)).toEqual([]);
+			expect(LinkSetParser?.parseJson?.(null)).toEqual([]);
 
-			expect(LinkSetParser.parseJson({})).toEqual([]);
+			expect(LinkSetParser?.parseJson?.({})).toEqual([]);
 		});
 	});
 });

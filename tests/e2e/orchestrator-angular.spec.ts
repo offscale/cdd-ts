@@ -2,14 +2,11 @@ import * as path from "node:path";
 import { auditAngularSourceBestPractices } from "@src/functions/utils.js";
 import type { Project } from "ts-morph";
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { coverageSpec } from "../fixtures/coverage.fixture.js";
 import { runGeneratorWithConfig } from "../shared/helpers.js";
 
 describe("E2E: Angular Generator Output", () => {
-	beforeAll(async () => {});
-	afterAll(async () => {});
-
 	/**
 	 * Returns true if string | number | boolean | object | undefined | null generated file's name ends with one of the given names, regardless of slashes.
 	 */

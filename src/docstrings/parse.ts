@@ -29,7 +29,7 @@ export interface ParsedJSDoc {
  * @param docComment - The raw JSDoc comment string, starting with '/**' and ending with '*\/'.
  * @returns An object containing the extracted description and tags.
  */
-export function parseJSDoc(docComment: string): ParsedJSDoc {
+export function parseJSDoc(docComment: string | null | undefined): ParsedJSDoc {
 	if (!docComment || typeof docComment !== "string") {
 		return {};
 	}
@@ -64,7 +64,7 @@ export function parseJSDoc(docComment: string): ParsedJSDoc {
 				});
 			}
 			currentTag = {
-				tagName: tagMatch[1],
+				tagName: tagMatch[1] as string,
 				textLines: tagMatch[2] ? [tagMatch[2]] : [],
 			};
 		} else if (currentTag) {

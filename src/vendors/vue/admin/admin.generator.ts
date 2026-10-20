@@ -5,10 +5,13 @@
  */
 import * as path from "node:path";
 import type { Project } from "ts-morph";
-import type { GeneratorConfig } from "../../../core/types/config.js";
+import { discoverAdminResources } from "../../../core/admin/resource-discovery.js";
+import {
+	type GeneratorConfig,
+	resolveLogger,
+} from "../../../core/types/config.js";
 import type { Resource } from "../../../core/types/index.js";
 import type { SwaggerParser } from "../../../openapi/parse.js";
-import { discoverAdminResources } from "../../angular/admin/resource-discovery.js";
 import { AdminTestGenerator } from "./admin-test.generator.js";
 import { CustomValidatorsGenerator } from "./custom-validators.generator.js";
 import { FormComponentGenerator } from "./form-component.generator.js";
@@ -40,12 +43,13 @@ export class VueAdminGenerator {
 	 * @param outputRoot The root directory path for generation.
 	 */
 	public generate(outputRoot: string): void {
-		console.log("🚀 Generating Vue Admin UI...");
+		const logger = resolveLogger(this.config);
+		logger.info("🚀 Generating Vue Admin UI...");
 
 		this.allResources = discoverAdminResources(this.parser);
 
 		if (this.allResources.length === 0) {
-			console.warn(
+			logger.warn(
 				"⚠️ No resources suitable for admin UI generation were found. Skipping.",
 			);
 			return;
@@ -74,7 +78,7 @@ export class VueAdminGenerator {
 			false;
 
 		for (const resource of this.allResources) {
-			console.log(`  -> Generating for resource: ${resource.name}`);
+			logger.info(`  -> Generating for resource: ${resource.name}`);
 
 			const resourceDir = path.posix.join(adminDir, resource.name);
 
@@ -99,6 +103,6 @@ export class VueAdminGenerator {
 			}
 		}
 
-		console.log("✅ Vue Admin UI generation complete.");
+		logger.info("✅ Vue Admin UI generation complete.");
 	}
 }

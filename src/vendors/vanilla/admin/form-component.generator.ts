@@ -153,9 +153,7 @@ export class FormComponentGenerator {
 			statements: loadDataStatements.join("\n"),
 		});
 
-		const saveDataStatements = [
-			`const payload: string | number | boolean | object | undefined | null = {};`,
-		];
+		const saveDataStatements = [`const payload: Record<string, string> = {};`];
 
 		resource.formProperties.forEach((p) => {
 			saveDataStatements.push(

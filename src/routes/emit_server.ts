@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 import type { SwaggerParser } from "../openapi/parse.js";
 
 /**
@@ -19,7 +18,7 @@ export class ServerGenerator {
 	 * @param project - The target `ts-morph` project.
 	 */
 	constructor(
-		private readonly parser: SwaggerParser,
+		private readonly parser: Pick<SwaggerParser, "servers">,
 
 		private readonly project: Project,
 	) {}
@@ -32,13 +31,11 @@ export class ServerGenerator {
 	public generate(outputDir: string): void {
 		const filePath = path.join(outputDir, "servers.ts");
 
-		const sourceFile = this.project.createSourceFile(
-			filePath,
-			UTILITY_GENERATOR_HEADER_COMMENT, // Start with the header content
-			{ overwrite: true },
-		);
+		const sourceFile = this.project.createSourceFile(filePath, "", {
+			overwrite: true,
+		});
 
-		const servers = this.parser.servers || [];
+		const servers = this.parser.servers;
 
 		if (servers.length > 0) {
 			sourceFile.addVariableStatement({

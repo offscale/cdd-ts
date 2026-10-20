@@ -4,7 +4,10 @@ import type { GeneratorConfig } from "../../src/core/types/index.js";
 import { SwaggerParser } from "../../src/openapi/parse.js";
 import { FetchClientGenerator } from "../../src/vendors/fetch/fetch-client.generator.js";
 import { ReactClientGenerator } from "../../src/vendors/react/react-client.generator.js";
-import { testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	expectZeroTypeScriptDiagnostics,
+} from "../shared/helpers.js";
 
 describe("React Implementation", () => {
 	beforeEach(() => {
@@ -104,6 +107,7 @@ describe("React Implementation", () => {
 		const generator = new ReactClientGenerator();
 
 		await generator.generate(project, parser, config, "/output");
+		expectZeroTypeScriptDiagnostics(project);
 
 		const hooksIndex = project.getSourceFile("/output/hooks/index.ts");
 		expect(hooksIndex).toBeDefined();
@@ -156,7 +160,7 @@ describe("React Implementation", () => {
 
 	it("should generate admin UI if config.options.admin is true", async () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const config = testCast<GeneratorConfig>({ options: { admin: true } });
+		const config = createTestConfig({ options: { admin: true } });
 
 		const spec = {
 			openapi: "3.1.0",
@@ -173,7 +177,7 @@ describe("React Implementation", () => {
 				},
 			},
 		};
-		const parser = new SwaggerParser(spec, testCast({}));
+		const parser = new SwaggerParser(spec, createTestConfig({}));
 
 		const generator = new ReactClientGenerator();
 		await generator.generate(project, parser, config, "/out");
@@ -184,7 +188,7 @@ describe("React Implementation", () => {
 
 	it("should respect config.options.tests being false in hook generation", async () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const config = testCast<GeneratorConfig>({ options: { tests: false } });
+		const config = createTestConfig({ options: { tests: false } });
 
 		const spec = {
 			openapi: "3.1.0",
@@ -201,7 +205,7 @@ describe("React Implementation", () => {
 				},
 			},
 		};
-		const parser = new SwaggerParser(spec, testCast({}));
+		const parser = new SwaggerParser(spec, createTestConfig({}));
 
 		const generator = new ReactClientGenerator();
 		await generator.generate(project, parser, config, "/out");

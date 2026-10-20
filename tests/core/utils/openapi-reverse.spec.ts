@@ -19,7 +19,8 @@ import {
 	parseGeneratedServices,
 } from "@src/openapi/emit.js";
 import { afterEach, describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../../shared/helpers.js";
+import type { PathItem } from "../../../src/core/types/index.js";
+import { createTestSchema, createTestSpec } from "../../shared/helpers.js";
 
 const tempDirs: string[] = [];
 
@@ -321,7 +322,9 @@ describe("Core Utils: OpenAPI Reverse", () => {
 
 		const getUser = userService?.operations.find(
 			(op) => op.methodName === "getUser",
-		)!;
+		);
+		expect(getUser).toBeDefined();
+		if (!getUser) throw new Error("Expected getUser operation");
 		expect(getUser.httpMethod).toBe("POST");
 		expect(getUser.path).toBe("/users/{id}");
 		expect(getUser.operationId).toBe("getUserById");
@@ -346,25 +349,21 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			{ status: "404", description: "Not found" },
 		]);
 
-		const specOp = spec.paths?.["/users/{id}"].post!;
+		const specOp = spec.paths?.["/users/{id}"]?.post;
+		expect(specOp).toBeDefined();
+		if (!specOp) throw new Error("Expected specOp");
 		expect(specOp.operationId).toBe("getUserById");
 		expect(Object.keys(specOp.responses || {})).toEqual(
 			expect.arrayContaining(["200", "404"]),
 		);
 
 		expect(
-			testCast(testCast<TestValue>(specOp.responses)["200"]).content?.[
-				"application/json"
-			],
+			specOp.responses["200"]?.content?.["application/json"],
 		).toBeDefined();
 
-		expect(testCast(testCast<TestValue>(specOp.responses)["200"]).summary).toBe(
-			"User response",
-		);
+		expect(specOp.responses["200"]?.summary).toBe("User response");
 
-		expect(
-			testCast(testCast<TestValue>(specOp.responses)["404"]).description,
-		).toBe("Not found");
+		expect(specOp.responses["404"]?.description).toBe("Not found");
 
 		const paramKeys = getUser.params.map((p) => `${p.in}:${p.name}`);
 		expect(paramKeys).toEqual(
@@ -406,9 +405,9 @@ describe("Core Utils: OpenAPI Reverse", () => {
 		expect(filterParam?.allowReserved).toBe(true);
 		expect(filterParam?.contentEncoding).toBe("base64");
 
-		const listWithServerSpec = testCast(spec.paths)["/server-test"].get;
+		const listWithServerSpec = spec.paths?.["/server-test"]?.get;
 
-		expect(listWithServerSpec.servers).toEqual([
+		expect(listWithServerSpec?.servers).toEqual([
 			{ url: "https://api.example.com/v1", description: "primary" },
 		]);
 
@@ -419,8 +418,8 @@ describe("Core Utils: OpenAPI Reverse", () => {
 
 		const listWithServerOp = userService?.operations.find(
 			(op) => op.methodName === "listWithServer",
-		)!;
-		expect(listWithServerOp.servers).toEqual([
+		);
+		expect(listWithServerOp?.servers).toEqual([
 			{ url: "https://api.example.com/v1", description: "primary" },
 		]);
 	});
@@ -462,16 +461,16 @@ describe("Core Utils: OpenAPI Reverse", () => {
             }
         }`;
 		const services = parseGeneratedServiceSource(source, "/edge.service.ts");
-		const op = services[0].operations[0];
-		const valParam = op.params.find((p) => p.name === "val");
+		const op = services[0]?.operations[0];
+		const valParam = op?.params.find((p) => p.name === "val");
 		expect(valParam?.in).toBe("querystring");
 		expect(valParam?.encoding).toBeUndefined();
 		expect(valParam?.contentEncoderConfig).toBeUndefined();
 
-		const unbOp = services[0].operations.find(
+		const unbOp = services[0]?.operations.find(
 			(o) => o.methodName === "unbalanced",
-		)!;
-		expect(unbOp.extensions).toBeUndefined();
+		);
+		expect(unbOp?.extensions).toBeUndefined();
 	});
 
 	it("should extract @param descriptions into parameter metadata", () => {
@@ -483,33 +482,29 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			title: "Recovered",
 			version: "1.0.0",
 		});
-		const operation = services[0].operations[0];
+		const operation = services[0]?.operations[0];
 
-		const idParam = operation.params.find((p) => p.name === "userId");
-		const verboseParam = operation.params.find((p) => p.name === "verbose");
-		const bodyParam = operation.params.find((p) => p.in === "body");
+		const idParam = operation?.params.find((p) => p.name === "userId");
+		const verboseParam = operation?.params.find((p) => p.name === "verbose");
+		const bodyParam = operation?.params.find((p) => p.in === "body");
 
 		expect(idParam?.description).toBe("The user id.");
 		expect(verboseParam?.description).toBe("desc");
 		expect(bodyParam?.description).toBe("Updated payload.");
 
-		const specParams = spec.paths?.["/users/{userId}"].put?.parameters!;
+		const specParams = spec.paths?.["/users/{userId}"]?.put?.parameters ?? [];
 
-		const specId = specParams.find(
-			(p) => testCast<TestValue>(p).name === "userId",
-		);
+		const specId = specParams.find((p) => p.name === "userId");
 
-		const specVerbose = specParams.find(
-			(p) => testCast<TestValue>(p).name === "verbose",
-		);
+		const specVerbose = specParams.find((p) => p.name === "verbose");
 
-		const specBody = testCast(spec.paths?.["/users/{userId}"].put?.requestBody);
+		const specBody = spec.paths?.["/users/{userId}"]?.put?.requestBody;
 
-		expect(testCast(specId).description).toBe("The user id.");
+		expect(specId?.description).toBe("The user id.");
 
-		expect(testCast(specVerbose).description).toBe("desc");
+		expect(specVerbose?.description).toBe("desc");
 
-		expect(specBody.description).toBe("Updated payload.");
+		expect(specBody?.description).toBe("Updated payload.");
 	});
 
 	it("should parse @server, @security, and @x-* tags from JSDoc when body hints are missing", () => {
@@ -517,22 +512,22 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			docTagServiceSource,
 			"/doc-tags.service.ts",
 		);
-		const operation = services[0].operations[0];
+		const operation = services[0]?.operations[0];
 
-		expect(operation.servers).toEqual([
+		expect(operation?.servers).toEqual([
 			{ url: "https://example.com", description: "Primary", name: "prod" },
 		]);
-		expect(operation.security).toEqual([{ ApiKey: [] }]);
-		expect(operation.extensions).toEqual({ "x-feature-flag": "beta" });
+		expect(operation?.security).toEqual([{ ApiKey: [] }]);
+		expect(operation?.extensions).toEqual({ "x-feature-flag": "beta" });
 		expect(
-			operation.responseHints?.find((r) => r.status === "200")?.summary,
+			operation?.responseHints?.find((r) => r.status === "200")?.summary,
 		).toBe("list ok");
 
-		const raw = services[0].operations[1];
-		expect(raw.servers).toEqual([{ url: "https://api.example.com" }]);
-		expect(raw.security).toEqual([{ ApiKey: ["read", "write"] }]);
-		expect(raw.extensions).toEqual({ "x-feature-flag": true });
-		expect(raw.responseHints?.find((r) => r.status === "200")?.summary).toBe(
+		const raw = services[0]?.operations[1];
+		expect(raw?.servers).toEqual([{ url: "https://api.example.com" }]);
+		expect(raw?.security).toEqual([{ ApiKey: ["read", "write"] }]);
+		expect(raw?.extensions).toEqual({ "x-feature-flag": true });
+		expect(raw?.responseHints?.find((r) => r.status === "200")?.summary).toBe(
 			"raw summary",
 		);
 	});
@@ -547,17 +542,18 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			version: "1.0.0",
 		});
 
-		const getPlain = testCast(spec.paths)["/plain"].get;
+		const getPlain = spec.paths?.["/plain"]?.get;
 
-		const responseContent = getPlain.responses["200"]?.content?.["text/plain"];
+		const responseContent =
+			getPlain?.responses?.["200"]?.content?.["text/plain"];
 
 		expect(responseContent?.example).toBeUndefined();
 
 		expect(responseContent?.examples?.example?.serializedValue).toBe("OK");
 
-		const postPlain = testCast(spec.paths)["/plain"].post;
+		const postPlain = spec.paths?.["/plain"]?.post;
 
-		const requestContent = postPlain.requestBody?.content?.["text/plain"];
+		const requestContent = postPlain?.requestBody?.content?.["text/plain"];
 
 		expect(requestContent?.example).toBeUndefined();
 
@@ -567,10 +563,10 @@ describe("Core Utils: OpenAPI Reverse", () => {
 	});
 
 	it("should keep component webhooks scoped to components only", () => {
-		const baseSpec: TestValue = testCast({
-			openapi: testCast("3.2.0"),
-			info: testCast({ title: testCast("T"), version: testCast("1") }),
-			paths: testCast({}),
+		const baseSpec = createTestSpec({
+			openapi: "3.2.0",
+			info: { title: "T", version: "1" },
+			paths: {},
 		});
 		const metadata: ReverseMetadata = {
 			webhooks: [
@@ -585,16 +581,16 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			],
 		};
 
-		const next = applyReverseMetadata(testCast(baseSpec), metadata);
+		const next = applyReverseMetadata(baseSpec, metadata);
 		expect(next.components?.webhooks?.ComponentHook).toBeDefined();
 		expect(next.webhooks?.ComponentHook).toBeUndefined();
 	});
 
 	it("should apply root-scoped webhooks to the OpenAPI Object", () => {
-		const baseSpec: TestValue = testCast({
-			openapi: testCast("3.2.0"),
-			info: testCast({ title: testCast("T"), version: testCast("1") }),
-			paths: testCast({}),
+		const baseSpec = createTestSpec({
+			openapi: "3.2.0",
+			info: { title: "T", version: "1" },
+			paths: {},
 		});
 		const metadata: ReverseMetadata = {
 			webhooks: [
@@ -609,7 +605,7 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			],
 		};
 
-		const next = applyReverseMetadata(testCast(baseSpec), metadata);
+		const next = applyReverseMetadata(baseSpec, metadata);
 		expect(next.webhooks?.RootHook).toBeDefined();
 		expect(next.components?.webhooks?.RootHook).toBeDefined();
 	});
@@ -628,31 +624,31 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			`export const API_DOCUMENT_META = ${JSON.stringify(documentMeta, null, 2)};`,
 		);
 
-		const metadata = parseGeneratedMetadata(dir, testCast(fs));
+		const metadata = parseGeneratedMetadata(dir, fs);
 		expect(metadata.documentMeta?.extensions).toEqual(documentMeta.extensions);
 
-		const baseSpec: TestValue = testCast({
-			openapi: testCast("3.2.0"),
-			info: testCast({ title: testCast("T"), version: testCast("1") }),
-			paths: testCast({}),
+		const baseSpec = createTestSpec({
+			openapi: "3.2.0",
+			info: { title: "T", version: "1" },
+			paths: {},
 		});
-		const next = applyReverseMetadata(testCast(baseSpec), metadata);
-		expect(testCast(next)["x-root-flag"]).toBe(true);
-		expect(testCast(next)["x-root-note"]).toBe("hello");
+		const next = applyReverseMetadata(baseSpec, metadata);
+		expect(next["x-root-flag"]).toBe(true);
+		expect(next["x-root-note"]).toBe("hello");
 	});
 
 	it("should infer $self for snapshotless reverse generation", () => {
 		const dir = makeTempDir();
-		const metadata = parseGeneratedMetadata(dir, testCast(fs));
+		const metadata = parseGeneratedMetadata(dir, fs);
 		const expectedSelf = pathToFileURL(path.resolve(dir, "openapi.yaml")).href;
 		expect(metadata.inferredSelf).toBe(expectedSelf);
 
-		const baseSpec: TestValue = testCast({
-			openapi: testCast("3.2.0"),
-			info: testCast({ title: testCast("T"), version: testCast("1") }),
-			paths: testCast({}),
+		const baseSpec = createTestSpec({
+			openapi: "3.2.0",
+			info: { title: "T", version: "1" },
+			paths: {},
 		});
-		const next = applyReverseMetadata(testCast(baseSpec), metadata);
+		const next = applyReverseMetadata(baseSpec, metadata);
 		expect(next.$self).toBe(expectedSelf);
 	});
 
@@ -661,98 +657,75 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			serviceSource,
 			"/users.service.ts",
 		);
-		const userService = services.find((s) => s.serviceName === "UsersService")!;
+		const userService = services.find((s) => s.serviceName === "UsersService");
+		if (!userService) throw new Error("Expected userService");
 
-		const upload = userService.operations.find(
-			(op) => op.methodName === "uploadAvatar",
-		)!;
+		const findOp = (name: string) => {
+			const op = userService.operations.find((o) => o.methodName === name);
+			if (!op) throw new Error(`Expected operation ${name}`);
+			return op;
+		};
+
+		const upload = findOp("uploadAvatar");
 		expect(upload.requestMediaTypes).toEqual(["multipart/form-data"]);
 		expect(
 			upload.params.some((p) => p.in === "formData" && p.name === "file"),
 		).toBe(true);
 
-		const uploadAdvanced = userService.operations.find(
-			(op) => op.methodName === "uploadAdvanced",
-		)!;
+		const uploadAdvanced = findOp("uploadAdvanced");
 		expect(uploadAdvanced.requestMediaTypes).toEqual(["multipart/form-data"]);
 
-		const uploadMixed = userService.operations.find(
-			(op) => op.methodName === "uploadMixed",
-		)!;
+		const uploadMixed = findOp("uploadMixed");
 		expect(uploadMixed.requestMediaTypes).toEqual(["multipart/mixed"]);
 
-		const encoded = userService.operations.find(
-			(op) => op.methodName === "submitEncoded",
-		)!;
+		const encoded = findOp("submitEncoded");
 		expect(encoded.requestMediaTypes).toEqual([
 			"application/x-www-form-urlencoded",
 		]);
 
-		const encodedMap = userService.operations.find(
-			(op) => op.methodName === "submitEncodedWithMap",
-		)!;
+		const encodedMap = findOp("submitEncodedWithMap");
 		expect(encodedMap.requestMediaTypes).toEqual([
 			"application/x-www-form-urlencoded",
 		]);
 
-		const xml = userService.operations.find(
-			(op) => op.methodName === "sendXml",
-		)!;
+		const xml = findOp("sendXml");
 		expect(xml.requestMediaTypes).toEqual(["application/xml"]);
 
-		const text = userService.operations.find(
-			(op) => op.methodName === "contentTypeOnly",
-		)!;
+		const text = findOp("contentTypeOnly");
 		expect(text.requestMediaTypes).toEqual(["text/plain"]);
 
-		const xmlResponse = userService.operations.find(
-			(op) => op.methodName === "xmlResponse",
-		)!;
+		const xmlResponse = findOp("xmlResponse");
 		expect(xmlResponse.requestMediaTypes).toEqual([]);
 		expect(xmlResponse.responseMediaTypes).toEqual(["application/xml"]);
 
-		const jsonSeq = userService.operations.find(
-			(op) => op.methodName === "jsonSeqResponse",
-		)!;
+		const jsonSeq = findOp("jsonSeqResponse");
 		expect(jsonSeq.responseMediaTypes).toEqual(["application/json-seq"]);
 
-		const jsonLines = userService.operations.find(
-			(op) => op.methodName === "jsonLinesResponse",
-		)!;
+		const jsonLines = findOp("jsonLinesResponse");
 		expect(jsonLines.responseMediaTypes).toEqual(["application/jsonl"]);
 
-		const accept = userService.operations.find(
-			(op) => op.methodName === "acceptVariants",
-		)!;
+		const accept = findOp("acceptVariants");
 		expect(accept.responseMediaTypes).toEqual([
 			"application/xml",
 			"application/json-seq",
 		]);
 
-		const sse = userService.operations.find(
-			(op) => op.methodName === "sseResponse",
-		)!;
+		const sse = findOp("sseResponse");
 		expect(sse.responseMediaTypes).toEqual(["text/event-stream"]);
 
-		const requestOption = userService.operations.find(
-			(op) => op.methodName === "requestWithBodyOption",
-		)!;
+		const requestOption = findOp("requestWithBodyOption");
 		expect(
 			requestOption.params.some((p) => p.in === "body" && p.name === "payload"),
 		).toBe(true);
 
-		const requestAssertion = userService.operations.find(
-			(op) => op.methodName === "requestWithBodyAssertion",
-		)!;
+		const requestAssertion = findOp("requestWithBodyAssertion");
 		expect(
 			requestAssertion.params.some(
 				(p) => p.in === "body" && p.name === "payload",
 			),
 		).toBe(true);
 
-		const noBody = userService.operations.find(
-			(op) => op.methodName === "requestWithoutBody",
-		)!;
+		const noBody = findOp("requestWithoutBody");
 		expect(noBody.params.some((p) => p.in === "body")).toBe(false);
 
 		expect(
@@ -765,17 +738,15 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			serviceSource,
 			"/users.service.ts",
 		);
-		const otherService = services.find(
-			(s) => s.serviceName === "OtherService",
-		)!;
-		const status = otherService.operations.find(
+		const otherService = services.find((s) => s.serviceName === "OtherService");
+		const status = otherService?.operations.find(
 			(op) => op.methodName === "getNoLeadingSlash",
-		)!;
-		expect(status.path).toBe("/status");
-		const root = otherService.operations.find(
+		);
+		expect(status?.path).toBe("/status");
+		const root = otherService?.operations.find(
 			(op) => op.methodName === "getRoot",
-		)!;
-		expect(root.path).toBe("/");
+		);
+		expect(root?.path).toBe("/");
 	});
 
 	it("should parse services from disk and handle errors", () => {
@@ -797,23 +768,23 @@ describe("Core Utils: OpenAPI Reverse", () => {
         `;
 		fs.writeFileSync(path.join(nestedDir, "nested.service.ts"), nestedSource);
 
-		const services = parseGeneratedServices(dir, testCast(fs));
+		const services = parseGeneratedServices(dir, fs);
 		expect(services.some((s) => s.serviceName === "NestedService")).toBe(true);
 
 		const fileServices = parseGeneratedServices(
 			path.join(dir, "users.service.ts"),
-			testCast(fs),
+			fs,
 		);
 		expect(fileServices.length).toBeGreaterThan(0);
 
 		const emptyDir = makeTempDir();
-		expect(() => parseGeneratedServices(emptyDir, testCast(fs))).toThrow(
+		expect(() => parseGeneratedServices(emptyDir, fs)).toThrow(
 			/No generated service files/,
 		);
 
 		const badFile = path.join(dir, "not-service.ts");
 		fs.writeFileSync(badFile, "export const x = 1;");
-		expect(() => parseGeneratedServices(badFile, testCast(fs))).toThrow(
+		expect(() => parseGeneratedServices(badFile, fs)).toThrow(
 			/Expected a generated service file/,
 		);
 
@@ -822,12 +793,12 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			path.join(noOpDir, "empty.service.ts"),
 			`export class EmptyService { private helper() { return null; } }`,
 		);
-		expect(() => parseGeneratedServices(noOpDir, testCast(fs))).toThrow(
+		expect(() => parseGeneratedServices(noOpDir, fs)).toThrow(
 			/No operations could be reconstructed/,
 		);
 
 		// Add test for empty metadata file parsing
-		expect(parseGeneratedMetadata(dir, testCast(fs)).servers).toBeUndefined();
+		expect(parseGeneratedMetadata(dir, fs).servers).toBeUndefined();
 	});
 
 	it("should build a minimal OpenAPI spec from services", () => {
@@ -846,39 +817,37 @@ describe("Core Utils: OpenAPI Reverse", () => {
 		expect(spec.info.version).toBe("1.2.3");
 		expect(spec.tags?.map((tag) => tag.name)).toEqual(["users", "admin"]);
 
-		const getUser = testCast(spec.paths)["/users/{id}"].post;
+		const getUser = spec.paths?.["/users/{id}"]?.post;
 
-		const params = getUser.parameters as TestValue;
+		const params = getUser?.parameters ?? [];
 
-		expect(getUser.operationId).toBe("getUserById");
+		expect(getUser?.operationId).toBe("getUserById");
 
-		expect(getUser.summary).toBe("Get a user by id.");
+		expect(getUser?.summary).toBe("Get a user by id.");
 
-		expect(getUser.description).toBe("Returns a user payload.");
+		expect(getUser?.description).toBe("Returns a user payload.");
 
-		expect(getUser.deprecated).toBe(true);
+		expect(getUser?.deprecated).toBe(true);
 
-		expect(getUser.externalDocs).toEqual({
+		expect(getUser?.externalDocs).toEqual({
 			url: "https://example.com/users",
 			description: "User docs",
 		});
 
-		expect(params.find((p: TestValue) => p.name === "id")?.required).toBe(true);
+		expect(params.find?.((p) => p.name === "id")?.required).toBe(true);
 
-		expect(params.find((p: TestValue) => p.name === "id")?.style).toBe(
-			"simple",
-		);
+		expect(params.find?.((p) => p.name === "id")?.style).toBe("simple");
 
-		expect(getUser.security).toEqual([
+		expect(getUser?.security).toEqual([
 			{ api_key: [] },
 			{ petstore_auth: ["read:pets"] },
 		]);
 
-		expect(testCast(getUser)["x-rate-limit"]).toBe(120);
+		expect(getUser?.["x-rate-limit"]).toBe(120);
 
-		expect(testCast(getUser)["x-feature-flag"]).toBe("alpha");
+		expect(getUser?.["x-feature-flag"]).toBe("alpha");
 
-		const querystringParam = params.find((p: TestValue) => p.name === "q");
+		const querystringParam = params.find?.((p) => p.name === "q");
 
 		expect(querystringParam?.in).toBe("querystring");
 
@@ -893,7 +862,7 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			tags: { style: "pipeDelimited", explode: false },
 		});
 
-		const searchParam = params.find((p: TestValue) => p.name === "search");
+		const searchParam = params.find?.((p) => p.name === "search");
 
 		expect(searchParam?.style).toBe("form");
 
@@ -903,9 +872,11 @@ describe("Core Utils: OpenAPI Reverse", () => {
 
 		expect(searchParam?.allowEmptyValue).toBe(true);
 
-		expect(searchParam?.schema?.contentMediaType).toBe("application/json");
+		expect(createTestSchema(searchParam?.schema).contentMediaType).toBe(
+			"application/json",
+		);
 
-		const filterParam = params.find((p: TestValue) => p.name === "filter");
+		const filterParam = params.find?.((p) => p.name === "filter");
 
 		expect(filterParam?.style).toBe("simple");
 
@@ -913,58 +884,66 @@ describe("Core Utils: OpenAPI Reverse", () => {
 
 		expect(filterParam?.allowReserved).toBe(true);
 
-		expect(filterParam?.schema?.contentEncoding).toBe("base64");
+		expect(createTestSchema(filterParam?.schema).contentEncoding).toBe(
+			"base64",
+		);
 
-		expect(params.find((p: TestValue) => p.name === "id")?.example).toBe(123);
+		expect(params.find?.((p) => p.name === "id")?.example).toBe(123);
 
 		const requestExample =
-			getUser.requestBody?.content?.["application/json"]?.example;
+			getUser?.requestBody?.content?.["application/json"]?.example;
 
 		expect(requestExample).toEqual({ name: "Ada" });
 
 		const responseExample =
-			getUser.responses["200"]?.content?.["application/json"]?.example;
+			getUser?.responses?.["200"]?.content?.["application/json"]?.example;
 
 		expect(responseExample).toEqual({ id: 123, name: "Ada" });
 
-		const uploadBody = testCast(spec.paths)["/upload"].post.requestBody;
-
-		expect(uploadBody.content["multipart/form-data"].schema.type).toBe(
-			"object",
-		);
+		const uploadBody = spec.paths?.["/upload"]?.post?.requestBody;
 
 		expect(
-			uploadBody.content["multipart/form-data"].schema.properties,
+			createTestSchema(uploadBody?.content?.["multipart/form-data"]?.schema)
+				.type,
+		).toBe("object");
+
+		expect(
+			createTestSchema(uploadBody?.content?.["multipart/form-data"]?.schema)
+				.properties,
 		).toHaveProperty("file");
 
-		const uploadAdvancedBody = testCast(spec.paths)["/upload-advanced"].post
-			.requestBody;
+		const uploadAdvancedBody =
+			spec.paths?.["/upload-advanced"]?.post?.requestBody;
 
-		expect(uploadAdvancedBody.content["multipart/form-data"].encoding).toEqual({
+		expect(
+			uploadAdvancedBody?.content?.["multipart/form-data"]?.encoding,
+		).toEqual({
 			meta: { contentType: "application/json" },
 			file: { contentType: "image/png" },
 		});
 
-		const uploadMixedBody = testCast(spec.paths)["/mixed"].post.requestBody;
+		const uploadMixedBody = spec.paths?.["/mixed"]?.post?.requestBody;
 
-		expect(uploadMixedBody.content["multipart/mixed"].itemEncoding).toEqual({
-			contentType: "image/png",
-		});
+		expect(uploadMixedBody?.content?.["multipart/mixed"]?.itemEncoding).toEqual(
+			{
+				contentType: "image/png",
+			},
+		);
 
-		const encodeMapBody = testCast(spec.paths)["/encode-map"].post.requestBody;
+		const encodeMapBody = spec.paths?.["/encode-map"]?.post?.requestBody;
 
 		expect(
-			encodeMapBody.content["application/x-www-form-urlencoded"].encoding,
+			encodeMapBody?.content?.["application/x-www-form-urlencoded"]?.encoding,
 		).toEqual({
 			foo: { style: "form", explode: true },
 			bar: { allowReserved: true },
 		});
 
-		const textBody = testCast(spec.paths)["/text"].post.requestBody;
+		const textBody = spec.paths?.["/text"]?.post?.requestBody;
 
-		expect(textBody.required).toBe(true);
+		expect(textBody?.required).toBe(true);
 
-		expect(textBody.content["text/plain"]).toBeDefined();
+		expect(textBody?.content?.["text/plain"]).toBeDefined();
 
 		const noContentSpec = buildOpenApiSpecFromServices([
 			{
@@ -983,11 +962,10 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			},
 		]);
 
-		const pingResponse = testCast(noContentSpec.paths)["/ping"].get.responses[
-			"200"
-		];
+		const pingResponse =
+			noContentSpec.paths?.["/ping"]?.get?.responses?.["200"];
 
-		expect(pingResponse.content).toBeUndefined();
+		expect(pingResponse?.content).toBeUndefined();
 	});
 
 	it("should apply schema refs when type hints and schemas are available", () => {
@@ -1000,30 +978,35 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			CreateUser: { type: "object" },
 			ExactMatch: { type: "object" },
 		};
-		const spec = buildOpenApiSpecFromServices(services, {}, testCast(schemas));
+		const spec = buildOpenApiSpecFromServices(services, {}, schemas);
 
-		const createUser = testCast(spec.paths)["/users"].post;
+		const createUser = spec.paths?.["/users"]?.post;
 
-		expect(createUser.requestBody.content["application/json"].schema).toEqual({
+		expect(
+			createUser?.requestBody?.content?.["application/json"]?.schema,
+		).toEqual({
 			$ref: "#/components/schemas/CreateUserRequest",
 		});
 
-		const exactUser = testCast(spec.paths)["/users/exact"].post;
+		const exactUser = spec.paths?.["/users/exact"]?.post;
 
-		expect(exactUser.requestBody.content["application/json"].schema).toEqual({
+		expect(
+			exactUser?.requestBody?.content?.["application/json"]?.schema,
+		).toEqual({
 			$ref: "#/components/schemas/ExactMatch",
 		});
 
 		expect(
-			createUser.responses["200"].content["application/json"].schema,
+			createUser?.responses?.["200"]?.content?.["application/json"]?.schema,
 		).toEqual({
 			$ref: "#/components/schemas/User",
 		});
 
-		const streamUsers = testCast(spec.paths)["/users/stream"].get;
+		const streamUsers = spec.paths?.["/users/stream"]?.get;
 
 		expect(
-			streamUsers.responses["200"].content["application/jsonl"].itemSchema,
+			streamUsers?.responses?.["200"]?.content?.["application/jsonl"]
+				?.itemSchema,
 		).toEqual({
 			$ref: "#/components/schemas/User",
 		});
@@ -1045,9 +1028,14 @@ describe("Core Utils: OpenAPI Reverse", () => {
 							responseMediaTypes: ["application/json"],
 							responseTypeHint: "MissingSchema",
 							responseIsArray: true,
-							responseExamples: testCast([
-								{ description: "Example", dataValue: "test" },
-							]),
+							responseExamples: {
+								"200": {
+									"application/json": {
+										description: "Example",
+										dataValue: "test",
+									},
+								},
+							},
 						},
 						{
 							methodName: "doSeq",
@@ -1081,23 +1069,29 @@ describe("Core Utils: OpenAPI Reverse", () => {
 				},
 			],
 			{},
-			testCast({ User: { type: "object" } }),
+			{ User: { type: "object" } },
 		);
 
 		expect(
-			testCast(spec.paths)["/do"].get.responses["200"].content[
-				"application/json"
-			].schema.type,
+			createTestSchema(
+				spec.paths?.["/do"]?.get?.responses?.["200"]?.content?.[
+					"application/json"
+				]?.schema,
+			).type,
 		).toBe("array");
 		expect(
-			testCast(spec.paths)["/seq"].get.responses["200"].content[
-				"application/jsonl"
-			].itemSchema.$ref,
+			createTestSchema(
+				spec.paths?.["/seq"]?.get?.responses?.["200"]?.content?.[
+					"application/jsonl"
+				]?.itemSchema,
+			).$ref,
 		).toBe("#/components/schemas/User");
 		expect(
-			testCast(spec.paths)["/hints"].get.responses["200"].content[
-				"application/jsonl"
-			].itemSchema.$ref,
+			createTestSchema(
+				spec.paths?.["/hints"]?.get?.responses?.["200"]?.content?.[
+					"application/jsonl"
+				]?.itemSchema,
+			).$ref,
 		).toBe("#/components/schemas/User");
 	});
 
@@ -1271,13 +1265,13 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			"export class DummyService { public ping() { const url = `\\${basePath}/ping`; return this.http.get<string | number | boolean | object | undefined | null>(url, requestOptions as string | number | boolean | object | undefined | null); } }",
 		);
 
-		const metadata = parseGeneratedMetadata(dir, testCast(fs));
+		const metadata = parseGeneratedMetadata(dir, fs);
 		expect(metadata.info?.title).toBe("Meta API");
-		expect(metadata.tags?.[0].name).toBe("meta");
+		expect(metadata.tags?.[0]?.name).toBe("meta");
 		expect(metadata.externalDocs?.url).toBe("https://example.com/docs");
 		expect(metadata.securitySchemes?.api_key?.type).toBe("apiKey");
 		expect(metadata.securityRequirements?.[0]?.api_key).toEqual([]);
-		expect(metadata.servers?.[0].url).toBe("https://api.example.com");
+		expect(metadata.servers?.[0]?.url).toBe("https://api.example.com");
 		expect(metadata.documentMeta?.openapi).toBe("3.1.2");
 		expect(metadata.documentMeta?.$self).toBe("https://example.com/openapi");
 		expect(metadata.documentMeta?.jsonSchemaDialect).toBe(
@@ -1320,31 +1314,33 @@ describe("Core Utils: OpenAPI Reverse", () => {
 		expect(merged.components?.securitySchemes).toBeDefined();
 
 		expect(
-			testCast(merged.paths)["/ping"].get.responses["200"].headers[
+			merged.paths?.["/ping"]?.get?.responses?.["200"]?.headers?.[
 				"X-Rate-Limit"
 			],
 		).toBeDefined();
 
 		expect(
-			testCast(merged.paths)["/ping"].get.responses["200"].headers[
+			merged.paths?.["/ping"]?.get?.responses?.["200"]?.headers?.[
 				"X-Rate-Limit"
-			].description,
+			]?.description,
 		).toBe("Rate limit");
 
 		expect(
-			testCast(merged.paths)["/ping"].get.responses["200"].headers[
-				"X-Rate-Limit"
-			].schema.type,
+			createTestSchema(
+				merged.paths?.["/ping"]?.get?.responses?.["200"]?.headers?.[
+					"X-Rate-Limit"
+				]?.schema,
+			).type,
 		).toBe("integer");
 		expect(
-			testCast(merged.paths)["/ping"].get.responses["200"].headers["X-Xml"]
-				.content?.["application/xml"],
+			merged.paths?.["/ping"]?.get?.responses?.["200"]?.headers?.["X-Xml"]
+				?.content?.["application/xml"],
 		).toBeDefined();
 		expect(
 			(
 				(
 					(
-						testCast<TestValue>(merged.paths?.["/ping"].get?.responses)[
+						merged.paths?.["/ping"]?.get?.responses[
 							"200"
 						] as import("../../../src/core/types/openapi.js").SwaggerResponse
 					).headers?.[
@@ -1357,7 +1353,7 @@ describe("Core Utils: OpenAPI Reverse", () => {
 		expect(
 			(
 				(
-					testCast<TestValue>(merged.paths?.["/ping"].get?.responses)[
+					merged.paths?.["/ping"]?.get?.responses[
 						"200"
 					] as import("../../../src/core/types/openapi.js").SwaggerResponse
 				).headers?.[
@@ -1368,7 +1364,7 @@ describe("Core Utils: OpenAPI Reverse", () => {
 		expect(
 			(
 				(
-					testCast<TestValue>(merged.paths?.["/ping"].get?.responses)[
+					merged.paths?.["/ping"]?.get?.responses[
 						"200"
 					] as import("../../../src/core/types/openapi.js").SwaggerResponse
 				).links?.next as import("../../../src/core/types/openapi.js").LinkObject
@@ -1407,7 +1403,7 @@ describe("Core Utils: OpenAPI Reverse", () => {
 		expect(merged.components?.parameters?.LimitParam?.name).toBe("limit");
 
 		expect(
-			testCast(merged.components)?.requestBodies?.CreateUser?.content?.[
+			merged.components?.requestBodies?.CreateUser?.content?.[
 				"application/json"
 			],
 		).toBeDefined();
@@ -1415,30 +1411,29 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			"Not found",
 		);
 
-		expect(testCast(merged.paths)["/meta"]?.summary).toBe("Meta path");
+		expect(merged.paths?.["/meta"]?.summary).toBe("Meta path");
 
-		expect(testCast(merged.paths)["/meta"]?.parameters?.[0]?.name).toBe(
-			"trace",
-		);
+		expect(merged.paths?.["/meta"]?.parameters?.[0]?.name).toBe("trace");
 
-		expect(testCast(merged.paths)["/meta"]?.servers?.[0]?.url).toBe(
+		expect(merged.paths?.["/meta"]?.servers?.[0]?.url).toBe(
 			"https://meta.example.com",
 		);
-		expect(testCast(merged.paths)["/meta"]?.["x-meta"]).toBe(true);
+		expect(merged.paths?.["/meta"]?.["x-meta"]).toBe(true);
 
-		const callbacks = testCast(merged.components?.callbacks);
+		const onPing = merged.components?.callbacks?.onPing as
+			| Record<string, PathItem>
+			| undefined;
 		expect(
-			callbacks?.onPing?.["{$request.body#/callbackUrl}"]?.post?.requestBody
-				?.content?.["application/json"],
-		).toBeDefined();
-
-		expect(
-			callbacks?.onPing?.["{$request.body#/callbackUrl}"]?.post?.responses?.[
-				"204"
+			onPing?.["{$request.body#/callbackUrl}"]?.post?.requestBody?.content?.[
+				"application/json"
 			],
 		).toBeDefined();
 
-		const webhooks = testCast(merged.components?.webhooks);
+		expect(
+			onPing?.["{$request.body#/callbackUrl}"]?.post?.responses?.["204"],
+		).toBeDefined();
+
+		const webhooks = merged.components?.webhooks;
 
 		expect(
 			webhooks?.pinged?.post?.requestBody?.content?.["application/json"],
@@ -1447,8 +1442,7 @@ describe("Core Utils: OpenAPI Reverse", () => {
 		expect(webhooks?.pinged?.post?.responses?.["201"]).toBeDefined();
 
 		expect(
-			testCast<TestValue>(merged.webhooks?.pinged?.post?.requestBody)
-				?.content?.["application/json"],
+			merged.webhooks?.pinged?.post?.requestBody?.content?.["application/json"],
 		).toBeDefined();
 	});
 
@@ -1462,7 +1456,7 @@ describe("Core Utils: OpenAPI Reverse", () => {
 						methodName: "copyThing",
 						httpMethod: "COPY",
 						path: "/things/{id}",
-						params: [testCast({ name: "id", in: "path", required: true })],
+						params: [{ name: "id", in: "path", required: true }],
 						requestMediaTypes: [],
 						responseMediaTypes: ["application/json"],
 					},
@@ -1470,11 +1464,11 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			},
 		]);
 
-		const pathItem = testCast(spec.paths)["/things/{id}"];
+		const pathItem = spec.paths?.["/things/{id}"];
 
-		expect(pathItem.additionalOperations?.COPY).toBeDefined();
+		expect(pathItem?.additionalOperations?.COPY).toBeDefined();
 
-		expect(pathItem.copy).toBeUndefined();
+		expect(pathItem?.copy).toBeUndefined();
 	});
 
 	it("should apply reverse metadata additionalOperations cleanly", () => {
@@ -1496,7 +1490,7 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			"export class DummyService { public copyThing() {} }",
 		);
 
-		const metadata = parseGeneratedMetadata(dir, testCast(fs));
+		const metadata = parseGeneratedMetadata(dir, fs);
 
 		const spec = buildOpenApiSpecFromServices([
 			{
@@ -1519,13 +1513,15 @@ describe("Core Utils: OpenAPI Reverse", () => {
 		const merged = applyReverseMetadata(spec, metadata);
 
 		expect(
-			testCast(merged.paths)["/things/{id}"].additionalOperations.COPY
-				.responses["200"].headers["X-Rate-Limit"],
+			merged.paths?.["/things/{id}"]?.additionalOperations?.COPY?.responses?.[
+				"200"
+			]?.headers?.["X-Rate-Limit"],
 		).toBeDefined();
 
 		expect(
-			testCast(merged.paths)["/things/{id}"].additionalOperations.COPY
-				.responses["200"].links.next,
+			merged.paths?.["/things/{id}"]?.additionalOperations?.COPY?.responses?.[
+				"200"
+			]?.links?.next,
 		).toBeDefined();
 	});
 
@@ -1548,7 +1544,7 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			"export class DummyService { public copyThing() {} }",
 		);
 
-		const metadata = parseGeneratedMetadata(dir, testCast(fs));
+		const metadata = parseGeneratedMetadata(dir, fs);
 
 		const spec = buildOpenApiSpecFromServices([
 			{
@@ -1570,8 +1566,9 @@ describe("Core Utils: OpenAPI Reverse", () => {
 
 		const merged = applyReverseMetadata(spec, metadata);
 		expect(
-			testCast(merged.paths)["/things/{id}"].additionalOperations.COPY
-				.responses["200"].headers,
+			merged.paths?.["/things/{id}"]?.additionalOperations?.COPY?.responses?.[
+				"200"
+			]?.headers,
 		).toBeUndefined();
 	});
 
@@ -1707,5 +1704,310 @@ describe("Core Utils: OpenAPI Reverse", () => {
 		expect(rules).toContain("no-signal-mutate");
 		expect(rules).toContain("no-any-type");
 		expect(rules).toContain("no-testing-ngmodules");
+	});
+
+	it("should cover remaining reverse emitter, metadata, parameter, response, webhook/callback, and Swagger 2.0 downgrade branches", async () => {
+		const {
+			extractJsonStructure,
+			splitTopLevelArgs,
+			extractOperationParamsAndBody,
+			assembleOperationParametersAndRequestBody,
+		} = await import("@src/openapi/emitters/assemble_operation_params.js");
+		const { downgradeOpenApiToSwagger2 } = await import(
+			"@src/openapi/emitters/downgrade_openapi.js"
+		);
+		const { findOperationById, applyWebhooksAndCallbacks } = await import(
+			"@src/openapi/emitters/assemble_webhooks_callbacks.js"
+		);
+
+		expect(extractJsonStructure("no json here")).toBeNull();
+		expect(extractJsonStructure("{ unclosed")).toBeNull();
+		expect(splitTopLevelArgs("a, ")).toEqual(["a"]);
+
+		const extracted = extractOperationParamsAndBody(
+			`
+			const url = \`\${basePath}/items/\${ParameterSerializer.serializePathParam('id', id, 'simple', false, false)}\`;
+			const q = ParameterSerializer.serializeQueryParam({"contentType":"application/json"}, qVal);
+			const qs = ParameterSerializer.serializeRawQuerystring('rawQs', qsVal, undefined, undefined);
+			return this.http.post(url, payload, {});
+			`,
+			"id: string, qVal: string, qsVal: string, extra1: string, payload: Item",
+			"http",
+		);
+		expect(extracted.urlPath).toBe("/items/{id}");
+		expect(
+			extracted.params.find((p) => p.name === "undefined")?.contentType,
+		).toBe("application/json");
+
+		const extractedFallbackBody = extractOperationParamsAndBody(
+			"return this.http.post(url, payload, {});",
+			"firstArg: string, secondArg: number",
+			"http",
+		);
+		expect(
+			extractedFallbackBody.params.some(
+				(p) => p.in === "body" && p.name === "firstArg",
+			),
+		).toBe(true);
+
+		const specOpTarget: Parameters<
+			typeof assembleOperationParametersAndRequestBody
+		>[0] = { responses: {} };
+		assembleOperationParametersAndRequestBody(
+			specOpTarget,
+			{
+				methodName: "m",
+				httpMethod: "POST",
+				path: "/m",
+				params: [
+					{
+						name: "qsPlain",
+						in: "querystring",
+						contentType: "text/plain",
+					},
+					{
+						name: "formFile",
+						in: "formData",
+					},
+				],
+				requestMediaTypes: [],
+				responseMediaTypes: [],
+			},
+			{},
+		);
+		expect(specOpTarget.parameters).toBeDefined();
+
+		const richServiceSrc = `
+export class RichReverseService {
+	/**
+	 * Summary line
+	 * Description line 1
+	 * Description line 2
+	 * @see https://example.com
+	 * @server {"url":"https://single.example.com"}
+	 * @server [{"url":"https://array.example.com"}]
+	 * @server https://described.example.com Server desc
+	 * @responseSummary 202 Summary first
+	 * @response 202 Added description
+	 * @responseExample 200 {"ok":true}
+	 * @response 200 Updated desc
+	 * @response 200 application/xml Second hint
+	 * @response 200 text/plain
+	 * @response 204
+	 * @param missingParam ignored
+	 * @requestExample {"req":true}
+	 * @querystring not-json
+	 * @querystring {"name":"missingQs"}
+	 * @querystring {"name":"qsEmpty"}
+	 * @unknownTag ignored
+	 */
+	postRich(qsEmpty: string) {
+		const url = \`\${basePath}/rich\`;
+		const qs = ParameterSerializer.serializeRawQuerystring('qsEmpty', qsEmpty);
+		// EXTENSIONS_CONTEXT_TOKEN no-json
+		// SECURITY_CONTEXT_TOKEN [{bad json}]
+		// const operationServers = [{bad json}]
+		headers.set('Content-Type', 'application/json');
+		headers.set('Content-Type', 'application/json');
+		headers.set('Content-Type', dynamicMedia);
+		return this.http.request('POST', url, { body: {} });
+	}
+
+	getNoJsonTokens() {
+		const url = \`\${basePath}/no-json-tokens\`;
+		// EXTENSIONS_CONTEXT_TOKEN
+		// SECURITY_CONTEXT_TOKEN
+		// const operationServers =
+		headers.set('Content-Type', dynamicMedia);
+		return this.http.get(url);
+	}
+
+	/**
+	 * @responseSummary 201 Created summary
+	 * @response 201
+	 */
+	postAlreadySetMedia() {
+		const url = \`\${basePath}/xml-req\`;
+		const xml = XmlBuilder.serialize({});
+		return this.http.request('POST', url, { body: xml });
+	}
+}
+`;
+		const parsedRich = parseGeneratedServiceSource(
+			richServiceSrc,
+			"/rich.service.ts",
+		);
+		const builtRich = buildOpenApiSpecFromServices(parsedRich);
+		expect(builtRich.paths?.["/rich"]).toBeDefined();
+
+		const dir = makeTempDir();
+		fs.writeFileSync(
+			path.join(dir, "info.ts"),
+			"export const API_INFO = {invalid_json};\n",
+		);
+		const badMeta = parseGeneratedMetadata(dir, fs);
+		expect(badMeta.info).toBeUndefined();
+
+		expect(
+			findOperationById(
+				{ openapi: "3.2.0", info: { title: "T", version: "1" } },
+				"x",
+			),
+		).toBeUndefined();
+		const specWithAddOp: Parameters<typeof findOperationById>[0] = {
+			openapi: "3.2.0",
+			info: { title: "T", version: "1" },
+			paths: {
+				"/p": {
+					get: {
+						operationId: "getOp",
+						responses: { "200": { description: "ok" } },
+					},
+					additionalOperations: {
+						LOCK: {
+							operationId: "lockOp",
+							responses: { "200": { description: "ok" } },
+						},
+					},
+				},
+				"/no-add": {
+					get: {
+						operationId: "getNoAdd",
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			},
+		};
+		expect(findOperationById(specWithAddOp, "otherOp")).toBeUndefined();
+
+		const specNoPaths: Parameters<typeof applyWebhooksAndCallbacks>[0] = {
+			openapi: "3.2.0",
+			info: { title: "T", version: "1" },
+			components: {},
+		};
+		applyWebhooksAndCallbacks(specNoPaths, {
+			paths: {
+				"/added": { get: { responses: { "200": { description: "ok" } } } },
+			},
+		});
+		expect(specNoPaths.paths?.["/added"]).toBeDefined();
+
+		const targetSpec: Parameters<typeof applyWebhooksAndCallbacks>[0] = {
+			openapi: "3.2.0",
+			info: { title: "T", version: "1" },
+			components: {},
+			paths: {
+				"/p": {
+					get: {
+						operationId: "op1",
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			},
+		};
+		applyWebhooksAndCallbacks(targetSpec, {
+			responseHeaderObjects: {
+				op1: { "404": { "X-Missing-Status": { schema: { type: "string" } } } },
+			},
+			links: {
+				op1: { "404": { next: { operationId: "op1" } } },
+			},
+			callbacks: [
+				{ name: "cb1", method: "POST", expression: "{$url}", pathItem: {} },
+				{ name: "cb1", method: "PUT" },
+			],
+			paths: {
+				"/p": { post: { responses: { "200": { description: "ok" } } } },
+			},
+		});
+		expect(targetSpec.paths?.["/p"]?.post).toBeDefined();
+
+		const downgraded1 = downgradeOpenApiToSwagger2({
+			swagger: "2.0",
+			info: { title: "S", version: "1" },
+			servers: [{ url: "/v1" }],
+			components: {
+				schemas: { User: { type: "object" } },
+				parameters: { P: { name: "p", in: "query" } },
+				responses: { R: { description: "r" } },
+				securitySchemes: { S: { type: "basic" } },
+			},
+			paths: {
+				"/upload": {
+					post: {
+						consumes: ["multipart/form-data"],
+						produces: ["application/json"],
+						requestBody: {
+							content: {
+								"multipart/form-data": {
+									schema: {
+										type: "object",
+										required: ["avatar"],
+										properties: {
+											avatar: { type: "string", format: "binary" },
+											b64: { type: "string", format: "base64" },
+											note: {},
+										},
+									},
+								},
+							},
+						},
+						responses: {
+							"200": {
+								description: "ok",
+								content: {
+									"application/json": { schema: { type: "string" } },
+								},
+							},
+							"204": {
+								description: "empty content",
+								content: {},
+							},
+						},
+					},
+					put: {
+						requestBody: {
+							content: {
+								"application/x-www-form-urlencoded": {
+									schema: { type: "object" },
+								},
+							},
+						},
+						responses: {},
+					},
+					delete: {
+						requestBody: {
+							content: {},
+						},
+						responses: {},
+					},
+				},
+			},
+		});
+		expect(downgraded1.basePath).toBe("/v1");
+		expect(downgraded1.definitions?.User).toBeDefined();
+
+		const downgradedRootUrl = downgradeOpenApiToSwagger2({
+			swagger: "2.0",
+			info: { title: "S", version: "1" },
+			servers: [{ url: "https://api.example.com/" }],
+			paths: {
+				"/simple": {
+					get: {
+						responses: {
+							"204": { description: "no content" },
+						},
+					},
+				},
+			},
+		});
+		expect(downgradedRootUrl.basePath).toBe("/");
+
+		const downgradedEmptyComp = downgradeOpenApiToSwagger2({
+			swagger: "2.0",
+			info: { title: "S", version: "1" },
+			components: {},
+		});
+		expect(downgradedEmptyComp.components).toBeUndefined();
 	});
 });

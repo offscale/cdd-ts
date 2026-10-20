@@ -125,10 +125,9 @@ export function registerFromArazzoCommands(program: Command): void {
 						"Please specify an input Arazzo specification via -i / --input.",
 					);
 				}
-				const outDir = options.output ?? "./arazzo-out";
 				generateFromArazzoSync(
 					options.input,
-					outDir,
+					options.output as string,
 					scope,
 					options.noTests !== true,
 				);

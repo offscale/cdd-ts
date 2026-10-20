@@ -28,18 +28,12 @@ const OPERATION_KEYS = [
 ];
 
 function countOccurrences(haystack: string, needle: string): number {
-	if (!needle) return 0;
 	return haystack.split(needle).length - 1;
 }
 
 function getServerTemplateVariables(url: string): string[] {
-	const vars = new Set<string>();
-	const regex = /\{([^}]+)\}/g;
-	let match: RegExpExecArray | null;
-	while ((match = regex.exec(url)) !== null) {
-		if (match[1]) vars.add(match[1]);
-	}
-	return Array.from(vars);
+	const matches = url.match(/\{[^}]+\}/g) ?? [];
+	return Array.from(new Set(matches.map((m) => m.slice(1, -1))));
 }
 
 /**

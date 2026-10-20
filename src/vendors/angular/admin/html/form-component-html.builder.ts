@@ -70,7 +70,7 @@ export function generateFormComponentHtml(
 
 			// 2. Render the dynamic form groups for this discriminator
 
-			for (const option of poly.options || []) {
+			for (const option of poly.options) {
 				const typeName = option.discriminatorValue;
 
 				const ifContainer = _.create("div");

@@ -2,14 +2,18 @@ import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { AuthInterceptorGenerator } from "@src/vendors/angular/utils/auth-interceptor.generator.js";
 import { describe, expect, it } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestProject,
+	createTestSpec,
+} from "../shared/helpers.js";
 import { emptySpec, securitySpec } from "../shared/specs.js";
 
 describe("Emitter: AuthInterceptorGenerator", () => {
 	const runGenerator = (spec: object) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out" });
-		const parser = new SwaggerParser(testCast(spec), config);
+		const config: GeneratorConfig = createTestConfig({ output: "/out" });
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		const generator = new AuthInterceptorGenerator(parser, project);
 		const result = generator.generate("/out");
 		return { ...result, project };
@@ -72,10 +76,11 @@ describe("Emitter: AuthInterceptorGenerator", () => {
 				},
 			},
 		});
-		const body = project
-			.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
-			.getFunctionOrThrow("authInterceptor")
-			?.getBodyText()!;
+		const body =
+			project
+				.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
+				.getFunctionOrThrow("authInterceptor")
+				.getBodyText() ?? "";
 		expect(tokenNames).toEqual(["bearerToken"]);
 		expect(body).toContain("'BearerAuth':");
 		expect(body).toContain("'OAuth2Flow':");
@@ -95,10 +100,11 @@ describe("Emitter: AuthInterceptorGenerator", () => {
 				},
 			},
 		});
-		const body = project
-			.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
-			.getFunctionOrThrow("authInterceptor")
-			?.getBodyText()!;
+		const body =
+			project
+				.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
+				.getFunctionOrThrow("authInterceptor")
+				.getBodyText() ?? "";
 		expect(tokenNames).toEqual(["bearerToken"]);
 		expect(body).toContain("'OIDC':");
 	});
@@ -115,10 +121,11 @@ describe("Emitter: AuthInterceptorGenerator", () => {
 			},
 		});
 
-		const body = project
-			.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
-			.getFunctionOrThrow("authInterceptor")
-			?.getBodyText()!;
+		const body =
+			project
+				.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
+				.getFunctionOrThrow("authInterceptor")
+				.getBodyText() ?? "";
 
 		expect(tokenNames).toEqual(["bearerToken"]);
 
@@ -153,7 +160,7 @@ describe("Emitter: AuthInterceptorGenerator", () => {
 			file.getImportDeclaration("../utils/http-params-builder"),
 		).toBeDefined();
 
-		const body = file.getFunctionOrThrow("authInterceptor").getBodyText()!;
+		const body = file.getFunctionOrThrow("authInterceptor").getBodyText() ?? "";
 
 		expect(body).toContain("'CookieAuth': (req, scopes, deps) => {");
 		expect(body).toContain("if (!deps.cookieAuth) return null;");
@@ -175,10 +182,11 @@ describe("Emitter: AuthInterceptorGenerator", () => {
 			},
 		};
 		const { project, tokenNames } = runGenerator(specWithMtls);
-		const body = project
-			.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
-			.getFunctionOrThrow("authInterceptor")
-			?.getBodyText()!;
+		const body =
+			project
+				.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
+				.getFunctionOrThrow("authInterceptor")
+				.getBodyText() ?? "";
 
 		expect(tokenNames).toContain("httpsAgentConfig");
 		expect(body).toContain("HTTPS_AGENT_CONTEXT_TOKEN");
@@ -190,10 +198,11 @@ describe("Emitter: AuthInterceptorGenerator", () => {
 
 	it("should check context requirements before iterating", () => {
 		const { project } = runGenerator(securitySpec);
-		const body = project
-			.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
-			.getFunctionOrThrow("authInterceptor")
-			?.getBodyText()!;
+		const body =
+			project
+				.getSourceFileOrThrow("/out/auth/auth.interceptor.ts")
+				.getFunctionOrThrow("authInterceptor")
+				.getBodyText() ?? "";
 
 		// If requirements array is empty (default), skip auth
 		expect(body).toContain("if (requirements.length === 0)");
@@ -232,8 +241,8 @@ describe("Emitter: AuthInterceptorGenerator", () => {
 
 	it("should default auth prefix to Bearer for non-http schemes", () => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out" });
-		const parser = new SwaggerParser(testCast(emptySpec), config);
+		const config: GeneratorConfig = createTestConfig({ output: "/out" });
+		const parser = new SwaggerParser(createTestSpec(emptySpec), config);
 		const generator = new AuthInterceptorGenerator(parser, project);
 
 		const prefix = generator.getAuthPrefix({

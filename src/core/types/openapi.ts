@@ -29,8 +29,34 @@ export type OpenApiValue =
 	| JsonPrimitive
 	| OpenApiObject
 	| OpenApiArray
-	| object
 	| undefined;
+
+/**
+ * Recursive JSON value alias (`JsonPrimitive | OpenApiObject | OpenApiArray | undefined`).
+ */
+export type JsonValue = OpenApiValue;
+
+/**
+ * Type alias representing an untyped or dynamic payload in generated code.
+ */
+export type UnknownPayload =
+	| string
+	| number
+	| boolean
+	| object
+	| undefined
+	| null;
+
+/**
+ * Canonical TypeScript type string emitted by code generators for untyped JSON payloads.
+ */
+export const UNKNOWN_PAYLOAD_TYPE =
+	"string | number | boolean | object | undefined | null";
+
+/**
+ * Canonical TypeScript type string emitted by code generators for untyped JSON object maps.
+ */
+export const UNKNOWN_RECORD_TYPE = `Record<string, ${UNKNOWN_PAYLOAD_TYPE}>`;
 
 // ===================================================================================
 // OpenAPI / Swagger Specification Types
@@ -48,7 +74,7 @@ export interface LicenseObject {
 	identifier?: string;
 
 	/** Specification extension property (`x-*`). */
-	[key: `x-${string}`]: OpenApiValue;
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -63,7 +89,7 @@ export interface ContactObject {
 	email?: string;
 
 	/** Specification extension property (`x-*`). */
-	[key: `x-${string}`]: OpenApiValue;
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -86,7 +112,7 @@ export interface InfoObject {
 	version: string;
 
 	/** Specification extension property (`x-*`). */
-	[key: `x-${string}`]: OpenApiValue;
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -99,7 +125,7 @@ export interface ExternalDocumentationObject {
 	url: string;
 
 	/** Specification extension property (`x-*`). */
-	[key: `x-${string}`]: OpenApiValue;
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -132,8 +158,12 @@ export interface DynamicReferenceObject {
 
 /**
  * Union of standard and dynamic reference objects.
+ *
+ * @template T - Optional target object type whose fields may be accessed after resolution or in union positions.
  */
-export type ReferenceLike = ReferenceObject | DynamicReferenceObject;
+export type ReferenceLike<T = Record<string, never>> =
+	| (ReferenceObject & Partial<T>)
+	| (DynamicReferenceObject & Partial<T>);
 
 /**
  * Adds metadata to a single tag that is used by the Operation Object.
@@ -167,7 +197,7 @@ export interface ServerVariableObject {
 	description?: string;
 
 	/** Specification extension property (`x-*`). */
-	[key: `x-${string}`]: OpenApiValue;
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -199,7 +229,7 @@ export interface DiscriminatorObject {
 	defaultMapping?: string;
 
 	/** Specification extension property (`x-*`). */
-	[key: `x-${string}`]: OpenApiValue;
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -220,7 +250,7 @@ export interface XmlObject {
 	nodeType?: "element" | "attribute" | "text" | "cdata" | "none" | string;
 
 	/** Specification extension property (`x-*`). */
-	[key: `x-${string}`]: OpenApiValue;
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -241,7 +271,7 @@ export interface LinkObject {
 	server?: ServerObject;
 
 	/** Specification extension property (`x-*`). */
-	[key: `x-${string}`]: OpenApiValue;
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -275,7 +305,7 @@ export interface ExampleObject {
 	serializedValue?: string;
 
 	/** Specification extension property (`x-*`). */
-	[key: `x-${string}`]: OpenApiValue;
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -307,7 +337,7 @@ export interface HeaderObject {
 	/** Example of the header's potential value. */
 	example?: OpenApiValue;
 	/** Examples of the header's potential value. */
-	examples?: Record<string, ExampleObject | ReferenceLike>;
+	examples?: Record<string, ExampleObject | ReferenceLike<ExampleObject>>;
 
 	[key: string]: OpenApiValue;
 }
@@ -359,7 +389,7 @@ export interface Parameter {
 	/** Example of the parameter's potential value. */
 	example?: OpenApiValue;
 	/** Examples of the parameter's potential value. */
-	examples?: Record<string, ExampleObject | ReferenceLike>;
+	examples?: Record<string, ExampleObject | ReferenceLike<ExampleObject>>;
 
 	[key: string]: OpenApiValue;
 }
@@ -386,7 +416,7 @@ export interface EncodingProperty {
 	itemEncoding?: EncodingProperty;
 
 	/** Specification extension property (`x-*`). */
-	[key: `x-${string}`]: OpenApiValue;
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -418,7 +448,7 @@ export interface MediaTypeObject {
 	/** Example of the media type. */
 	example?: OpenApiValue;
 	/** Examples of the media type. */
-	examples?: Record<string, ExampleObject | ReferenceLike>;
+	examples?: Record<string, ExampleObject | ReferenceLike<ExampleObject>>;
 	/** A map between a property name and its encoding information. */
 	encoding?: Record<string, EncodingProperty>;
 	/** Positional encoding definitions for array payloads (OAS 3.2). */
@@ -440,9 +470,9 @@ export interface SwaggerResponse {
 	/** A map containing descriptions of potential response payloads. */
 	content?: Record<string, MediaTypeObject>;
 	/** A map of operations links that can be followed from the response. */
-	links?: Record<string, LinkObject | ReferenceLike>;
+	links?: Record<string, LinkObject | ReferenceLike<LinkObject>>;
 	/** Maps a header name to its definition. */
-	headers?: Record<string, HeaderObject | ReferenceLike>;
+	headers?: Record<string, HeaderObject | ReferenceLike<HeaderObject>>;
 
 	[key: string]: OpenApiValue;
 }
@@ -639,11 +669,11 @@ export interface SpecOperation {
 	/** Swagger 2.0 MIME types the operation can produce. */
 	produces?: string[];
 	/** A list of parameters that are applicable for this operation. */
-	parameters?: OpenApiValue[];
+	parameters?: (Parameter | ReferenceLike<Parameter>)[];
 	/** The request body applicable for this operation. */
-	requestBody?: OpenApiValue;
+	requestBody?: RequestBody | ReferenceLike<RequestBody>;
 	/** The list of possible responses as they are returned from executing this operation. */
-	responses: Record<string, OpenApiValue>;
+	responses: Record<string, SwaggerResponse | ReferenceLike<SwaggerResponse>>;
 	/** Swagger 2.0 transfer protocols for the operation. */
 	schemes?: string[];
 	/** Declares this operation to be deprecated. */
@@ -653,7 +683,7 @@ export interface SpecOperation {
 	/** An alternative server array to service this operation. */
 	servers?: ServerObject[];
 	/** A map of possible out-of band callbacks related to the parent operation. */
-	callbacks?: Record<string, PathItem | ReferenceLike>;
+	callbacks?: Record<string, PathItem | ReferenceLike<PathItem>>;
 
 	[key: string]: OpenApiValue;
 }
@@ -689,7 +719,7 @@ export interface PathItem {
 	/** Custom HTTP method operations on this path (OAS 3.2). */
 	additionalOperations?: Record<string, SpecOperation>;
 	/** A list of parameters that are applicable for all the operations described under this path. */
-	parameters?: OpenApiValue[];
+	parameters?: (Parameter | ReferenceLike<Parameter>)[];
 	/** An alternative server array to service all operations in this path. */
 	servers?: ServerObject[];
 
@@ -703,27 +733,30 @@ export interface ComponentsObject {
 	/** Reusable Schema Objects. */
 	schemas?: Record<string, SwaggerDefinition | boolean>;
 	/** Reusable Response Objects. */
-	responses?: Record<string, SwaggerResponse | ReferenceLike>;
+	responses?: Record<string, SwaggerResponse | ReferenceLike<SwaggerResponse>>;
 	/** Reusable Security Scheme Objects. */
-	securitySchemes?: Record<string, SecurityScheme | ReferenceLike>;
+	securitySchemes?: Record<
+		string,
+		SecurityScheme | ReferenceLike<SecurityScheme>
+	>;
 	/** Reusable Path Item Objects (OAS 3.1+). */
 	pathItems?: Record<string, PathItem>;
 	/** Reusable Callback Objects. */
-	callbacks?: Record<string, PathItem | ReferenceLike>;
+	callbacks?: Record<string, PathItem | ReferenceLike<PathItem>>;
 	/** Reusable Link Objects. */
-	links?: Record<string, LinkObject | ReferenceLike>;
+	links?: Record<string, LinkObject | ReferenceLike<LinkObject>>;
 	/** Reusable Header Objects. */
-	headers?: Record<string, HeaderObject | ReferenceLike>;
+	headers?: Record<string, HeaderObject | ReferenceLike<HeaderObject>>;
 	/** Reusable Parameter Objects. */
-	parameters?: Record<string, Parameter | ReferenceLike>;
+	parameters?: Record<string, Parameter | ReferenceLike<Parameter>>;
 	/** Reusable Request Body Objects. */
-	requestBodies?: Record<string, RequestBody | ReferenceLike>;
+	requestBodies?: Record<string, RequestBody | ReferenceLike<RequestBody>>;
 	/** Reusable Example Objects. */
-	examples?: Record<string, ExampleObject | ReferenceLike>;
+	examples?: Record<string, ExampleObject | ReferenceLike<ExampleObject>>;
 	/** Reusable Media Type Objects (OAS 3.2). */
-	mediaTypes?: Record<string, MediaTypeObject | ReferenceLike>;
+	mediaTypes?: Record<string, MediaTypeObject | ReferenceLike<MediaTypeObject>>;
 	/** Reusable Webhook Path Item Objects. */
-	webhooks?: Record<string, PathItem | ReferenceLike>;
+	webhooks?: Record<string, PathItem | ReferenceLike<PathItem>>;
 
 	/** Additional vendor extension properties. */
 	[key: string]: OpenApiValue;

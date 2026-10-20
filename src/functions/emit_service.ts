@@ -4,11 +4,19 @@
  * @module functions/emit_service
  */
 import * as path from "node:path";
-import type { Project, SourceFile } from "ts-morph";
-import { SERVICE_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
-import type { GeneratorConfig, PathInfo } from "../core/types/index.js";
+import {
+	type ClassDeclaration,
+	type Project,
+	Scope,
+	type SourceFile,
+} from "ts-morph";
+import type {
+	GeneratorConfig,
+	PathInfo,
+	SwaggerDefinition,
+} from "../core/types/index.js";
 import type { SwaggerParser } from "../openapi/parse.js";
-import { camelCase } from "./utils.js";
+import { camelCase, getTypeScriptType, isDataTypeInterface } from "./utils.js";
 
 /**
  * Converts a string into a valid camelCase TypeScript identifier.
@@ -35,9 +43,7 @@ export abstract class AbstractServiceGenerator {
 	 */
 	constructor(
 		protected parser: SwaggerParser,
-
 		protected project: Project,
-
 		protected config: GeneratorConfig,
 	) {}
 
@@ -66,25 +72,16 @@ export abstract class AbstractServiceGenerator {
 		outputDir: string,
 	): void {
 		const cleanControllerName = toTsIdentifier(controllerName);
-
 		const fileName = this.getFileName(cleanControllerName);
-
 		const filePath = path.join(outputDir, fileName);
 
 		const sourceFile = this.project.createSourceFile(filePath, "", {
 			overwrite: true,
 		});
 
-		sourceFile.addStatements(SERVICE_GENERATOR_HEADER_COMMENT);
-
-		// 1. Abstraction: Generate Imports
-
 		this.generateImports(sourceFile, operations);
 
 		const usedNames = new Set<string>();
-
-		// 2. Normalize Operation Names
-
 		for (const op of operations) {
 			let suggestedName = op.methodName;
 
@@ -108,7 +105,6 @@ export abstract class AbstractServiceGenerator {
 			}
 
 			let finalName = suggestedName;
-
 			let counter = 2;
 
 			while (usedNames.has(finalName)) {
@@ -116,15 +112,103 @@ export abstract class AbstractServiceGenerator {
 			}
 
 			usedNames.add(finalName);
-
 			op.methodName = finalName;
 		}
 
-		// 3. Abstraction: Generate Class/Function Body
-
 		this.generateServiceContent(sourceFile, cleanControllerName, operations);
-
 		sourceFile.formatText();
+	}
+
+	/**
+	 * Collects and adds model import declarations (`../models`) referenced by the given operations' responses, parameters, and JSON request bodies.
+	 *
+	 * @param sourceFile - Target `SourceFile`.
+	 * @param operations - Operations belonging to the controller.
+	 */
+	protected addOperationModelImports(
+		sourceFile: SourceFile,
+		operations: PathInfo[],
+	): void {
+		const knownTypes = this.parser.schemas.map((s) => s.name);
+		const modelImports = new Set<string>();
+
+		for (const op of operations) {
+			for (const resp of Object.values(
+				op.responses as Record<
+					string,
+					{ content?: Record<string, { schema?: SwaggerDefinition | boolean }> }
+				>,
+			)) {
+				if (resp.content) {
+					Object.values(resp.content).forEach((media) => {
+						const typeName = getTypeScriptType(
+							media.schema as SwaggerDefinition,
+							this.config,
+							knownTypes,
+						).replace(/\[\]| \| null/g, "");
+						if (isDataTypeInterface(typeName)) {
+							modelImports.add(typeName);
+						}
+					});
+				}
+			}
+
+			op.parameters?.forEach((param) => {
+				const paramType = getTypeScriptType(
+					param.schema as SwaggerDefinition,
+					this.config,
+					knownTypes,
+				).replace(/\[\]| \| null/g, "");
+				if (isDataTypeInterface(paramType)) {
+					modelImports.add(paramType);
+				}
+			});
+
+			if (op.requestBody?.content?.["application/json"]?.schema) {
+				const bodyType = getTypeScriptType(
+					op.requestBody.content["application/json"]
+						.schema as SwaggerDefinition,
+					this.config,
+					knownTypes,
+				).replace(/\[\]| \| null/g, "");
+				if (isDataTypeInterface(bodyType)) {
+					modelImports.add(bodyType);
+				}
+			}
+		}
+
+		const validModels = Array.from(modelImports).filter(
+			(m: string) => /^[A-Z]/.test(m) && !["Date", "Blob", "File"].includes(m),
+		);
+
+		if (validModels.length > 0) {
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: "../models",
+				namedImports: validModels,
+			});
+		}
+	}
+
+	/**
+	 * Adds the standard `private basePath = ""` property and `constructor(basePath?: string)` to a generated HTTP service class.
+	 *
+	 * @param serviceClass - Target `ClassDeclaration`.
+	 */
+	protected addBasePathPropertyAndConstructor(
+		serviceClass: ClassDeclaration,
+	): void {
+		serviceClass.addProperty({
+			name: "basePath",
+			scope: Scope.Private,
+			initializer: '""',
+		});
+
+		serviceClass.addConstructor({
+			parameters: [
+				{ name: "basePath", type: "string", hasQuestionToken: true },
+			],
+			statements: ["this.basePath = basePath || getServerUrl(0, {});"],
+		});
 	}
 
 	/**

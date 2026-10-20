@@ -5,13 +5,12 @@ import {
 	ValidationRenderer,
 } from "@src/vendors/angular/admin/form.renderer.js";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
 
 describe("Admin: FormRenderer", () => {
 	describe("ValidationRenderer", () => {
 		it("should return an empty string for empty or null rules", () => {
 			expect(ValidationRenderer.render([])).toBe("");
-			expect(ValidationRenderer.render(testCast(null))).toBe("");
+			expect(ValidationRenderer.render(null)).toBe("");
 		});
 
 		it("should render all standard validation rules correctly", () => {
@@ -31,7 +30,7 @@ describe("Admin: FormRenderer", () => {
 		});
 
 		it("should render all custom validation rules correctly", () => {
-			const rules: ValidationRule[] = testCast([
+			const rules: ValidationRule[] = [
 				{ type: "multipleOf", value: 3 },
 				{ type: "exclusiveMinimum", value: 1 },
 				{ type: "exclusiveMaximum", value: 99 },
@@ -45,7 +44,7 @@ describe("Admin: FormRenderer", () => {
 				{ type: "contains", schema: { type: "string" } },
 				{ type: "const", value: "val" },
 				{ type: "const", value: 123 },
-			]);
+			];
 			const result = ValidationRenderer.render(rules);
 			// Ensure const renders correctly with quotes for string and none for number
 			expect(result).toContain("CustomValidators.constValidator('val')");
@@ -78,13 +77,6 @@ describe("Admin: FormRenderer", () => {
 			);
 			expect(result).toContain("Validators.pattern(/^foo/)");
 			expect(result).toContain("Validators.minLength(5)");
-		});
-
-		it("should throw an error on unhandled validation rule type", () => {
-			const badRule = testCast({ type: "futureValidator" });
-			expect(() => ValidationRenderer.render([testCast(badRule)])).toThrow(
-				"Unhandled validation rule type: futureValidator",
-			);
 		});
 	});
 
@@ -154,7 +146,7 @@ describe("Admin: FormRenderer", () => {
 				dataType: "string",
 				defaultValue: null,
 				validationRules: [
-					testCast({ type: "not", rules: [{ type: "pattern", value: "foo" }] }),
+					{ type: "not", rules: [{ type: "pattern", value: "foo" }] },
 				],
 				controlType: "control",
 			};
@@ -371,9 +363,8 @@ describe("Admin: FormRenderer", () => {
 		});
 
 		it("should render empty form array item initializer when controls are undefined", () => {
-			const result = FormInitializerRenderer.renderFormArrayItemInitializer(
-				testCast(undefined),
-			);
+			const result =
+				FormInitializerRenderer.renderFormArrayItemInitializer(undefined);
 			expect(result).toMatch(/new FormGroup\(\{\s*\}\)/);
 		});
 	});

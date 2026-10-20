@@ -1,6 +1,5 @@
 import { validateSpec } from "@src/openapi/parse_validator.js";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
 
 describe("Input Validation: additionalOperations", () => {
 	it("should reject additionalOperations that reuse fixed HTTP methods", () => {
@@ -16,7 +15,7 @@ describe("Input Validation: additionalOperations", () => {
 			},
 		};
 
-		expect(() => validateSpec(testCast(spec))).toThrow(
+		expect(() => validateSpec(spec)).toThrow(
 			/additionalOperations method "POST"/,
 		);
 	});
@@ -34,7 +33,7 @@ describe("Input Validation: additionalOperations", () => {
 			},
 		};
 
-		expect(() => validateSpec(testCast(spec))).not.toThrow();
+		expect(() => validateSpec(spec)).not.toThrow();
 	});
 
 	it("should reject additionalOperations with invalid HTTP method tokens", () => {
@@ -50,8 +49,6 @@ describe("Input Validation: additionalOperations", () => {
 			},
 		};
 
-		expect(() => validateSpec(testCast(spec))).toThrow(
-			/not a valid HTTP method token/i,
-		);
+		expect(() => validateSpec(spec)).toThrow(/not a valid HTTP method token/i);
 	});
 });

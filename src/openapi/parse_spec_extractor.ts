@@ -5,7 +5,6 @@
  */
 import type {
 	BodyParameter,
-	Response,
 	Parameter as SwaggerOfficialParameter,
 } from "swagger-schema-official";
 import type {
@@ -65,9 +64,13 @@ export function groupPathsByController(parser: {
 			}
 		}
 
-		if (!groups[group]) groups[group] = [];
+		let groupList = groups[group];
+		if (!groupList) {
+			groupList = [];
+			groups[group] = groupList;
+		}
 
-		groups[group].push(op);
+		groupList.push(op);
 	}
 
 	return groups;
@@ -85,14 +88,14 @@ export function groupPathsByController(parser: {
  */
 export function extractPaths(
 	swaggerPaths: { [p: string]: PathItem } | undefined,
-	resolveRef?: (ref: string) => OpenApiValue,
-	components?: { securitySchemes?: Record<string, OpenApiValue> } | undefined,
+	resolveRef?: (ref: string) => unknown,
+	components?: { securitySchemes?: Record<string, unknown> } | undefined,
 	options?: {
 		isOpenApi3?: boolean;
 		defaultConsumes?: string[];
 		defaultProduces?: string[];
 	},
-	resolveObj?: (obj: OpenApiValue) => OpenApiValue,
+	resolveObj?: (obj: OpenApiValue) => unknown,
 ): PathInfo[] {
 	if (!swaggerPaths) {
 		return [];
@@ -124,7 +127,7 @@ export function extractPaths(
 		"query",
 	];
 
-	const resolveMaybeRef = <T>(
+	const resolveMaybeRef = <T extends OpenApiValue>(
 		obj:
 			| T
 			| {
@@ -141,7 +144,7 @@ export function extractPaths(
 		if (!resolveRef && !resolveObj) return obj as T;
 
 		if (resolveObj && typeof obj === "object") {
-			const resolvedObj = resolveObj(obj);
+			const resolvedObj = resolveObj(obj as OpenApiValue);
 
 			if (resolvedObj !== undefined) return resolvedObj as T;
 		}
@@ -168,13 +171,13 @@ export function extractPaths(
 		const description = objRec.description;
 
 		if (summary !== undefined || description !== undefined) {
-			return {
-				...(resolved as object),
-
-				...(summary !== undefined ? { summary } : {}),
-
-				...(description !== undefined ? { description } : {}),
-			} as T;
+			const merged = { ...(resolved as object) } as Record<
+				string,
+				OpenApiValue
+			>;
+			if (summary !== undefined) merged.summary = summary;
+			if (description !== undefined) merged.description = description;
+			return merged as T;
 		}
 
 		return resolved;
@@ -240,18 +243,10 @@ export function extractPaths(
 	for (const [path, rawPathItem] of Object.entries(swaggerPaths)) {
 		let pathItem = rawPathItem;
 
-		if (pathItem.$ref && (resolveObj || resolveRef)) {
-			const resolvedByObj =
-				resolveObj && typeof pathItem === "object"
-					? (resolveObj(pathItem) as PathItem | undefined)
-					: undefined;
-			const resolved =
-				resolvedByObj ??
-				(resolveRef
-					? (resolveRef(pathItem.$ref) as PathItem | undefined)
-					: undefined);
+		if (pathItem.$ref) {
+			const resolved = resolveMaybeRef<PathItem>(pathItem);
 
-			if (resolved) {
+			if (resolved && resolved !== pathItem) {
 				const localOverrides = { ...pathItem };
 
 				delete localOverrides.$ref;
@@ -346,19 +341,10 @@ export function extractPaths(
 					);
 
 					if (resolvedContent) {
-						const contentType = Object.keys(resolvedContent)[0];
+						const firstMedia = Object.values(resolvedContent)[0];
 
-						if (
-							contentType &&
-							resolvedContent[contentType].schema !== undefined
-						) {
-							finalSchema = resolvedContent[contentType].schema;
-						}
-					} else if (p.content) {
-						const contentType = Object.keys(p.content)[0];
-
-						if (contentType && p.content[contentType].schema !== undefined) {
-							finalSchema = p.content[contentType].schema;
+						if (firstMedia && firstMedia.schema !== undefined) {
+							finalSchema = firstMedia.schema;
 						}
 					}
 
@@ -480,9 +466,9 @@ export function extractPaths(
 			let requestBody: RequestBody | undefined;
 
 			if (operation.requestBody !== undefined) {
-				requestBody =
-					resolveMaybeRef<RequestBody>(operation.requestBody as RequestBody) ??
-					(operation.requestBody as RequestBody);
+				requestBody = resolveMaybeRef<RequestBody>(
+					operation.requestBody as RequestBody,
+				);
 			} else if (bodyParam) {
 				const consumes = (operation.consumes && operation.consumes.length > 0
 					? operation.consumes
@@ -519,12 +505,13 @@ export function extractPaths(
 
 			if (operation.responses) {
 				for (const [code, resp] of Object.entries(operation.responses)) {
-					const resolvedResp =
-						resolveMaybeRef<SwaggerResponse | Response>(
-							resp as SwaggerResponse | Response,
-						) ?? (resp as SwaggerResponse);
+					const resolvedResp = resolveMaybeRef<SwaggerResponse>(
+						resp as SwaggerResponse,
+					) as SwaggerResponse;
 
-					const swagger2Response = resolvedResp as Response;
+					const swagger2Response = resolvedResp as SwaggerResponse & {
+						schema?: SwaggerDefinition | boolean;
+					};
 
 					const headers = resolveHeaders(
 						(resolvedResp as Record<string, OpenApiValue>).headers as Record<
@@ -543,8 +530,7 @@ export function extractPaths(
 
 						produces.forEach((mediaType) => {
 							content[mediaType] = {
-								schema:
-									swagger2Response.schema as OpenApiValue as SwaggerDefinition,
+								schema: swagger2Response.schema as SwaggerDefinition,
 							};
 						});
 
@@ -580,13 +566,13 @@ export function extractPaths(
 				effectiveSecurity = effectiveSecurity.map((req) => {
 					const normalizedReq: { [key: string]: string[] } = {};
 
-					Object.keys(req).forEach((key) => {
+					Object.entries(req).forEach(([key, scopes]) => {
 						if (securitySchemeNames.has(key)) {
-							normalizedReq[key] = req[key];
+							normalizedReq[key] = scopes;
 						} else if (isUriReference(key)) {
-							normalizedReq[key] = req[key];
+							normalizedReq[key] = scopes;
 						} else {
-							normalizedReq[normalizeSecurityKey(key)] = req[key];
+							normalizedReq[normalizeSecurityKey(key)] = scopes;
 						}
 					});
 

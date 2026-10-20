@@ -5,7 +5,13 @@ import { ListComponentGenerator } from "@src/vendors/angular/admin/list-componen
 import { discoverAdminResources } from "@src/vendors/angular/admin/resource-discovery.js";
 import type { Project } from "ts-morph";
 import { beforeAll, describe, expect, it } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestProject,
+	createTestResourceOp,
+	createTestSpec,
+	ensureTestSpecResponses,
+} from "../shared/helpers.js";
 import {
 	branchCoverageSpec,
 	coverageSpec,
@@ -18,8 +24,8 @@ describe("Generators (Angular): ListComponentGenerator", () => {
 	beforeAll(() => {
 		project = createTestProject();
 		const parser = new SwaggerParser(
-			testCast(coverageSpec),
-			testCast({ options: { admin: true } }),
+			createTestSpec(coverageSpec),
+			createTestConfig({ options: { admin: true } }),
 		);
 		const resources = discoverAdminResources(parser);
 		const listGen = new ListComponentGenerator(project);
@@ -39,7 +45,7 @@ describe("Generators (Angular): ListComponentGenerator", () => {
 			const ngAfterViewInitMethod = listClass
 				.getClassOrThrow("UsersListComponent")
 				.getMethodOrThrow("ngAfterViewInit");
-			const effectBody = ngAfterViewInitMethod.getBodyText()!;
+			const effectBody = ngAfterViewInitMethod.getBodyText() ?? "";
 			expect(effectBody).toContain(`catchError(() => of(null))`);
 			expect(effectBody).toContain(`if (response === null)`);
 		});
@@ -51,7 +57,7 @@ describe("Generators (Angular): ListComponentGenerator", () => {
 			const ngAfterViewInitMethod = listClass
 				.getClassOrThrow("UsersListComponent")
 				.getMethodOrThrow("ngAfterViewInit");
-			const effectBody = ngAfterViewInitMethod.getBodyText()!;
+			const effectBody = ngAfterViewInitMethod.getBodyText() ?? "";
 			expect(effectBody).toContain(
 				`this.totalItems.set(totalCount ? +totalCount : response.body?.length ?? 0);`,
 			);
@@ -142,29 +148,18 @@ describe("Generators (Angular): ListComponentGenerator", () => {
 		it("should handle a resource with only read-only properties", () => {
 			const project = createTestProject();
 
-			const specClone = testCast(
-				JSON.parse(JSON.stringify(branchCoverageSpec)),
+			const specClone = ensureTestSpecResponses(
+				createTestSpec(JSON.parse(JSON.stringify(branchCoverageSpec))),
 			);
 
-			for (const pathItem of Object.values(specClone.paths ?? {})) {
-				if (!pathItem || typeof pathItem !== "object") continue;
-
-				const operation = testCast(pathItem).get;
-
-				if (operation && operation.responses === undefined) {
-					operation.responses = testCast({
-						"200": testCast({ description: testCast("ok") }),
-					});
-				}
-			}
-
 			const parser = new SwaggerParser(
-				testCast(specClone),
-				testCast({ options: { admin: true } }),
+				specClone,
+				createTestConfig({ options: { admin: true } }),
 			);
 			const resource = discoverAdminResources(parser).find(
 				(r: Resource) => r.name === "readOnlyResource",
-			)!;
+			);
+			if (!resource) throw new Error("Expected readOnlyResource");
 			const generator = new ListComponentGenerator(project);
 			generator.generate(resource, "/admin");
 			const listClass = project
@@ -184,8 +179,8 @@ describe("Generators (Angular): ListComponentGenerator", () => {
 		beforeAll(() => {
 			localProject = createTestProject();
 			const parser = new SwaggerParser(
-				testCast(listComponentSpec),
-				testCast({ options: { admin: true } }),
+				createTestSpec(listComponentSpec),
+				createTestConfig({ options: { admin: true } }),
 			);
 			const resources = discoverAdminResources(parser);
 			const listGen = new ListComponentGenerator(localProject);
@@ -277,19 +272,19 @@ describe("Generators (Angular): ListComponentGenerator", () => {
 				modelName: "Orphan",
 				isEditable: true,
 				operations: [
-					testCast({ action: "list", methodName: "listOrphans" }),
-					testCast({ action: "delete" }),
+					createTestResourceOp({ action: "list", methodName: "listOrphans" }),
+					createTestResourceOp({ action: "delete" }),
 				],
 				formProperties: [
 					{
 						name: "id",
-						schema: testCast({ type: "string" }),
+						schema: { type: "string" },
 					},
 				],
 				listProperties: [
 					{
 						name: "id",
-						schema: testCast({ type: "string" }),
+						schema: { type: "string" },
 					},
 				],
 			};

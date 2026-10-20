@@ -97,8 +97,9 @@ export class AdminTestGenerator {
 			`    fixture.detectChanges();`,
 			`  });`,
 			``,
-			`  it('should create', () => {`,
+			`  it('should create and render template', () => {`,
 			`    expect(component).toBeTruthy();`,
+			`    expect(fixture.nativeElement).toBeInstanceOf(HTMLElement);`,
 			`  });`,
 			`});`,
 		]);

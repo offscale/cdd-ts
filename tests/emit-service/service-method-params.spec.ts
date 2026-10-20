@@ -5,7 +5,7 @@ import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestOperation, createTestSpec } from "../shared/helpers.js";
 
 const specParamTests = {
 	openapi: "3.0.0",
@@ -247,7 +247,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 			output: "/out",
 			options: { dateType: "Date", enumStyle: "enum", platform: "browser" },
 		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 		new ParameterSerializerGenerator(project).generate("/out");
 
@@ -279,7 +279,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 	it("should detect application/xml parameters and generate xml serialization logic", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
 		const opKey = "/xml-params/{xmlId}";
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			...specParamTests.paths[opKey].get,
 			method: "GET",
 			path: opKey,
@@ -287,7 +287,8 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		});
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass.getMethodOrThrow("getXmlParams").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getXmlParams").getBodyText() ?? "";
 
 		expect(body).toContain(
 			`let filterSerialized: Record<string, string | number | boolean | object | undefined | null> = filter;`,
@@ -306,7 +307,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 	it("should detect +xml and text/xml parameters and generate xml serialization logic", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
 		const opKey = "/xml-plus-params/{soapId}";
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			...specParamTests.paths[opKey].get,
 			method: "GET",
 			path: opKey,
@@ -314,7 +315,8 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		});
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass.getMethodOrThrow("getSoapParams").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getSoapParams").getBodyText() ?? "";
 
 		expect(body).toContain(
 			`let soapFilterSerialized: Record<string, string | number | boolean | object | undefined | null> = soapFilter;`,
@@ -332,7 +334,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 
 	it("should generate @deprecated JSDoc for deprecated operations", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			...specParamTests.paths["/deprecated-endpoint"].get,
 			path: "/deprecated-endpoint",
 			method: "GET",
@@ -386,7 +388,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		};
 
 		const { methodGen, serviceClass } = createTestEnvironment(spec);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			...spec.paths["/users/{id}"].post,
 			path: "/users/{id}",
 			method: "POST",
@@ -405,7 +407,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 
 	it("should generate @deprecated JSDoc override for deprecated parameters", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			...specParamTests.paths["/deprecated-param"].get,
 			path: "/deprecated-param",
 			method: "GET",
@@ -415,13 +417,13 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		methodGen.addServiceMethod(serviceClass, op);
 		const method = serviceClass.getMethodOrThrow("getDeprecatedParam");
 		const overload = method.getOverloads()[0];
-		const param = overload.getParameters()[0];
-		expect(param.getFullText()).toContain("@deprecated");
+		const param = overload?.getParameters()[0];
+		expect(param?.getFullText()).toContain("@deprecated");
 	});
 
 	it("should warn about forbidden Cookie headers during generation and in runtime code (Browser Default)", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			...specParamTests.paths["/cookie-test"].get,
 			path: "/cookie-test",
 			method: "GET",
@@ -429,14 +431,15 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		});
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass.getMethodOrThrow("getWithCookies").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getWithCookies").getBodyText() ?? "";
 		expect(body).toContain("if (typeof window !== 'undefined') { console.warn");
 		expect(body).toContain("headers = headers.set('Cookie'");
 	});
 
 	it("should respect strict OAS defaults for cookie explode based on style", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			...specParamTests.paths["/cookie-strict-defaults"].get,
 			path: "/cookie-strict-defaults",
 			method: "GET",
@@ -444,9 +447,9 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		});
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass
-			.getMethodOrThrow("getWithCookieDefaults")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getWithCookieDefaults").getBodyText() ??
+			"";
 
 		// Default cookie (implicit style: form) should be explode: true, allowReserved: false (last arg)
 		expect(body).toContain(
@@ -466,7 +469,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 
 	it('should generate logic for in: "querystring" parameters', () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			method: "GET",
 			path: "/query-string",
 			methodName: "getWithQuerystring",
@@ -474,9 +477,8 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		});
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass
-			.getMethodOrThrow("getWithQuerystring")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getWithQuerystring").getBodyText() ?? "";
 		expect(body).toContain(
 			"const queryString = ParameterSerializer.serializeRawQuerystring(filter, 'json');",
 		);
@@ -487,7 +489,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 
 	it("should pass contentType hint for x-www-form-urlencoded querystring parameters", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			method: "GET",
 			path: "/query-form",
 			methodName: "getWithFormQuerystring",
@@ -495,9 +497,9 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		});
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass
-			.getMethodOrThrow("getWithFormQuerystring")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getWithFormQuerystring").getBodyText() ??
+			"";
 		expect(body).toContain(
 			"const queryString = ParameterSerializer.serializeRawQuerystring(filter, undefined, 'application/x-www-form-urlencoded');",
 		);
@@ -505,7 +507,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 
 	it("should pass encoding map for x-www-form-urlencoded querystring parameters", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			method: "GET",
 			path: "/query-form-encoded",
 			methodName: "getWithFormQuerystringEncoding",
@@ -513,9 +515,10 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		});
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass
-			.getMethodOrThrow("getWithFormQuerystringEncoding")
-			.getBodyText()!;
+		const body =
+			serviceClass
+				.getMethodOrThrow("getWithFormQuerystringEncoding")
+				.getBodyText() ?? "";
 		expect(body).toContain(
 			'const queryString = ParameterSerializer.serializeRawQuerystring(filter, undefined, \'application/x-www-form-urlencoded\', {"tags":{"style":"pipeDelimited","explode":false}});',
 		);
@@ -523,7 +526,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 
 	it('should generate correct builder call with "json" hint for path params with content', () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			method: "GET",
 			path: "/search/{filter}",
 			methodName: "search",
@@ -531,7 +534,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		});
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass.getMethodOrThrow("search").getBodyText()!;
+		const body = serviceClass.getMethodOrThrow("search").getBodyText() ?? "";
 		expect(body).toContain(
 			"ParameterSerializer.serializePathParam('filter', filter, 'simple', false, false, 'json')",
 		);
@@ -539,7 +542,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 
 	it('should generate correct builder call with "json" hint for header params with content', () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			method: "GET",
 			path: "/info",
 			methodName: "getInfo",
@@ -547,7 +550,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		});
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass.getMethodOrThrow("getInfo").getBodyText()!;
+		const body = serviceClass.getMethodOrThrow("getInfo").getBodyText() ?? "";
 		expect(body).toContain(
 			"ParameterSerializer.serializeHeaderParam(xMeta, false, 'json', 'application/json')",
 		);
@@ -555,7 +558,7 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 
 	it("should pass contentType and encoding for query params with content", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specParamTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			method: "GET",
 			path: "/query-content",
 			methodName: "getWithContentQueryParam",
@@ -563,9 +566,9 @@ describe("Emitter: ServiceMethodGenerator (Parameters)", () => {
 		});
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass
-			.getMethodOrThrow("getWithContentQueryParam")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getWithContentQueryParam").getBodyText() ??
+			"";
 		expect(body).toContain('"contentType":"application/x-www-form-urlencoded"');
 		expect(body).toContain(
 			'"encoding":{"tags":{"style":"pipeDelimited","explode":false}}',

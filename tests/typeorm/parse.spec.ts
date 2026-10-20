@@ -1,8 +1,7 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import type { IOrmGenerator, IOrmParser } from "../../src/core/orm/index.js";
+import type { IOrmParser } from "../../src/core/orm/index.js";
 import type { SwaggerDefinition } from "../../src/core/types/openapi.js";
-import { TypeOrmGenerator } from "../../src/vendors/typeorm/emit.js";
 import { TypeOrmParser } from "../../src/vendors/typeorm/parse.js";
 
 describe("TypeOrmParser", () => {
@@ -49,9 +48,6 @@ describe("TypeOrmParser", () => {
 		);
 
 		const parser: IOrmParser = new TypeOrmParser();
-		const generator: IOrmGenerator = new TypeOrmGenerator();
-		expect(generator).toBeDefined();
-
 		const schemas = parser.parse(project);
 
 		expect(schemas.User).toBeDefined();

@@ -5,10 +5,13 @@
  */
 import * as path from "node:path";
 import type { Project } from "ts-morph";
-import type { GeneratorConfig } from "../../../core/types/config.js";
+import { discoverAdminResources } from "../../../core/admin/resource-discovery.js";
+import {
+	type GeneratorConfig,
+	resolveLogger,
+} from "../../../core/types/config.js";
 import type { Resource } from "../../../core/types/index.js";
 import type { SwaggerParser } from "../../../openapi/parse.js";
-import { discoverAdminResources } from "../../angular/admin/resource-discovery.js";
 import { AdminTestGenerator } from "./admin-test.generator.js";
 import { CustomValidatorsGenerator } from "./custom-validators.generator.js";
 import { FormComponentGenerator } from "./form-component.generator.js";
@@ -41,12 +44,13 @@ export class ReactAdminGenerator {
 	 * @param outputRoot The root directory path for generation.
 	 */
 	public generate(outputRoot: string): void {
-		console.log("🚀 Generating React Admin UI...");
+		const logger = resolveLogger(this.config);
+		logger.info("🚀 Generating React Admin UI...");
 
 		this.allResources = discoverAdminResources(this.parser);
 
 		if (this.allResources.length === 0) {
-			console.warn(
+			logger.warn(
 				"⚠️ No resources suitable for admin UI generation were found. Skipping.",
 			);
 			return;
@@ -74,7 +78,7 @@ export class ReactAdminGenerator {
 			false;
 
 		for (const resource of this.allResources) {
-			console.log(`  -> Generating for resource: ${resource.name}`);
+			logger.info(`  -> Generating for resource: ${resource.name}`);
 
 			const resourceDir = path.posix.join(adminDir, resource.name);
 
@@ -102,12 +106,12 @@ export class ReactAdminGenerator {
 			validatorGen.generate(adminDir);
 		}
 
-		console.log("  -> Generating i18n hooks...");
+		logger.info("  -> Generating i18n hooks...");
 		i18nGen.generate(adminDir);
 
-		console.log("  -> Generating React App Routing (App Shell)...");
+		logger.info("  -> Generating React App Routing (App Shell)...");
 		routeGen.generateMaster(this.allResources, adminDir);
 
-		console.log("✅ React Admin UI generation complete.");
+		logger.info("✅ React Admin UI generation complete.");
 	}
 }

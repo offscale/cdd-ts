@@ -2,7 +2,7 @@ import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { CallbackGenerator } from "../../src/functions/emit_callback.js";
 import { SwaggerParser } from "../../src/openapi/parse.js";
-import { testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 describe("CallbackGenerator", () => {
 	it("should handle duplicate type aliases and unresolvable paths", () => {
@@ -71,7 +71,7 @@ describe("CallbackGenerator", () => {
 			},
 		};
 
-		const parser = new SwaggerParser(testCast(spec), {
+		const parser = new SwaggerParser(createTestSpec(spec), {
 			input: "memory://spec.json",
 			output: "dummy",
 			options: { framework: "vanilla" },
@@ -84,6 +84,6 @@ describe("CallbackGenerator", () => {
 
 		const file = project.getSourceFile("/out/callbacks.ts");
 		expect(file).toBeDefined();
-		expect(file!.getText()).toContain("MyCallbackPostPayload");
+		expect(file?.getText()).toContain("MyCallbackPostPayload");
 	});
 });

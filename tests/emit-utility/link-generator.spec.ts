@@ -2,9 +2,12 @@ import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { LinkGenerator } from "@src/openapi/emit_link.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestProject,
+} from "../shared/helpers.js";
 
 const linksSpec: SwaggerSpec = {
 	openapi: "3.0.0",
@@ -265,10 +268,10 @@ const sparseSpec: SwaggerSpec = {
 		},
 		// Missing responses (technically invalid OAS but parser handles it)
 		"/no-responses": {
-			get: testCast({
+			get: {
 				operationId: "actionNoResp",
 				responses: { "200": { description: "ok" } },
-			}),
+			},
 		},
 	},
 };
@@ -276,28 +279,17 @@ const sparseSpec: SwaggerSpec = {
 describe("Emitter: LinkGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const parser = new SwaggerParser(spec, config);
 		new LinkGenerator(parser, project).generate("/out");
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/links.ts");
-		const code = sourceFile.getText();
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/links.ts");
 
 	it("should generate links registry for inline links (Id, Desc, Params)", () => {
 		const project = runGenerator(linksSpec);
@@ -306,27 +298,27 @@ describe("Emitter: LinkGenerator", () => {
 
 		expect(API_LINKS).toBeDefined();
 
-		expect(API_LINKS.getUserById).toBeDefined();
+		expect(API_LINKS?.getUserById).toBeDefined();
 
-		expect(API_LINKS.getUserById["200"]).toBeDefined();
+		expect(API_LINKS?.getUserById?.["200"]).toBeDefined();
 
-		const link = API_LINKS.getUserById["200"].GetUserAddress;
+		const link = API_LINKS?.getUserById?.["200"]?.GetUserAddress;
 
 		expect(link).toBeDefined();
 
-		expect(link.operationId).toBe("getUserAddress");
+		expect(link?.operationId).toBe("getUserAddress");
 
-		expect(link.description).toBe("The address of this user");
+		expect(link?.description).toBe("The address of this user");
 
-		expect(link.parameters).toEqual({ userId: "$response.body#/id" });
+		expect(link?.parameters).toEqual({ userId: "$response.body#/id" });
 
 		// Assert missing fields are truly undefined in the generated object
 
-		expect(link.operationRef).toBeUndefined();
+		expect(link?.operationRef).toBeUndefined();
 
-		expect(link.requestBody).toBeUndefined();
+		expect(link?.requestBody).toBeUndefined();
 
-		expect(link.server).toBeUndefined();
+		expect(link?.server).toBeUndefined();
 	});
 
 	it("should emit component links registry when components.links is defined", () => {
@@ -336,11 +328,11 @@ describe("Emitter: LinkGenerator", () => {
 
 		expect(API_COMPONENT_LINKS).toBeDefined();
 
-		expect(API_COMPONENT_LINKS.NextPage).toBeDefined();
+		expect(API_COMPONENT_LINKS?.NextPage).toBeDefined();
 
-		expect(API_COMPONENT_LINKS.NextPage.operationId).toBe("listThings");
+		expect(API_COMPONENT_LINKS?.NextPage?.operationId).toBe("listThings");
 
-		expect(API_COMPONENT_LINKS.NextPage.description).toBe("Next page link");
+		expect(API_COMPONENT_LINKS?.NextPage?.description).toBe("Next page link");
 	});
 
 	it("should resolve operationRef for component links", () => {
@@ -350,13 +342,13 @@ describe("Emitter: LinkGenerator", () => {
 
 		expect(API_COMPONENT_LINKS).toBeDefined();
 
-		expect(API_COMPONENT_LINKS.GoTarget).toBeDefined();
+		expect(API_COMPONENT_LINKS?.GoTarget).toBeDefined();
 
-		expect(API_COMPONENT_LINKS.GoTarget.operationRef).toBe(
+		expect(API_COMPONENT_LINKS?.GoTarget?.operationRef).toBe(
 			"#/paths/~1target/get",
 		);
 
-		expect(API_COMPONENT_LINKS.GoTarget.operationId).toBe("getTarget");
+		expect(API_COMPONENT_LINKS?.GoTarget?.operationId).toBe("getTarget");
 	});
 
 	it("should resolve referenced links", () => {
@@ -364,13 +356,13 @@ describe("Emitter: LinkGenerator", () => {
 
 		const { API_LINKS } = compileGeneratedFile(project);
 
-		const link = API_LINKS.getOrder["200"].CancelOrder;
+		const link = API_LINKS?.getOrder?.["200"]?.CancelOrder;
 
 		expect(link).toBeDefined();
 
-		expect(link.operationId).toBe("cancelOrder");
+		expect(link?.operationId).toBe("cancelOrder");
 
-		expect(link.parameters).toEqual({ orderId: "$request.path.id" });
+		expect(link?.parameters).toEqual({ orderId: "$request.path.id" });
 	});
 
 	it("should resolve operationRef to operationId and preserve operationRef, requestBody, server", () => {
@@ -378,21 +370,21 @@ describe("Emitter: LinkGenerator", () => {
 
 		const { API_LINKS } = compileGeneratedFile(project);
 
-		const link = API_LINKS.getResource["200"].DeepLink;
+		const link = API_LINKS?.getResource?.["200"]?.DeepLink;
 
-		expect(link.operationRef).toBe("#/paths/~1other/get");
+		expect(link?.operationRef).toBe("#/paths/~1other/get");
 
-		expect(link.requestBody).toBe("$request.body");
+		expect(link?.requestBody).toBe("$request.body");
 
-		expect(link.server).toEqual({ url: "https://other.com" });
+		expect(link?.server).toEqual({ url: "https://other.com" });
 
 		// Verify omitted fields
 
-		expect(link.operationId).toBe("getOther");
+		expect(link?.operationId).toBe("getOther");
 
-		expect(link.description).toBeUndefined();
+		expect(link?.description).toBeUndefined();
 
-		expect(link.parameters).toBeUndefined();
+		expect(link?.parameters).toBeUndefined();
 	});
 
 	it("should resolve operationRef that targets webhooks", () => {
@@ -400,11 +392,11 @@ describe("Emitter: LinkGenerator", () => {
 
 		const { API_LINKS } = compileGeneratedFile(project);
 
-		const link = API_LINKS.triggerWebhook["200"].NotifyWebhook;
+		const link = API_LINKS?.triggerWebhook?.["200"]?.NotifyWebhook;
 
-		expect(link.operationRef).toBe("#/webhooks/user.created/post");
+		expect(link?.operationRef).toBe("#/webhooks/user.created/post");
 
-		expect(link.operationId).toBe("handleUserCreated");
+		expect(link?.operationId).toBe("handleUserCreated");
 	});
 
 	it("should preserve x- extensions on operation and component links", () => {
@@ -412,13 +404,13 @@ describe("Emitter: LinkGenerator", () => {
 
 		const { API_LINKS, API_COMPONENT_LINKS } = compileGeneratedFile(project);
 
-		const link = API_LINKS.getItem["200"].Next;
+		const link = API_LINKS?.getItem?.["200"]?.Next;
 
-		expect(link["x-trace"]).toBe("keep-me");
+		expect(link?.["x-trace"]).toBe("keep-me");
 
-		expect(link["x-meta"]).toEqual({ level: 1 });
+		expect(link?.["x-meta"]).toEqual({ level: 1 });
 
-		expect(API_COMPONENT_LINKS.Paged["x-note"]).toBe("component-link");
+		expect(API_COMPONENT_LINKS?.Paged?.["x-note"]).toBe("component-link");
 	});
 
 	it("should resolve external operationRef when the target document is cached", () => {
@@ -458,7 +450,10 @@ describe("Emitter: LinkGenerator", () => {
 		};
 
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const entryUri = "http://api.com/spec.json";
 		const externalUri = "http://api.com/other.json";
 		const specCache = new Map<string, SwaggerSpec>([
@@ -470,11 +465,11 @@ describe("Emitter: LinkGenerator", () => {
 
 		const { API_LINKS } = compileGeneratedFile(project);
 
-		const link = API_LINKS.getEntry["200"].External;
+		const link = API_LINKS?.getEntry?.["200"]?.External;
 
-		expect(link.operationRef).toBe("other.json#/paths/~1external/get");
+		expect(link?.operationRef).toBe("other.json#/paths/~1external/get");
 
-		expect(link.operationId).toBe("getExternal");
+		expect(link?.operationId).toBe("getExternal");
 	});
 
 	it("should ignore operations without identifiers or links", () => {
@@ -490,7 +485,7 @@ describe("Emitter: LinkGenerator", () => {
 
 	it("should handle unresolvable references gracefully", () => {
 		// Suppress warning expectation in test output
-		vi.spyOn(console, "warn").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => undefined);
 		const project = runGenerator(brokenRefsSpec);
 
 		const { API_LINKS } = compileGeneratedFile(project);
@@ -547,18 +542,13 @@ describe("Emitter: LinkGenerator", () => {
 			},
 		};
 		const project = runGenerator(spec);
-		const { API_LINKS } = testCast<{
-			API_LINKS: Record<
-				string,
-				Record<string, Record<string, { operationId?: string }>>
-			>;
-		}>(compileGeneratedFile(project));
-		const linkBlock = API_LINKS.getTest["200"];
-		expect(linkBlock.MalformedLink.operationId).toBeUndefined();
-		expect(linkBlock.NoFragment.operationId).toBeUndefined();
-		expect(linkBlock.ShortFragment.operationId).toBeUndefined();
-		expect(linkBlock.UnknownRoot.operationId).toBeUndefined();
-		expect(linkBlock.UnknownPathMethod.operationId).toBeUndefined();
+		const { API_LINKS } = compileGeneratedFile(project);
+		const linkBlock = API_LINKS?.getTest?.["200"];
+		expect(linkBlock?.MalformedLink?.operationId).toBeUndefined();
+		expect(linkBlock?.NoFragment?.operationId).toBeUndefined();
+		expect(linkBlock?.ShortFragment?.operationId).toBeUndefined();
+		expect(linkBlock?.UnknownRoot?.operationId).toBeUndefined();
+		expect(linkBlock?.UnknownPathMethod?.operationId).toBeUndefined();
 	});
 
 	it("should resolve operationId from relative operationRef for additionalOperations", () => {
@@ -586,7 +576,7 @@ describe("Emitter: LinkGenerator", () => {
 		};
 		const parser = new SwaggerParser(
 			spec,
-			testCast({
+			createTestConfig({
 				output: "/out",
 				options: {},
 			}),
@@ -600,13 +590,10 @@ describe("Emitter: LinkGenerator", () => {
 		});
 		const project = createTestProject();
 		new LinkGenerator(parser, project).generate("/out");
-		const { API_LINKS } = testCast<{
-			API_LINKS: Record<
-				string,
-				Record<string, Record<string, { operationId?: string }>>
-			>;
-		}>(compileGeneratedFile(project));
-		expect(API_LINKS.createFoo["200"].myLink.operationId).toBe("customReport");
+		const { API_LINKS } = compileGeneratedFile(project);
+		expect(API_LINKS?.createFoo?.["200"]?.myLink?.operationId).toBe(
+			"customReport",
+		);
 	});
 
 	it("should return undefined when path is not found in pool", () => {
@@ -633,13 +620,8 @@ describe("Emitter: LinkGenerator", () => {
 			components: { links: {} },
 		};
 		const project = runGenerator(spec);
-		const { API_LINKS } = testCast<{
-			API_LINKS: Record<
-				string,
-				Record<string, Record<string, { operationId?: string }>>
-			>;
-		}>(compileGeneratedFile(project));
-		expect(API_LINKS.createFoo["200"].myLink.operationId).toBeUndefined();
+		const { API_LINKS } = compileGeneratedFile(project);
+		expect(API_LINKS?.createFoo?.["200"]?.myLink?.operationId).toBeUndefined();
 	});
 
 	it("should return undefined when path is found but method does not match", () => {
@@ -666,13 +648,8 @@ describe("Emitter: LinkGenerator", () => {
 			components: { links: {} },
 		};
 		const project = runGenerator(spec);
-		const { API_LINKS } = testCast<{
-			API_LINKS: Record<
-				string,
-				Record<string, Record<string, { operationId?: string }>>
-			>;
-		}>(compileGeneratedFile(project));
-		expect(API_LINKS.createFoo["200"].myLink.operationId).toBeUndefined();
+		const { API_LINKS } = compileGeneratedFile(project);
+		expect(API_LINKS?.createFoo?.["200"]?.myLink?.operationId).toBeUndefined();
 	});
 
 	it("should fall back to undefined operationId when operation lacks it", () => {
@@ -699,6 +676,9 @@ describe("Emitter: LinkGenerator", () => {
 									missingLink: {
 										operationRef: "#/paths/~1foo/get",
 									},
+									webhookLink: {
+										operationRef: "#/webhooks/~1hook/post",
+									},
 									malformedLongLink: {
 										operationRef: "#/paths/~1foo/bar/baz/qux",
 									},
@@ -708,13 +688,23 @@ describe("Emitter: LinkGenerator", () => {
 					},
 				},
 			},
+			webhooks: {
+				"/hook": {
+					post: {
+						responses: { "200": { description: "ok" } },
+					},
+				},
+			},
 			components: { links: {} },
 		};
 		const project = runGenerator(spec);
-		const { API_LINKS } = testCast(compileGeneratedFile(project));
-		expect(API_LINKS.myOp["200"].myLink.operationId).toBe("myOp");
-		expect(API_LINKS.myOp["200"].shortLink.operationId).toBeUndefined();
-		expect(API_LINKS.myOp["200"].missingLink.operationId).toBeUndefined();
-		expect(API_LINKS.myOp["200"].malformedLongLink.operationId).toBeUndefined();
+		const { API_LINKS } = compileGeneratedFile(project);
+		expect(API_LINKS?.myOp?.["200"]?.myLink?.operationId).toBe("myOp");
+		expect(API_LINKS?.myOp?.["200"]?.shortLink?.operationId).toBeUndefined();
+		expect(API_LINKS?.myOp?.["200"]?.missingLink?.operationId).toBeUndefined();
+		expect(API_LINKS?.myOp?.["200"]?.webhookLink?.operationId).toBeUndefined();
+		expect(
+			API_LINKS?.myOp?.["200"]?.malformedLongLink?.operationId,
+		).toBeUndefined();
 	});
 });

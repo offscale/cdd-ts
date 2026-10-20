@@ -79,7 +79,7 @@ export class ArazzoServerGenerator {
 						writer.writeLine(`case ${JSON.stringify(wf.workflowId)}:`);
 						writer.indent(() => {
 							writer.writeLine(
-								`return orchestrator.${methodName}(inputs as never);`,
+								`return orchestrator.${methodName}(inputs as Parameters<WorkflowOrchestrator[${JSON.stringify(methodName)}]>[0]);`,
 							);
 						});
 					}

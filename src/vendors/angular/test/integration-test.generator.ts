@@ -112,23 +112,20 @@ export class IntegrationTestGenerator {
 					if (param.required) {
 						const schemaDef = (param.schema || param) as SwaggerDefinition;
 						const schemaName = schemaDef?.name || param.name;
-						mockArgs.push(
-							`${this.mockDataGenerator.generate(String(schemaName))} as never`,
-						);
+						mockArgs.push(this.mockDataGenerator.generate(String(schemaName)));
 					} else {
-						mockArgs.push("null as never");
+						mockArgs.push("undefined");
 					}
 				}
 
 				if (op.requestBody?.content) {
 					const contentTypes = Object.keys(op.requestBody.content);
-					if (contentTypes.length > 0) {
-						const schema = op.requestBody.content[contentTypes[0]!]?.schema;
+					const firstContentType = contentTypes[0];
+					if (firstContentType) {
+						const schema = op.requestBody.content[firstContentType]?.schema;
 						const schemaDef = schema as SwaggerDefinition;
 						const schemaName = schemaDef?.name ? schemaDef.name : "Unknown";
-						mockArgs.push(
-							`${this.mockDataGenerator.generate(String(schemaName))} as never`,
-						);
+						mockArgs.push(this.mockDataGenerator.generate(String(schemaName)));
 					}
 				}
 

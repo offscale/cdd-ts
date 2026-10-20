@@ -9,7 +9,6 @@ import {
 	scanTypeScriptSource,
 } from "@src/functions/parse.js";
 import { afterEach, describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../../shared/helpers.js";
 
 const tempDirs: string[] = [];
 
@@ -77,22 +76,22 @@ describe("Core Utils: OpenAPI AST Scanner", () => {
 			(op) => op.path === "/projects/{projectId}",
 		);
 		expect(patchProject?.path).toBe("/projects/{projectId}");
-		expect(patchProject?.responses[0].contentTypes).toContain(
+		expect(patchProject?.responses[0]?.contentTypes).toContain(
 			"application/xml",
 		);
 
 		const messages = ir.operations.find((op) => op.path === "/messages");
 		expect(messages?.requestBody?.contentTypes).toEqual(["application/json"]);
-		expect(messages?.responses[0].contentTypes).toEqual(["text/plain"]);
+		expect(messages?.responses[0]?.contentTypes).toEqual(["text/plain"]);
 
 		const typedMessages = ir.operations.find(
 			(op) => op.path === "/typed-messages",
 		);
-		expect(typedMessages?.responses[0].status).toBe("201");
+		expect(typedMessages?.responses[0]?.status).toBe("201");
 		expect(typedMessages?.requestBody?.schema).toEqual({
 			$ref: "#/components/schemas/CreateMessageBody",
 		});
-		expect(typedMessages?.responses[0].schema).toEqual({
+		expect(typedMessages?.responses[0]?.schema).toEqual({
 			$ref: "#/components/schemas/MessageReceipt",
 		});
 
@@ -103,7 +102,7 @@ describe("Core Utils: OpenAPI AST Scanner", () => {
 
 		const arrayOp = ir.operations.find((op) => op.path === "/array");
 		expect(arrayOp?.method).toBe("PUT");
-		expect(arrayOp?.responses[0].contentTypes).toEqual(["text/csv"]);
+		expect(arrayOp?.responses[0]?.contentTypes).toEqual(["text/csv"]);
 
 		const boundOp = ir.operations.find((op) => op.path === "/bound/{id}");
 		const boundParams =
@@ -111,13 +110,13 @@ describe("Core Utils: OpenAPI AST Scanner", () => {
 		expect(boundParams).toEqual(
 			expect.arrayContaining(["path:id", "query:filter"]),
 		);
-		expect(boundOp?.responses[0].contentTypes).toEqual([]);
+		expect(boundOp?.responses[0]?.contentTypes).toEqual([]);
 
 		const objectOp = ir.operations.find((op) => op.path === "/object");
-		expect(objectOp?.responses[0].contentTypes).toEqual(["application/json"]);
+		expect(objectOp?.responses[0]?.contentTypes).toEqual(["application/json"]);
 
 		const removeOp = ir.operations.find((op) => op.path === "/remove/{id}");
-		expect(removeOp?.responses[0].status).toBe("204");
+		expect(removeOp?.responses[0]?.status).toBe("204");
 
 		const localOp = ir.operations.find((op) => op.path === "/local");
 		expect(localOp?.summary).toBe("Local handler summary.");
@@ -126,7 +125,7 @@ describe("Core Utils: OpenAPI AST Scanner", () => {
 		const stringStatusOp = ir.operations.find(
 			(op) => op.path === "/string-status",
 		);
-		expect(stringStatusOp?.responses[0].status).toBe("202");
+		expect(stringStatusOp?.responses[0]?.status).toBe("202");
 
 		expect(ir.operations.some((op) => op.path === "/literal")).toBe(true);
 
@@ -216,20 +215,22 @@ app.post('/users/:id', createUser);
 		const ir = scanTypeScriptSource(sourceText, "/virtual.ts");
 		const spec = buildOpenApiSpecFromScan(ir);
 
-		const createUser = testCast(spec.paths)["/users/{id}"].post;
+		const createUser = spec.paths?.["/users/{id}"]?.post;
 
-		const idParam = createUser.parameters.find(
-			(param: TestValue) => param.name === "id",
+		const idParam = createUser?.parameters?.find?.(
+			(param) => param.name === "id",
 		);
 
 		expect(idParam?.example).toBe(123);
 
-		expect(createUser.requestBody.content["application/json"].example).toEqual({
+		expect(
+			createUser?.requestBody?.content?.["application/json"]?.example,
+		).toEqual({
 			name: "Ada",
 		});
 
 		expect(
-			createUser.responses["200"].content["application/json"].example,
+			createUser?.responses?.["200"]?.content?.["application/json"]?.example,
 		).toEqual({ id: 123, name: "Ada" });
 	});
 
@@ -260,17 +261,18 @@ app.post('/plain', postPlain);
 		const ir = scanTypeScriptSource(sourceText, "/virtual.ts");
 		const spec = buildOpenApiSpecFromScan(ir);
 
-		const getPlain = testCast(spec.paths)["/plain"].get;
+		const getPlain = spec.paths?.["/plain"]?.get;
 
-		const responseContent = getPlain.responses["200"]?.content?.["text/plain"];
+		const responseContent =
+			getPlain?.responses?.["200"]?.content?.["text/plain"];
 
 		expect(responseContent?.example).toBeUndefined();
 
 		expect(responseContent?.examples?.example?.serializedValue).toBe("OK");
 
-		const postPlain = testCast(spec.paths)["/plain"].post;
+		const postPlain = spec.paths?.["/plain"]?.post;
 
-		const requestContent = postPlain.requestBody?.content?.["text/plain"];
+		const requestContent = postPlain?.requestBody?.content?.["text/plain"];
 
 		expect(requestContent?.example).toBeUndefined();
 
@@ -284,10 +286,10 @@ app.post('/plain', postPlain);
 		const ir = scanTypeScriptSource(sourceText, querystringExampleFixture);
 		const spec = buildOpenApiSpecFromScan(ir);
 
-		const rawQuery = testCast(spec.paths)["/raw-query-example"].get;
+		const rawQuery = spec.paths?.["/raw-query-example"]?.get;
 
-		const param = rawQuery.parameters.find(
-			(entry: TestValue) => testCast<string>(entry.in) === "querystring",
+		const param = rawQuery?.parameters?.find?.(
+			(entry) => entry.in === "querystring",
 		);
 
 		const content = param?.content?.["application/x-www-form-urlencoded"];
@@ -321,18 +323,16 @@ app.get('/resources/:id', fetchResource);
 		const ir = scanTypeScriptSource(sourceText, "/virtual.ts");
 		const spec = buildOpenApiSpecFromScan(ir);
 
-		const op = testCast(spec.paths)["/resources/{id}"].get;
+		const op = spec.paths?.["/resources/{id}"]?.get;
 
-		const idParam = op.parameters.find(
-			(param: TestValue) => param.name === "id",
+		const idParam = op?.parameters?.find?.((param) => param.name === "id");
+
+		const searchParam = op?.parameters?.find?.(
+			(param) => param.name === "search",
 		);
 
-		const searchParam = op.parameters.find(
-			(param: TestValue) => param.name === "search",
-		);
-
-		const filterParam = op.parameters.find(
-			(param: TestValue) => param.name === "filter",
+		const filterParam = op?.parameters?.find?.(
+			(param) => param.name === "filter",
 		);
 
 		expect(idParam?.schema).toEqual({ type: "string", format: "uuid" });
@@ -359,13 +359,13 @@ app.get('/headers', headerHandler);
 		const ir = scanTypeScriptSource(sourceText, "/virtual.ts");
 		const spec = buildOpenApiSpecFromScan(ir);
 
-		const op = testCast(spec.paths)["/headers"].get;
+		const op = spec.paths?.["/headers"]?.get;
 
-		const headerParams = (op.parameters || []).filter(
-			(param: TestValue) => testCast<string>(param.in) === "header",
+		const headerParams = (op?.parameters || []).filter(
+			(param) => param.in === "header",
 		);
 
-		const headerNames = headerParams.map((param: TestValue) =>
+		const headerNames = headerParams.map((param) =>
 			String(param.name).toLowerCase(),
 		);
 
@@ -397,12 +397,12 @@ app.get('/headers', headerHandler);
 		});
 		const createOp = ir.operations.find((op) => op.operationId === "create");
 		expect(createOp).toBeDefined();
-		expect(createOp?.responses[0].status).toBe("201");
+		expect(createOp?.responses[0]?.status).toBe("201");
 		expect(createOp?.requestBody?.contentTypes).toEqual(["application/json"]);
 		expect(createOp?.requestBody?.schema).toEqual({
 			$ref: "#/components/schemas/CreateWidget",
 		});
-		expect(createOp?.responses[0].schema).toEqual({
+		expect(createOp?.responses[0]?.schema).toEqual({
 			$ref: "#/components/schemas/Widget",
 		});
 		const createParamKeys =
@@ -437,30 +437,29 @@ app.get('/headers', headerHandler);
 		expect(spec.info.title).toBe("AST Scan");
 		expect(spec.info.version).toBe("1.2.3");
 
-		const getUser = testCast(spec.paths)["/users/{id}"].get;
+		const getUser = spec.paths?.["/users/{id}"]?.get;
 
-		expect(getUser.operationId).toBe("getUser");
+		expect(getUser?.operationId).toBe("getUser");
 
 		expect(
-			getUser.parameters.some(
-				(param: TestValue) =>
-					param.name === "id" && testCast<string>(param.in) === "path",
+			getUser?.parameters?.some?.(
+				(param) => param.name === "id" && param.in === "path",
 			),
 		).toBe(true);
 
-		expect(getUser.tags).toEqual(["Users", "Accounts"]);
+		expect(getUser?.tags).toEqual(["Users", "Accounts"]);
 		expect(spec.tags?.map((tag) => tag.name)).toEqual(["Users", "Accounts"]);
 		const usersTag = spec.tags?.find((tag) => tag.name === "Users");
 		expect(usersTag?.summary).toBe("User operations");
 		expect(usersTag?.kind).toBe("nav");
 
-		const search = testCast(spec.paths)["/search"].query;
+		const search = spec.paths?.["/search"]?.query;
 
 		expect(search).toBeDefined();
 
-		const rawQuery = testCast(spec.paths)["/raw-query"].get;
+		const rawQuery = spec.paths?.["/raw-query"]?.get;
 
-		expect(rawQuery.parameters).toEqual(
+		expect(rawQuery?.parameters).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
 					name: "rawQuery",
@@ -472,38 +471,38 @@ app.get('/headers', headerHandler);
 			]),
 		);
 
-		const copyPath = testCast(spec.paths)["/files/{id}"];
+		const copyPath = spec.paths?.["/files/{id}"];
 
-		expect(copyPath.additionalOperations?.COPY).toBeDefined();
+		expect(copyPath?.additionalOperations?.COPY).toBeDefined();
 
-		const messages = testCast(spec.paths)["/messages"].post;
+		const messages = spec.paths?.["/messages"]?.post;
 
-		expect(messages.requestBody.content["application/json"]).toBeDefined();
+		expect(messages?.requestBody?.content?.["application/json"]).toBeDefined();
 
-		expect(messages.responses["200"].content["text/plain"]).toBeDefined();
+		expect(messages?.responses?.["200"]?.content?.["text/plain"]).toBeDefined();
 
-		const typedMessages = testCast(spec.paths)["/typed-messages"].post;
+		const typedMessages = spec.paths?.["/typed-messages"]?.post;
 
 		expect(
-			typedMessages.requestBody.content["application/json"].schema,
+			typedMessages?.requestBody?.content?.["application/json"]?.schema,
 		).toEqual({
 			$ref: "#/components/schemas/CreateMessageBody",
 		});
 
 		expect(
-			typedMessages.responses["201"].content["application/json"].schema,
+			typedMessages?.responses?.["201"]?.content?.["application/json"]?.schema,
 		).toEqual({
 			$ref: "#/components/schemas/MessageReceipt",
 		});
 
-		const secure = testCast(spec.paths)["/secure"].get;
+		const secure = spec.paths?.["/secure"]?.get;
 
-		expect(secure.externalDocs).toEqual({
+		expect(secure?.externalDocs).toEqual({
 			url: "https://example.com/secure",
 			description: "Secure docs",
 		});
 
-		expect(secure.servers).toEqual([
+		expect(secure?.servers).toEqual([
 			{
 				url: "https://api.example.com/v2",
 				description: "Production",
@@ -513,32 +512,36 @@ app.get('/headers', headerHandler);
 			{ url: "https://staging.example.com/v2", description: "Staging" },
 		]);
 
-		expect(secure.security).toEqual([
+		expect(secure?.security).toEqual([
 			{ ApiKey: [] },
 			{ OAuth2: ["read:items", "write:items"] },
 		]);
 
-		expect(secure["x-feature-flag"]).toBe("beta");
+		expect(secure?.["x-feature-flag"]).toBe("beta");
 
-		const documented = testCast(spec.paths)["/documented/{id}"].get;
+		const documented = spec.paths?.["/documented/{id}"]?.get;
 
-		expect(documented.operationId).toBe("fetchDocumented");
+		expect(documented?.operationId).toBe("fetchDocumented");
 
-		const documentedParam = documented.parameters.find(
-			(param: TestValue) => param.name === "id",
+		const documentedParam = documented?.parameters?.find?.(
+			(param) => param.name === "id",
 		);
 
-		expect(documentedParam.description).toBe("Documented id.");
+		expect(documentedParam?.description).toBe("Documented id.");
 
-		expect(documented.responses["202"].summary).toBe("Accepted summary");
+		expect(documented?.responses?.["202"]?.summary).toBe("Accepted summary");
 
-		expect(documented.responses["202"].description).toBe("Accepted payload");
+		expect(documented?.responses?.["202"]?.description).toBe(
+			"Accepted payload",
+		);
 
 		expect(
-			documented.responses["202"].content["application/json"],
+			documented?.responses?.["202"]?.content?.["application/json"],
 		).toBeDefined();
 
-		expect(documented.responses["404"].content["text/plain"]).toBeDefined();
+		expect(
+			documented?.responses?.["404"]?.content?.["text/plain"],
+		).toBeDefined();
 
 		expect(spec.components?.schemas).toHaveProperty("CreateMessage");
 
@@ -579,18 +582,22 @@ app.get('/headers', headerHandler);
 			{ title: "Custom", version: "0.1.0" },
 		);
 
-		const customPath = testCast(customSpec.paths)["/things/{id}"];
+		const customPath = customSpec.paths?.["/things/{id}"];
 
-		expect(customPath.additionalOperations?.COPY).toBeDefined();
-
-		expect(customPath.additionalOperations.COPY.responses["200"]).toBeDefined();
-
-		const uploadPath = testCast(customSpec.paths)["/upload"].post;
-
-		expect(uploadPath.requestBody.content["multipart/form-data"]).toBeDefined();
+		expect(customPath?.additionalOperations?.COPY).toBeDefined();
 
 		expect(
-			uploadPath.requestBody.content["application/octet-stream"],
+			customPath?.additionalOperations?.COPY?.responses?.["200"],
+		).toBeDefined();
+
+		const uploadPath = customSpec.paths?.["/upload"]?.post;
+
+		expect(
+			uploadPath?.requestBody?.content?.["multipart/form-data"],
+		).toBeDefined();
+
+		expect(
+			uploadPath?.requestBody?.content?.["application/octet-stream"],
 		).toBeDefined();
 	});
 
@@ -623,5 +630,190 @@ app.get('/headers', headerHandler);
 		expect(() => scanTypeScriptProject(badFile, fs)).toThrow(
 			/Expected a TypeScript source file/,
 		);
+	});
+
+	it("should cover remaining JSDoc and Express/decorator route scanner branches", async () => {
+		const sourceText = `
+const app = {
+	get: (..._args: unknown[]) => { void _args; },
+	post: (..._args: unknown[]) => { void _args; },
+	other: (..._args: unknown[]) => ({ get: (..._a: unknown[]) => { void _a; } }),
+};
+const notFn = 123;
+const idSegment = 'seg';
+function helperCall(paramCb?: unknown) {
+	if (paramCb) app.get('/param-cb', paramCb);
+}
+app.other('/ignored').get(() => {});
+app.get('/no-handler', [notFn]);
+
+type Request<P = unknown, ResB = unknown, ReqB = unknown, Q = unknown> = {
+	params: P;
+	query: Q;
+	headers: Record<string, string>;
+	cookies: Record<string, string>;
+	body: ReqB;
+};
+type Response<ResB = unknown> = {
+	status: (c?: number) => Response<ResB>;
+	type: (t?: string) => Response<ResB>;
+	set: (k?: string, v?: string) => Response<ResB>;
+	header: (k?: string, v?: string) => Response<ResB>;
+	cookie: (k?: string, v?: string) => Response<ResB>;
+	send: (v?: ResB) => void;
+	json: (v?: ResB) => void;
+	end: () => void;
+	sendStatus: (c?: number) => void;
+};
+
+/**
+ * Summary line
+ * @tags ["TagA", "", 123, {"name":"MergedTag","description":"First"}, {"name":""}]
+ * @server {invalid-json
+ * @server [{"url":"https://srv1.com"}, {"url":""}, 123]
+ * @security [{"Bearer":["read"]}, 123]
+ * @security {"ApiKey":[]}
+ * @querystring {"name":"qsJson","required":true,"description":"QS json"}
+ * @paramExample qsJson "raw=1"
+ * @paramExample h1 {"__oasExample":{"serializedValue":"ser-h1"}}
+ * @requestExample {"wildcardReq":true}
+ * @responseExample 200 {"noMediaResp":true}
+ * @responseExample 200 text/xml <xml/>
+ * @responseSummary 201 Standalone 201 summary
+ * @paramSchema h1 true
+ * @paramSchema h2 https://example.com/schema.json
+ * @paramSchema c1 !invalid!
+ * @paramSchema c2 123
+ */
+function boundHeadersAndCookies(
+	{ headers, cookies, body, params: renamedParams, unknownProp }: {
+		headers: Record<string, string>;
+		cookies: Record<string, string>;
+		body: Record<string, string>;
+		params: Record<string, string>;
+		unknownProp: string;
+	},
+	res: Response
+) {
+	const dyn = "dyn";
+	const h1 = headers.h1;
+	const h2 = headers["h2"];
+	const hDyn = headers[dyn];
+	const c1 = cookies.c1;
+	const c2 = cookies["c2"];
+	const p1 = renamedParams.id;
+	const { destructuredBody } = body;
+	const { nonReq } = { nonReq: 1 };
+	helperCall();
+	void h1; void h2; void hDyn; void c1; void c2; void p1; void destructuredBody; void unknownProp; void nonReq;
+	[1].map((x) => x)[0]?.toString();
+	res.cookie("k", "v").status().type().set("X-Other", "1").header("Content-Type").send(123);
+	res.status(200).json({ ok: true });
+	res.sendStatus();
+}
+app.post(\`/\${idSegment}/\${'lit'}/\${1 + 2}\`, [notFn, boundHeadersAndCookies]);
+
+/**
+ * @tag {"name":"MergedTag","externalDocs":{"url":"https://docs.example.com"}}
+ * @querystring qsSpace required Space QS
+ * @see https://only-url.example.com
+ * @server https://only-server.example.com
+ * @x-empty-ext
+ * @requestExample text/xml <xml/>
+ * @responseExample 200 text/xml <xml/>
+ * @response 200
+ * @response 202 application/json Extra typed response
+ * @param x
+ */
+const propHandler = (
+	req: Request<unknown, { id: string }, void>,
+	res: Response<{ id: string }>
+) => {
+	const { x } = (req.body as unknown as Record<string, string>);
+	void x;
+	res.end();
+};
+app.post('/prop-handler', propHandler);
+
+/**
+ * @querystring {"name": "qsMinimal"}
+ * @see
+ */
+function invalidQs() {
+	helperCall();
+}
+app.get('/invalid-qs', invalidQs);
+
+/**
+ * @querystring {"noName": true}
+ */
+function badQs(_req: Request, { send }: Response) {
+	send();
+}
+app.get('/one-param', badQs);
+
+function Controller(_p?: string): ClassDecorator { return () => undefined; }
+function Get(_p?: string): MethodDecorator { return () => undefined; }
+function Post(_p?: string): MethodDecorator { return () => undefined; }
+function Cookie(_p?: string): ParameterDecorator { return () => undefined; }
+function Query(_p?: string): ParameterDecorator { return () => undefined; }
+function Body(): ParameterDecorator { return () => undefined; }
+function HttpCode(_c?: number): MethodDecorator { return () => undefined; }
+
+@Controller()
+export class ExtraController {
+	/**
+	 * @response 204
+	 */
+	@Get()
+	@HttpCode()
+	voidRet(@Cookie('sid') _sid: string, @Query() _bareQ?: string): string {
+		return "ok";
+	}
+
+	@Get('resp-ret')
+	respRet(): Promise<Response<string>> {
+		return Promise.resolve({} as Response<string>);
+	}
+
+	/**
+	 * @response 201 application/json Created
+	 */
+	@Post('prim-body')
+	primBody(@Body() _body?: String): Promise<Number> {
+		return Promise.resolve(1);
+	}
+
+	@Post('untyped-body')
+	untypedBody(@Body() _body: unknown) {}
+
+	/**
+	 * @response 200 application/json JSON response
+	 * @responseExample 200 text/plain "unmatched"
+	 */
+	@Get('unmatched-resp-example')
+	unmatchedRespExample(): { ok: boolean } {
+		return { ok: true };
+	}
+}
+`;
+		const ir = scanTypeScriptSource(sourceText, "/extra.ts");
+		const spec = buildOpenApiSpecFromScan(ir);
+		expect(spec.paths).toBeDefined();
+		expect(spec.tags?.some((t) => t.name === "MergedTag")).toBe(true);
+
+		const { Project, SyntaxKind } = await import("ts-morph");
+		const { evaluateAstLiteral } = await import(
+			"@src/openapi/parse_ast_literal.js"
+		);
+		const malformedProject = new Project({ useInMemoryFileSystem: true });
+		const malformedSf = malformedProject.createSourceFile(
+			"/malformed.ts",
+			"const x = { a: };",
+		);
+		const objLit = malformedSf.getFirstDescendantByKindOrThrow(
+			SyntaxKind.ObjectLiteralExpression,
+		);
+		expect(evaluateAstLiteral(objLit)).toBeUndefined();
 	});
 });

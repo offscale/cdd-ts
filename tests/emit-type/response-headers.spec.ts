@@ -3,7 +3,7 @@ import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 const headerSpec = {
 	openapi: "3.0.0",
@@ -56,14 +56,14 @@ const headerSpec = {
 };
 
 describe("Emitter: Response Header Type Generation", () => {
-	const runGenerator = (spec: TestValue) => {
+	const runGenerator = (spec: object) => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/out",
 			options: { enumStyle: "enum" },
 		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 		return project.createSourceFile(
 			"/out/combined.ts",
@@ -77,7 +77,7 @@ describe("Emitter: Response Header Type Generation", () => {
 	};
 
 	it("should generate interface for response headers", () => {
-		const sourceFile = runGenerator(testCast(headerSpec));
+		const sourceFile = runGenerator(headerSpec);
 
 		const interfaceName = "GetUsers200Headers";
 		const headersInterface = sourceFile.getInterfaceOrThrow(interfaceName);
@@ -89,13 +89,13 @@ describe("Emitter: Response Header Type Generation", () => {
 		expect(rateLimit.getTypeNode()?.getText() ?? "").toBe("number");
 
 		const totalCount = headersInterface.getPropertyOrThrow("'X-Total-Count'");
-		expect(totalCount.getJsDocs()[0].getDescription().trim()).toBe(
+		expect(totalCount.getJsDocs()[0]?.getDescription().trim()).toBe(
 			"Total number of items",
 		);
 	});
 
 	it("should handle headers defined via content map (OAS 3.x)", () => {
-		const sourceFile = runGenerator(testCast(headerSpec));
+		const sourceFile = runGenerator(headerSpec);
 		const headersInterface =
 			sourceFile.getInterfaceOrThrow("GetUsers200Headers");
 
@@ -107,18 +107,18 @@ describe("Emitter: Response Header Type Generation", () => {
 		// { id?: string }
 		const typeText = complexHeader.getTypeNode()?.getText() ?? "";
 		expect(typeText.replace(";", "")).toContain("{ id?: string }"); // or just check for structure
-		expect(complexHeader.getJsDocs()[0].getDescription().trim()).toBe(
+		expect(complexHeader.getJsDocs()[0]?.getDescription().trim()).toBe(
 			"Header defined via content map",
 		);
 	});
 
 	it("should include @deprecated tag for deprecated headers", () => {
-		const sourceFile = runGenerator(testCast(headerSpec));
+		const sourceFile = runGenerator(headerSpec);
 		const headersInterface =
 			sourceFile.getInterfaceOrThrow("GetUsers200Headers");
 
 		const oldHeader = headersInterface.getPropertyOrThrow("'X-Old-Header'");
-		const doc = oldHeader.getJsDocs()[0].getText();
+		const doc = oldHeader.getJsDocs()[0]?.getText();
 
 		expect(doc).toContain("An old header");
 		expect(doc).toContain("@deprecated");
@@ -141,7 +141,7 @@ describe("Emitter: Response Header Type Generation", () => {
 				},
 			},
 		};
-		const sourceFile = runGenerator(testCast(spec));
+		const sourceFile = runGenerator(spec);
 		// Name should be HeadItems200Headers
 		expect(sourceFile.getInterface("HeadItems200Headers")).toBeDefined();
 	});
@@ -165,7 +165,7 @@ describe("Emitter: Response Header Type Generation", () => {
 				},
 			},
 		};
-		const sourceFile = runGenerator(testCast(spec));
+		const sourceFile = runGenerator(spec);
 		const headersInterface = sourceFile.getInterfaceOrThrow(
 			"GetLegacy200Headers",
 		);
@@ -195,7 +195,7 @@ describe("Emitter: Response Header Type Generation", () => {
 				},
 			},
 		};
-		const sourceFile = runGenerator(testCast(spec));
+		const sourceFile = runGenerator(spec);
 		const headersInterface = sourceFile.getInterfaceOrThrow(
 			"GetCookies200Headers",
 		);
@@ -226,7 +226,7 @@ describe("Emitter: Response Header Type Generation", () => {
 				},
 			},
 		};
-		const sourceFile = runGenerator(testCast(spec));
+		const sourceFile = runGenerator(spec);
 		const headersInterface = sourceFile.getInterfaceOrThrow(
 			"GetContent200Headers",
 		);

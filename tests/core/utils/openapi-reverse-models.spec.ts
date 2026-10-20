@@ -9,7 +9,7 @@ import {
 } from "@src/classes/parse.js";
 import { EnumMember } from "ts-morph";
 import { afterEach, describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../../shared/helpers.js";
+import { asSchemaMap, createTestSchema } from "../../shared/helpers.js";
 
 const tempDirs: string[] = [];
 
@@ -231,172 +231,164 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 
 		expect(schemas.Base).toBeDefined();
 
-		expect(testCast<TestValue>(schemas).Base.properties.id.type).toBe("string");
+		expect(asSchemaMap(schemas).Base?.properties?.id?.type).toBe("string");
 
-		expect(
-			testCast<TestValue>(schemas).Base.properties.createdAt.readOnly,
-		).toBe(true);
+		expect(asSchemaMap(schemas).Base?.properties?.createdAt?.readOnly).toBe(
+			true,
+		);
 
-		expect(testCast<TestValue>(schemas).Base.properties.createdAt.format).toBe(
+		expect(asSchemaMap(schemas).Base?.properties?.createdAt?.format).toBe(
 			"date-time",
 		);
 
-		expect(testCast<TestValue>(schemas).Status.enum).toEqual([
-			"active",
-			"inactive",
-		]);
+		expect(asSchemaMap(schemas).Status?.enum).toEqual(["active", "inactive"]);
 
-		expect(testCast<TestValue>(schemas).Status.deprecated).toBe(true);
+		expect(asSchemaMap(schemas).Status?.deprecated).toBe(true);
 
-		expect(testCast<TestValue>(schemas).Level.type).toBe("number");
+		expect(asSchemaMap(schemas).Level?.type).toBe("number");
 
-		expect(testCast<TestValue>(schemas).Mixed.type).toBeUndefined();
+		expect(asSchemaMap(schemas).Mixed?.type).toBeUndefined();
 
-		expect(testCast<TestValue>(schemas).Mode.enum).toEqual(["auto", "manual"]);
+		expect(asSchemaMap(schemas).Mode?.enum).toEqual(["auto", "manual"]);
 		expect(schemas.AnyAlias).toBeDefined();
 		expect(schemas.UnknownAlias).toBeDefined();
 		expect(schemas.ObjAlias).toBeDefined();
 
-		expect(testCast<TestValue>(schemas).LiteralNum.const).toBe(42);
+		expect(asSchemaMap(schemas).LiteralNum?.const).toBe(42);
 
-		expect(testCast<TestValue>(schemas).LiteralTrue.const).toBe(true);
+		expect(asSchemaMap(schemas).LiteralTrue?.const).toBe(true);
 
-		expect(testCast<TestValue>(schemas).LiteralFalse.const).toBe(false);
+		expect(asSchemaMap(schemas).LiteralFalse?.const).toBe(false);
 
-		expect(testCast<TestValue>(schemas).LiteralNull.type).toBe("null");
+		expect(asSchemaMap(schemas).LiteralNull?.type).toBe("null");
 
-		expect(testCast<TestValue>(schemas).LiteralNull.const).toBe(null);
+		expect(asSchemaMap(schemas).LiteralNull?.const).toBe(null);
 
-		expect(testCast<TestValue>(schemas).ParenAlias.type).toBe("string");
+		expect(asSchemaMap(schemas).ParenAlias?.type).toBe("string");
 
-		expect(testCast<TestValue>(schemas).NullableName.type).toEqual([
-			"string",
-			"null",
-		]);
+		expect(asSchemaMap(schemas).NullableName?.type).toEqual(["string", "null"]);
 
-		expect(testCast<TestValue>(schemas).OptionalName.type).toBe("string");
+		expect(asSchemaMap(schemas).OptionalName?.type).toBe("string");
 
-		expect(testCast<TestValue>(schemas).UnionAnyOf.anyOf.length).toBe(2);
+		expect(asSchemaMap(schemas).UnionAnyOf?.anyOf?.length).toBe(2);
 
-		expect(testCast<TestValue>(schemas).ArrayAlias.type).toBe("array");
+		expect(asSchemaMap(schemas).ArrayAlias?.type).toBe("array");
 
-		expect(testCast<TestValue>(schemas).ArrayAlias.items.type).toBe("string");
+		expect(asSchemaMap(schemas).ArrayAlias?.items?.type).toBe("string");
 
-		expect(testCast<TestValue>(schemas).TupleAlias.prefixItems.length).toBe(2);
+		expect(asSchemaMap(schemas).TupleAlias?.prefixItems?.length).toBe(2);
 
-		expect(testCast<TestValue>(schemas).TupleAlias.minItems).toBe(2);
+		expect(asSchemaMap(schemas).TupleAlias?.minItems).toBe(2);
 
-		expect(testCast<TestValue>(schemas).TupleAlias.maxItems).toBe(2);
+		expect(asSchemaMap(schemas).TupleAlias?.maxItems).toBe(2);
 
-		expect(testCast<TestValue>(schemas).TupleAlias.items).toBe(false);
+		expect(asSchemaMap(schemas).TupleAlias?.items).toBe(false);
 
-		expect(testCast<TestValue>(schemas).OptionalTuple.prefixItems.length).toBe(
-			2,
+		expect(asSchemaMap(schemas).OptionalTuple?.prefixItems?.length).toBe(2);
+
+		expect(asSchemaMap(schemas).OptionalTuple?.minItems).toBe(1);
+
+		expect(asSchemaMap(schemas).OptionalTuple?.maxItems).toBe(2);
+
+		expect(asSchemaMap(schemas).OptionalTuple?.items).toBe(false);
+
+		expect(asSchemaMap(schemas).NamedTuple?.prefixItems?.length).toBe(2);
+
+		expect(asSchemaMap(schemas).NamedTuple?.minItems).toBe(1);
+
+		expect(asSchemaMap(schemas).NamedTuple?.maxItems).toBe(2);
+
+		expect(asSchemaMap(schemas).NamedTuple?.items).toBe(false);
+
+		expect(asSchemaMap(schemas).RestTuple?.prefixItems?.length).toBe(1);
+
+		expect(asSchemaMap(schemas).RestTuple?.minItems).toBe(1);
+
+		expect(asSchemaMap(schemas).RestTuple?.items?.type).toBe("number");
+
+		expect(asSchemaMap(schemas).ReadonlyAlias?.items?.type).toBe("string");
+
+		expect(asSchemaMap(schemas).ArrayRef?.items?.type).toBe("number");
+
+		expect(asSchemaMap(schemas).SetAlias?.items?.type).toBe("boolean");
+
+		expect(asSchemaMap(schemas).RecordAlias?.additionalProperties?.type).toBe(
+			"number",
 		);
 
-		expect(testCast<TestValue>(schemas).OptionalTuple.minItems).toBe(1);
-
-		expect(testCast<TestValue>(schemas).OptionalTuple.maxItems).toBe(2);
-
-		expect(testCast<TestValue>(schemas).OptionalTuple.items).toBe(false);
-
-		expect(testCast<TestValue>(schemas).NamedTuple.prefixItems.length).toBe(2);
-
-		expect(testCast<TestValue>(schemas).NamedTuple.minItems).toBe(1);
-
-		expect(testCast<TestValue>(schemas).NamedTuple.maxItems).toBe(2);
-
-		expect(testCast<TestValue>(schemas).NamedTuple.items).toBe(false);
-
-		expect(testCast<TestValue>(schemas).RestTuple.prefixItems.length).toBe(1);
-
-		expect(testCast<TestValue>(schemas).RestTuple.minItems).toBe(1);
-
-		expect(testCast<TestValue>(schemas).RestTuple.items.type).toBe("number");
-
-		expect(testCast<TestValue>(schemas).ReadonlyAlias.items.type).toBe(
+		expect(asSchemaMap(schemas).MapAlias?.additionalProperties?.type).toBe(
 			"string",
 		);
 
-		expect(testCast<TestValue>(schemas).ArrayRef.items.type).toBe("number");
+		expect(asSchemaMap(schemas).DateAlias?.format).toBe("date-time");
 
-		expect(testCast<TestValue>(schemas).SetAlias.items.type).toBe("boolean");
+		expect(asSchemaMap(schemas).BlobAlias?.format).toBe("binary");
 
-		expect(
-			testCast<TestValue>(schemas).RecordAlias.additionalProperties.type,
-		).toBe("number");
+		expect(asSchemaMap(schemas).FileAlias?.format).toBe("binary");
 
-		expect(
-			testCast<TestValue>(schemas).MapAlias.additionalProperties.type,
-		).toBe("string");
-
-		expect(testCast<TestValue>(schemas).DateAlias.format).toBe("date-time");
-
-		expect(testCast<TestValue>(schemas).BlobAlias.format).toBe("binary");
-
-		expect(testCast<TestValue>(schemas).FileAlias.format).toBe("binary");
-
-		const extensionModel = testCast(schemas.ExtensionModel);
+		const extensionModel = createTestSchema(schemas.ExtensionModel);
 
 		expect(extensionModel["x-entity"]).toBe("internal");
 
 		expect(extensionModel["x-meta"]).toEqual({ tier: 1 });
 
-		expect(extensionModel.properties.value["x-prop"]).toBe(true);
+		expect(extensionModel.properties?.value?.["x-prop"]).toBe(true);
 
-		const eventPayload = testCast(schemas.EventPayload);
+		const eventPayload = createTestSchema(schemas.EventPayload);
 
-		expect(eventPayload.properties.data.contentMediaType).toBe(
+		expect(eventPayload.properties?.data?.contentMediaType).toBe(
 			"application/json",
 		);
 
-		expect(eventPayload.properties.data.contentSchema.properties.id.type).toBe(
-			"string",
-		);
+		expect(
+			eventPayload.properties?.data?.contentSchema?.properties?.id?.type,
+		).toBe("string");
 
-		expect(testCast<TestValue>(schemas).RefAlias.$ref).toBe(
+		expect(asSchemaMap(schemas).RefAlias?.$ref).toBe(
 			"#/components/schemas/Base",
 		);
 
-		expect(testCast<TestValue>(schemas).IntersectionAlias.allOf.length).toBe(2);
+		expect(asSchemaMap(schemas).IntersectionAlias?.allOf?.length).toBe(2);
 
-		const typeLiteral = testCast(schemas.TypeLiteralAlias);
+		const typeLiteral = createTestSchema(schemas.TypeLiteralAlias);
 
-		expect(typeLiteral.properties.foo.type).toBe("string");
+		expect(typeLiteral.properties?.foo?.type).toBe("string");
 
-		expect(typeLiteral.properties["bar-baz"].type).toBe("number");
+		expect(typeLiteral.properties?.["bar-baz"]?.type).toBe("number");
 
-		expect(typeLiteral.properties.ro.readOnly).toBe(true);
+		expect(typeLiteral.properties?.ro?.readOnly).toBe(true);
 
-		expect(typeLiteral.additionalProperties.type).toBe("string");
+		expect(typeLiteral.additionalProperties?.type).toBe("string");
 
-		const derived = testCast(schemas.Derived);
+		const derived = createTestSchema(schemas.Derived);
 
-		expect(derived.allOf.length).toBe(2);
+		expect(derived.allOf?.length).toBe(2);
 
 		expect(
-			testCast<TestValue>(testCast<TestValue>(derived.allOf[1]).properties.name)
+			createTestSchema(createTestSchema(derived.allOf?.[1]).properties?.name)
 				.type,
 		).toBe("string");
 
-		const derivedNoProps = testCast(schemas.DerivedNoProps);
+		const derivedNoProps = createTestSchema(schemas.DerivedNoProps);
 
-		expect(derivedNoProps.allOf.length).toBe(1);
+		expect(derivedNoProps.allOf?.length).toBe(1);
 
-		const derivedIndexOnly = testCast(schemas.DerivedIndexOnly);
+		const derivedIndexOnly = createTestSchema(schemas.DerivedIndexOnly);
 
-		expect(derivedIndexOnly.allOf.length).toBe(2);
+		expect(derivedIndexOnly.allOf?.length).toBe(2);
 
-		expect(derivedIndexOnly.allOf[1].additionalProperties.type).toBe("string");
+		expect(derivedIndexOnly.allOf?.[1]?.additionalProperties?.type).toBe(
+			"string",
+		);
 
-		const discriminated = testCast(schemas.Discriminated);
+		const discriminated = createTestSchema(schemas.Discriminated);
 
 		expect(discriminated.discriminator).toEqual({
 			propertyName: "kind",
 			mapping: { cat: "Cat", dog: "Dog" },
 		});
 
-		const pet = testCast(schemas.Pet);
+		const pet = createTestSchema(schemas.Pet);
 
 		expect(pet.discriminator).toEqual({
 			propertyName: "kind",
@@ -410,7 +402,7 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 
 		expect(pet.anyOf).toBeUndefined();
 
-		const inlinePet = testCast(schemas.InlinePet);
+		const inlinePet = createTestSchema(schemas.InlinePet);
 
 		expect(inlinePet.discriminator).toEqual({ propertyName: "kind" });
 
@@ -418,7 +410,7 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 
 		expect(inlinePet.anyOf).toBeUndefined();
 
-		const withDocs = testCast(schemas.WithDocs);
+		const withDocs = createTestSchema(schemas.WithDocs);
 
 		expect(withDocs.description).toBe("With docs.");
 
@@ -426,23 +418,23 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 
 		expect(withDocs.default).toEqual({ flag: false });
 
-		expect(withDocs.properties.flag.example).toBe("value");
+		expect(withDocs.properties?.flag?.example).toBe("value");
 
-		expect(withDocs.properties.mode.default).toBe("not-json");
+		expect(withDocs.properties?.mode?.default).toBe("not-json");
 
-		const multiExample = testCast(schemas.MultiExample);
+		const multiExample = createTestSchema(schemas.MultiExample);
 
 		expect(multiExample.example).toBeUndefined();
 
 		expect(multiExample.examples).toEqual([{ id: 1 }, { id: 2 }]);
 
-		const binaryPayload = testCast(schemas.BinaryPayload);
+		const binaryPayload = createTestSchema(schemas.BinaryPayload);
 
-		expect(binaryPayload.properties.data.contentMediaType).toBe("image/png");
+		expect(binaryPayload.properties?.data?.contentMediaType).toBe("image/png");
 
-		expect(binaryPayload.properties.data.contentEncoding).toBe("base64");
+		expect(binaryPayload.properties?.data?.contentEncoding).toBe("base64");
 
-		const constraints = testCast(schemas.Constraints);
+		const constraints = createTestSchema(schemas.Constraints);
 
 		expect(constraints.minProperties).toBe(1);
 
@@ -451,82 +443,82 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 		expect(constraints.propertyNames).toEqual({ pattern: "^[a-z]+$" });
 
 		expect(
-			testCast<TestValue>(testCast<TestValue>(constraints).properties.name)
-				.minimum,
+			createTestSchema(createTestSchema(constraints).properties?.name).minimum,
 		).toBe(1);
 
 		expect(
-			testCast<TestValue>(testCast<TestValue>(constraints).properties.name)
-				.maximum,
+			createTestSchema(createTestSchema(constraints).properties?.name).maximum,
 		).toBe(10);
 
 		expect(
-			testCast<TestValue>(testCast<TestValue>(constraints).properties.name)
-				.pattern,
+			createTestSchema(createTestSchema(constraints).properties?.name).pattern,
 		).toBe("^[a-z]+$");
 
 		expect(
-			testCast<TestValue>(testCast<TestValue>(constraints).properties.name)
-				.format,
+			createTestSchema(createTestSchema(constraints).properties?.name).format,
 		).toBe("uuid");
 
 		expect(
-			testCast<TestValue>(testCast<TestValue>(constraints).properties.name)
+			createTestSchema(createTestSchema(constraints).properties?.name)
 				.minLength,
 		).toBe(2);
 
 		expect(
-			testCast<TestValue>(testCast<TestValue>(constraints).properties.name)
+			createTestSchema(createTestSchema(constraints).properties?.name)
 				.maxLength,
 		).toBe(5);
 
-		expect(constraints.properties.tags.minItems).toBe(1);
+		expect(constraints.properties?.tags?.minItems).toBe(1);
 
-		expect(constraints.properties.tags.maxItems).toBe(3);
+		expect(constraints.properties?.tags?.maxItems).toBe(3);
 
-		expect(constraints.properties.tags.uniqueItems).toBe(true);
+		expect(constraints.properties?.tags?.uniqueItems).toBe(true);
 
-		expect(constraints.properties.values.contains).toEqual({ type: "string" });
+		expect(constraints.properties?.values?.contains).toEqual({
+			type: "string",
+		});
 
-		expect(constraints.properties.values.minContains).toBe(1);
+		expect(constraints.properties?.values?.minContains).toBe(1);
 
-		expect(constraints.properties.values.maxContains).toBe(2);
+		expect(constraints.properties?.values?.maxContains).toBe(2);
 
-		expect(constraints.properties.ratio.multipleOf).toBe(0.5);
+		expect(constraints.properties?.ratio?.multipleOf).toBe(0.5);
 
-		expect(constraints.properties.positive.exclusiveMinimum).toBe(0);
+		expect(constraints.properties?.positive?.exclusiveMinimum).toBe(0);
 
-		expect(constraints.properties.below.exclusiveMaximum).toBe(true);
+		expect(constraints.properties?.below?.exclusiveMaximum).toBe(true);
 
-		expect(constraints.properties.secret.readOnly).toBe(true);
+		expect(constraints.properties?.secret?.readOnly).toBe(true);
 
-		expect(constraints.properties.secret.writeOnly).toBe(true);
+		expect(constraints.properties?.secret?.writeOnly).toBe(true);
 
-		const xmlDoc = testCast(schemas.XmlDoc);
+		const xmlDoc = createTestSchema(schemas.XmlDoc);
 
-		expect(xmlDoc.properties.value.xml.name).toBe("doc");
+		expect(xmlDoc.properties?.value?.xml?.name).toBe("doc");
 
-		expect(xmlDoc.properties.value.xml.namespace).toBe("https://example.com");
+		expect(xmlDoc.properties?.value?.xml?.namespace).toBe(
+			"https://example.com",
+		);
 
-		expect(xmlDoc.properties.value.xml.prefix).toBe("ex");
+		expect(xmlDoc.properties?.value?.xml?.prefix).toBe("ex");
 
-		const closedMap = testCast(schemas.ClosedMap);
+		const closedMap = createTestSchema(schemas.ClosedMap);
 
 		expect(closedMap.additionalProperties).toBe(false);
 
-		const tagged = testCast(schemas.TaggedSchema);
+		const tagged = createTestSchema(schemas.TaggedSchema);
 
 		expect(tagged.patternProperties).toEqual({ "^x-": { type: "string" } });
 
 		expect(
-			tagged.dependentSchemas.paymentMethod.properties.cardNumber.type,
+			tagged.dependentSchemas?.paymentMethod?.properties?.cardNumber?.type,
 		).toBe("string");
 
-		expect(tagged.dependentSchemas.paymentMethod.required).toEqual([
+		expect(tagged.dependentSchemas?.paymentMethod?.required).toEqual([
 			"cardNumber",
 		]);
 
-		expect(tagged.dependentRequired.paymentMethod).toEqual(["cardNumber"]);
+		expect(tagged.dependentRequired?.paymentMethod).toEqual(["cardNumber"]);
 
 		expect(tagged.unevaluatedProperties).toBe(false);
 
@@ -547,7 +539,7 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 			description: "Tagged docs",
 		});
 
-		const conditional = testCast(schemas.ConditionalTagged);
+		const conditional = createTestSchema(schemas.ConditionalTagged);
 
 		expect(conditional.const).toEqual({ status: "fixed", count: 1 });
 
@@ -561,7 +553,7 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 			properties: { banned: { type: "string" } },
 		});
 
-		const taggedUnion = testCast(schemas.TaggedUnion);
+		const taggedUnion = createTestSchema(schemas.TaggedUnion);
 
 		expect(taggedUnion.oneOf).toEqual([{ type: "string" }, { type: "number" }]);
 
@@ -581,7 +573,7 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
         `;
 		fs.writeFileSync(path.join(modelsDir, "extra.ts"), extraSource);
 
-		const schemas = parseGeneratedModels(dir, testCast(fs));
+		const schemas = parseGeneratedModels(dir, fs);
 		expect(schemas.ExtraModel).toBeDefined();
 
 		const nestedDir = path.join(modelsDir, "nested");
@@ -590,23 +582,23 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 			path.join(nestedDir, "nested.ts"),
 			"export interface Nested { id: string; }",
 		);
-		const nestedSchemas = parseGeneratedModels(modelsDir, testCast(fs));
+		const nestedSchemas = parseGeneratedModels(modelsDir, fs);
 		expect(nestedSchemas.Nested).toBeDefined();
 
 		const fileSchemas = parseGeneratedModels(
 			path.join(modelsDir, "index.ts"),
-			testCast(fs),
+			fs,
 		);
 		expect(fileSchemas.Base).toBeDefined();
 
 		const emptyDir = makeTempDir();
-		expect(() => parseGeneratedModels(emptyDir, testCast(fs))).toThrow(
+		expect(() => parseGeneratedModels(emptyDir, fs)).toThrow(
 			/No generated model files/,
 		);
 
 		const badFile = path.join(dir, "not-model.txt");
 		fs.writeFileSync(badFile, "data");
-		expect(() => parseGeneratedModels(badFile, testCast(fs))).toThrow(
+		expect(() => parseGeneratedModels(badFile, fs)).toThrow(
 			/Expected a generated model file/,
 		);
 
@@ -619,9 +611,9 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 			readFileSync: (_p: string, _e: string) => "",
 			readdirSync: (_p: string) => [],
 		};
-		expect(() =>
-			parseGeneratedModels("/some/fake/path", testCast(fakeFs)),
-		).toThrow(/neither a file nor a directory/);
+		expect(() => parseGeneratedModels("/some/fake/path", fakeFs)).toThrow(
+			/neither a file nor a directory/,
+		);
 
 		const noExportDir = makeTempDir();
 		const noExportModelsDir = path.join(noExportDir, "models");
@@ -630,7 +622,7 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 			path.join(noExportModelsDir, "index.ts"),
 			"const value = 1;",
 		);
-		expect(() => parseGeneratedModels(noExportDir, testCast(fs))).toThrow(
+		expect(() => parseGeneratedModels(noExportDir, fs)).toThrow(
 			/No exported models could be reconstructed/,
 		);
 	});
@@ -659,11 +651,11 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 		const schemas = parseGeneratedModelSource(edgeSource, "/models/edge.ts");
 		expect(schemas.BadUnion).toBeDefined();
 		expect(schemas.SingleUnion).toBeDefined();
-		expect(testCast<TestValue>(schemas).InlineUnion.discriminator).toEqual({
+		expect(asSchemaMap(schemas).InlineUnion?.discriminator).toEqual({
 			propertyName: "kind",
 		});
 		expect(schemas.NoDesc).toBeDefined();
-		expect(testCast<TestValue>(schemas).NoDesc.discriminator).toBeUndefined();
+		expect(asSchemaMap(schemas).NoDesc?.discriminator).toBeUndefined();
 	});
 
 	it("should handle edge cases in TypeNode parsing", () => {
@@ -715,28 +707,26 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 		EnumMember.prototype.getValue = originalGetValue;
 
 		expect(schemas.ExtendsUndefined).toEqual({});
-		expect(testCast<TestValue>(schemas).IntersectAny.allOf).toBeDefined();
-		expect(testCast<TestValue>(schemas).TupleRest.type).toBe("array");
-		expect(testCast<TestValue>(schemas).TupleOpt.type).toBe("array");
-		expect(testCast<TestValue>(schemas).EnumStrings.enum).toEqual(["A", "B"]);
-		expect(testCast<TestValue>(schemas).EnumNumbers.enum).toEqual([1, 2]);
-		expect(testCast<TestValue>(schemas).Parenthesized.type).toBe("number");
-		expect(testCast<TestValue>(schemas).ComplexIntersection.allOf.length).toBe(
-			2,
-		);
-		expect(testCast<TestValue>(schemas).CustomLiteral.const).toBe("template");
-		expect(testCast<TestValue>(schemas).NullAlias.type).toBe("null");
+		expect(asSchemaMap(schemas).IntersectAny?.allOf).toBeDefined();
+		expect(asSchemaMap(schemas).TupleRest?.type).toBe("array");
+		expect(asSchemaMap(schemas).TupleOpt?.type).toBe("array");
+		expect(asSchemaMap(schemas).EnumStrings?.enum).toEqual(["A", "B"]);
+		expect(asSchemaMap(schemas).EnumNumbers?.enum).toEqual([1, 2]);
+		expect(asSchemaMap(schemas).Parenthesized?.type).toBe("number");
+		expect(asSchemaMap(schemas).ComplexIntersection?.allOf?.length).toBe(2);
+		expect(asSchemaMap(schemas).CustomLiteral?.const).toBe("template");
+		expect(asSchemaMap(schemas).NullAlias?.type).toBe("null");
 		expect(schemas.BigIntAlias).toEqual({});
-		expect(testCast<TestValue>(schemas).TupleOnlyRest.type).toBe("array");
-		expect(testCast<TestValue>(schemas).UnionOnlyNull.type).toBe("null");
-		expect(testCast<TestValue>(schemas).UnionMultiTypes.type).toEqual([
+		expect(asSchemaMap(schemas).TupleOnlyRest?.type).toBe("array");
+		expect(asSchemaMap(schemas).UnionOnlyNull?.type).toBe("null");
+		expect(asSchemaMap(schemas).UnionMultiTypes?.type).toEqual([
 			"number",
 			"string",
 		]);
-		expect(testCast<TestValue>(schemas).TupleRestAny.items).toBeDefined();
+		expect(asSchemaMap(schemas).TupleRestAny?.items).toBeDefined();
 		expect(schemas.BigIntLit).toEqual({});
 
-		const enumSchema = testCast(schemas.ComplexEnum);
+		const enumSchema = createTestSchema(schemas.ComplexEnum);
 		expect(enumSchema.enum).toEqual([
 			"string_val",
 			42,
@@ -745,11 +735,11 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 			"template_val",
 		]);
 
-		const docSchema = testCast(schemas.DocTags);
+		const docSchema = createTestSchema(schemas.DocTags);
 		expect(docSchema.nullable).toBe(true);
 		expect(docSchema.title).toBe("My Title");
 		expect(docSchema.anyOf).toEqual([{ type: "string" }]);
-		expect(docSchema.properties.val.minimum).toBe(1.5);
+		expect(docSchema.properties?.val?.minimum).toBe(1.5);
 	});
 
 	it("should test applyNullability and findDiscriminatorProperty sorting", () => {
@@ -783,26 +773,26 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 			"/models/nullability.ts",
 		);
 
-		expect(testCast<TestValue>(schemas).AnyOfNull.anyOf).toBeDefined();
-		expect(testCast<TestValue>(schemas).OneOfNull.oneOf).toBeDefined();
-		expect(testCast<TestValue>(schemas).TypeNull.type).toContain("null");
-		expect(testCast<TestValue>(schemas).RefNull.anyOf).toBeDefined();
+		expect(asSchemaMap(schemas).AnyOfNull?.anyOf).toBeDefined();
+		expect(asSchemaMap(schemas).OneOfNull?.oneOf).toBeDefined();
+		expect(asSchemaMap(schemas).TypeNull?.type).toContain("null");
+		expect(asSchemaMap(schemas).RefNull?.anyOf).toBeDefined();
 
-		expect(testCast<TestValue>(schemas).UnionZebra.discriminator).toEqual({
+		expect(asSchemaMap(schemas).UnionZebra?.discriminator).toEqual({
 			propertyName: "apple",
 			mapping: {
 				1: "#/components/schemas/VariantX",
 				2: "#/components/schemas/VariantY",
 			},
 		});
-		expect(testCast<TestValue>(schemas).UnionSort.discriminator).toEqual({
+		expect(asSchemaMap(schemas).UnionSort?.discriminator).toEqual({
 			propertyName: "type",
 			mapping: {
 				"1": "#/components/schemas/SortA",
 				"3": "#/components/schemas/SortB",
 			},
 		});
-		expect(testCast<TestValue>(schemas).UnionSort2.discriminator).toEqual({
+		expect(asSchemaMap(schemas).UnionSort2?.discriminator).toEqual({
 			propertyName: "type",
 			mapping: {
 				"2": "#/components/schemas/SortC",
@@ -826,7 +816,7 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 			"/models/enumprop.ts",
 		);
 
-		expect(testCast<TestValue>(schemas).UnionEnumProp.discriminator).toEqual({
+		expect(asSchemaMap(schemas).UnionEnumProp?.discriminator).toEqual({
 			propertyName: "enumProp",
 			mapping: {
 				A: "#/components/schemas/Variant1",
@@ -858,7 +848,7 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
         `;
 		const schemas = parseGeneratedModelSource(src, "/models/fallbacks.ts");
 		expect(schemas.EmptyNull).toBeDefined();
-		expect(testCast<TestValue>(schemas).EmptyNull.anyOf).toBeDefined();
+		expect(asSchemaMap(schemas).EmptyNull?.anyOf).toBeDefined();
 		expect(schemas.RestTupleLine488).toBeDefined();
 		expect(schemas.ComplexTupleLine517).toBeDefined();
 		expect(schemas.OneOfNullFallback).toBeDefined();
@@ -908,11 +898,11 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 		// But what if we just use a trick to inject enum: ["X"] into the AST parsing using JSDoc tags?
 		// Wait, applyDocs doesn't support @enum.
 
-		expect(testCast<TestValue>(schemas).LitNull.type).toBe("null");
+		expect(asSchemaMap(schemas).LitNull?.type).toBe("null");
 		expect(schemas.RestTuple).toBeDefined();
 		expect(schemas.UnionArrTypes).toBeDefined();
-		expect(testCast<TestValue>(schemas).OneOfNull2.oneOf).toBeDefined();
-		expect(testCast<TestValue>(schemas).FallbackNull.anyOf).toBeDefined();
+		expect(asSchemaMap(schemas).OneOfNull2?.oneOf).toBeDefined();
+		expect(asSchemaMap(schemas).FallbackNull?.anyOf).toBeDefined();
 	});
 
 	it("should hit type value parsing fallbacks in asBoolean", () => {
@@ -973,9 +963,9 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 		EnumMember.prototype.getValue = originalGetValue;
 
 		expect(schemas.ParsedTags).toBeDefined();
-		expect(testCast<TestValue>(schemas).UnionFallback.anyOf).toBeDefined();
-		expect(testCast<TestValue>(schemas).ObjNull.type).toContain("null");
-		expect(testCast<TestValue>(schemas.EnumFallback).enum).toEqual([
+		expect(asSchemaMap(schemas).UnionFallback?.anyOf).toBeDefined();
+		expect(asSchemaMap(schemas).ObjNull?.type).toContain("null");
+		expect(createTestSchema(schemas.EnumFallback).enum).toEqual([
 			"EXTERNAL_VAR",
 		]);
 		expect(schemas.UnionMultiTypesObj).toBeDefined();
@@ -994,7 +984,102 @@ describe("Core Utils: OpenAPI Reverse Models", () => {
 			"export interface Deeper { id: string; }",
 		);
 
-		const schemas = parseGeneratedModels(dir, testCast(fs));
+		const schemas = parseGeneratedModels(dir, fs);
 		expect(schemas.Deeper).toBeDefined();
+	});
+
+	it("should cover remaining reverse model parser branches", () => {
+		EnumMember.prototype.getValue = () => undefined;
+		const src = `
+		enum InternalUnexportedEnum {
+			A = "A",
+		}
+		export enum BareMemberEnum {
+			Bare,
+		}
+		/**
+		 * @booleanSchema
+		 */
+		export type VoidAlias = void;
+
+		/**
+		 * @booleanSchema maybe
+		 * @see
+		 * @x-flag
+		 * @min not-a-number
+		 * @title 123
+		 * @contains 123
+		 * @xml 123
+		 * @type 123
+		 */
+		export type TaggedNonVoid = string;
+
+		/**
+		 * @booleanSchema invalid
+		 * @oneOf [{"type":"string"}]
+		 * @anyOf [{"type":"number"}]
+		 */
+		export type AnyOfOverridesOneOf = string;
+
+		/**
+		 * @see https://example.com/only-url
+		 * @anyOf [{"type":"number"}]
+		 * @oneOf [{"type":"string"}]
+		 */
+		export type OneOfOverridesAnyOf = string;
+
+		export type OnlyUndefinedUnion = undefined | undefined;
+		export type LitUnionWithNull = 'X' | 'Y' | null;
+		export type LitUnionWithBigInt = 'X' | 1n;
+		export type UnknownWithNull = unknown | null;
+		export type BoolTypeAlias = boolean;
+		export type BareArrayRef = Array;
+		export type BareRecordRef = Record<string>;
+		export type UntypedInterface = {
+			untypedProp;
+		};
+		export type TupleWithLeadingOptAndRest = [a?: string, ...b: [number]];
+		export type TupleWithEmptyArrayRest = [a: string, ...b: []];
+
+		export interface DiscA {
+			kind: 'same';
+		}
+		export interface DiscB {
+			kind: 'same';
+		}
+		export type DuplicateDiscUnion = DiscA | DiscB;
+		export type MixedRefAndInlineUnion = DiscA | { kind: 'other' };
+
+		/** @booleanSchema true */
+		export type BoolTarget = boolean;
+		export type UnionWithBoolTarget = DiscA | BoolTarget;
+		export type UnionWithMissingTarget = DiscA | MissingTarget;
+		/** @oneOf [{"$ref": "#/invalid/ref"}, {"$ref": "#/components/schemas/DiscA"}] */
+		export type BadRefUnion = string;
+		/** @oneOf [true, {"$ref": "#/components/schemas/DiscA"}] */
+		export type BoolEntryUnion = string;
+		export interface EmptyDiscVariant {}
+		export type UnionWithEmptyVariant = DiscA | EmptyDiscVariant;
+		/** @oneOf [{"kind": {"type": "string"}}, {"kind": {"type": "string"}}] */
+		export type NonConstDiscUnion = string;
+		`;
+		const schemas = parseGeneratedModelSource(src, "/models/remaining.ts");
+		EnumMember.prototype.getValue = originalGetValue;
+
+		expect(schemas.InternalUnexportedEnum).toBeUndefined();
+		expect(schemas.BareMemberEnum).toEqual({
+			type: "string",
+			enum: ["Bare"],
+		});
+		expect(schemas.VoidAlias).toBe(false);
+		expect(schemas.BoolTypeAlias).toEqual({ type: "boolean" });
+		expect(schemas.OnlyUndefinedUnion).toEqual({});
+		expect(schemas.LitUnionWithNull).toEqual({
+			type: ["string", "null"],
+			enum: ["X", "Y", null],
+		});
+		expect(schemas.DuplicateDiscUnion).toBeDefined();
+		expect(schemas.MixedRefAndInlineUnion).toBeDefined();
+		expect(schemas.UnionWithBoolTarget).toBeDefined();
 	});
 });

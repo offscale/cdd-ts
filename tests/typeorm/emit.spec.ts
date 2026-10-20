@@ -1,15 +1,17 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import type { SwaggerParser } from "../../src/openapi/parse.js";
 import { TypeOrmGenerator } from "../../src/vendors/typeorm/emit.js";
-import { testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	expectZeroTypeScriptDiagnostics,
+} from "../shared/helpers.js";
 
 describe("TypeOrmGenerator", () => {
 	it("should generate an entity file correctly with explicit types and JSDoc", async () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const mockParser = testCast<SwaggerParser>({
+		const mockParser = {
 			schemas: [
 				{
 					name: "User",
@@ -23,6 +25,7 @@ describe("TypeOrmGenerator", () => {
 							email: { type: "string" },
 							createdAt: { type: "string", format: "date-time" },
 							isActive: { type: "boolean" },
+							tags: { type: "array" },
 							metadata: { type: "object" },
 							skippedProp: true, // Testing the boolean fallback exclusion
 							price: { type: "number" },
@@ -34,14 +37,15 @@ describe("TypeOrmGenerator", () => {
 					},
 				},
 			],
-		});
+		};
 
 		await generator.generate(
 			project,
 			mockParser,
-			testCast({ options: { tests: true } }),
+			createTestConfig({ options: { tests: true } }),
 			"/out",
 		);
+		expectZeroTypeScriptDiagnostics(project);
 
 		const file = project.getSourceFileOrThrow("/out/entities/user.entity.ts");
 		const text = file.getFullText();
@@ -69,8 +73,10 @@ describe("TypeOrmGenerator", () => {
 		expect(text).toContain("@Column({ type: 'boolean' })");
 		expect(text).toContain("isActive!: boolean;");
 
+		expect(text).toContain("tags?: unknown[];");
+
 		expect(text).toContain("@Column({ type: 'json', nullable: true })");
-		expect(text).toContain("metadata?: any;");
+		expect(text).toContain("metadata?: Record<string, unknown>;");
 
 		expect(text).toContain("@Column({ type: 'float', nullable: true })");
 		expect(text).toContain("price?: number;");
@@ -105,20 +111,20 @@ describe("TypeOrmGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const mockParser = testCast<SwaggerParser>({ schemas: undefined });
+		const mockParser = { schemas: undefined };
 		await generator.generate(
 			project,
 			mockParser,
-			testCast({ options: {} }),
+			createTestConfig({ options: {} }),
 			"/out",
 		);
 		expect(project.getSourceFiles().length).toBe(0);
 
-		const mockParser2 = testCast<SwaggerParser>({ schemas: [] });
+		const mockParser2 = { schemas: [] };
 		await generator.generate(
 			project,
 			mockParser2,
-			testCast({ options: {} }),
+			createTestConfig({ options: {} }),
 			"/out",
 		);
 		expect(project.getSourceFiles().length).toBe(0);
@@ -128,19 +134,19 @@ describe("TypeOrmGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const mockParser = testCast<SwaggerParser>({
+		const mockParser = {
 			schemas: [
 				{
 					name: "StringAlias",
 					definition: { type: "string" },
 				},
 			],
-		});
+		};
 
 		await generator.generate(
 			project,
 			mockParser,
-			testCast({ options: {} }),
+			createTestConfig({ options: {} }),
 			"/out",
 		);
 		// It shouldn't create entities directory or files for non-object schemas
@@ -151,19 +157,19 @@ describe("TypeOrmGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const mockParser = testCast<SwaggerParser>({
+		const mockParser = {
 			schemas: [
 				{
 					name: "NoProps",
 					definition: { type: "object" }, // no properties
 				},
 			],
-		});
+		};
 
 		await generator.generate(
 			project,
 			mockParser,
-			testCast({ options: {} }),
+			createTestConfig({ options: {} }),
 			"/out",
 		);
 		const file = project.getSourceFileOrThrow(
@@ -177,7 +183,7 @@ describe("TypeOrmGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const mockParser = testCast<SwaggerParser>({
+		const mockParser = {
 			schemas: [
 				{
 					name: "OptionalId",
@@ -191,12 +197,12 @@ describe("TypeOrmGenerator", () => {
 					},
 				},
 			],
-		});
+		};
 
 		await generator.generate(
 			project,
 			mockParser,
-			testCast({ options: {} }),
+			createTestConfig({ options: {} }),
 			"/out",
 		);
 		const file = project.getSourceFileOrThrow(
@@ -212,9 +218,9 @@ describe("TypeOrmGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new TypeOrmGenerator();
 
-		const config = testCast({ options: { tests: false } });
+		const config = { options: { tests: false } };
 
-		const testParser = testCast({
+		const testParser = {
 			schemas: [
 				{
 					name: "User",
@@ -226,9 +232,9 @@ describe("TypeOrmGenerator", () => {
 					},
 				},
 			],
-		});
+		};
 
-		generator.generate(project, testCast(testParser), testCast(config), "/out");
+		generator.generate(project, testParser, createTestConfig(config), "/out");
 
 		expect(project.getSourceFile("/out/entities/user.entity.ts")).toBeDefined();
 		expect(

@@ -104,7 +104,7 @@ const ${camelCase(resource.name)}Service = use${serviceName}();
 const isEditMode = computed(() => !!route.params.id);
 const itemId = computed(() => route.params.id as string);
 
-const formData = ref<Record<string, any>>({
+const formData = ref<Record<string, string | number | boolean>>({
 ${properties
 	.map((prop) => {
 		const schemaType = (prop.schema as { type?: string })?.type;
@@ -143,8 +143,8 @@ const loadData = async () => {
         }`
 						: `// TODO: Implement fetch logic`
 				}
-    } catch (err: any) {
-        error.value = err.message || t('common.errorFetching', 'Error fetching data');
+    } catch (err: unknown) {
+        error.value = (err instanceof Error ? err.message : '') || t('common.errorFetching', 'Error fetching data');
     } finally {
         loading.value = false;
     }
@@ -160,8 +160,8 @@ const handleSubmit = async () => {
             await ${camelCase(resource.name)}Service.${createOp?.methodName}(formData.value);
         }
         router.push(\`/admin/${resource.name}\`);
-    } catch (err: any) {
-        error.value = err.message || t('common.errorSaving', 'Error saving data');
+    } catch (err: unknown) {
+        error.value = (err instanceof Error ? err.message : '') || t('common.errorSaving', 'Error saving data');
     } finally {
         submitting.value = false;
     }

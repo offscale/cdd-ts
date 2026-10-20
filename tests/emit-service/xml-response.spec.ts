@@ -4,7 +4,7 @@ import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../shared/helpers.js";
+import { createTestOperation } from "../shared/helpers.js";
 
 const xmlResponseSpec = {
 	openapi: "3.0.0",
@@ -44,7 +44,7 @@ describe("Emitter: ServiceMethodGenerator (XML Response Parsing)", () => {
 			options: { enumStyle: "enum", framework: "angular" },
 		};
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(testCast(xmlResponseSpec), config);
+		const parser = new SwaggerParser(xmlResponseSpec, config);
 
 		new TypeGenerator(parser, project, config).generate("/out");
 
@@ -77,16 +77,17 @@ describe("Emitter: ServiceMethodGenerator (XML Response Parsing)", () => {
 	it("should set responseType to text and pipe through XmlParser.parse", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: TestValue = testCast({
-			method: testCast("GET"),
-			path: testCast("/xml-data"),
-			methodName: testCast("getXmlData"),
-			responses: testCast(xmlResponseSpec.paths["/xml-data"].get.responses),
+		const op = createTestOperation({
+			method: "GET",
+			path: "/xml-data",
+			methodName: "getXmlData",
+			responses: xmlResponseSpec.paths["/xml-data"].get.responses,
 		});
 
-		methodGen.addServiceMethod(serviceClass, testCast(op));
+		methodGen.addServiceMethod(serviceClass, createTestOperation(op));
 
-		const body = serviceClass.getMethodOrThrow("getXmlData").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getXmlData").getBodyText() ?? "";
 
 		expect(body).toContain(`responseType: 'text'`);
 		expect(body).toContain(".pipe(");

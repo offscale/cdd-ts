@@ -27,11 +27,18 @@ export function parseGeneratedCliSource(
 		overwrite: true,
 	});
 
+	const info: NonNullable<SwaggerSpec["info"]> = {
+		title: "api-cli",
+		version: "1.0.0",
+	};
+	const paths: NonNullable<SwaggerSpec["paths"]> = {};
+	const servers: NonNullable<SwaggerSpec["servers"]> = [];
+
 	const spec: Partial<SwaggerSpec> = {
 		openapi: "3.1.0",
-		info: { title: "api-cli", version: "1.0.0" },
-		paths: {},
-		servers: [],
+		info,
+		paths,
+		servers,
 	};
 
 	function getBaseIdentifier(
@@ -69,40 +76,21 @@ export function parseGeneratedCliSource(
 					const args = call.getArguments();
 
 					if (name === "name" && args[0]) {
-						spec.info!.title = args[0].getText().replace(/['"]/g, "");
+						info.title = args[0].getText().replace(/['"]/g, "");
 					}
 
 					if (name === "version" && args[0]) {
-						spec.info!.version = args[0].getText().replace(/['"]/g, "");
+						info.version = args[0].getText().replace(/['"]/g, "");
 					}
 
 					if (name === "description" && args[0]) {
 						// Check that this is chained directly to program.name or program itself
-						let isProgramDesc = false;
-						const p = exp as import("ts-morph").PropertyAccessExpression;
-						if (p.getExpression().getText() === "program") isProgramDesc = true;
-						else if (
-							p.getExpression().getKind() === SyntaxKind.CallExpression
-						) {
-							const pCall =
-								p.getExpression() as import("ts-morph").CallExpression;
-							if (
-								pCall.getExpression().getKind() ===
-								SyntaxKind.PropertyAccessExpression
-							) {
-								const pCallProp =
-									pCall.getExpression() as import("ts-morph").PropertyAccessExpression;
-								if (
-									pCallProp.getExpression().getText() === "program" &&
-									pCallProp.getName() === "name"
-								) {
-									isProgramDesc = true;
-								}
-							}
-						}
+						const exprText = prop.getExpression().getText();
+						const isProgramDesc =
+							exprText === "program" || exprText.startsWith("program.name(");
 
 						if (isProgramDesc) {
-							spec.info!.description = args[0]
+							info.description = args[0]
 								.getText()
 								.replace(/['"]/g, "")
 								.replace(/\\'/g, "'");
@@ -112,8 +100,8 @@ export function parseGeneratedCliSource(
 						const optStr = args[0].getText().replace(/['"]/g, "");
 						if (optStr.includes("--server")) {
 							const url = args[2] ? args[2].getText().replace(/['"]/g, "") : "";
-							if (url && spec.servers) {
-								spec.servers.push({ url });
+							if (url) {
+								servers.push({ url });
 							}
 						}
 					}
@@ -134,96 +122,98 @@ export function parseGeneratedCliSource(
 			) as CallExpression[]
 		).forEach((call) => {
 			const exp = call.getExpression();
-			if (exp.getKind() === SyntaxKind.PropertyAccessExpression) {
-				const prop = exp as import("ts-morph").PropertyAccessExpression;
-				const baseName = getBaseIdentifier(prop.getExpression());
-				if (baseName === v.getName() && prop.getName() === "command") {
-					const methodArg = call.getArguments()[0];
-					if (methodArg) {
-						const methodName = methodArg.getText().replace(/['"]/g, "");
-						const pathKey = `/${tag}/${methodName}`;
+			const prop = exp as import("ts-morph").PropertyAccessExpression;
+			const isGroupCommand =
+				exp.getKind() === SyntaxKind.PropertyAccessExpression &&
+				prop.getName() === "command" &&
+				getBaseIdentifier(prop.getExpression()) === v.getName();
+			if (isGroupCommand) {
+				const methodArg = call.getArguments()[0];
+				if (methodArg) {
+					const methodName = methodArg.getText().replace(/['"]/g, "");
+					const pathKey = `/${tag}/${methodName}`;
 
-						if (!spec.paths?.[pathKey]) {
-							spec.paths![pathKey] = {} as PathItem;
+					const pathItem: PathItem = {};
+					paths[pathKey] = pathItem;
+
+					const op: SpecOperation = {
+						operationId: methodName,
+						tags: [tag.charAt(0).toUpperCase() + tag.slice(1)],
+						responses: { "200": { description: "Success" } },
+					};
+
+					let httpMethod:
+						| "get"
+						| "post"
+						| "put"
+						| "delete"
+						| "patch"
+						| "head"
+						| "options" = "post";
+					const lowerMethod = methodName.toLowerCase();
+					if (
+						lowerMethod.startsWith("delete") ||
+						lowerMethod.startsWith("remove")
+					) {
+						httpMethod = "delete";
+					} else if (
+						lowerMethod.startsWith("put") ||
+						lowerMethod.startsWith("update")
+					) {
+						httpMethod = "put";
+					} else if (lowerMethod.startsWith("patch")) {
+						httpMethod = "patch";
+					}
+
+					let parent = call.getParent();
+					while (
+						parent &&
+						parent.getKind() === SyntaxKind.PropertyAccessExpression
+					) {
+						const pCall = parent.getParentIfKind(SyntaxKind.CallExpression) as
+							| CallExpression
+							| undefined;
+						if (!pCall) {
+							break;
 						}
-
-						const op: SpecOperation = {
-							operationId: methodName,
-							tags: [tag.charAt(0).toUpperCase() + tag.slice(1)],
-							responses: { "200": { description: "Success" } },
-						};
-
-						let httpMethod:
-							| "get"
-							| "post"
-							| "put"
-							| "delete"
-							| "patch"
-							| "head"
-							| "options" = "post";
-						const lowerMethod = methodName.toLowerCase();
-						if (
-							lowerMethod.startsWith("delete") ||
-							lowerMethod.startsWith("remove")
-						) {
-							httpMethod = "delete";
-						} else if (
-							lowerMethod.startsWith("put") ||
-							lowerMethod.startsWith("update")
-						) {
-							httpMethod = "put";
-						} else if (lowerMethod.startsWith("patch")) {
-							httpMethod = "patch";
-						}
-
-						let parent = call.getParent();
-						while (
-							parent &&
-							parent.getKind() === SyntaxKind.PropertyAccessExpression
-						) {
-							const pCall = parent.getParentIfKind(SyntaxKind.CallExpression) as
-								| CallExpression
-								| undefined;
-							if (!pCall) {
-								break;
+						const pName = (
+							parent as import("ts-morph").PropertyAccessExpression
+						).getName();
+						if (pName === "description") {
+							op.description = (
+								pCall.getArguments()[0] as import("ts-morph").Node
+							)
+								.getText()
+								.replace(/['"]/g, "");
+						} else if (pName === "option") {
+							const optStr = (
+								pCall.getArguments()[0] as import("ts-morph").Node
+							)
+								.getText()
+								.replace(/['"]/g, "");
+							const optDesc = pCall
+								.getArguments()[1]
+								?.getText()
+								.replace(/['"]/g, "");
+							const optMatch = optStr.match(
+								/--([a-zA-Z0-9-]+)\s+(<[^>]+>|\[[^\]]+\])/,
+							);
+							if (optMatch) {
+								if (!op.parameters) op.parameters = [];
+								op.parameters.push({
+									name: optMatch[1] as string,
+									in: "query",
+									required: (optMatch[2] as string).startsWith("<"),
+									description: optDesc,
+								} as Parameter);
 							}
-							const pName = (
-								parent as import("ts-morph").PropertyAccessExpression
-							).getName();
-							if (pName === "description") {
-								op.description = pCall
-									.getArguments()[0]
-									?.getText()
-									.replace(/['"]/g, "");
-							} else if (pName === "option") {
-								const optStr = pCall
-									.getArguments()[0]
-									?.getText()
-									.replace(/['"]/g, "");
-								const optDesc = pCall
-									.getArguments()[1]
-									?.getText()
-									.replace(/['"]/g, "");
-								const optMatch = optStr.match(
-									/--([a-zA-Z0-9-]+)\s+(<[^>]+>|\[[^\]]+\])/,
-								);
-								if (optMatch) {
-									if (!op.parameters) op.parameters = [];
-									op.parameters.push({
-										name: optMatch[1],
-										in: "query",
-										required: optMatch[2].startsWith("<"),
-										description: optDesc,
-									} as Parameter);
-								}
-							}
-							parent = pCall.getParent();
 						}
+						parent = pCall.getParent();
+					}
 
-						(spec.paths?.[pathKey] as PathItem)[httpMethod] = op;
-						if (httpMethod !== "post") {
-							(spec.paths?.[pathKey] as PathItem).post = op;
-						}
+					pathItem[httpMethod] = op;
+					if (httpMethod !== "post") {
+						pathItem.post = op;
 					}
 				}
 			}

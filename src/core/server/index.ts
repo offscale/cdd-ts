@@ -26,7 +26,7 @@ export interface IServerFrameworkGenerator {
 		outputDir: string,
 		orm?: string,
 		config?: GeneratorConfig,
-		parser?: import("../../openapi/parse.js").SwaggerParser,
+		parser?: Pick<import("../../openapi/parse.js").SwaggerParser, "schemas">,
 	): void;
 
 	/**
@@ -36,24 +36,30 @@ export interface IServerFrameworkGenerator {
 	 * @param outputDir - The directory where the server code should be saved.
 	 * @param config - The generator configuration options.
 	 */
-	generateMcpRoutes?(
+	generateMcpRoutes(
 		project: Project,
-		parser: import("../../openapi/parse.js").SwaggerParser,
+		parser: {
+			spec?: import("../../openapi/parse.js").SwaggerParser["spec"] | undefined;
+			operations: import("../types/analysis.js").PathInfo[];
+		},
 		outputDir: string,
 		config?: GeneratorConfig,
 	): void;
 
 	/**
-	 * Generates the main server entrypoint and CLI handler.
+	 * Generates the main server entrypoint and CLI wrapper.
 	 * @param project - The active ts-morph project where the files will be written.
-	 * @param schemas - The list of schemas.
+	 * @param schemas - An array of entity schema names to wire up.
 	 * @param outputDir - The directory where the server code should be saved.
 	 * @param parser - Optional parsed OpenAPI specification.
 	 */
-	generateServerEntrypoint?(
+	generateServerEntrypoint(
 		project: Project,
 		schemas: string[],
 		outputDir: string,
-		parser?: import("../../openapi/parse.js").SwaggerParser,
+		parser?: Pick<
+			import("../../openapi/parse.js").SwaggerParser,
+			"spec" | "schemas" | "operations"
+		>,
 	): void;
 }

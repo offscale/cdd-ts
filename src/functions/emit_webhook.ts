@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 import type { OpenApiValue, PathInfo, PathItem } from "../core/types/index.js";
 import type { SwaggerParser } from "../openapi/parse.js";
 import {
@@ -109,10 +108,12 @@ export class WebhookGenerator {
 					this.parser.schemas.map((s) => s.name),
 				);
 
-				const responseKeys = Object.keys(sub.responses!);
+				const firstResponse = Object.values(
+					sub.responses as NonNullable<typeof sub.responses>,
+				)[0];
 
 				const responseType = getResponseType(
-					sub.responses?.[responseKeys[0]],
+					firstResponse,
 					this.parser.config,
 
 					this.parser.schemas.map((s) => s.name),
@@ -192,8 +193,6 @@ export class WebhookGenerator {
 		}
 
 		sourceFile.formatText();
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 	}
 
 	/**

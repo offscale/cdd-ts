@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 
 /** Generator/utility class `ExtensionTokensGenerator`. */
 export class ExtensionTokensGenerator {
@@ -27,8 +26,6 @@ export class ExtensionTokensGenerator {
 		const sourceFile = this.project.createSourceFile(filePath, "", {
 			overwrite: true,
 		});
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
 		sourceFile.addImportDeclarations([
 			{

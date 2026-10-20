@@ -27,7 +27,7 @@ export function hasDuplicateFunctionNames(
  * @returns Normalized security scheme identifier.
  */
 export function normalizeSecurityKey(key: string): string {
-	const withoutQuery = key.split("?")[0];
+	const withoutQuery = key.split("?")[0] as string;
 
 	const [, fragment] = withoutQuery.split("#");
 
@@ -35,7 +35,7 @@ export function normalizeSecurityKey(key: string): string {
 
 	const parts = target.split("/").filter(Boolean);
 
-	return parts.length > 0 ? parts[parts.length - 1] : key;
+	return parts.length > 0 ? (parts[parts.length - 1] as string) : key;
 }
 
 /**

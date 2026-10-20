@@ -5,58 +5,14 @@ import { ServiceGenerator } from "@src/vendors/angular/service/service.generator
 import { type ImportDeclaration, Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
+	createTestOperation,
 	createTestProject,
-	type TestCallable,
-	type TestValue,
-	testCast,
+	createTestSpec,
+	ensureTestSpecResponses,
 } from "../shared/helpers.js";
 import { branchCoverageSpec, coverageSpecPart2 } from "../shared/specs.js";
 
 describe("Generators (Angular): Service Generators (Coverage)", () => {
-	const ensureResponses = testCast(
-		testCast((spec: TestValue) => {
-			if (!spec?.paths) return spec;
-			const methods = [
-				"get",
-				"post",
-				"put",
-				"delete",
-				"options",
-				"head",
-				"patch",
-				"trace",
-				"query",
-			];
-
-			for (const pathItem of Object.values(spec.paths)) {
-				if (!pathItem || typeof pathItem !== "object") continue;
-				for (const method of methods) {
-					const operation = testCast(pathItem)[method];
-
-					if (operation && operation.responses === undefined) {
-						operation.responses = testCast({
-							"200": testCast({ description: testCast("ok") }),
-						});
-					}
-				}
-
-				if (testCast(pathItem).additionalOperations) {
-					for (const operation of Object.values(
-						testCast(pathItem).additionalOperations,
-					)) {
-						if (operation && testCast(operation).responses === undefined) {
-							testCast(operation).responses = testCast({
-								"200": testCast({ description: testCast("ok") }),
-							});
-						}
-					}
-				}
-			}
-
-			return spec;
-		}),
-	);
-
 	const run = (spec: object): Project => {
 		const project = createTestProject();
 		const config: GeneratorConfig = {
@@ -65,11 +21,9 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 			options: { dateType: "string", enumStyle: "enum", framework: "angular" },
 		};
 
-		const specClone = testCast<TestCallable>(ensureResponses)(
-			JSON.parse(JSON.stringify(spec)),
-		);
+		const specClone = ensureTestSpecResponses(spec);
 
-		const parser = new SwaggerParser(testCast(specClone), config);
+		const parser = new SwaggerParser(specClone, config);
 		const serviceGen = new ServiceGenerator(parser, project, config);
 		const controllerGroups = groupPathsByController(parser);
 		for (const [name, operations] of Object.entries(controllerGroups)) {
@@ -119,10 +73,13 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/primitives.service.ts",
 		);
-		const _modelImport = serviceFile.getImportDeclaration(
+		const modelImport = serviceFile.getImportDeclaration(
 			(imp) => imp.getModuleSpecifierValue() === "../models",
 		);
-		void _modelImport;
+		expect(modelImport).toBeUndefined();
+		expect(
+			serviceFile.getClassOrThrow("PrimitivesService").getMethods().length,
+		).toBeGreaterThan(0);
 	});
 
 	it("should generate methods for multipart/form-data", () => {
@@ -130,10 +87,11 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/formData.service.ts",
 		);
-		const methodBody = serviceFile
-			.getClassOrThrow("FormDataService")
-			.getMethodOrThrow("postWithFormData")
-			.getBodyText()!;
+		const methodBody =
+			serviceFile
+				.getClassOrThrow("FormDataService")
+				.getMethodOrThrow("postWithFormData")
+				.getBodyText() ?? "";
 		expect(methodBody).toContain("const multipartConfig =");
 		expect(methodBody).toContain(
 			"MultipartBuilder.serialize(body, multipartConfig);",
@@ -148,10 +106,11 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/urlEncoded.service.ts",
 		);
-		const methodBody = serviceFile
-			.getClassOrThrow("UrlEncodedService")
-			.getMethodOrThrow("postWithUrlEncoded")
-			.getBodyText()!;
+		const methodBody =
+			serviceFile
+				.getClassOrThrow("UrlEncodedService")
+				.getMethodOrThrow("postWithUrlEncoded")
+				.getBodyText() ?? "";
 		expect(methodBody).toContain(
 			"const urlParamEntries = ParameterSerializer.serializeUrlEncodedBody(body,",
 		);
@@ -171,7 +130,11 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 		const modelImport = serviceFile.getImportDeclaration(
 			(imp: ImportDeclaration) => imp.getModuleSpecifierValue() === "../models",
 		);
-		expect(modelImport).toBeDefined();
+		expect(modelImport).toBeUndefined();
+		expect(
+			serviceFile.getClassOrThrow("PrimitiveResponseService").getMethods()
+				.length,
+		).toBeGreaterThan(0);
 	});
 
 	it("should handle request body without a schema", () => {
@@ -201,12 +164,12 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 
 		const responseOverload = overloads.find((o) =>
 			o.getReturnType().getText().includes("HttpResponse"),
-		)!;
+		);
 
 		const optionsParam = responseOverload
-			.getParameters()
-			.find((p) => p.getName() === "options")!;
-		expect(optionsParam.hasQuestionToken()).toBe(false);
+			?.getParameters()
+			.find((p) => p.getName() === "options");
+		expect(optionsParam?.hasQuestionToken()).toBe(false);
 	});
 
 	it('should fall back to "string | number | boolean | object | undefined | null" for responseType when no success response is defined', () => {
@@ -217,7 +180,7 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 		const method = serviceFile
 			.getClassOrThrow("NoSuccessResponseService")
 			.getMethodOrThrow("getNoSuccess");
-		expect(method.getOverloads()[0].getReturnType().getText()).toBe(
+		expect(method.getOverloads()[0]?.getReturnType().getText()).toBe(
 			"Observable<Record<string, string | number | boolean | object | null | undefined>>",
 		);
 	});
@@ -249,10 +212,11 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 			output: "/out",
 			options: { dateType: "string", enumStyle: "enum", framework: "angular" },
 		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 
 		// Mutate after validation
-		const op = parser.operations.find((o) => o.operationId === "getEdge")!;
+		const op = parser.operations.find((o) => o.operationId === "getEdge");
+		if (!op) throw new Error("Expected getEdge");
 		op.parameters = [
 			{
 				name: "p1",
@@ -280,20 +244,36 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 			},
 		];
 
-		op.responses!["200"].content!["application/json"].schema = undefined;
-		op.responses!["200"].content!["application/json"].itemSchema = {
+		const respContent = op.responses?.["200"]?.content;
+		if (!respContent?.["application/json"]) {
+			throw new Error("Expected respContent");
+		}
+		respContent["application/json"].schema = undefined;
+		respContent["application/json"].itemSchema = {
 			type: "string",
 		};
-		op.responses!["200"].content!["text/plain"] = { schema: undefined };
+		respContent["text/plain"] = { schema: undefined };
 
 		const project = new Project({ useInMemoryFileSystem: true });
 		const serviceGen = new ServiceGenerator(parser, project, config);
-		serviceGen.generateServiceFile("Edge", [testCast(op)], "/out/services");
+		serviceGen.generateServiceFile(
+			"Edge",
+			[createTestOperation(op)],
+			"/out/services",
+		);
 
 		const serviceFile = project.getSourceFileOrThrow(
 			"/out/services/edge.service.ts",
 		);
-		expect(serviceFile).toBeDefined();
+		const edgeMethod = serviceFile
+			.getClassOrThrow("EdgeService")
+			.getMethodOrThrow("getEdge");
+		expect(edgeMethod.getParameters().map((p) => p.getName())).toEqual([
+			"p1",
+			"p2",
+			"p3",
+			"options",
+		]);
 	});
 
 	it("should handle default responses and responses without content", () => {
@@ -347,7 +327,12 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 		const noContentServiceFile = project.getSourceFileOrThrow(
 			"/out/services/noContentResponse.service.ts",
 		);
-		expect(noContentServiceFile).toBeDefined();
+		const noContentMethod = noContentServiceFile
+			.getClassOrThrow("NoContentResponseService")
+			.getMethodOrThrow("getNoContentResponse");
+		expect(noContentMethod.getOverloads()[0]?.getReturnType().getText()).toBe(
+			"Observable<Record<string, string | number | boolean | object | null | undefined>>",
+		);
 	});
 
 	it("should generate SSE parsing logic for text/event-stream", () => {
@@ -390,7 +375,7 @@ describe("Generators (Angular): Service Generators (Coverage)", () => {
 		const returnType = method.getReturnType().getText();
 		expect(returnType).toContain("Observable<");
 
-		const body = method.getBodyText()!;
+		const body = method.getBodyText() ?? "";
 		expect(body).toContain("fetch(url");
 		expect(body).toContain("response.body.getReader");
 		expect(body).toContain("SSE response body is not readable");

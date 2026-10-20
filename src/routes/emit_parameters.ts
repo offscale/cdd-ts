@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 import type { SwaggerParser } from "../openapi/parse.js";
 
 /**
@@ -42,9 +41,7 @@ export class ParametersGenerator {
 		const hasParameters = Object.keys(parameters).length > 0;
 
 		if (!hasParameters) {
-			sourceFile.replaceWithText(
-				`${UTILITY_GENERATOR_HEADER_COMMENT}export { };\n`,
-			);
+			sourceFile.replaceWithText("export { };\n");
 
 			return;
 		}
@@ -62,7 +59,5 @@ export class ParametersGenerator {
 		});
 
 		sourceFile.formatText();
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 	}
 }

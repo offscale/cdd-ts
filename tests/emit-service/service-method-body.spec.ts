@@ -11,7 +11,7 @@ import {
 	finalCoveragePushSpec,
 	finalCoverageSpec,
 } from "../fixtures/coverage.fixture.js";
-import { testCast } from "../shared/helpers.js";
+import { createTestOperation, createTestSpec } from "../shared/helpers.js";
 
 const specBodyTests = {
 	openapi: "3.0.0",
@@ -204,7 +204,9 @@ const specBodyTests = {
 };
 
 describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
-	const createTestEnvironment = (spec: object) => {
+	const createTestEnvironment = (
+		spec: object & { components?: { schemas?: Record<string, unknown> } },
+	) => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const config: GeneratorConfig = {
 			input: "",
@@ -212,7 +214,7 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 			options: { dateType: "Date", enumStyle: "enum" },
 		};
 
-		const baseComponents = testCast(spec).components || {};
+		const baseComponents = spec.components || {};
 		const extComponents = finalCoverageSpec.components || {};
 
 		const fullSpec = {
@@ -229,7 +231,7 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 			},
 		};
 
-		const parser = new SwaggerParser(testCast(fullSpec), config);
+		const parser = new SwaggerParser(createTestSpec(fullSpec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 		new ParameterSerializerGenerator(project).generate("/out");
 		new XmlBuilderGenerator(project).generate("/out");
@@ -262,16 +264,16 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should detect application/xml request body and generate xml serialization logic", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = {
 			...specBodyTests.paths["/xml-endpoint"].post,
 			method: "POST",
 			path: "/xml-endpoint",
 			methodName: "postXml",
-		});
+		};
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass.getMethodOrThrow("postXml").getBodyText()!;
+		const body = serviceClass.getMethodOrThrow("postXml").getBodyText() ?? "";
 		expect(body).toContain(
 			`const xmlBody = XmlBuilder.serialize(body, 'RequestRoot',`,
 		);
@@ -285,16 +287,17 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should generate blob wrapping for encoded multipart fields using accurate OAS 3.2 default logic", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = {
 			...specBodyTests.paths["/multipart-encoding"].post,
 			method: "POST",
 			path: "/multipart-encoding",
 			methodName: "postEncoded",
-		});
+		};
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass.getMethodOrThrow("postEncoded").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("postEncoded").getBodyText() ?? "";
 
 		expect(body).toContain(
 			'const multipartConfig = {"profile":{"contentType":"application/json"},"avatar":{"contentType":"image/png"}};',
@@ -310,16 +313,17 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should generate HttpParams builder calls for encoded url-encoded bodies", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = {
 			...specBodyTests.paths["/urlencoded-encoding"].post,
 			method: "POST",
 			path: "/urlencoded-encoding",
 			methodName: "postUrlEncoded",
-		});
+		};
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass.getMethodOrThrow("postUrlEncoded").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("postUrlEncoded").getBodyText() ?? "";
 
 		expect(body).toContain(
 			'const urlParamEntries = ParameterSerializer.serializeUrlEncodedBody(body, {"tags":{"style":"spaceDelimited","explode":false}});',
@@ -338,18 +342,18 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should apply ContentEncoder for urlencoded bodies with contentEncoding", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = {
 			...specBodyTests.paths["/urlencoded-content-encoding"].post,
 			method: "POST",
 			path: "/urlencoded-content-encoding",
 			methodName: "postUrlEncodedEncoded",
-		});
+		};
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass
-			.getMethodOrThrow("postUrlEncodedEncoded")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("postUrlEncodedEncoded").getBodyText() ??
+			"";
 
 		expect(body).toContain("let encodedBody = body;");
 		expect(body).toContain("encodedBody = ContentEncoder.encode(encodedBody");
@@ -360,16 +364,17 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should serialize ndjson request bodies using newline delimiters", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = {
 			...specBodyTests.paths["/jsonl-endpoint"].post,
 			method: "POST",
 			path: "/jsonl-endpoint",
 			methodName: "postJsonLines",
-		});
+		};
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass.getMethodOrThrow("postJsonLines").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("postJsonLines").getBodyText() ?? "";
 		expect(body).toContain("let jsonLinesBody = readOnlyModel;");
 		expect(body).toContain(
 			"jsonLinesBody = jsonLinesBody.map((item: Record<string, string | number | boolean | object | undefined | null>) => JSON.stringify(item)).join('\\n')",
@@ -381,18 +386,17 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should serialize custom JSON sequential request bodies using newline delimiters", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = {
 			...specBodyTests.paths["/custom-jsonl-endpoint"].post,
 			method: "POST",
 			path: "/custom-jsonl-endpoint",
 			methodName: "postCustomJsonLines",
-		});
+		};
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass
-			.getMethodOrThrow("postCustomJsonLines")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("postCustomJsonLines").getBodyText() ?? "";
 		expect(body).toContain("let jsonLinesBody = readOnlyModel;");
 		expect(body).toContain(
 			"jsonLinesBody = jsonLinesBody.map((item: Record<string, string | number | boolean | object | undefined | null>) => JSON.stringify(item)).join('\\n')",
@@ -461,7 +465,7 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 		const overload = serviceClass
 			.getMethodOrThrow("postWithReadOnly")
 			.getOverloads()[0];
-		expect(overload.getReturnType().getText()).toBe(
+		expect(overload?.getReturnType().getText()).toBe(
 			"Observable<ReadOnlyModel>",
 		);
 	});
@@ -482,9 +486,9 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass
-			.getMethodOrThrow("postUrlencodedNoParams")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("postUrlencodedNoParams").getBodyText() ??
+			"";
 		expect(body).toContain(
 			"const urlParamEntries = ParameterSerializer.serializeUrlEncodedBody(body, {});",
 		);
@@ -498,21 +502,20 @@ describe("Emitter: ServiceMethodGenerator (Body Handling)", () => {
 
 	it("should generate HttpParams for legacy formData", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specBodyTests);
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			method: "POST",
 			path: "/urlencoded",
 			methodName: "postLegacy",
 			consumes: ["application/x-www-form-urlencoded"],
 
-			parameters: testCast([
-				{ name: "grantType", in: "formData", type: "string" },
-			]),
+			parameters: [{ name: "grantType", in: "formData", type: "string" }],
 
-			responses: testCast({ "200": { description: "ok" } }),
+			responses: { "200": { description: "ok" } },
 		});
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass.getMethodOrThrow("postLegacy").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("postLegacy").getBodyText() ?? "";
 		expect(body).toContain("let formBody = new HttpParams();");
 		expect(body).toContain(
 			"if (grantType != null) { formBody = formBody.append('grantType', grantType); }",

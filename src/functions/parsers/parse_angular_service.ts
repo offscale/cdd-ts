@@ -158,15 +158,16 @@ export function extractAngularHttpCall(
 	}
 
 	let httpMethod = "GET";
-	if (directMatch) {
-		httpMethod = directMatch[1]!.toUpperCase();
+	if (directMatch?.[1]) {
+		httpMethod = directMatch[1].toUpperCase();
 		if (!returnTypeHint && directMatch[2]) {
 			returnTypeHint = directMatch[2];
 		}
-	} else if (requestMatch) {
-		httpMethod = requestMatch[2]!.toUpperCase();
-		if (!returnTypeHint && requestMatch[1]) {
-			returnTypeHint = requestMatch[1];
+	} else {
+		const reqMatch = requestMatch as RegExpExecArray;
+		httpMethod = (reqMatch[2] as string).toUpperCase();
+		if (!returnTypeHint && reqMatch[1]) {
+			returnTypeHint = reqMatch[1];
 		}
 	}
 

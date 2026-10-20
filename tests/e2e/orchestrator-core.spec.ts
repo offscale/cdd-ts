@@ -3,9 +3,10 @@ import { generateFromConfigSync } from "@src/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+	createTestOptions,
 	createTestProject,
+	createTestSpec,
 	runGeneratorWithConfig,
-	testCast,
 } from "../shared/helpers.js";
 import { coverageSpec, emptySpec } from "../shared/specs.js";
 
@@ -40,10 +41,10 @@ describe("E2E: Core Orchestrator Flow", () => {
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/generated",
-			options: testCast({ generateServices: true }),
+			options: createTestOptions({ generateServices: true }),
 		};
 		vi.spyOn(SwaggerParser, "createSync").mockReturnValue(
-			new SwaggerParser(testCast(emptySpec), config),
+			new SwaggerParser(createTestSpec(emptySpec), config),
 		);
 
 		expect(() => generateFromConfigSync(config, project)).toThrow(errorMessage);

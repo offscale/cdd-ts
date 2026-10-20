@@ -50,7 +50,7 @@ vi.mock('vue', async (importOriginal) => {
 });
 
 describe('${componentName}.vue', () => {
-    it('mounts successfully', () => {
+    it('mounts and renders template structure', () => {
         const wrapper = mount(Component, {
             global: {
                 stubs: {
@@ -60,6 +60,7 @@ describe('${componentName}.vue', () => {
             }
         });
         expect(wrapper.exists()).toBe(true);
+        expect(wrapper.html().length).toBeGreaterThan(0);
     });
 });
 `.trim(),

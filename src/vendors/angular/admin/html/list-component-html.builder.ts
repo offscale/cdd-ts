@@ -65,7 +65,7 @@ export function generateListComponentHtml(
 				.appendChild(
 					_.create("mat-icon")
 						.setAttribute("aria-hidden", "true")
-						.setTextContent(iconMap.get(action.action)!),
+						.setTextContent(iconMap.get(action.action) as string),
 				)
 				.appendChild(
 					_.create("span")
@@ -175,7 +175,7 @@ export function generateListComponentHtml(
 					.appendChild(
 						_.create("mat-icon")
 							.setAttribute("aria-hidden", "true")
-							.setTextContent(iconMap.get(action.action)!),
+							.setTextContent(iconMap.get(action.action) as string),
 					),
 			);
 

@@ -32,32 +32,30 @@ export class AdminTestGenerator {
 		const body = isList
 			? `
     it('renders loading state', () => {
-        // Mock hook to return isLoading: true
         const { container } = render(<${componentName} />);
-        expect(container).toBeDefined();
+        expect(container.firstChild).not.toBeNull();
     });
     it('renders error state', () => {
-        // Mock hook to return error: true
         const { container } = render(<${componentName} />);
-        expect(container).toBeDefined();
+        expect(container.innerHTML.length).toBeGreaterThan(0);
     });
     it('renders data state', () => {
-        // Mock hook to return data: []
         const { container } = render(<${componentName} />);
-        expect(container).toBeDefined();
+        expect(container.querySelector('table, div')).not.toBeNull();
     });`
 			: `
     it('renders create mode', () => {
         const { container } = render(<${componentName} />);
-        expect(container).toBeDefined();
+        expect(container.querySelector('form')).not.toBeNull();
     });
     it('submits the form successfully', () => {
         const { container } = render(<${componentName} />);
-        expect(container).toBeDefined();
+        const form = container.querySelector('form');
+        expect(form).not.toBeNull();
     });`;
 
 		sourceFile.addStatements(
-			`import React from 'react';\nimport { describe, it, expect, vi } from 'vitest';\nimport { render } from '@testing-library/react';\nimport { ${componentName} } from './${componentName.toLowerCase().replace("list", "-list").replace("form", "-form")}.js';\n\n// Mocks for react-router-dom and hooks should be configured here\nvi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn(), useParams: () => ({ id: undefined }), Link: ({ children }: any) => <a>{children}</a> }));\n\ndescribe('${componentName}', () => {${body}\n});\n`,
+			`import React from 'react';\nimport { describe, it, expect, vi } from 'vitest';\nimport { render } from '@testing-library/react';\nimport { ${componentName} } from './${componentName.toLowerCase().replace("list", "-list").replace("form", "-form")}.js';\n\n// Mocks for react-router-dom and hooks should be configured here\nvi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn(), useParams: () => ({ id: undefined }), Link: ({ children }: { children?: React.ReactNode }) => <a>{children}</a> }));\n\ndescribe('${componentName}', () => {${body}\n});\n`,
 		);
 		return sourceFile;
 	}

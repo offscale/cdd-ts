@@ -74,7 +74,7 @@ export class FetchServiceMethodGenerator extends AbstractHttpServiceMethodGenera
 				);
 
 				lines.push(
-					`urlParamEntries.forEach((entry: { key: string; value: string }) => formBody.append(entry.key, entry.value));`,
+					`urlParamEntries.forEach((entry: { key: string; value: string }) => { formBody.append(entry.key, entry.value); });`,
 				);
 
 				bodyArgument = "formBody";

@@ -1,13 +1,12 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { emitTestBlocks } from "../../src/tests/emit.js";
-import { testCast } from "../shared/helpers.js";
 
 describe("emitTestBlocks", () => {
 	it("should handle missing sourceFile", () => {
 		// Should not throw
 		expect(() =>
-			emitTestBlocks(testCast(null), { suiteName: "test", cases: [] }),
+			emitTestBlocks(null, { suiteName: "test", cases: [] }),
 		).not.toThrow();
 	});
 

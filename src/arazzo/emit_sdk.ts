@@ -6,7 +6,11 @@
  * @module arazzo/emit_sdk
  */
 import { posix as path } from "node:path";
-import type { Project, SourceFile } from "ts-morph";
+import {
+	type Project,
+	type SourceFile,
+	VariableDeclarationKind,
+} from "ts-morph";
 import {
 	applyPayloadReplacements,
 	evaluateCriteriaList,
@@ -594,6 +598,18 @@ export class ArazzoSdkGenerator {
 			{ overwrite: true },
 		);
 
+		modelsFile.addTypeAlias({
+			name: "ArazzoClientRegistry",
+			isExported: true,
+			type: "Record<string, unknown>",
+			docs: [
+				{
+					description:
+						"Registry of injected SDK service clients keyed by sourceDescription or service name.",
+				},
+			],
+		});
+
 		const knownTypes = this.parser.inputSchemas.map((s) => s.name);
 
 		for (const entry of this.parser.inputSchemas) {
@@ -700,29 +716,30 @@ export class ArazzoSdkGenerator {
 			{ overwrite: true },
 		);
 
-		const modelExports = this.parser.inputSchemas.map((s) => s.name);
+		const modelExports = [
+			"ArazzoClientRegistry",
+			...this.parser.inputSchemas.map((s) => s.name),
+		];
 		for (const wf of spec.workflows) {
 			if (wf.outputs && Object.keys(wf.outputs).length > 0) {
 				modelExports.push(`${pascalCase(wf.workflowId)}Outputs`);
 			}
 		}
 
-		if (modelExports.length > 0) {
-			indexFile.addExportDeclaration({
-				moduleSpecifier: "./models.js",
-				isTypeOnly: true,
-				namedExports: modelExports,
-			});
-			indexFile.addImportDeclaration({
-				moduleSpecifier: "./models.js",
-				isTypeOnly: true,
-				namedImports: modelExports,
-			});
-		}
+		indexFile.addExportDeclaration({
+			moduleSpecifier: "./models.js",
+			isTypeOnly: true,
+			namedExports: modelExports,
+		});
+		indexFile.addImportDeclaration({
+			moduleSpecifier: "./models.js",
+			isTypeOnly: true,
+			namedImports: modelExports,
+		});
 
 		indexFile.addVariableStatement({
 			isExported: true,
-			declarationKind: "const" as never,
+			declarationKind: VariableDeclarationKind.Const,
 			docs: [
 				{
 					description: `Embedded Arazzo ${spec.arazzo} specification metadata for lossless reverse AST parsing and runtime orchestration.`,
@@ -806,7 +823,7 @@ export class ArazzoSdkGenerator {
 				{
 					name: "clients",
 					isReadonly: true,
-					type: "Record<string, unknown>",
+					type: "ArazzoClientRegistry",
 					docs: [
 						{
 							description:
@@ -826,7 +843,7 @@ export class ArazzoSdkGenerator {
 					parameters: [
 						{
 							name: "clients",
-							type: "Record<string, unknown>",
+							type: "ArazzoClientRegistry",
 							initializer: "{}",
 						},
 					],
@@ -884,7 +901,7 @@ export class ArazzoSdkGenerator {
 				{
 					name: "inputs",
 					type: inputType,
-					hasQuestionToken: wf.inputs === undefined,
+					hasQuestionToken: true,
 				},
 			],
 			statements: (writer) => {
@@ -973,9 +990,14 @@ export class ArazzoSdkGenerator {
 					for (const wf of this.parser.spec.workflows) {
 						const methodName = camelCase(wf.workflowId);
 						writer.writeLine(
-							`const res_${methodName} = await orchestrator.${methodName}({} as never);`,
+							`const res_${methodName} = await orchestrator.${methodName}();`,
 						);
 						writer.writeLine(`expect(res_${methodName}).toBeDefined();`);
+						for (const step of wf.steps) {
+							writer.writeLine(
+								`expect((res_${methodName} as Record<string, Record<string, unknown>>)[${JSON.stringify(step.stepId)}]?.stepId).toBe(${JSON.stringify(step.stepId)});`,
+							);
+						}
 					}
 				});
 				writer.writeLine("});");

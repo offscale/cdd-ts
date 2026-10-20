@@ -7,6 +7,7 @@
 import type { ClassDeclaration } from "ts-morph";
 import type { GeneratorConfig, PathInfo } from "../core/types/index.js";
 import type { SwaggerParser } from "../openapi/parse.js";
+import { buildOperationMethodDocs } from "./emit_operation_jsdoc.js";
 import { ServiceMethodAnalyzer } from "./parse_analyzer.js";
 import type { ParamSerialization, ServiceMethodModel } from "./types.js";
 import { pascalCase } from "./utils.js";
@@ -132,7 +133,7 @@ export abstract class AbstractHttpServiceMethodGenerator {
 				`const serialized_${p.paramName} = ParameterSerializer.serializeQueryParam(${configObj}, ${p.paramName});`,
 			);
 			lines.push(
-				`serialized_${p.paramName}.forEach((entry: { key: string; value: string }) => ${searchParamsTarget}.append(entry.key, entry.value));`,
+				`serialized_${p.paramName}.forEach((entry: { key: string; value: string }) => { ${searchParamsTarget}.append(entry.key, entry.value); });`,
 			);
 		});
 		return lines;
@@ -151,6 +152,7 @@ export abstract class AbstractHttpServiceMethodGenerator {
 		const model = this.analyzer.analyze(operation);
 		if (!model) return;
 
+		let errorTypeAlias: string | undefined;
 		if (model.errorResponses && model.errorResponses.length > 0) {
 			const typeName = `${pascalCase(model.methodName)}Error`;
 			const union = [...new Set(model.errorResponses.map((e) => e.type))].join(
@@ -162,11 +164,18 @@ export abstract class AbstractHttpServiceMethodGenerator {
 				isExported: true,
 				type: union,
 			});
+			errorTypeAlias = typeName;
 		}
 
 		const returnType = this.computeReturnType(model);
 		const serverOptionType =
 			"{ server?: number | string; serverVariables?: Record<string, string> }";
+		const docs = buildOperationMethodDocs(
+			operation,
+			model,
+			this.parser,
+			errorTypeAlias,
+		);
 
 		classDeclaration.addMethod({
 			name: model.methodName,
@@ -181,6 +190,7 @@ export abstract class AbstractHttpServiceMethodGenerator {
 			],
 			returnType: `Promise<${returnType}>`,
 			statements: this.emitMethodBody(model, returnType),
+			docs,
 		});
 	}
 }

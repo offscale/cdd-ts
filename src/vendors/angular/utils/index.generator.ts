@@ -5,10 +5,6 @@
  */
 import * as path from "node:path";
 import type { Project } from "ts-morph";
-import {
-	MAIN_INDEX_GENERATOR_HEADER_COMMENT,
-	SERVICE_INDEX_GENERATOR_HEADER_COMMENT,
-} from "../../../core/constants.js";
 import type { GeneratorConfig } from "../../../core/types/index.js";
 import type { SwaggerParser } from "../../../openapi/parse.js";
 
@@ -39,8 +35,6 @@ export class MainIndexGenerator {
 			overwrite: true,
 		});
 
-		sourceFile.insertText(0, MAIN_INDEX_GENERATOR_HEADER_COMMENT);
-
 		sourceFile.addExportDeclaration({ moduleSpecifier: "./models" });
 
 		sourceFile.addExportDeclaration({ moduleSpecifier: "./info" });
@@ -62,8 +56,6 @@ export class MainIndexGenerator {
 
 		const hasPathMetadata = Object.entries(this.parser.spec.paths ?? {}).some(
 			([_, pathItem]) => {
-				if (!pathItem || typeof pathItem !== "object") return false;
-
 				if (pathItem.$ref || pathItem.summary || pathItem.description)
 					return true;
 
@@ -141,12 +133,13 @@ export class MainIndexGenerator {
 				{ moduleSpecifier: "./utils/response-header.service" },
 			]);
 
-			const hasResponseHeaders = this.parser.operations.some(
-				(op) =>
-					op.responses &&
-					Object.values(op.responses).some(
-						(r) => r.headers && Object.keys(r.headers).length > 0,
-					),
+			const hasResponseHeaders = this.parser.operations.some((op) =>
+				Object.values(
+					op.responses as Record<
+						string,
+						import("../../../core/types/index.js").SwaggerResponse
+					>,
+				).some((r) => r.headers && Object.keys(r.headers).length > 0),
 			);
 
 			if (hasResponseHeaders) {
@@ -161,15 +154,15 @@ export class MainIndexGenerator {
 				});
 			}
 
-			const hasLinks =
-				this.parser.links && Object.keys(this.parser.links).length > 0;
+			const hasLinks = Object.keys(this.parser.links).length > 0;
 
-			const hasOpLinks = this.parser.operations.some(
-				(op) =>
-					op.responses &&
-					Object.values(op.responses).some(
-						(r) => r.links && Object.keys(r.links).length > 0,
-					),
+			const hasOpLinks = this.parser.operations.some((op) =>
+				Object.values(
+					op.responses as Record<
+						string,
+						import("../../../core/types/index.js").SwaggerResponse
+					>,
+				).some((r) => r.links && Object.keys(r.links).length > 0),
 			);
 
 			if (hasLinks || hasOpLinks) {
@@ -192,9 +185,7 @@ export class MainIndexGenerator {
 			}
 
 			const hasWebhooks =
-				(this.parser.webhooks && this.parser.webhooks.length > 0) ||
-				(this.parser.spec.webhooks &&
-					Object.keys(this.parser.spec.webhooks).length > 0) ||
+				this.parser.webhooks.length > 0 ||
 				(!!this.parser.spec.components?.webhooks &&
 					Object.keys(this.parser.spec.components.webhooks).length > 0);
 
@@ -276,8 +267,6 @@ export class ServiceIndexGenerator {
 		const sourceFile = this.project.createSourceFile(indexPath, "", {
 			overwrite: true,
 		});
-
-		sourceFile.insertText(0, SERVICE_INDEX_GENERATOR_HEADER_COMMENT);
 
 		for (const serviceFile of serviceFiles) {
 			const serviceClass = serviceFile.getClasses()[0];

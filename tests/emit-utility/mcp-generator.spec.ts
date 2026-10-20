@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest";
 import type { GeneratorConfig } from "../../src/core/types/index.js";
 import type { SwaggerParser } from "../../src/openapi/parse.js";
 import { McpGenerator } from "../../src/vendors/mcp/emit.js";
-import { testCast } from "../shared/helpers.js";
+import { createTestConfig, createTestSpec } from "../shared/helpers.js";
 
 describe("McpGenerator", () => {
 	it("should generate mcp server file based on parser operations", async () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = testCast<SwaggerParser>({
+		const parser: Pick<SwaggerParser, "spec" | "operations"> = {
 			spec: {
 				info: { title: "Test API", version: "2.0.0" },
 			},
@@ -17,34 +17,38 @@ describe("McpGenerator", () => {
 					tags: ["TestTag"],
 					operationId: "testOp",
 					path: "/test",
+					method: "GET",
 					summary: "A test operation",
 					parameters: [
-						{ name: "param1", required: true, description: "first param" },
-						{ name: "param2", required: false },
 						{
-							/* nameless parameter should be ignored */
+							name: "param1",
+							in: "query",
+							required: true,
+							description: "first param",
+						},
+						{ name: "param2", in: "query", required: false },
+						{
+							name: "",
+							in: "query",
 						},
 					],
-					requestBody: {},
+					requestBody: { content: {} },
 				},
 				{
 					// No tags, no operationId, no parameters, no body
 					path: "/fallback",
+					method: "GET",
 				},
 				{
-					// Tags as objects
-					tags: [{ name: "ObjTag" }],
+					// Hyphenated tag
+					tags: ["obj-tag"],
 					path: "/obj",
-				},
-				{
-					// Tag as object without name
-					tags: [{}],
-					path: "/objnoname",
+					method: "GET",
 				},
 			],
-		});
+		};
 
-		const config = {} as GeneratorConfig;
+		const config: GeneratorConfig = createTestConfig({});
 		const generator = new McpGenerator();
 		generator.generate(project, parser, config, "/out");
 
@@ -79,25 +83,19 @@ describe("McpGenerator", () => {
 		expect(text).toContain("param1: z.string().describe('first param')");
 		expect(text).toContain("param2: z.string().optional()");
 		expect(text).toContain(
-			"body: z.any().optional().describe('JSON request body')",
+			"body: z.unknown().optional().describe('JSON request body')",
 		);
 		expect(text).toContain("const client = new services.TestTagClient()");
-		expect(text).toContain("const res = await client.testOp(args as any)");
+		expect(text).toContain("const res = await client.testOp(args)");
 
 		// Check fallback tool
 		expect(text).toContain("'fallback'");
 		expect(text).toContain("const client = new services.DefaultClient()");
-		expect(text).toContain("const res = await client.fallback(args as any)");
+		expect(text).toContain("const res = await client.fallback(args)");
 
-		// Check object tag tool
+		// Check hyphenated tag tool
 		expect(text).toContain("'obj'");
 		expect(text).toContain("const client = new services.ObjTagClient()");
-
-		// Check object tag tool without name
-		expect(text).toContain("'objnoname'");
-		expect(text).toContain(
-			"const client = new services.[object Object]Client()",
-		);
 
 		const adapterFile = project.getSourceFile("/out/mcp-adapter.ts");
 		expect(adapterFile).toBeDefined();
@@ -110,7 +108,7 @@ describe("McpGenerator", () => {
 		expect(adapterText).toContain('"required": [');
 		expect(adapterText).toContain('"param1"');
 		expect(adapterText).toContain(
-			"async executeTool(name: string, args: any): Promise<CallToolResult>",
+			"async executeTool(name: string, args: Record<string, unknown>): Promise<CallToolResult>",
 		);
 		expect(adapterText).toContain("case 'test_op': {");
 		expect(adapterText).toContain(
@@ -127,13 +125,13 @@ describe("McpGenerator", () => {
 
 	it("should handle missing info object completely", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = testCast<SwaggerParser>({
-			spec: {},
+		const parser: Pick<SwaggerParser, "spec" | "operations"> = {
+			spec: createTestSpec({}),
 			operations: [],
-		});
+		};
 
 		const generator = new McpGenerator();
-		generator.generate(project, parser, {} as GeneratorConfig, "/out2");
+		generator.generate(project, parser, createTestConfig({}), "/out2");
 		const mcpFile = project.getSourceFile("/out2/mcp.ts");
 		const text = mcpFile?.getFullText();
 		expect(text).toContain("name: 'api-mcp'");
@@ -142,13 +140,13 @@ describe("McpGenerator", () => {
 
 	it("should handle partial info object", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = testCast<SwaggerParser>({
-			spec: { info: {} },
+		const parser: Pick<SwaggerParser, "spec" | "operations"> = {
+			spec: createTestSpec({ info: {} }),
 			operations: [],
-		});
+		};
 
 		const generator = new McpGenerator();
-		generator.generate(project, parser, {} as GeneratorConfig, "/out3");
+		generator.generate(project, parser, createTestConfig({}), "/out3");
 		const mcpFile = project.getSourceFile("/out3/mcp.ts");
 		const text = mcpFile?.getFullText();
 		expect(text).toContain("name: 'api-mcp'");

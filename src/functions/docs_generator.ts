@@ -4,7 +4,7 @@
  * @module functions/docs_generator
  */
 import type { PathInfo } from "../core/types/analysis.js";
-import type { GeneratorConfig } from "../core/types/index.js";
+import type { GeneratorConfig, OpenApiValue } from "../core/types/index.js";
 import type { SwaggerParser } from "../openapi/parse.js";
 import { camelCase, pascalCase } from "./utils.js";
 
@@ -26,6 +26,9 @@ export interface DocOperationCode {
 	snippet: string;
 	/** Wrapper end code */
 	wrapper_end?: string;
+
+	/** Additional metadata properties. */
+	[key: string]: OpenApiValue;
 }
 
 /** Represents a single documented operation. */
@@ -38,12 +41,18 @@ export interface DocOperation {
 	operationId?: string;
 	/** Code snippets */
 	code: DocOperationCode;
+
+	/** Additional metadata properties. */
+	[key: string]: OpenApiValue;
 }
 
 /** Result structure containing endpoint documentation snippets by path and method. */
 export interface DocsJsonResult {
 	/** Map of endpoint paths to HTTP methods and generated code snippets. */
 	endpoints: Record<string, Record<string, string>>;
+
+	/** Additional metadata properties. */
+	[key: string]: OpenApiValue;
 }
 
 /** Represents a language and its operations. */
@@ -116,7 +125,7 @@ function getMethodName(op: PathInfo, config: GeneratorConfig): string {
  */
 
 export function generateDocsJson(
-	parser: SwaggerParser,
+	parser: Pick<SwaggerParser, "operations">,
 	config: GeneratorConfig,
 	options: DocsOptions,
 ): DocsJsonResult {

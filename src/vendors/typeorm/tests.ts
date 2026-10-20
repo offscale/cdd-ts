@@ -143,8 +143,22 @@ describe('Mock Server Integration Tests', () => {
     });
 
     describe('Topological Teardown & Clean State Validation', () => {
-        it('should verify clean state if needed', () => {
-            expect(true).toBe(true);
+        it('should verify clean state on fresh ephemeral instance', async () => {
+            const cleanApp = await startServer(['node', 'script.js', '--ephemeral']);
+            try {
+                ${schemas
+									.map(
+										(schema) => `
+                const res${schema.name} = await request(cleanApp).get('/${schema.name.toLowerCase()}');
+                expect(res${schema.name}.status).toBe(200);
+                expect(res${schema.name}.body).toEqual([]);`,
+									)
+									.join("\n")}
+            } finally {
+                if (cleanApp && cleanApp.locals && cleanApp.locals.dataSource) {
+                    await cleanApp.locals.dataSource.destroy();
+                }
+            }
         });
     });
 

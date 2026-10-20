@@ -12,7 +12,7 @@ import {
 	vi,
 } from "vitest";
 import { checkIsMain, executeIfMain, run } from "../../src/cli.js";
-import { testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 vi.mock("../../src/index.js", () => ({
 	generateFromConfigSync: vi.fn(),
@@ -87,8 +87,13 @@ describe("cli.ts", () => {
 	let consoleWarnSpy: import("vitest").MockInstance;
 	let consoleErrorSpy: import("vitest").MockInstance;
 	let stdoutSpy: import("vitest").MockInstance;
-	let mockServer: import("node:http").Server;
-	let requestHandler: http.RequestListener | undefined;
+	let mockServer: { listen: import("vitest").Mock };
+	let requestHandler:
+		| ((
+				req: { method: string; on: import("vitest").Mock },
+				res: { writeHead: import("vitest").Mock; end: import("vitest").Mock },
+		  ) => Promise<void> | void)
+		| undefined;
 	let actualFs: typeof import("node:fs");
 
 	const dummyConfigPath1 = path.join(process.cwd(), "dummy-config1.js");
@@ -128,25 +133,29 @@ describe("cli.ts", () => {
 		vi.resetModules();
 		vi.clearAllMocks();
 
-		vi.spyOn(console, "log").mockImplementation(() => {});
-		consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-		consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.spyOn(console, "log").mockImplementation(() => undefined);
+		consoleWarnSpy = vi
+			.spyOn(console, "warn")
+			.mockImplementation(() => undefined);
+		consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
 		stdoutSpy = vi
 			.spyOn(process.stdout, "write")
 			.mockImplementation(() => true);
 
-		mockServer = testCast<import("node:http").Server>({
+		mockServer = {
 			listen: vi.fn((_port: number, _host: string, cb: () => void) => {
 				if (cb) cb();
 				return mockServer;
 			}),
-		});
-		testCast<import("vitest").MockInstance>(
-			http.createServer,
-		).mockImplementation((handler: http.RequestListener) => {
-			requestHandler = handler;
-			return mockServer;
-		});
+		};
+		(http.createServer as import("vitest").Mock).mockImplementation(
+			(handler: typeof requestHandler) => {
+				requestHandler = handler;
+				return mockServer;
+			},
+		);
 
 		const cli = await import("../../src/cli.js");
 		run = cli.run;
@@ -187,10 +196,9 @@ describe("cli.ts", () => {
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			const indexModule = await import("../../src/index.js");
 			expect(indexModule.generateFromConfigSync).toHaveBeenCalled();
-			const config = testCast<Record<string, unknown>>(
-				vi.mocked(indexModule.generateFromConfigSync).mock.calls[0]?.[0],
-			);
-			expect(config.input).toBe("test.json");
+			const config = vi.mocked(indexModule.generateFromConfigSync).mock
+				.calls[0]?.[0];
+			expect(config?.input).toBe("test.json");
 		});
 
 		it("to_sdk defaults and relative output resolution", async () => {
@@ -235,10 +243,9 @@ describe("cli.ts", () => {
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			const indexModule = await import("../../src/index.js");
 			expect(indexModule.generateFromConfigSync).toHaveBeenCalled();
-			const config = testCast<Record<string, unknown>>(
-				vi.mocked(indexModule.generateFromConfigSync).mock.calls[0]?.[0],
-			);
-			expect(config.input).toBe(path.resolve(process.cwd(), "dummy.json"));
+			const config = vi.mocked(indexModule.generateFromConfigSync).mock
+				.calls[0]?.[0];
+			expect(config?.input).toBe(path.resolve(process.cwd(), "dummy.json"));
 		});
 
 		it("fails if config file throws a string error", async () => {
@@ -279,10 +286,9 @@ describe("cli.ts", () => {
 			]);
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			const indexModule = await import("../../src/index.js");
-			const config = testCast<Record<string, unknown>>(
-				vi.mocked(indexModule.generateFromConfigSync).mock.calls[0]?.[0],
-			);
-			expect(config.output).toBe(path.resolve(process.cwd(), "outdir", "src"));
+			const config = vi.mocked(indexModule.generateFromConfigSync).mock
+				.calls[0]?.[0];
+			expect(config?.output).toBe(path.resolve(process.cwd(), "outdir", "src"));
 		});
 
 		it("fails if config file not found", async () => {
@@ -312,11 +318,11 @@ describe("cli.ts", () => {
 	describe("to_openapi", () => {
 		it("generates yaml spec normally", async () => {
 			const utils = await import("../../src/functions/utils.js");
-			vi.mocked(utils.readOpenApiSnapshot).mockReturnValueOnce(
-				testCast({
-					spec: { openapi: "3.0.0" },
-				}),
-			);
+			vi.mocked(utils.readOpenApiSnapshot).mockReturnValueOnce({
+				spec: createTestSpec({ openapi: "3.0.0" }),
+				sourcePath: "in",
+				format: "yaml",
+			});
 			await run(["node", "cli.js", "to_openapi", "-i", "in"]);
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			expect(stdoutSpy).toHaveBeenCalledWith(
@@ -326,11 +332,11 @@ describe("cli.ts", () => {
 
 		it("generates json spec to file", async () => {
 			const utils = await import("../../src/functions/utils.js");
-			vi.mocked(utils.readOpenApiSnapshot).mockReturnValueOnce(
-				testCast({
-					spec: { openapi: "3.0.0" },
-				}),
-			);
+			vi.mocked(utils.readOpenApiSnapshot).mockReturnValueOnce({
+				spec: createTestSpec({ openapi: "3.0.0" }),
+				sourcePath: "in",
+				format: "json",
+			});
 			await run([
 				"node",
 				"cli.js",
@@ -512,7 +518,7 @@ describe("cli.ts", () => {
 			);
 
 			const { req, res } = createMockReqRes("GET");
-			await requestHandler?.(testCast(req), testCast(res));
+			await requestHandler?.(req, res);
 			await new Promise((r) => setTimeout(r, 10));
 			expect(res.writeHead).toHaveBeenCalledWith(405);
 			expect(res.end).toHaveBeenCalled();
@@ -522,7 +528,7 @@ describe("cli.ts", () => {
 			await run(["node", "cli.js", "serve_json_rpc"]);
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			const { req, res } = createMockReqRes("POST", "{ invalid }");
-			await requestHandler?.(testCast(req), testCast(res));
+			await requestHandler?.(req, res);
 			await new Promise((r) => setTimeout(r, 10));
 			expect(res.writeHead).toHaveBeenCalledWith(400, {
 				"Content-Type": "application/json",
@@ -539,7 +545,7 @@ describe("cli.ts", () => {
 				"POST",
 				JSON.stringify({ method: "unknown" }),
 			);
-			await requestHandler?.(testCast(req), testCast(res));
+			await requestHandler?.(req, res);
 			await new Promise((r) => setTimeout(r, 10));
 			expect(res.end).toHaveBeenCalledWith(
 				expect.stringContaining("Method not found"),
@@ -553,7 +559,7 @@ describe("cli.ts", () => {
 				"POST",
 				JSON.stringify({ method: "version", id: 1 }),
 			);
-			await requestHandler?.(testCast(req), testCast(res));
+			await requestHandler?.(req, res);
 			await new Promise((r) => setTimeout(r, 10));
 			expect(res.end).toHaveBeenCalledWith(
 				expect.stringContaining('"result":'),
@@ -571,7 +577,7 @@ describe("cli.ts", () => {
 					id: 1,
 				}),
 			);
-			await requestHandler?.(testCast(req), testCast(res));
+			await requestHandler?.(req, res);
 			await new Promise((r) => setTimeout(r, 10));
 			expect(res.end).toHaveBeenCalledWith(
 				expect.stringContaining('"result":"Success"'),
@@ -589,7 +595,7 @@ describe("cli.ts", () => {
 					id: 1,
 				}),
 			);
-			await requestHandler?.(testCast(req), testCast(res));
+			await requestHandler?.(req, res);
 			await new Promise((r) => setTimeout(r, 10));
 			expect(res.end).toHaveBeenCalledWith(
 				expect.stringContaining('"result":"Success"'),
@@ -607,7 +613,7 @@ describe("cli.ts", () => {
 					id: 1,
 				}),
 			);
-			await requestHandler?.(testCast(req), testCast(res));
+			await requestHandler?.(req, res);
 			await new Promise((r) => setTimeout(r, 10));
 			expect(res.end).toHaveBeenCalledWith(
 				expect.stringContaining('"result":"Success"'),
@@ -618,11 +624,11 @@ describe("cli.ts", () => {
 			await run(["node", "cli.js", "serve_json_rpc"]);
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			const utils = await import("../../src/functions/utils.js");
-			vi.mocked(utils.readOpenApiSnapshot).mockReturnValueOnce(
-				testCast({
-					spec: { openapi: "3.0.0" },
-				}),
-			);
+			vi.mocked(utils.readOpenApiSnapshot).mockReturnValueOnce({
+				spec: createTestSpec({ openapi: "3.0.0" }),
+				sourcePath: "in",
+				format: "json",
+			});
 			const { req, res } = createMockReqRes(
 				"POST",
 				JSON.stringify({
@@ -631,7 +637,7 @@ describe("cli.ts", () => {
 					id: 1,
 				}),
 			);
-			await requestHandler?.(testCast(req), testCast(res));
+			await requestHandler?.(req, res);
 			await new Promise((r) => setTimeout(r, 10));
 			expect(res.end).toHaveBeenCalledWith(
 				expect.stringContaining('"result":{"openapi":"3.0.0"}'),
@@ -649,7 +655,7 @@ describe("cli.ts", () => {
 					id: 1,
 				}),
 			);
-			await requestHandler?.(testCast(req), testCast(res));
+			await requestHandler?.(req, res);
 			await new Promise((r) => setTimeout(r, 10));
 			expect(res.end).toHaveBeenCalledWith(
 				expect.stringContaining('"result":{"docs":true}'),
@@ -673,7 +679,7 @@ describe("cli.ts", () => {
 						id: 1,
 					}),
 				);
-				await requestHandler?.(testCast(req), testCast(res));
+				await requestHandler?.(req, res);
 				await new Promise((r) => setTimeout(r, 10));
 				expect(res.writeHead).toHaveBeenCalledWith(200, {
 					"Content-Type": "application/json",
@@ -693,7 +699,7 @@ describe("cli.ts", () => {
 						id: 2,
 					}),
 				);
-				await requestHandler?.(testCast(req), testCast(res));
+				await requestHandler?.(req, res);
 				await new Promise((r) => setTimeout(r, 10));
 				expect(res.writeHead).toHaveBeenCalledWith(200, {
 					"Content-Type": "application/json",
@@ -718,7 +724,7 @@ describe("cli.ts", () => {
 					id: 1,
 				}),
 			);
-			await requestHandler?.(testCast(req), testCast(res));
+			await requestHandler?.(req, res);
 			await new Promise((r) => setTimeout(r, 10));
 			expect(res.writeHead).toHaveBeenCalledWith(400, {
 				"Content-Type": "application/json",
@@ -745,7 +751,7 @@ describe("cli.ts", () => {
 					id: 1,
 				}),
 			);
-			await requestHandler?.(testCast(req), testCast(res));
+			await requestHandler?.(req, res);
 			await new Promise((r) => setTimeout(r, 10));
 			expect(res.writeHead).toHaveBeenCalledWith(400, {
 				"Content-Type": "application/json",
@@ -765,7 +771,9 @@ describe("isMain block", () => {
 		const exitSpy = vi
 			.spyOn(process, "exit")
 			.mockImplementation(() => undefined as never);
-		const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const errSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
 
 		const fakeUrl = "file:///tmp/cli-entry.js";
 		let rejectedPromise: Promise<void> | undefined;
@@ -773,12 +781,12 @@ describe("isMain block", () => {
 			rejectedPromise = Promise.reject(new Error("runner boom"));
 			return rejectedPromise;
 		});
-		await rejectedPromise?.catch(() => {});
+		await rejectedPromise?.catch(() => undefined);
 		await new Promise((r) => setTimeout(r, 10));
 		expect(errSpy).toHaveBeenCalled();
 		expect(exitSpy).toHaveBeenCalledWith(1);
 
-		executeIfMain(["node"], fakeUrl, async () => {});
+		executeIfMain(["node"], fakeUrl, async () => undefined);
 	});
 });
 

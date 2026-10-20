@@ -1,13 +1,21 @@
 import type { GeneratorConfig } from "@src/core/types/index.js";
+import {
+	buildOperationMethodDocs,
+	filterMediaTypes,
+} from "@src/functions/emit_operation_jsdoc.js";
 import type { ServiceMethodModel } from "@src/functions/types.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it, vi } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestOperation,
+	createTestSpec,
+} from "../shared/helpers.js";
 
 describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
-	const config: GeneratorConfig = testCast({
+	const config: GeneratorConfig = createTestConfig({
 		input: "",
 		output: "/out",
 		options: { dateType: "string", enumStyle: "enum" },
@@ -16,7 +24,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 	it("should include docs when provided", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -60,17 +68,17 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 		vi.spyOn(generator.analyzer, "analyze").mockReturnValue(model);
 		generator.addServiceMethod(
 			classDeclaration,
-			testCast({ methodName: "doThing" }),
+			createTestOperation({ methodName: "doThing" }),
 		);
 
 		const docs = classDeclaration.getMethodOrThrow("doThing").getJsDocs();
-		expect(docs[0].getText()).toContain("Doc string");
+		expect(docs[0]?.getText()).toContain("Doc string");
 	});
 
 	it("should emit @operationId when provided on the operation", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -114,7 +122,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 		vi.spyOn(generator.analyzer, "analyze").mockReturnValue(model);
 		generator.addServiceMethod(
 			classDeclaration,
-			testCast({
+			createTestOperation({
 				methodName: "doThing",
 				operationId: "getThing",
 			}),
@@ -123,7 +131,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 		const docText = classDeclaration
 			.getMethodOrThrow("doThing")
 			.getJsDocs()[0]
-			.getText();
+			?.getText();
 		expect(docText).toContain("@operationId getThing");
 	});
 
@@ -176,7 +184,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 				},
 			},
 		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		const generator = new ServiceMethodGenerator(config, parser);
 
 		const model: ServiceMethodModel = {
@@ -211,12 +219,15 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 		const classDeclaration = sourceFile.addClass({ name: "TestService" });
 
 		vi.spyOn(generator.analyzer, "analyze").mockReturnValue(model);
-		generator.addServiceMethod(classDeclaration, parser.operations[0]);
+		generator.addServiceMethod(
+			classDeclaration,
+			parser.operations[0] as (typeof parser.operations)[number],
+		);
 
 		const docText = classDeclaration
 			.getMethodOrThrow("listItems")
 			.getJsDocs()[0]
-			.getText();
+			?.getText();
 		expect(docText).toContain("@tags items, admin");
 		expect(docText).toContain("@see https://example.com/items Item docs");
 		expect(docText).toContain('@server [{"url":"https://api.example.com/v1"');
@@ -272,7 +283,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 				},
 			},
 		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		const generator = new ServiceMethodGenerator(config, parser);
 
 		const model: ServiceMethodModel = {
@@ -314,12 +325,15 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 		const classDeclaration = sourceFile.addClass({ name: "TestService" });
 
 		vi.spyOn(generator.analyzer, "analyze").mockReturnValue(model);
-		generator.addServiceMethod(classDeclaration, parser.operations[0]);
+		generator.addServiceMethod(
+			classDeclaration,
+			parser.operations[0] as (typeof parser.operations)[number],
+		);
 
 		const docText = classDeclaration
 			.getMethodOrThrow("createItem")
 			.getJsDocs()[0]
-			.getText();
+			?.getText();
 		expect(docText).toContain('@paramExample id "abc"');
 		expect(docText).toContain("@paramExample limit 10");
 		expect(docText).toContain(
@@ -357,7 +371,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 			},
 			components: {},
 		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		const generator = new ServiceMethodGenerator(config, parser);
 
 		const model: ServiceMethodModel = {
@@ -392,12 +406,15 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 		const classDeclaration = sourceFile.addClass({ name: "TestService" });
 
 		vi.spyOn(generator.analyzer, "analyze").mockReturnValue(model);
-		generator.addServiceMethod(classDeclaration, parser.operations[0]);
+		generator.addServiceMethod(
+			classDeclaration,
+			parser.operations[0] as (typeof parser.operations)[number],
+		);
 
 		const docText = classDeclaration
 			.getMethodOrThrow("getText")
 			.getJsDocs()[0]
-			.getText();
+			?.getText();
 		expect(docText).toContain(
 			'@responseExample 200 text/plain {"__oasExample":{"serializedValue":"SERIALIZED-VALUE"}}',
 		);
@@ -407,7 +424,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 	it("should widen return type when multiple success response types exist", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.2.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -456,7 +473,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 		vi.spyOn(generator.analyzer, "analyze").mockReturnValue(model);
 		generator.addServiceMethod(
 			classDeclaration,
-			testCast({ methodName: "getMulti" }),
+			createTestOperation({ methodName: "getMulti" }),
 		);
 
 		const returnType =
@@ -473,7 +490,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 	it("should emit @response tags when responses are defined", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -517,7 +534,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 		vi.spyOn(generator.analyzer, "analyze").mockReturnValue(model);
 		generator.addServiceMethod(
 			classDeclaration,
-			testCast({
+			createTestOperation({
 				methodName: "withResponses",
 				responses: {
 					"200": {
@@ -538,7 +555,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 		const docText = classDeclaration
 			.getMethodOrThrow("withResponses")
 			.getJsDocs()[0]
-			.getText();
+			?.getText();
 		expect(docText).toContain("@response 200 application/json OK");
 		expect(docText).toContain("@response 200 text/plain OK");
 		expect(docText).toContain("@response 404 Not found");
@@ -548,7 +565,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 	it("should omit docs when none are provided", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -592,7 +609,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 		vi.spyOn(generator.analyzer, "analyze").mockReturnValue(model);
 		generator.addServiceMethod(
 			classDeclaration,
-			testCast({ methodName: "noDocs" }),
+			createTestOperation({ methodName: "noDocs" }),
 		);
 
 		expect(classDeclaration.getMethodOrThrow("noDocs").getJsDocs().length).toBe(
@@ -602,7 +619,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 
 	it("should generate body logic for xml, json-seq, json-lines, and decoding variants", () => {
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -690,7 +707,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 			hasServers: false,
 		};
 
-		const rawOp = testCast({
+		const rawOp = {
 			path: "/custom",
 			method: "CUSTOM",
 			parameters: [
@@ -701,9 +718,14 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 					content: { "application/json": { schema: { type: "string" } } },
 				},
 			],
-		});
+		};
 
-		const body = generator.emitMethodBody(model, testCast(rawOp), false, true);
+		const body = generator.emitMethodBody(
+			model,
+			createTestOperation(rawOp),
+			false,
+			true,
+		);
 
 		expect(body).toContain("serializeRawQuerystring(qs, 'json')");
 
@@ -728,7 +750,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 
 	it("should omit json hints for querystring and header params when not using json serialization", () => {
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -773,15 +795,20 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 			hasServers: false,
 		};
 
-		const rawOp = testCast({
+		const rawOp = {
 			path: "/qs",
 			method: "GET",
 			parameters: [
 				{ name: "qs", in: "querystring", schema: { type: "string" } },
 			],
-		});
+		};
 
-		const body = generator.emitMethodBody(model, testCast(rawOp), false, false);
+		const body = generator.emitMethodBody(
+			model,
+			createTestOperation(rawOp),
+			false,
+			false,
+		);
 
 		expect(body).toContain("serializeRawQuerystring(qs)");
 
@@ -794,7 +821,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 
 	it("should keep responseType as options when content negotiation has no xml/seq variants", () => {
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -835,9 +862,14 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 			hasServers: false,
 		};
 
-		const rawOp = testCast({ path: "/neg", method: "GET" });
+		const rawOp = { path: "/neg", method: "GET" };
 
-		const body = generator.emitMethodBody(model, testCast(rawOp), false, true);
+		const body = generator.emitMethodBody(
+			model,
+			createTestOperation(rawOp),
+			false,
+			true,
+		);
 
 		expect(body).toContain("const acceptHeader = headers.get('Accept');");
 
@@ -848,7 +880,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 
 	it("should default responseType to blob for binary responses", () => {
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.2.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -883,16 +915,21 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 			hasServers: false,
 		};
 
-		const rawOp = testCast({ path: "/download", method: "GET" });
+		const rawOp = { path: "/download", method: "GET" };
 
-		const body = generator.emitMethodBody(model, testCast(rawOp), false, false);
+		const body = generator.emitMethodBody(
+			model,
+			createTestOperation(rawOp),
+			false,
+			false,
+		);
 
 		expect(body).toContain("responseType: 'blob'");
 	});
 
 	it("should leave body null for unsupported body types", () => {
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -927,15 +964,20 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 			queryParams: [],
 			headerParams: [],
 			cookieParams: [],
-			body: testCast({ type: "binary", paramName: "payload" }),
+			body: { type: "encoded-form-data", paramName: "payload", mappings: [] },
 			security: [],
 			extensions: {},
 			hasServers: false,
 		};
 
-		const rawOp = testCast({ path: "/weird", method: "POST" });
+		const rawOp = { path: "/weird", method: "POST" };
 
-		const body = generator.emitMethodBody(model, testCast(rawOp), false, false);
+		const body = generator.emitMethodBody(
+			model,
+			createTestOperation(rawOp),
+			false,
+			false,
+		);
 
 		expect(body).toContain(
 			"this.http.post<string | number | boolean | object | undefined | null>(url, null, requestOptions as object)",
@@ -944,7 +986,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 
 	it("should set Content-Type when requestContentType is provided", () => {
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -981,9 +1023,14 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 			hasServers: false,
 		};
 
-		const rawOp = testCast({ path: "/text", method: "POST" });
+		const rawOp = { path: "/text", method: "POST" };
 
-		const body = generator.emitMethodBody(model, testCast(rawOp), false, false);
+		const body = generator.emitMethodBody(
+			model,
+			createTestOperation(rawOp),
+			false,
+			false,
+		);
 
 		expect(body).toContain(
 			"headers = headers.set('Content-Type', 'text/plain')",
@@ -994,7 +1041,7 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 
 	it("should fall back to string | number | boolean | object | undefined | null when responseType is empty", () => {
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "T", version: "1" },
 				paths: {},
@@ -1020,8 +1067,384 @@ describe("Emitter: ServiceMethodGenerator (Coverage)", () => {
 			"",
 		);
 
-		expect(overloads[0].returnType).toContain(
+		expect(overloads[0]?.returnType).toContain(
 			"Record<string, string | number | boolean | object | undefined | null>",
 		);
+	});
+
+	it("should handle binary content negotiation, SSE with body and decoding, and advanced param/body encoders", () => {
+		const parser = new SwaggerParser(
+			createTestSpec({
+				openapi: "3.2.0",
+				info: { title: "T", version: "1" },
+				paths: {},
+			}),
+			config,
+		);
+		const generator = new ServiceMethodGenerator(config, parser);
+
+		// 1. Binary content negotiation (only binary + json, no xml/seq)
+		const binaryNegModel: ServiceMethodModel = {
+			methodName: "negBinary",
+			httpMethod: "GET",
+			urlTemplate: "/neg-bin/{id}",
+			isDeprecated: false,
+			parameters: [{ name: "id", type: "string" }],
+			responseType: "Blob",
+			responseSerialization: "blob",
+			responseVariants: [
+				{
+					mediaType: "application/pdf",
+					type: "Blob",
+					serialization: "blob",
+					isDefault: true,
+				},
+				{
+					mediaType: "application/json",
+					type: "string",
+					serialization: "json",
+					isDefault: false,
+				},
+			],
+			errorResponses: [],
+			pathParams: [
+				{
+					paramName: "id",
+					originalName: "id",
+					explode: false,
+					allowReserved: false,
+					contentEncoderConfig: { encode: true },
+				},
+			],
+			queryParams: [
+				{
+					paramName: "qs",
+					originalName: "qs",
+					explode: true,
+					allowReserved: false,
+					contentEncoderConfig: { encode: true },
+				},
+			],
+			headerParams: [
+				{
+					paramName: "h1",
+					originalName: "X-H1",
+					explode: false,
+					allowReserved: false,
+					contentType: "application/x-www-form-urlencoded",
+					encoding: { a: { style: "form" } },
+					contentEncoderConfig: { encode: true },
+				},
+				{
+					paramName: "h2",
+					originalName: "X-H2",
+					explode: false,
+					allowReserved: false,
+					contentEncoderConfig: { encode: true },
+				},
+			],
+			cookieParams: [
+				{
+					paramName: "c1",
+					originalName: "c1",
+					explode: true,
+					allowReserved: false,
+					contentEncoderConfig: { encode: true },
+				},
+			],
+			security: [],
+			extensions: {},
+			hasServers: false,
+		};
+
+		const binRawOp = {
+			path: "/neg-bin/{id}",
+			method: "GET",
+			parameters: [
+				{
+					name: "qs",
+					in: "querystring",
+					content: { "text/plain": { schema: { type: "string" } } },
+				},
+			],
+		};
+		const binBody = generator.emitMethodBody(
+			binaryNegModel,
+			createTestOperation(binRawOp),
+			false,
+			true,
+		);
+		expect(binBody).toContain("acceptHeader?.includes('application/pdf')");
+		expect(binBody).toContain("? 'blob' : (false) ? 'text'");
+
+		// 2. SSE with bodyArgument !== "null", responseDecodingConfig, and undefined sseMode
+		const sseBodyModel: ServiceMethodModel = {
+			methodName: "ssePost",
+			httpMethod: "POST",
+			urlTemplate: "/sse",
+			isDeprecated: false,
+			parameters: [{ name: "payload", type: "string" }],
+			responseType: "string",
+			responseSerialization: "sse",
+			responseDecodingConfig: { contentEncoding: "base64" },
+			responseVariants: [
+				{
+					mediaType: "text/event-stream",
+					type: "string",
+					serialization: "sse",
+					isDefault: true,
+				},
+			],
+			errorResponses: [],
+			pathParams: [],
+			queryParams: [],
+			headerParams: [],
+			cookieParams: [],
+			body: { type: "urlencoded", paramName: "payload", config: {} },
+			requestEncodingConfig: { encode: true },
+			security: [],
+			extensions: {},
+			hasServers: false,
+		};
+		const sseBody = generator.emitMethodBody(
+			sseBodyModel,
+			createTestOperation({ path: "/sse", method: "POST" }),
+			true,
+			false,
+		);
+		expect(sseBody).toContain("const sseDecodingConfig =");
+		expect(sseBody).toContain("fetchOptions.body = formBody");
+		expect(sseBody).toContain(
+			"payload = ContentDecoder.decode(payload, sseDecodingConfig);",
+		);
+
+		// 3. Legacy formData with application/x-www-form-urlencoded and json-seq with requestEncodingConfig
+		const legacyFormModel: ServiceMethodModel = {
+			methodName: "legacyForm",
+			httpMethod: "POST",
+			urlTemplate: "/legacy",
+			isDeprecated: false,
+			parameters: [{ name: "fieldA", type: "string" }],
+			responseType: "string",
+			responseSerialization: "json",
+			responseVariants: [],
+			errorResponses: [],
+			pathParams: [],
+			queryParams: [],
+			headerParams: [],
+			cookieParams: [],
+			security: [],
+			extensions: {},
+			hasServers: false,
+		};
+		const legacyBody = generator.emitMethodBody(
+			legacyFormModel,
+			createTestOperation({
+				path: "/legacy",
+				method: "POST",
+				consumes: ["application/x-www-form-urlencoded"],
+				parameters: [{ name: "field_a", in: "formData", type: "string" }],
+			}),
+			false,
+			false,
+		);
+		expect(legacyBody).toContain(
+			"formBody = formBody.append('field_a', fieldA)",
+		);
+
+		const legacyMultiBody = generator.emitMethodBody(
+			legacyFormModel,
+			createTestOperation({
+				path: "/legacy-multi",
+				method: "POST",
+				consumes: ["multipart/form-data"],
+				parameters: [{ name: "field_a", in: "formData", type: "string" }],
+			}),
+			false,
+			false,
+		);
+		expect(legacyMultiBody).toContain("formData.append('field_a', fieldA)");
+
+		const seqEncModel: ServiceMethodModel = {
+			...legacyFormModel,
+			body: { type: "json-seq", paramName: "fieldA" },
+			requestEncodingConfig: { encode: true },
+		};
+		const seqEncBody = generator.emitMethodBody(
+			seqEncModel,
+			createTestOperation({ path: "/seq", method: "POST" }),
+			false,
+			false,
+		);
+		expect(seqEncBody).toContain(
+			"jsonSeqBody = ContentEncoder.encode(jsonSeqBody",
+		);
+
+		// 4. filterMediaTypes and buildOperationMethodDocs edge cases
+		expect(
+			filterMediaTypes([
+				"",
+				"text/*",
+				"*/json",
+				"application/json",
+				"application/json",
+			]),
+		).toEqual(["text/*", "application/json"]);
+
+		const jsdocParser = new SwaggerParser(
+			createTestSpec({
+				openapi: "3.2.0",
+				info: { title: "T", version: "1" },
+				paths: {
+					"/custom-add": {
+						additionalOperations: {
+							OTHER: {
+								responses: { "200": { description: "ok" } },
+							},
+						},
+					},
+					"/no-add": {
+						get: {
+							responses: { "200": { description: "ok" } },
+						},
+					},
+				},
+			}),
+			config,
+		);
+		const docs = buildOperationMethodDocs(
+			createTestOperation({
+				path: "/custom-add",
+				method: "LOCK",
+				externalDocs: { url: "https://example.com/no-desc" },
+				parameters: [
+					{
+						name: "p1",
+						in: "query",
+						examples: {
+							ex1: { externalValue: "https://example.com/ex.json" },
+						},
+					},
+					{
+						name: "p2",
+						in: "query",
+						examples: {
+							exEmpty: {},
+						},
+						schema: {
+							examples: ["fromSchemaArray"],
+						},
+					},
+					{
+						name: "p3",
+						in: "query",
+						examples: {
+							exPrim: "primitive",
+						},
+						schema: {
+							example: "fromSchemaDirect",
+						},
+					},
+					{
+						name: "p4",
+						in: "query",
+						content: {
+							"text/plain": {
+								examples: {
+									exSer: { serializedValue: "ser-val" },
+								},
+							},
+						},
+					},
+					{
+						name: "p5",
+						in: "query",
+						content: {
+							"text/plain": {
+								examples: {
+									exEmpty: {},
+								},
+							},
+						},
+					},
+					{
+						name: "qs",
+						in: "querystring",
+					},
+				],
+				requestBody: {
+					description: "Body desc",
+					content: {
+						"application/json": {
+							examples: {
+								exVal: { value: { a: 1 } },
+							},
+						},
+					},
+				},
+				responses: {
+					"200": {
+						description: "",
+						content: {
+							"application/json": {
+								examples: {
+									exData: { dataValue: { b: 2 } },
+								},
+							},
+						},
+					},
+					"204": {
+						description: "",
+					},
+				},
+			}),
+			{
+				...legacyFormModel,
+				docs: "",
+				parameters: [
+					{ name: "p1", type: "string" },
+					{ name: "p2", type: "string" },
+					{ name: "p3", type: "string" },
+					{ name: "p4", type: "string" },
+					{ name: "p5", type: "string" },
+					{ name: "qs", type: "string" },
+					{ name: "body", type: "object" },
+				],
+			},
+			jsdocParser,
+		);
+		expect(docs[0]).toContain("@paramExample p1");
+		expect(docs[0]).toContain("@paramExample p2");
+		expect(docs[0]).toContain("@paramExample p3");
+		expect(docs[0]).toContain("@paramExample p4");
+
+		const missingPathDocs = buildOperationMethodDocs(
+			createTestOperation({
+				path: "/not-in-spec",
+				method: "GET",
+				requestBody: {},
+			}),
+			{
+				...legacyFormModel,
+				docs: "",
+				parameters: [{ name: "body", type: "object" }],
+			},
+			jsdocParser,
+		);
+		expect(missingPathDocs).toEqual([]);
+
+		const noAddDocs = buildOperationMethodDocs(
+			createTestOperation({
+				path: "/no-add",
+				method: "POST",
+			}),
+			{
+				...legacyFormModel,
+				docs: "",
+				parameters: [],
+			},
+			jsdocParser,
+		);
+		expect(noAddDocs).toEqual([]);
 	});
 });

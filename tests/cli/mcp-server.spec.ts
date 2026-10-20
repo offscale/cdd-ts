@@ -1,10 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import * as cli from "../../src/cli.js";
 import { serveMcp } from "../../src/mcp_server.js";
-import { type TestValue, testCast } from "../shared/helpers.js";
+import { createTestProject } from "../shared/helpers.js";
 
-type McpAsyncHandler = (...args: unknown[]) => Promise<TestValue>;
-type McpSyncHandler = (...args: unknown[]) => TestValue;
+interface McpResult {
+	isError?: boolean;
+	content?: Array<{ type: string; text: string }>;
+	messages?: Array<{ role: string; content?: { type: string; text: string } }>;
+	contents?: Array<{ uri: string; mimeType: string; text: string }>;
+}
+
+type McpAsyncHandler = (...args: unknown[]) => Promise<McpResult>;
+type McpSyncHandler = (...args: unknown[]) => McpResult;
 
 const mockTool =
 	vi.fn<
@@ -22,7 +29,7 @@ const mockResource =
 		(name: string, uri: string, meta: unknown, handler: McpAsyncHandler) => void
 	>();
 const mockConnect = vi
-	.fn<(...args: TestValue[]) => Promise<undefined>>()
+	.fn<(...args: unknown[]) => Promise<undefined>>()
 	.mockResolvedValue(undefined);
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
@@ -50,10 +57,15 @@ describe("serveMcp", () => {
 			.mockResolvedValue("");
 		const spyGenerateFromArazzo = vi
 			.spyOn(cli, "generateFromArazzoSync")
-			.mockReturnValue(testCast({}));
+			.mockReturnValue(createTestProject());
 		const spyGenerateToArazzo = vi
 			.spyOn(cli, "generateToArazzo")
-			.mockReturnValue(testCast({}));
+			.mockReturnValue({
+				arazzo: "1.1.0",
+				info: { title: "T", version: "1" },
+				sourceDescriptions: [],
+				workflows: [],
+			});
 
 		await serveMcp();
 
@@ -63,9 +75,8 @@ describe("serveMcp", () => {
 			(call) => call[0] === "cdd_generate_arazzo_server",
 		);
 		expect(cdd_generate_arazzo_server).toBeDefined();
-		const arazzoServerHandler = testCast<McpAsyncHandler>(
-			cdd_generate_arazzo_server?.[3],
-		);
+		const arazzoServerHandler =
+			cdd_generate_arazzo_server?.[3] as McpAsyncHandler;
 		const resArazzoServer = await arazzoServerHandler({
 			input: "arazzo.yaml",
 			output: "out-srv",
@@ -94,9 +105,7 @@ describe("serveMcp", () => {
 			(call) => call[0] === "cdd_generate_arazzo_sdk",
 		);
 		expect(cdd_generate_arazzo_sdk).toBeDefined();
-		const arazzoSdkHandler = testCast<McpAsyncHandler>(
-			cdd_generate_arazzo_sdk?.[3],
-		);
+		const arazzoSdkHandler = cdd_generate_arazzo_sdk?.[3] as McpAsyncHandler;
 		const resArazzoSdk = await arazzoSdkHandler({
 			input: "arazzo.yaml",
 			output: "out",
@@ -133,7 +142,7 @@ describe("serveMcp", () => {
 			(call) => call[0] === "cdd_to_arazzo",
 		);
 		expect(cdd_to_arazzo).toBeDefined();
-		const toArazzoHandler = testCast<McpAsyncHandler>(cdd_to_arazzo?.[3]);
+		const toArazzoHandler = cdd_to_arazzo?.[3] as McpAsyncHandler;
 		const resToArazzo = await toArazzoHandler({
 			input: "src",
 			output: "arazzo.yaml",
@@ -168,7 +177,7 @@ describe("serveMcp", () => {
 		expect(cdd_generate_sdk).toBeDefined();
 
 		// Simulate invoking cdd_generate_sdk
-		const sdkHandler = testCast<McpAsyncHandler>(cdd_generate_sdk?.[3]);
+		const sdkHandler = cdd_generate_sdk?.[3] as McpAsyncHandler;
 		const resSdk = await sdkHandler({
 			input: "test.yaml",
 			output: "out",
@@ -192,7 +201,7 @@ describe("serveMcp", () => {
 			tests: true,
 		});
 		expect(errSdkStr.isError).toBe(true);
-		expect(errSdkStr.content[0].text).toContain("fail sdk string");
+		expect(errSdkStr.content?.[0]?.text).toContain("fail sdk string");
 
 		spyGenerateFromOpenApi.mockRejectedValueOnce(new Error("fail sdk error"));
 		const errSdkErr = await sdkHandler({
@@ -203,7 +212,7 @@ describe("serveMcp", () => {
 			tests: true,
 		});
 		expect(errSdkErr.isError).toBe(true);
-		expect(errSdkErr.content[0].text).toContain("fail sdk error");
+		expect(errSdkErr.content?.[0]?.text).toContain("fail sdk error");
 
 		const cdd_generate_server = mockTool.mock.calls.find(
 			(call) => call[0] === "cdd_generate_server",
@@ -211,7 +220,7 @@ describe("serveMcp", () => {
 		expect(cdd_generate_server).toBeDefined();
 
 		// Simulate invoking cdd_generate_server
-		const serverHandler = testCast<McpAsyncHandler>(cdd_generate_server?.[3]);
+		const serverHandler = cdd_generate_server?.[3] as McpAsyncHandler;
 		const resServer = await serverHandler({
 			input: "test.yaml",
 			output: "out",
@@ -232,7 +241,7 @@ describe("serveMcp", () => {
 			serverFramework: "express",
 		});
 		expect(errServerStr.isError).toBe(true);
-		expect(errServerStr.content[0].text).toContain("fail server string");
+		expect(errServerStr.content?.[0]?.text).toContain("fail server string");
 
 		spyGenerateFromOpenApi.mockRejectedValueOnce(
 			new Error("fail server error"),
@@ -243,7 +252,7 @@ describe("serveMcp", () => {
 			serverFramework: "express",
 		});
 		expect(errServerErr.isError).toBe(true);
-		expect(errServerErr.content[0].text).toContain("fail server error");
+		expect(errServerErr.content?.[0]?.text).toContain("fail server error");
 
 		const cdd_to_openapi = mockTool.mock.calls.find(
 			(call) => call[0] === "cdd_to_openapi",
@@ -256,9 +265,7 @@ describe("serveMcp", () => {
 		expect(cdd_inspect_schema).toBeDefined();
 
 		// Simulate invoking cdd_inspect_schema
-		const inspectSchemaHandler = testCast<McpAsyncHandler>(
-			cdd_inspect_schema?.[3],
-		);
+		const inspectSchemaHandler = cdd_inspect_schema?.[3] as McpAsyncHandler;
 
 		// Mock SwaggerParser to simulate success
 		vi.doMock("../../src/openapi/parse.js", () => ({
@@ -275,9 +282,11 @@ describe("serveMcp", () => {
 
 		const resInspect = await inspectSchemaHandler({ input: "test.yaml" });
 		expect(resInspect.isError).toBeUndefined();
-		expect(resInspect.content[0].text).toContain("Schema: Test API (v1.2.3)");
-		expect(resInspect.content[0].text).toContain("Paths: 1");
-		expect(resInspect.content[0].text).toContain("Components: 1 schemas");
+		expect(resInspect.content?.[0]?.text).toContain(
+			"Schema: Test API (v1.2.3)",
+		);
+		expect(resInspect.content?.[0]?.text).toContain("Paths: 1");
+		expect(resInspect.content?.[0]?.text).toContain("Components: 1 schemas");
 
 		// Simulate invoking cdd_inspect_schema with minimal spec (cover fallback branches)
 		vi.doMock("../../src/openapi/parse.js", () => ({
@@ -289,11 +298,13 @@ describe("serveMcp", () => {
 		}));
 		const resInspectEmpty = await inspectSchemaHandler({ input: "empty.yaml" });
 		expect(resInspectEmpty.isError).toBeUndefined();
-		expect(resInspectEmpty.content[0].text).toContain(
+		expect(resInspectEmpty.content?.[0]?.text).toContain(
 			"Schema: Unknown (v1.0.0)",
 		);
-		expect(resInspectEmpty.content[0].text).toContain("Paths: 0");
-		expect(resInspectEmpty.content[0].text).toContain("Components: 0 schemas");
+		expect(resInspectEmpty.content?.[0]?.text).toContain("Paths: 0");
+		expect(resInspectEmpty.content?.[0]?.text).toContain(
+			"Components: 0 schemas",
+		);
 
 		// Simulate invoking cdd_inspect_schema with error (Error object)
 		vi.doMock("../../src/openapi/parse.js", () => ({
@@ -304,7 +315,7 @@ describe("serveMcp", () => {
 
 		const errInspectErr = await inspectSchemaHandler({ input: "test.yaml" });
 		expect(errInspectErr.isError).toBe(true);
-		expect(errInspectErr.content[0].text).toContain("fail inspect schema");
+		expect(errInspectErr.content?.[0]?.text).toContain("fail inspect schema");
 
 		// Simulate invoking cdd_inspect_schema with error (string to cover String(err) branch)
 		vi.doMock("../../src/openapi/parse.js", () => ({
@@ -315,7 +326,7 @@ describe("serveMcp", () => {
 
 		const errInspectStr = await inspectSchemaHandler({ input: "test.yaml" });
 		expect(errInspectStr.isError).toBe(true);
-		expect(errInspectStr.content[0].text).toContain(
+		expect(errInspectStr.content?.[0]?.text).toContain(
 			"fail inspect schema string",
 		);
 
@@ -323,7 +334,7 @@ describe("serveMcp", () => {
 		vi.doUnmock("../../src/openapi/parse.js");
 
 		// Simulate invoking cdd_to_openapi
-		const toOpenApiHandler = testCast<McpAsyncHandler>(cdd_to_openapi?.[3]);
+		const toOpenApiHandler = cdd_to_openapi?.[3] as McpAsyncHandler;
 		const resToOpenApi = await toOpenApiHandler({
 			input: "src",
 			output: "out.yaml",
@@ -343,7 +354,7 @@ describe("serveMcp", () => {
 			format: "yaml",
 		});
 		expect(errToOpenApiStr.isError).toBe(true);
-		expect(errToOpenApiStr.content[0].text).toContain("fail openapi string");
+		expect(errToOpenApiStr.content?.[0]?.text).toContain("fail openapi string");
 
 		spyGenerateToOpenApi.mockRejectedValueOnce(new Error("fail openapi error"));
 		const errToOpenApiErr = await toOpenApiHandler({
@@ -352,7 +363,7 @@ describe("serveMcp", () => {
 			format: "yaml",
 		});
 		expect(errToOpenApiErr.isError).toBe(true);
-		expect(errToOpenApiErr.content[0].text).toContain("fail openapi error");
+		expect(errToOpenApiErr.content?.[0]?.text).toContain("fail openapi error");
 
 		// Simulate invoking cdd_ast_query
 		const cdd_ast_query = mockTool.mock.calls.find(
@@ -360,7 +371,7 @@ describe("serveMcp", () => {
 		);
 		expect(cdd_ast_query).toBeDefined();
 
-		const astQueryHandler = testCast<McpAsyncHandler>(cdd_ast_query?.[3]);
+		const astQueryHandler = cdd_ast_query?.[3] as McpAsyncHandler;
 
 		vi.doMock("../../src/functions/utils.js", () => ({
 			parseGeneratedModels: vi.fn().mockReturnValue({ model: "test" }),
@@ -373,21 +384,21 @@ describe("serveMcp", () => {
 			queryType: "models",
 		});
 		expect(resAstModels.isError).toBeUndefined();
-		expect(resAstModels.content[0].text).toContain('"model": "test"');
+		expect(resAstModels.content?.[0]?.text).toContain('"model": "test"');
 
 		const resAstServices = await astQueryHandler({
 			input: "test",
 			queryType: "services",
 		});
 		expect(resAstServices.isError).toBeUndefined();
-		expect(resAstServices.content[0].text).toContain('"service": "test"');
+		expect(resAstServices.content?.[0]?.text).toContain('"service": "test"');
 
 		const resAstMetadata = await astQueryHandler({
 			input: "test",
 			queryType: "metadata",
 		});
 		expect(resAstMetadata.isError).toBeUndefined();
-		expect(resAstMetadata.content[0].text).toContain('"metadata": "test"');
+		expect(resAstMetadata.content?.[0]?.text).toContain('"metadata": "test"');
 
 		// Test error handling
 		vi.doMock("../../src/functions/utils.js", () => ({
@@ -403,7 +414,7 @@ describe("serveMcp", () => {
 			queryType: "models",
 		});
 		expect(errAstErr.isError).toBe(true);
-		expect(errAstErr.content[0].text).toContain("fail ast query");
+		expect(errAstErr.content?.[0]?.text).toContain("fail ast query");
 
 		vi.doMock("../../src/functions/utils.js", () => ({
 			parseGeneratedModels: vi.fn().mockImplementation(() => {
@@ -418,7 +429,7 @@ describe("serveMcp", () => {
 			queryType: "models",
 		});
 		expect(errAstStr.isError).toBe(true);
-		expect(errAstStr.content[0].text).toContain("fail ast query string");
+		expect(errAstStr.content?.[0]?.text).toContain("fail ast query string");
 
 		// Test unknown queryType fallback
 		vi.doMock("../../src/functions/utils.js", () => ({
@@ -429,10 +440,10 @@ describe("serveMcp", () => {
 
 		const resAstUnknown = await astQueryHandler({
 			input: "test",
-			queryType: testCast("unknown"),
+			queryType: "unknown",
 		});
 		expect(resAstUnknown.isError).toBeUndefined();
-		expect(resAstUnknown.content[0].text).toBeUndefined();
+		expect(resAstUnknown.content?.[0]?.text).toBeUndefined();
 
 		vi.doUnmock("../../src/functions/utils.js");
 
@@ -456,12 +467,12 @@ describe("serveMcp", () => {
 		);
 		expect(cdd_instructions).toBeDefined();
 
-		const promptHandler = testCast<McpSyncHandler>(cdd_instructions?.[2]);
+		const promptHandler = cdd_instructions?.[2] as McpSyncHandler;
 		const resPrompt1 = promptHandler({ topic: "SDK" });
-		expect(resPrompt1.messages[0].content.text).toContain("Focus on: SDK");
+		expect(resPrompt1.messages?.[0]?.content?.text).toContain("Focus on: SDK");
 
 		const resPrompt2 = promptHandler({});
-		expect(resPrompt2.messages[0].content.text).not.toContain("Focus on:");
+		expect(resPrompt2.messages?.[0]?.content?.text).not.toContain("Focus on:");
 
 		expect(mockResource).toHaveBeenCalledTimes(1);
 		const cdd_architecture = mockResource.mock.calls.find(
@@ -469,22 +480,22 @@ describe("serveMcp", () => {
 		);
 		expect(cdd_architecture).toBeDefined();
 
-		const resourceHandler = testCast<McpAsyncHandler>(cdd_architecture?.[3]);
+		const resourceHandler = cdd_architecture?.[3] as McpAsyncHandler;
 		vi.doMock("node:fs/promises", () => ({
 			readFile: vi.fn().mockResolvedValue("mock architecture content"),
 		}));
-		const resResource = await resourceHandler(
-			testCast({
-				href: "file:///ARCHITECTURE.md",
-			}),
+		const resResource = await resourceHandler({
+			href: "file:///ARCHITECTURE.md",
+		});
+		expect(resResource.contents?.[0]?.text).toContain(
+			"mock architecture content",
 		);
-		expect(resResource.contents[0].text).toContain("mock architecture content");
 
 		vi.doMock("node:fs/promises", () => ({
 			readFile: vi.fn().mockRejectedValue(new Error("fail")),
 		}));
 		await expect(
-			resourceHandler(testCast({ href: "file:///ARCHITECTURE.md" })),
+			resourceHandler({ href: "file:///ARCHITECTURE.md" }),
 		).rejects.toThrow("Could not read ARCHITECTURE.md");
 		vi.doUnmock("node:fs/promises");
 	});

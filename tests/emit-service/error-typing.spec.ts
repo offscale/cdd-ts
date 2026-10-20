@@ -5,7 +5,7 @@ import { ServiceGenerator } from "@src/vendors/angular/service/service.generator
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 const errorTypingSpec = {
 	openapi: "3.0.0",
@@ -104,7 +104,7 @@ describe("Emitter: Error Typing Support", () => {
 			options: { dateType: "string", enumStyle: "enum" },
 		};
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(testCast(errorTypingSpec), config);
+		const parser = new SwaggerParser(createTestSpec(errorTypingSpec), config);
 
 		// Generate models first so TypeGenerator behavior is present (names are known)
 		new TypeGenerator(parser, project, config).generate("/out");
@@ -120,7 +120,8 @@ describe("Emitter: Error Typing Support", () => {
 		});
 		const cls = sourceFile.addClass({ name: "TestService" });
 
-		const op = parser.operations.find((o) => o.operationId === "getUser")!;
+		const op = parser.operations.find((o) => o.operationId === "getUser");
+		if (!op) throw new Error("Expected getUser");
 		op.methodName = "getUser";
 
 		gen.addServiceMethod(cls, op);
@@ -143,7 +144,8 @@ describe("Emitter: Error Typing Support", () => {
 		});
 		const cls = sourceFile.addClass({ name: "TestService" });
 
-		const op = parser.operations.find((o) => o.operationId === "getUser")!;
+		const op = parser.operations.find((o) => o.operationId === "getUser");
+		if (!op) throw new Error("Expected getUser");
 		op.methodName = "getUser";
 
 		gen.addServiceMethod(cls, op);
@@ -167,7 +169,8 @@ describe("Emitter: Error Typing Support", () => {
 		});
 		const cls = sourceFile.addClass({ name: "TestService" });
 
-		const op = parser.operations.find((o) => o.operationId === "deleteItem")!;
+		const op = parser.operations.find((o) => o.operationId === "deleteItem");
+		if (!op) throw new Error("Expected deleteItem");
 		op.methodName = "deleteItem";
 
 		gen.addServiceMethod(cls, op);

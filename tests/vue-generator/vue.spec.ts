@@ -4,7 +4,11 @@ import type { GeneratorConfig } from "../../src/core/types/index.js";
 import { SwaggerParser } from "../../src/openapi/parse.js";
 import { FetchClientGenerator } from "../../src/vendors/fetch/fetch-client.generator.js";
 import { VueClientGenerator } from "../../src/vendors/vue/vue-client.generator.js";
-import { testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestSpec,
+	expectZeroTypeScriptDiagnostics,
+} from "../shared/helpers.js";
 
 describe("Vue Implementation", () => {
 	beforeEach(() => {
@@ -64,6 +68,7 @@ describe("Vue Implementation", () => {
 		const generator = new VueClientGenerator();
 
 		await generator.generate(project, parser, config, "/output");
+		expectZeroTypeScriptDiagnostics(project);
 
 		const composablesIndex = project.getSourceFile(
 			"/output/composables/index.ts",
@@ -118,7 +123,7 @@ describe("Vue Implementation", () => {
 			options: { tests: false, framework: "vue" },
 		};
 
-		const spec = testCast({
+		const spec = {
 			openapi: "3.0.0",
 			info: { title: "Test API", version: "1.0.0" },
 			paths: {
@@ -132,8 +137,11 @@ describe("Vue Implementation", () => {
 					},
 				},
 			},
-		});
-		const parser = new SwaggerParser(testCast(spec), testCast({}));
+		};
+		const parser = new SwaggerParser(
+			createTestSpec(spec),
+			createTestConfig({}),
+		);
 
 		const generator = new VueClientGenerator();
 		await generator.generate(project, parser, config, "/out");

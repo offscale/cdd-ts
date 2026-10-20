@@ -172,11 +172,12 @@ ${links}
 			}
 		});
 
+		const firstResource = resources[0] as (typeof resources)[number];
 		const routerStatements = `
 ${routeImports.join("\n")}
 
 export const routes: RouteRecordRaw[] = [
-    { path: '/', redirect: '/${resources[0].name}' },
+    { path: '/', redirect: '/${firstResource.name}' },
     ${routeSpreads.join(",\n    ")}
 ];
 

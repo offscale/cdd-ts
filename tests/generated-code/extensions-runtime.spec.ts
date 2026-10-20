@@ -4,7 +4,7 @@ import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-met
 import { ExtensionTokensGenerator } from "@src/vendors/angular/utils/extension-tokens.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestConfig, createTestSpec } from "../shared/helpers.js";
 
 const extensionsSpec = {
 	openapi: "3.0.0",
@@ -24,12 +24,12 @@ const extensionsSpec = {
 describe("Generated Code: Extensions Runtime Support", () => {
 	const run = () => {
 		const project = new Project({ useInMemoryFileSystem: true });
-		const config: GeneratorConfig = testCast({
+		const config: GeneratorConfig = createTestConfig({
 			input: "",
 			output: "/out",
 			options: { framework: "angular" },
 		});
-		const parser = new SwaggerParser(testCast(extensionsSpec), config);
+		const parser = new SwaggerParser(createTestSpec(extensionsSpec), config);
 
 		// 1. Test Token Generation
 		new ExtensionTokensGenerator(project).generate("/out");
@@ -41,7 +41,7 @@ describe("Generated Code: Extensions Runtime Support", () => {
 		);
 
 		// 2. Test Service Generation Injection
-		const op = parser.operations[0];
+		const op = parser.operations[0] as (typeof parser.operations)[number];
 		op.methodName = "getCachedData";
 
 		const methodGen = new ServiceMethodGenerator(config, parser);
@@ -54,7 +54,7 @@ describe("Generated Code: Extensions Runtime Support", () => {
 		});
 
 		methodGen.addServiceMethod(cls, op);
-		return cls.getMethodOrThrow("getCachedData").getBodyText()!;
+		return cls.getMethodOrThrow("getCachedData").getBodyText() ?? "";
 	};
 
 	it("should inject extensions into HttpContext when present", () => {

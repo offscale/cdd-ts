@@ -8,7 +8,11 @@ import {
 } from "@src/openapi/parse_validator.js";
 import { describe, expect, it } from "vitest";
 import { info } from "../fixtures/common.js";
-import { testCast } from "../shared/helpers.js";
+import {
+	createTestExample,
+	createTestPaths,
+	createTestSpec,
+} from "../shared/helpers.js";
 
 describe("Core: Input Spec Validation", () => {
 	const validInfo = { title: "Valid API", version: "1.0.0" };
@@ -21,7 +25,7 @@ describe("Core: Input Spec Validation", () => {
 				info: validInfo,
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should accept a valid OpenAPI 3.x spec with paths", () => {
@@ -30,7 +34,7 @@ describe("Core: Input Spec Validation", () => {
 				info: validInfo,
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should accept a valid OpenAPI 3.x spec with components only (no paths)", () => {
@@ -39,7 +43,7 @@ describe("Core: Input Spec Validation", () => {
 				info: validInfo,
 				components: { schemas: {} },
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should accept a valid OpenAPI 3.x spec with webhooks only (no paths)", () => {
@@ -48,7 +52,7 @@ describe("Core: Input Spec Validation", () => {
 				info: validInfo,
 				webhooks: {},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should accept a valid $self URI reference", () => {
@@ -58,7 +62,7 @@ describe("Core: Input Spec Validation", () => {
 				$self: "/api/openapi",
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should reject an invalid $self URI reference", () => {
@@ -68,49 +72,43 @@ describe("Core: Input Spec Validation", () => {
 				$self: "not a uri",
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/\$self.*URI reference/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/\$self.*URI reference/);
 		});
 
 		it("should throw if spec object is null/undefined", () => {
-			expect(() => validateSpec(testCast(null))).toThrow(SpecValidationError);
-			expect(() => validateSpec(testCast(undefined))).toThrow(
-				SpecValidationError,
-			);
+			expect(() => validateSpec(null)).toThrow(SpecValidationError);
+			expect(() => validateSpec(undefined)).toThrow(SpecValidationError);
 		});
 
 		it("should throw on missing version header", () => {
 			const spec = { info: validInfo, paths: {} };
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Unsupported or missing OpenAPI\/Swagger version/,
 			);
 		});
 
 		it("should throw on invalid version (e.g. 1.2)", () => {
 			const spec = { swagger: "1.2", info: validInfo, paths: {} };
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Unsupported or missing OpenAPI\/Swagger version/,
 			);
 		});
 
 		it("should throw on missing info object", () => {
 			const spec = { openapi: "3.0.0", paths: {} };
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/must contain an 'info' object/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/must contain an 'info' object/);
 		});
 
 		it("should throw on missing info title", () => {
 			const spec = { openapi: "3.0.0", info: { version: "1.0" }, paths: {} };
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/must contain a required string field: 'title'/,
 			);
 		});
 
 		it("should throw on missing info version", () => {
 			const spec = { openapi: "3.0.0", info: { title: "API" }, paths: {} };
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/must contain a required string field: 'version'/,
 			);
 		});
@@ -121,7 +119,7 @@ describe("Core: Input Spec Validation", () => {
 				info: { ...validInfo, termsOfService: "not a uri" },
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/termsOfService must be a valid URI/i,
 			);
 		});
@@ -137,7 +135,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(specUrl))).toThrow(
+			expect(() => validateSpec(specUrl)).toThrow(
 				/contact.url must be a valid URI/i,
 			);
 
@@ -151,7 +149,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(specEmail))).toThrow(
+			expect(() => validateSpec(specEmail)).toThrow(
 				/contact.email must be a valid email/i,
 			);
 		});
@@ -168,7 +166,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should reject invalid externalDocs at root", () => {
@@ -178,7 +176,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				externalDocs: { url: "not a uri" },
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/ExternalDocs\.url must be a valid URI/i,
 			);
 		});
@@ -190,9 +188,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				tags: [{ name: "bad", externalDocs: { url: "bad uri" } }],
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/tags\.bad\.externalDocs/i,
-			);
+			expect(() => validateSpec(spec)).toThrow(/tags\.bad\.externalDocs/i);
 		});
 
 		it("should reject invalid externalDocs on operation", () => {
@@ -208,7 +204,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/externalDocs/i);
+			expect(() => validateSpec(spec)).toThrow(/externalDocs/i);
 		});
 
 		it("should reject invalid externalDocs on schema", () => {
@@ -225,94 +221,82 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/components\.schemas\.BadSchema\.externalDocs/i,
 			);
 		});
 
 		it("should reject invalid schema $id and $schema URIs", () => {
 			expect(() =>
-				validateSpec(
-					testCast({
-						openapi: "3.2.0",
-						info: validInfo,
-						paths: {},
-						components: {
-							schemas: { BadId: { type: "object", $id: "not a uri" } },
-						},
-					}),
-				),
+				validateSpec({
+					openapi: "3.2.0",
+					info: validInfo,
+					paths: {},
+					components: {
+						schemas: { BadId: { type: "object", $id: "not a uri" } },
+					},
+				}),
 			).toThrow(/Schema Object.*\$id/);
 
 			expect(() =>
-				validateSpec(
-					testCast({
-						openapi: "3.2.0",
-						info: validInfo,
-						paths: {},
-						components: {
-							schemas: {
-								BadSchema: { type: "object", $schema: "also not a uri" },
-							},
+				validateSpec({
+					openapi: "3.2.0",
+					info: validInfo,
+					paths: {},
+					components: {
+						schemas: {
+							BadSchema: { type: "object", $schema: "also not a uri" },
 						},
-					}),
-				),
+					},
+				}),
 			).toThrow(/Schema Object.*\$schema/);
 		});
 
 		it("should reject invalid schema $ref and $dynamicRef URIs", () => {
 			expect(() =>
-				validateSpec(
-					testCast({
-						openapi: "3.2.0",
-						info: validInfo,
-						paths: {},
-						components: { schemas: { BadRef: { $ref: "not a uri" } } },
-					}),
-				),
+				validateSpec({
+					openapi: "3.2.0",
+					info: validInfo,
+					paths: {},
+					components: { schemas: { BadRef: { $ref: "not a uri" } } },
+				}),
 			).toThrow(/Schema Object.*\$ref/);
 
 			expect(() =>
-				validateSpec(
-					testCast({
-						openapi: "3.2.0",
-						info: validInfo,
-						paths: {},
-						components: {
-							schemas: { BadDynamic: { $dynamicRef: "not a uri" } },
-						},
-					}),
-				),
+				validateSpec({
+					openapi: "3.2.0",
+					info: validInfo,
+					paths: {},
+					components: {
+						schemas: { BadDynamic: { $dynamicRef: "not a uri" } },
+					},
+				}),
 			).toThrow(/Schema Object.*\$dynamicRef/);
 		});
 
 		it("should reject invalid schema anchors", () => {
 			expect(() =>
-				validateSpec(
-					testCast({
-						openapi: "3.2.0",
-						info: validInfo,
-						paths: {},
-						components: {
-							schemas: { BadAnchor: { type: "object", $anchor: "" } },
-						},
-					}),
-				),
+				validateSpec({
+					openapi: "3.2.0",
+					info: validInfo,
+					paths: {},
+					components: {
+						schemas: { BadAnchor: { type: "object", $anchor: "" } },
+					},
+				}),
 			).toThrow(/invalid '\$anchor'/);
 
 			expect(() =>
-				validateSpec(
-					testCast({
-						openapi: "3.2.0",
-						info: validInfo,
-						paths: {},
-						components: {
-							schemas: {
-								BadDynamicAnchor: { type: "object", $dynamicAnchor: 123 },
-							},
+				validateSpec({
+					openapi: "3.2.0",
+					info: validInfo,
+					paths: {},
+					components: {
+						schemas: {
+							BadDynamicAnchor: { type: "object", $dynamicAnchor: 123 },
 						},
-					}),
-				),
+					},
+				}),
 			).toThrow(/invalid '\$dynamicAnchor'/);
 		});
 
@@ -333,7 +317,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it('should reject paths keys that do not start with "/"', () => {
@@ -350,7 +334,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Path key "users" must start with "\/"/,
 			);
 		});
@@ -369,9 +353,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/invalid status code '600'/i,
-			);
+			expect(() => validateSpec(spec)).toThrow(/invalid status code '600'/i);
 		});
 
 		it("should accept response code ranges and default", () => {
@@ -394,19 +376,19 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should throw if Swagger 2.0 has no paths", () => {
 			const spec = { swagger: "2.0", info: validInfo }; // Missing paths
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Swagger 2.0 specification must contain a 'paths' object/,
 			);
 		});
 
 		it("should throw if OpenAPI 3.x has no paths, components, or webhooks", () => {
 			const spec = { openapi: "3.0.0", info: validInfo }; // Completely empty structure
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/must contain at least one of: 'paths', 'components', or 'webhooks'/,
 			);
 		});
@@ -424,7 +406,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/License object must contain a required string field: 'name'/,
 			);
 		});
@@ -442,7 +424,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/mutually exclusive/);
+			expect(() => validateSpec(spec)).toThrow(/mutually exclusive/);
 		});
 
 		it("should accept License with only url", () => {
@@ -457,7 +439,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should accept License with only identifier (OAS 3.1+)", () => {
@@ -472,7 +454,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should accept License with neither url nor identifier (just name)", () => {
@@ -486,7 +468,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 	});
 
@@ -501,7 +483,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/missing a corresponding 'in: path'/i,
 			);
 		});
@@ -516,7 +498,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should reject when a path parameter is not required", () => {
@@ -539,9 +521,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/must be marked as required/i,
-			);
+			expect(() => validateSpec(spec)).toThrow(/must be marked as required/i);
 		});
 
 		it("should reject when a path parameter does not match the template", () => {
@@ -564,7 +544,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/does not match the template variable/i,
 			);
 		});
@@ -587,7 +567,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 	});
 
@@ -605,7 +585,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should reject invalid mediaTypes component keys", () => {
@@ -616,9 +596,7 @@ describe("Core: Input Spec Validation", () => {
 					mediaTypes: { "Bad Key!": { schema: { type: "string" } } },
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/Invalid component key/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/Invalid component key/);
 		});
 
 		it("should reject invalid webhooks component keys", () => {
@@ -633,9 +611,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/Invalid component key/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/Invalid component key/);
 		});
 	});
 
@@ -650,9 +626,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/must define 'responses'/i,
-			);
+			expect(() => validateSpec(spec)).toThrow(/must define 'responses'/i);
 		});
 
 		it("should reject response objects without description", () => {
@@ -665,9 +639,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/Response Object.*description/i,
-			);
+			expect(() => validateSpec(spec)).toThrow(/Response Object.*description/i);
 		});
 
 		it("should reject responses objects with no entries", () => {
@@ -680,7 +652,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Responses Object.*at least one response code/i,
 			);
 		});
@@ -695,7 +667,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 	});
 
@@ -713,9 +685,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/Response Object.*description/i,
-			);
+			expect(() => validateSpec(spec)).toThrow(/Response Object.*description/i);
 		});
 
 		it("should validate component webhooks operations", () => {
@@ -731,7 +701,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Responses Object.*at least one response code/i,
 			);
 		});
@@ -758,9 +728,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 			};
 
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/Duplicate operationId "dup"/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/Duplicate operationId "dup"/);
 		});
 
 		it("should throw when operationIds are duplicated across webhooks", () => {
@@ -784,9 +752,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 			};
 
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/Duplicate operationId "whDup"/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/Duplicate operationId "whDup"/);
 		});
 
 		it("should allow unique operationIds across paths and webhooks", () => {
@@ -811,7 +777,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 			};
 
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should throw when operationIds are duplicated across callbacks", () => {
@@ -838,7 +804,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 			};
 
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Duplicate operationId "dupCallback"/,
 			);
 		});
@@ -867,7 +833,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 			};
 
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Duplicate operationId "dupComponent"/,
 			);
 		});
@@ -895,7 +861,7 @@ describe("Core: Input Spec Validation", () => {
 				},
 			};
 
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Duplicate operationId "dupPathItem"/,
 			);
 		});
@@ -905,7 +871,7 @@ describe("Core: Input Spec Validation", () => {
 		it("should validate spec upon construction", () => {
 			const invalidSpec = { openapi: "3.0.0" }; // No info
 			expect(
-				() => new SwaggerParser(testCast(invalidSpec), validConfig),
+				() => new SwaggerParser(createTestSpec(invalidSpec), validConfig),
 			).toThrow(SpecValidationError);
 		});
 
@@ -949,7 +915,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should throw on invalid characters (space) in component keys", () => {
@@ -963,7 +929,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Invalid component key "User Name" in "components.schemas"/,
 			);
 		});
@@ -979,7 +945,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Invalid component key "\$limit" in "components.parameters"/,
 			);
 		});
@@ -995,7 +961,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Invalid component key "@auth" in "components.securitySchemes"/,
 			);
 		});
@@ -1013,7 +979,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Component parameter 'BadParam' must be an object or Reference Object/,
 			);
 		});
@@ -1029,7 +995,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Component parameter 'MissingName' must define a non-empty string 'name'/,
 			);
 		});
@@ -1045,7 +1011,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Component parameter 'MissingIn' must define a non-empty string 'in'/,
 			);
 		});
@@ -1059,7 +1025,7 @@ describe("Core: Input Spec Validation", () => {
 				servers: [{ url: "https://example.com/api?x=1" }],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/MUST NOT include query or fragment/,
 			);
 		});
@@ -1071,7 +1037,7 @@ describe("Core: Input Spec Validation", () => {
 				servers: [{ url: "https://{region.example.com" }],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/opening.*matching/i);
+			expect(() => validateSpec(spec)).toThrow(/opening.*matching/i);
 		});
 
 		it("should reject server URLs with unmatched closing braces", () => {
@@ -1081,7 +1047,7 @@ describe("Core: Input Spec Validation", () => {
 				servers: [{ url: "https://region}.example.com" }],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/contains a closing "}" without a matching/i,
 			);
 		});
@@ -1093,7 +1059,7 @@ describe("Core: Input Spec Validation", () => {
 				servers: [{ url: "https://{{region}}.example.com" }],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/contains nested "{" characters/i,
 			);
 		});
@@ -1105,9 +1071,7 @@ describe("Core: Input Spec Validation", () => {
 				servers: [{ url: "https://example.com/{}" }],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/empty template expression/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/empty template expression/);
 		});
 
 		it("should reject server variables with empty enum", () => {
@@ -1124,9 +1088,7 @@ describe("Core: Input Spec Validation", () => {
 				],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/enum MUST NOT be empty/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/enum MUST NOT be empty/);
 		});
 
 		it("should reject server variables with non-string enum values", () => {
@@ -1143,7 +1105,7 @@ describe("Core: Input Spec Validation", () => {
 				],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/enum MUST contain only strings/,
 			);
 		});
@@ -1162,7 +1124,7 @@ describe("Core: Input Spec Validation", () => {
 				],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/default MUST be present in enum/,
 			);
 		});
@@ -1179,9 +1141,7 @@ describe("Core: Input Spec Validation", () => {
 				],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/appears more than once/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/appears more than once/);
 		});
 
 		it("should reject server URLs defining template variables but missing variables object entirely", () => {
@@ -1191,7 +1151,7 @@ describe("Core: Input Spec Validation", () => {
 				servers: [{ url: "https://{region}.example.com" }],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/defines template variables but 'variables' is missing/,
 			);
 		});
@@ -1210,9 +1170,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 			};
 			expect(() => validateSpec(spec1)).toThrow(/must be a non-empty string/);
-			expect(testCast(() => validateSpec(testCast(spec2)))).toThrow(
-				/must be a non-empty string/,
-			);
+			expect(() => validateSpec(spec2)).toThrow(/must be a non-empty string/);
 		});
 
 		it("should reject duplicate server names", () => {
@@ -1225,7 +1183,7 @@ describe("Core: Input Spec Validation", () => {
 				],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Server name "prod" must be unique/,
 			);
 		});
@@ -1242,9 +1200,7 @@ describe("Core: Input Spec Validation", () => {
 				],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/not defined in variables/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/not defined in variables/);
 		});
 
 		it("should reject server variables missing required default", () => {
@@ -1259,9 +1215,7 @@ describe("Core: Input Spec Validation", () => {
 				],
 				paths: {},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/must define a string default/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/must define a string default/);
 		});
 	});
 
@@ -1273,7 +1227,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				tags: [{ name: "dup" }, { name: "dup" }],
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/Duplicate tag name/);
+			expect(() => validateSpec(spec)).toThrow(/Duplicate tag name/);
 		});
 
 		it("should reject tags whose parent does not exist", () => {
@@ -1283,7 +1237,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				tags: [{ name: "child", parent: "missing" }],
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/parent "missing" which does not exist/,
 			);
 		});
@@ -1298,9 +1252,7 @@ describe("Core: Input Spec Validation", () => {
 					{ name: "b", parent: "a" },
 				],
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/Circular tag parent reference/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/Circular tag parent reference/);
 		});
 
 		it("should accept valid tag parent references", () => {
@@ -1310,7 +1262,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				tags: [{ name: "root" }, { name: "child", parent: "root" }],
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 	});
 
@@ -1324,7 +1276,7 @@ describe("Core: Input Spec Validation", () => {
 					"/pets/{name}": {},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Ambiguous path definition detected/,
 			);
 		});
@@ -1337,9 +1289,7 @@ describe("Core: Input Spec Validation", () => {
 					"/pets/{id}/{id}": {},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/repeats template variable/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/repeats template variable/);
 		});
 
 		it("should throw when a path template has unmatched braces", () => {
@@ -1350,7 +1300,7 @@ describe("Core: Input Spec Validation", () => {
 					"/pets/{id": {},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/opening.*matching/i);
+			expect(() => validateSpec(spec)).toThrow(/opening.*matching/i);
 		});
 
 		it("should throw when a path template has empty expressions", () => {
@@ -1361,9 +1311,7 @@ describe("Core: Input Spec Validation", () => {
 					"/pets/{}": {},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/empty template expression/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/empty template expression/);
 		});
 
 		it("should accept paths with identical hierarchy if they are structurally different", () => {
@@ -1375,7 +1323,7 @@ describe("Core: Input Spec Validation", () => {
 					"/pets/{id}/details": {},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should accept paths that differ only by fixed segments vs variables", () => {
@@ -1387,7 +1335,7 @@ describe("Core: Input Spec Validation", () => {
 					"/pets/{id}": {},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should throw for complex nested collisions", () => {
@@ -1399,7 +1347,7 @@ describe("Core: Input Spec Validation", () => {
 					"/api/{v}/upload": {},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Ambiguous path definition detected/,
 			);
 		});
@@ -1413,7 +1361,7 @@ describe("Core: Input Spec Validation", () => {
 					"/api/{v}": {},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Ambiguous path definition detected/,
 			);
 		});
@@ -1433,9 +1381,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/non-empty string 'name'/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/non-empty string 'name'/);
 		});
 
 		it("should throw if a parameter is missing in", () => {
@@ -1451,9 +1397,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/non-empty string 'in'/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/non-empty string 'in'/);
 		});
 
 		it("should throw if a parameters array contains non-objects", () => {
@@ -1469,7 +1413,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/must be an object or Reference Object/,
 			);
 		});
@@ -1498,7 +1442,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/contains both 'query' and 'querystring' parameters/,
 			);
 		});
@@ -1529,7 +1473,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/contains both 'query' and 'querystring' parameters/,
 			);
 		});
@@ -1550,9 +1494,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/Duplicate parameter 'dup'/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/Duplicate parameter 'dup'/);
 		});
 
 		it("should throw if operation parameters contain duplicates", () => {
@@ -1571,9 +1513,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/Duplicate parameter 'dup'/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/Duplicate parameter 'dup'/);
 		});
 
 		it("should treat header parameter names as case-insensitive for duplicates", () => {
@@ -1592,7 +1532,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/Duplicate parameter/);
+			expect(() => validateSpec(spec)).toThrow(/Duplicate parameter/);
 		});
 
 		it("should allow operation parameters to override path-level parameters", () => {
@@ -1613,7 +1553,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it('should throw if parameter has both "example" and "examples"', () => {
@@ -1637,7 +1577,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/contains both 'example' and 'examples'/,
 			);
 		});
@@ -1655,7 +1595,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/must define either 'schema' or 'content'/,
 			);
 		});
@@ -1677,7 +1617,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Component parameter 'MyParam' contains both 'example' and 'examples'/,
 			);
 		});
@@ -1696,7 +1636,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Component parameter 'MyParam' must define either 'schema' or 'content'/,
 			);
 		});
@@ -1716,9 +1656,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/invalid location 'formData'/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/invalid location 'formData'/);
 		});
 
 		it("should throw if parameter uses an invalid style for its location", () => {
@@ -1741,7 +1679,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/invalid style 'matrix' for location 'query'/,
 			);
 		});
@@ -1764,53 +1702,56 @@ describe("Core: Input Spec Validation", () => {
 				},
 			});
 			expect(() =>
-				validateSpec(createSpec(testCast({ type: "string" }))),
+				validateSpec(createSpec(createTestSpec({ type: "string" }))),
 			).toThrow(/deepObject.*schema is not an object/);
 
 			// Should also reject array types (OAS 3.1)
 			expect(() =>
-				validateSpec(createSpec(testCast({ type: ["string", "null"] }))),
+				validateSpec(createSpec(createTestSpec({ type: ["string", "null"] }))),
 			).toThrow(/deepObject.*schema is not an object/);
 
 			// Should accept 'string | number | boolean | object | undefined | null' types that might resolve to object later or are free-form
 			expect(() =>
-				validateSpec(createSpec(testCast({ type: "not-a-type" }))),
+				validateSpec(createSpec(createTestSpec({ type: "not-a-type" }))),
 			).not.toThrow();
 			expect(() =>
-				validateSpec(createSpec(testCast({ type: ["string", "number"] }))),
+				validateSpec(
+					createSpec(createTestSpec({ type: ["string", "number"] })),
+				),
 			).not.toThrow();
 		});
 
 		it("should throw if spaceDelimited style uses explode=true", () => {
 			const createSpec = (
-				style: import("@src/core/types/openapi.js").SwaggerSpec,
+				style: unknown,
 				schema: import("@src/core/types/openapi.js").SwaggerSpec,
 				explode?: boolean,
-			) => ({
-				openapi: "3.2.0",
-				info: validInfo,
-				paths: {
-					"/test": {
-						get: {
-							parameters: [
-								{
-									name: "q",
-									in: "query",
-									style,
-									explode,
-									schema,
-								},
-							],
-							responses: { "200": { description: "ok" } },
+			) =>
+				createTestSpec({
+					openapi: "3.2.0",
+					info: validInfo,
+					paths: {
+						"/test": {
+							get: {
+								parameters: [
+									{
+										name: "q",
+										in: "query",
+										style,
+										explode,
+										schema,
+									},
+								],
+								responses: { "200": { description: "ok" } },
+							},
 						},
 					},
-				},
-			});
+				});
 			expect(() =>
 				validateSpec(
 					createSpec(
-						testCast("spaceDelimited"),
-						testCast({ type: "array", items: { type: "string" } }),
+						"spaceDelimited",
+						createTestSpec({ type: "array", items: { type: "string" } }),
 						true,
 					),
 				),
@@ -1818,18 +1759,18 @@ describe("Core: Input Spec Validation", () => {
 
 			// Should throw if style is not a string
 			expect(() =>
-				validateSpec(createSpec(testCast(123), testCast({ type: "array" }))),
+				validateSpec(createSpec(123, createTestSpec({ type: "array" }))),
 			).toThrow(/has non-string 'style'/);
 
 			// Should throw if spaceDelimited/pipeDelimited used on primitive schema
 			expect(() =>
 				validateSpec(
-					createSpec(testCast("spaceDelimited"), testCast({ type: "string" })),
+					createSpec("spaceDelimited", createTestSpec({ type: "string" })),
 				),
 			).toThrow(/style but schema is not an array or object/);
 			expect(() =>
 				validateSpec(
-					createSpec(testCast("pipeDelimited"), testCast({ type: "integer" })),
+					createSpec("pipeDelimited", createTestSpec({ type: "integer" })),
 				),
 			).toThrow(/style but schema is not an array or object/);
 		});
@@ -1855,9 +1796,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/pipeDelimited.*explode=true/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/pipeDelimited.*explode=true/);
 		});
 
 		it("should throw if component parameter uses an invalid style", () => {
@@ -1876,7 +1815,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/invalid style 'form' for location 'header'/,
 			);
 		});
@@ -1903,7 +1842,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/contains both 'schema' and 'content'/,
 			);
 		});
@@ -1924,7 +1863,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Component parameter 'MyParam' contains both 'schema' and 'content'/,
 			);
 		});
@@ -1951,7 +1890,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/has an invalid 'content' map. It MUST contain exactly one entry/,
 			);
 		});
@@ -1971,7 +1910,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/has an invalid 'content' map. It MUST contain exactly one entry/,
 			);
 		});
@@ -1991,7 +1930,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should throw if allowEmptyValue used with style (OAS 3.2)", () => {
@@ -2015,7 +1954,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/defines 'allowEmptyValue' alongside 'style'. This is forbidden/,
 			);
 		});
@@ -2040,7 +1979,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should throw if allowEmptyValue used on non-query param (OAS 3.2)", () => {
@@ -2063,7 +2002,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/defines 'allowEmptyValue' but location is not 'query'/,
 			);
 		});
@@ -2094,7 +2033,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/location 'querystring' but defines style\/explode\/allowReserved/,
 			);
 		});
@@ -2114,7 +2053,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/location 'querystring' but defines 'schema'/,
 			);
 		});
@@ -2143,7 +2082,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/contains both 'schema' and 'content'/,
 			);
 		});
@@ -2180,7 +2119,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/defines more than one 'querystring' parameter/,
 			);
 		});
@@ -2201,7 +2140,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/defines 'allowEmptyValue' but location is not 'query'/,
 			);
 		});
@@ -2223,7 +2162,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/defines 'allowEmptyValue' alongside 'style'/,
 			);
 		});
@@ -2244,7 +2183,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should throw if component parameter querystring defines style/explode/allowReserved", () => {
@@ -2267,7 +2206,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/location 'querystring' but defines style\/explode\/allowReserved/,
 			);
 		});
@@ -2291,7 +2230,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should throw if component parameter querystring is missing content", () => {
@@ -2309,7 +2248,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/location 'querystring' but defines 'schema'/,
 			);
 		});
@@ -2334,7 +2273,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it('should accept "examples" only', () => {
@@ -2357,7 +2296,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it('should accept "schema" only', () => {
@@ -2375,7 +2314,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it('should accept "content" only', () => {
@@ -2399,7 +2338,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 	});
 
@@ -2426,7 +2365,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/Header Object.*name/);
+			expect(() => validateSpec(spec)).toThrow(/Header Object.*name/);
 		});
 
 		it("should reject header objects that define an in", () => {
@@ -2451,7 +2390,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/Header Object.*in/);
+			expect(() => validateSpec(spec)).toThrow(/Header Object.*in/);
 		});
 
 		it("should reject header objects that define allowEmptyValue", () => {
@@ -2476,7 +2415,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/allowEmptyValue/);
+			expect(() => validateSpec(spec)).toThrow(/allowEmptyValue/);
 		});
 
 		it("should reject header objects missing schema and content", () => {
@@ -2498,7 +2437,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/must define either 'schema' or 'content'/,
 			);
 		});
@@ -2525,7 +2464,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/invalid 'style'/);
+			expect(() => validateSpec(spec)).toThrow(/invalid 'style'/);
 		});
 
 		it("should reject header objects with example and examples", () => {
@@ -2551,7 +2490,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/example.*examples/);
+			expect(() => validateSpec(spec)).toThrow(/example.*examples/);
 		});
 
 		it("should reject header objects with schema and content", () => {
@@ -2578,7 +2517,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/schema.*content/);
+			expect(() => validateSpec(spec)).toThrow(/schema.*content/);
 		});
 
 		it("should reject header content maps with multiple entries", () => {
@@ -2605,9 +2544,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/content.*exactly one entry/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/content.*exactly one entry/);
 		});
 
 		it("should accept header content maps with single entry and valid media type", () => {
@@ -2633,7 +2570,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should reject media types that define example and examples", () => {
@@ -2659,7 +2596,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Media Type Object.*example.*examples/,
 			);
 		});
@@ -2685,9 +2622,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/itemSchema.*not sequential/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/itemSchema.*not sequential/);
 		});
 
 		it("should allow itemSchema on custom JSON media types", () => {
@@ -2711,7 +2646,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should allow itemSchema on sequential media types", () => {
@@ -2735,7 +2670,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should reject media types that mix encoding with prefixEncoding", () => {
@@ -2761,7 +2696,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/encoding.*prefixEncoding.*mutually exclusive/,
 			);
 		});
@@ -2786,9 +2721,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/media type.*encoding/i,
-			);
+			expect(() => validateSpec(spec)).toThrow(/media type.*encoding/i);
 		});
 
 		it("should reject encoding headers that define Content-Type", () => {
@@ -2822,9 +2755,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/Content-Type.*headers/i,
-			);
+			expect(() => validateSpec(spec)).toThrow(/Content-Type.*headers/i);
 		});
 
 		it("should reject encoding objects with non-string contentType", () => {
@@ -2854,7 +2785,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/contentType/i);
+			expect(() => validateSpec(spec)).toThrow(/contentType/i);
 		});
 
 		it("should reject encoding objects with invalid style", () => {
@@ -2884,7 +2815,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Encoding Object.*invalid 'style'/,
 			);
 		});
@@ -2915,31 +2846,33 @@ describe("Core: Input Spec Validation", () => {
 				},
 			});
 
-			expect(() => validateSpec(createSpec(testCast([])))).toThrow(
+			expect(() => validateSpec(createSpec(createTestSpec([])))).toThrow(
 				/must be an object/,
 			);
 			expect(() =>
-				validateSpec(createSpec(testCast({ contentType: 123 }))),
+				validateSpec(createSpec(createTestSpec({ contentType: 123 }))),
 			).toThrow(/non-string 'contentType'/);
-			expect(() => validateSpec(createSpec(testCast({ style: 123 })))).toThrow(
-				/non-string 'style'/,
-			);
 			expect(() =>
-				validateSpec(createSpec(testCast({ explode: "yes" }))),
+				validateSpec(createSpec(createTestSpec({ style: 123 }))),
+			).toThrow(/non-string 'style'/);
+			expect(() =>
+				validateSpec(createSpec(createTestSpec({ explode: "yes" }))),
 			).toThrow(/non-boolean 'explode'/);
 			expect(() =>
-				validateSpec(createSpec(testCast({ allowReserved: "yes" }))),
+				validateSpec(createSpec(createTestSpec({ allowReserved: "yes" }))),
 			).toThrow(/non-boolean 'allowReserved'/);
-			expect(() => validateSpec(createSpec(testCast({ headers: [] })))).toThrow(
-				/invalid 'headers' map/,
-			);
 			expect(() =>
-				validateSpec(createSpec(testCast({ headers: { "Content-Type": {} } }))),
+				validateSpec(createSpec(createTestSpec({ headers: [] }))),
+			).toThrow(/invalid 'headers' map/);
+			expect(() =>
+				validateSpec(
+					createSpec(createTestSpec({ headers: { "Content-Type": {} } })),
+				),
 			).toThrow(/MUST NOT define 'Content-Type' in headers/); // line 1029
 			expect(() =>
 				validateSpec(
 					createSpec(
-						testCast({
+						createTestSpec({
 							headers: { "X-Rate-Limit": { schema: { type: "integer" } } },
 						}),
 					),
@@ -2948,38 +2881,42 @@ describe("Core: Input Spec Validation", () => {
 
 			// Nested encoding checks
 			expect(() =>
-				validateSpec(createSpec(testCast({ encoding: [] }))),
+				validateSpec(createSpec(createTestSpec({ encoding: [] }))),
 			).toThrow(/invalid nested 'encoding' map/);
 			expect(() =>
-				validateSpec(createSpec(testCast({ prefixEncoding: {} }))),
+				validateSpec(createSpec(createTestSpec({ prefixEncoding: {} }))),
 			).toThrow(/prefixEncoding.*must be an array/);
 			expect(() =>
-				validateSpec(createSpec(testCast({ itemEncoding: [] }))),
+				validateSpec(createSpec(createTestSpec({ itemEncoding: [] }))),
 			).toThrow(/Encoding Object.*must be an object/);
 
 			// Exclusivity checks
 			expect(() =>
 				validateSpec(
-					createSpec(testCast({ encoding: {}, prefixEncoding: [] })),
+					createSpec(createTestSpec({ encoding: {}, prefixEncoding: [] })),
 				),
 			).toThrow(/mutually exclusive/);
 			expect(() =>
-				validateSpec(createSpec(testCast({ encoding: {}, itemEncoding: {} }))),
+				validateSpec(
+					createSpec(createTestSpec({ encoding: {}, itemEncoding: {} })),
+				),
 			).toThrow(/mutually exclusive/);
 
 			// Valid nested paths should trace through recursively
 			expect(() =>
 				validateSpec(
-					createSpec(testCast({ encoding: { inner: { style: 123 } } })),
+					createSpec(createTestSpec({ encoding: { inner: { style: 123 } } })),
 				),
 			).toThrow(/non-string 'style'/);
 			expect(() =>
 				validateSpec(
-					createSpec(testCast({ prefixEncoding: [{ style: 123 }] })),
+					createSpec(createTestSpec({ prefixEncoding: [{ style: 123 }] })),
 				),
 			).toThrow(/non-string 'style'/);
 			expect(() =>
-				validateSpec(createSpec(testCast({ itemEncoding: { style: 123 } }))),
+				validateSpec(
+					createSpec(createTestSpec({ itemEncoding: { style: 123 } })),
+				),
 			).toThrow(/non-string 'style'/);
 		});
 
@@ -3012,23 +2949,20 @@ describe("Core: Input Spec Validation", () => {
 
 			expect(() =>
 				validateSpec(
-					createSpec(testCast("application/json"), testCast({ encoding: {} })),
+					createSpec("application/json", createTestSpec({ encoding: {} })),
 				),
 			).toThrow(/does not support it/); // 1115
 			expect(() =>
 				validateSpec(
 					createSpec(
-						testCast("application/json"),
-						testCast({ prefixEncoding: [] }),
+						"application/json",
+						createTestSpec({ prefixEncoding: [] }),
 					),
 				),
 			).toThrow(/is not multipart/); // 1129
 			expect(() =>
 				validateSpec(
-					createSpec(
-						testCast("multipart/form-data"),
-						testCast({ encoding: [] }),
-					),
+					createSpec("multipart/form-data", createTestSpec({ encoding: [] })),
 				),
 			).toThrow(/invalid 'encoding' map/); // 1139? Actually, 1129 is inside validateMediaTypeObject line 1129. Let's trace it.
 
@@ -3036,8 +2970,8 @@ describe("Core: Input Spec Validation", () => {
 			expect(() =>
 				validateSpec(
 					createSpec(
-						testCast("multipart/form-data"),
-						testCast({ prefixEncoding: {} }),
+						"multipart/form-data",
+						createTestSpec({ prefixEncoding: {} }),
 					),
 				),
 			).toThrow(/invalid 'prefixEncoding'. It must be an array/);
@@ -3056,7 +2990,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/must define either 'schema' or 'content'/,
 			);
 		});
@@ -3073,36 +3007,30 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/must be a valid URI reference/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/must be a valid URI reference/);
 		});
 
 		it("should validate RequestBody and Response objects thoroughly", () => {
 			// RequestBody content validation (1349)
 			expect(() =>
-				validateSpec(
-					testCast({
-						openapi: "3.2.0",
-						info: validInfo,
-						paths: {},
-						components: {
-							requestBodies: { Bad: { description: "bad", content: [] } },
-						},
-					}),
-				),
+				validateSpec({
+					openapi: "3.2.0",
+					info: validInfo,
+					paths: {},
+					components: {
+						requestBodies: { Bad: { description: "bad", content: [] } },
+					},
+				}),
 			).toThrow(/invalid 'content'. It must be an object/);
 
 			// Response description non-string (1377)
 			expect(() =>
-				validateSpec(
-					testCast({
-						openapi: "3.2.0",
-						info: validInfo,
-						paths: {},
-						components: { responses: { Bad: { description: 123 } } },
-					}),
-				),
+				validateSpec({
+					openapi: "3.2.0",
+					info: validInfo,
+					paths: {},
+					components: { responses: { Bad: { description: 123 } } },
+				}),
 			).toThrow(/non-string 'description'/);
 		});
 
@@ -3119,9 +3047,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/RequestBody Object.*content/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/RequestBody Object.*content/);
 		});
 
 		it("should allow requestBody objects with empty content maps (implementation-defined)", () => {
@@ -3137,7 +3063,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should accept requestBody objects with at least one content entry", () => {
@@ -3153,7 +3079,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should reject link objects that define both operationId and operationRef", () => {
@@ -3170,7 +3096,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/both 'operationId' and 'operationRef'/,
 			);
 		});
@@ -3188,9 +3114,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/operationRef.*URI reference/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/operationRef.*URI reference/);
 		});
 
 		it("should reject link objects with invalid parameters", () => {
@@ -3207,9 +3131,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/invalid 'parameters'/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/invalid 'parameters'/);
 		});
 
 		it("should reject link objects that define neither operationId nor operationRef", () => {
@@ -3231,7 +3153,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/must define either 'operationId' or 'operationRef'/,
 			);
 		});
@@ -3260,7 +3182,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Runtime expression.*valid runtime expression/,
 			);
 		});
@@ -3287,7 +3209,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Runtime expression.*invalid runtime expression/,
 			);
 		});
@@ -3314,7 +3236,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Server url MUST NOT include query or fragment/,
 			);
 		});
@@ -3338,7 +3260,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Callback expression.*runtime expression/,
 			);
 		});
@@ -3358,7 +3280,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/Callback expression.*runtime expression/,
 			);
 		});
@@ -3382,7 +3304,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should validate webhooks additionalOperations content and responses", () => {
@@ -3415,7 +3337,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 	});
 
@@ -3427,7 +3349,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				jsonSchemaDialect: "https://spec.openapis.org/oas/3.1/dialect/base",
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should accept URN URI", () => {
@@ -3437,7 +3359,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				jsonSchemaDialect: "urn:ietf:params:xml:ns:yang:1",
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should throw on non-URI string", () => {
@@ -3447,7 +3369,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				jsonSchemaDialect: "not-a-uri",
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/must be a valid URI/);
+			expect(() => validateSpec(spec)).toThrow(/must be a valid URI/);
 		});
 
 		it("should accept dialect strings that satisfy URI scheme regex when URL parsing fails", () => {
@@ -3457,7 +3379,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				jsonSchemaDialect: "http://",
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should throw on non-string value", () => {
@@ -3467,7 +3389,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				jsonSchemaDialect: 123,
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/must be a string/);
+			expect(() => validateSpec(spec)).toThrow(/must be a string/);
 		});
 	});
 
@@ -3479,7 +3401,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				$self: "/api/openapi",
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should reject invalid URI references", () => {
@@ -3489,9 +3411,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				$self: "not a uri",
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/\$self.*valid URI reference/i,
-			);
+			expect(() => validateSpec(spec)).toThrow(/\$self.*valid URI reference/i);
 		});
 	});
 
@@ -3506,13 +3426,13 @@ describe("Core: Input Spec Validation", () => {
 
 		it("should reject string discriminators outside of Swagger 2.0 definitions", () => {
 			expect(() =>
-				validateSpec(createSpec(testCast({ discriminator: "foo" }))),
+				validateSpec(createSpec(createTestSpec({ discriminator: "foo" }))),
 			).toThrow(/must be an object/);
 		});
 
 		it("should reject non-object discriminators", () => {
 			expect(() =>
-				validateSpec(createSpec(testCast({ discriminator: [] }))),
+				validateSpec(createSpec(createTestSpec({ discriminator: [] }))),
 			).toThrow(/must be an object/);
 		});
 
@@ -3520,7 +3440,7 @@ describe("Core: Input Spec Validation", () => {
 			expect(() =>
 				validateSpec(
 					createSpec(
-						testCast({
+						createTestSpec({
 							type: "object",
 							discriminator: { propertyName: "petType" },
 						}),
@@ -3534,7 +3454,7 @@ describe("Core: Input Spec Validation", () => {
 				oneOf: [{}],
 				discriminator: { propertyName: "p", mapping: [] },
 			};
-			expect(() => validateSpec(createSpec(testCast(schema1)))).toThrow(
+			expect(() => validateSpec(createSpec(createTestSpec(schema1)))).toThrow(
 				/mapping.*must be an object/,
 			);
 
@@ -3542,7 +3462,7 @@ describe("Core: Input Spec Validation", () => {
 				oneOf: [{}],
 				discriminator: { propertyName: "p", mapping: { a: 123 } },
 			};
-			expect(() => validateSpec(createSpec(testCast(schema2)))).toThrow(
+			expect(() => validateSpec(createSpec(createTestSpec(schema2)))).toThrow(
 				/mapping value.*must be a string/,
 			);
 		});
@@ -3557,17 +3477,24 @@ describe("Core: Input Spec Validation", () => {
 				oneOf: [{}],
 				discriminator: { propertyName: "p" },
 			};
-			expect(() => validateSpec(createSpec(testCast(schema)))).not.toThrow();
+			expect(() =>
+				validateSpec(createSpec(createTestSpec(schema))),
+			).not.toThrow();
 		});
 
 		it("should reject discriminator with missing or empty propertyName", () => {
 			expect(() =>
-				validateSpec(createSpec(testCast({ oneOf: [{}], discriminator: {} }))),
+				validateSpec(
+					createSpec(createTestSpec({ oneOf: [{}], discriminator: {} })),
+				),
 			).toThrow(/must define a non-empty string 'propertyName'/);
 			expect(() =>
 				validateSpec(
 					createSpec(
-						testCast({ oneOf: [{}], discriminator: { propertyName: " " } }),
+						createTestSpec({
+							oneOf: [{}],
+							discriminator: { propertyName: " " },
+						}),
 					),
 				),
 			).toThrow(/must define a non-empty string 'propertyName'/);
@@ -3577,7 +3504,7 @@ describe("Core: Input Spec Validation", () => {
 			expect(() =>
 				validateSpec(
 					createSpec(
-						testCast({
+						createTestSpec({
 							oneOf: [{}],
 							discriminator: { propertyName: "p", defaultMapping: 123 },
 						}),
@@ -3604,9 +3531,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
-				/defaultMapping.*required/,
-			);
+			expect(() => validateSpec(spec)).toThrow(/defaultMapping.*required/);
 		});
 
 		it("should accept discriminator when property is required", () => {
@@ -3628,7 +3553,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 	});
 
@@ -3646,7 +3571,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/MUST NOT define 'attribute' when 'nodeType' is present/,
 			);
 		});
@@ -3664,7 +3589,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/defines 'wrapped' but the schema is not an array/,
 			);
 		});
@@ -3679,7 +3604,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(/non-relative IRI/);
+			expect(() => validateSpec(spec)).toThrow(/non-relative IRI/);
 		});
 
 		it("should reject non-object xml properties", () => {
@@ -3691,28 +3616,28 @@ describe("Core: Input Spec Validation", () => {
 				components: { schemas: { BadXml: { type: "string", xml } } },
 			});
 
-			expect(() => validateSpec(createSpec(testCast([])))).toThrow(
+			expect(() => validateSpec(createSpec(createTestSpec([])))).toThrow(
 				/must be an object/,
 			);
 			expect(() =>
-				validateSpec(createSpec(testCast({ nodeType: 123 }))),
+				validateSpec(createSpec(createTestSpec({ nodeType: 123 }))),
 			).toThrow(/invalid 'nodeType'/);
 			expect(() =>
 				validateSpec(
-					createSpec(testCast({ nodeType: "element", wrapped: true })),
+					createSpec(createTestSpec({ nodeType: "element", wrapped: true })),
 				),
 			).toThrow(/MUST NOT define 'wrapped'/);
-			expect(() => validateSpec(createSpec(testCast({ name: 123 })))).toThrow(
-				/non-string 'name'/,
-			);
-			expect(() => validateSpec(createSpec(testCast({ prefix: 123 })))).toThrow(
-				/non-string 'prefix'/,
-			);
 			expect(() =>
-				validateSpec(createSpec(testCast({ attribute: "true" }))),
+				validateSpec(createSpec(createTestSpec({ name: 123 }))),
+			).toThrow(/non-string 'name'/);
+			expect(() =>
+				validateSpec(createSpec(createTestSpec({ prefix: 123 }))),
+			).toThrow(/non-string 'prefix'/);
+			expect(() =>
+				validateSpec(createSpec(createTestSpec({ attribute: "true" }))),
 			).toThrow(/non-boolean 'attribute'/);
 			expect(() =>
-				validateSpec(createSpec(testCast({ wrapped: "true" }))),
+				validateSpec(createSpec(createTestSpec({ wrapped: "true" }))),
 			).toThrow(/non-boolean 'wrapped'/);
 		});
 	});
@@ -3740,7 +3665,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should allow reference objects with extra fields in parameters (ignored by spec)", () => {
@@ -3771,7 +3696,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should allow reference objects with summary/description overrides", () => {
@@ -3797,7 +3722,7 @@ describe("Core: Input Spec Validation", () => {
 					},
 				},
 			};
-			expect(() => validateSpec(testCast(spec))).not.toThrow();
+			expect(() => validateSpec(spec)).not.toThrow();
 		});
 
 		it("should reject reference objects that define both $ref and $dynamicRef", () => {
@@ -3807,7 +3732,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				components: { responses: { Ok: { $ref: "#/a", $dynamicRef: "#/b" } } },
 			};
-			expect(() => validateSpec(testCast(spec))).toThrow(
+			expect(() => validateSpec(spec)).toThrow(
 				/must not define both '\$ref' and '\$dynamicRef'/,
 			);
 		});
@@ -3837,9 +3762,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				components: { responses: { Ok: { $ref: "#/a", summary: 123 } } },
 			};
-			expect(testCast(() => validateSpec(testCast(spec1)))).toThrow(
-				/non-string 'summary'/,
-			);
+			expect(() => validateSpec(spec1)).toThrow(/non-string 'summary'/);
 
 			const spec2 = {
 				openapi: "3.2.0",
@@ -3847,9 +3770,7 @@ describe("Core: Input Spec Validation", () => {
 				paths: {},
 				components: { responses: { Ok: { $ref: "#/a", description: 123 } } },
 			};
-			expect(testCast(() => validateSpec(testCast(spec2)))).toThrow(
-				/non-string 'description'/,
-			);
+			expect(() => validateSpec(spec2)).toThrow(/non-string 'description'/);
 		});
 	});
 
@@ -3938,65 +3859,73 @@ describe("Core: Input Spec Validation", () => {
 			const badDocs = { externalDocs: "not-an-object" };
 
 			// Trigger line 246:
-			expect(() => validateSpec(createDeepSpec(testCast(badDocs)))).toThrow(
-				/must be an object/,
-			);
+			expect(() =>
+				validateSpec(createDeepSpec(createTestSpec(badDocs))),
+			).toThrow(/must be an object/);
 
 			// Test recursive visits to cover lines 337-380
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ allOf: [badDocs] }))),
+				validateSpec(createDeepSpec(createTestSpec({ allOf: [badDocs] }))),
 			).toThrow(/allOf\[0\].externalDocs/);
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ anyOf: [badDocs] }))),
+				validateSpec(createDeepSpec(createTestSpec({ anyOf: [badDocs] }))),
 			).toThrow(/anyOf\[0\].externalDocs/);
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ oneOf: [badDocs] }))),
+				validateSpec(createDeepSpec(createTestSpec({ oneOf: [badDocs] }))),
 			).toThrow(/oneOf\[0\].externalDocs/);
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ not: badDocs }))),
+				validateSpec(createDeepSpec(createTestSpec({ not: badDocs }))),
 			).toThrow(/not.externalDocs/);
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ if: badDocs }))),
+				validateSpec(createDeepSpec(createTestSpec({ if: badDocs }))),
 			).toThrow(/if.externalDocs/);
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ then: badDocs }))),
+				validateSpec(createDeepSpec(createTestSpec({ then: badDocs }))),
 			).toThrow(/then.externalDocs/);
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ else: badDocs }))),
+				validateSpec(createDeepSpec(createTestSpec({ else: badDocs }))),
 			).toThrow(/else.externalDocs/);
 
 			// items (object) vs items (array)
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ items: badDocs }))),
+				validateSpec(createDeepSpec(createTestSpec({ items: badDocs }))),
 			).toThrow(/items.externalDocs/);
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ items: [badDocs] }))),
+				validateSpec(createDeepSpec(createTestSpec({ items: [badDocs] }))),
 			).toThrow(/items\[0\].externalDocs/);
 
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ prefixItems: [badDocs] }))),
+				validateSpec(
+					createDeepSpec(createTestSpec({ prefixItems: [badDocs] })),
+				),
 			).toThrow(/prefixItems\[0\].externalDocs/);
 
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ properties: { p: badDocs } }))),
+				validateSpec(
+					createDeepSpec(createTestSpec({ properties: { p: badDocs } })),
+				),
 			).toThrow(/properties.p.externalDocs/);
 			expect(() =>
 				validateSpec(
-					createDeepSpec(testCast({ patternProperties: { "^p": badDocs } })),
+					createDeepSpec(
+						createTestSpec({ patternProperties: { "^p": badDocs } }),
+					),
 				),
 			).toThrow(/patternProperties.\^p.externalDocs/);
 			expect(() =>
 				validateSpec(
-					createDeepSpec(testCast({ additionalProperties: badDocs })),
+					createDeepSpec(createTestSpec({ additionalProperties: badDocs })),
 				),
 			).toThrow(/additionalProperties.externalDocs/);
 			expect(() =>
 				validateSpec(
-					createDeepSpec(testCast({ dependentSchemas: { p: badDocs } })),
+					createDeepSpec(createTestSpec({ dependentSchemas: { p: badDocs } })),
 				),
 			).toThrow(/dependentSchemas.p.externalDocs/);
 			expect(() =>
-				validateSpec(createDeepSpec(testCast({ contentSchema: badDocs }))),
+				validateSpec(
+					createDeepSpec(createTestSpec({ contentSchema: badDocs })),
+				),
 			).toThrow(/contentSchema.externalDocs/);
 		});
 	});
@@ -4019,9 +3948,7 @@ describe("Core: Server Object Validation (Additional)", () => {
 			],
 			paths: {},
 		};
-		expect(() => validateSpec(testCast(spec))).toThrow(
-			/not defined in variables/,
-		);
+		expect(() => validateSpec(spec)).toThrow(/not defined in variables/);
 	});
 
 	it("should reject server URLs defining template variables but missing variables object entirely", () => {
@@ -4035,7 +3962,7 @@ describe("Core: Server Object Validation (Additional)", () => {
 			],
 			paths: {},
 		};
-		expect(() => validateSpec(testCast(spec))).toThrow(
+		expect(() => validateSpec(spec)).toThrow(
 			/defines template variables but 'variables' is missing/,
 		);
 	});
@@ -4052,9 +3979,7 @@ describe("Core: Server Object Validation (Additional)", () => {
 			],
 			paths: {},
 		};
-		expect(() => validateSpec(testCast(spec))).toThrow(
-			/must define a string default/,
-		);
+		expect(() => validateSpec(spec)).toThrow(/must define a string default/);
 	});
 
 	it("should reject server variables with non-string default", () => {
@@ -4069,9 +3994,7 @@ describe("Core: Server Object Validation (Additional)", () => {
 			],
 			paths: {},
 		};
-		expect(() => validateSpec(testCast(spec))).toThrow(
-			/must define a string default/,
-		);
+		expect(() => validateSpec(spec)).toThrow(/must define a string default/);
 	});
 
 	it("should reject empty or non-string server url", () => {
@@ -4088,9 +4011,7 @@ describe("Core: Server Object Validation (Additional)", () => {
 			paths: {},
 		};
 		expect(() => validateSpec(spec1)).toThrow(/must be a non-empty string/);
-		expect(testCast(() => validateSpec(testCast(spec2)))).toThrow(
-			/must be a non-empty string/,
-		);
+		expect(() => validateSpec(spec2)).toThrow(/must be a non-empty string/);
 	});
 
 	it("should reject duplicate server names", () => {
@@ -4103,7 +4024,7 @@ describe("Core: Server Object Validation (Additional)", () => {
 			],
 			paths: {},
 		};
-		expect(() => validateSpec(testCast(spec))).toThrow(
+		expect(() => validateSpec(spec)).toThrow(
 			/Server name "prod" must be unique/,
 		);
 	});
@@ -4115,9 +4036,7 @@ describe("Core: Server Object Validation (Additional)", () => {
 			servers: [{ url: "https://{{nested}}.example.com" }],
 			paths: {},
 		};
-		expect(() => validateSpec(testCast(spec))).toThrow(
-			/contains nested "{" characters/,
-		);
+		expect(() => validateSpec(spec)).toThrow(/contains nested "{" characters/);
 	});
 
 	it("should reject unmatched closing braces in server URL templates", () => {
@@ -4127,7 +4046,7 @@ describe("Core: Server Object Validation (Additional)", () => {
 			servers: [{ url: "https://unmatched}.example.com" }],
 			paths: {},
 		};
-		expect(() => validateSpec(testCast(spec))).toThrow(
+		expect(() => validateSpec(spec)).toThrow(
 			/contains a closing "}" without a matching "\{"/,
 		);
 	});
@@ -4149,7 +4068,7 @@ describe("Core: Security Scheme Validation", () => {
 			},
 		};
 
-		expect(() => validateSpec(testCast(spec))).toThrow(
+		expect(() => validateSpec(spec)).toThrow(
 			/apiKey security scheme "BadApiKey" must define non-empty 'name'/,
 		);
 
@@ -4164,7 +4083,7 @@ describe("Core: Security Scheme Validation", () => {
 			},
 		};
 
-		expect(() => validateSpec(testCast(spec2))).toThrow(
+		expect(() => validateSpec(spec2)).toThrow(
 			/apiKey security scheme "BadApiKey2" must define 'in' as 'query', 'header', or 'cookie'/,
 		);
 	});
@@ -4181,7 +4100,7 @@ describe("Core: Security Scheme Validation", () => {
 			},
 		};
 
-		expect(() => validateSpec(testCast(spec))).toThrow(
+		expect(() => validateSpec(spec)).toThrow(
 			/http security scheme "BadHttp" must define non-empty 'scheme'/,
 		);
 	});
@@ -4198,7 +4117,7 @@ describe("Core: Security Scheme Validation", () => {
 			},
 		};
 
-		expect(() => validateSpec(testCast(spec))).toThrow(/must define 'flows'/);
+		expect(() => validateSpec(spec)).toThrow(/must define 'flows'/);
 	});
 
 	it("should throw on invalid validateHttpsUrl cases", () => {
@@ -4222,21 +4141,21 @@ describe("Core: Security Scheme Validation", () => {
 
 		// Not an object
 		expect(() =>
-			validateSpec(createSpec(testCast({ implicit: "not-an-object" }))),
+			validateSpec(createSpec(createTestSpec({ implicit: "not-an-object" }))),
 		).toThrow(/must be an object/);
 
 		// Missing/empty/non-string URL
 		expect(() =>
 			validateSpec(
 				createSpec(
-					testCast({ implicit: { authorizationUrl: "", scopes: {} } }),
+					createTestSpec({ implicit: { authorizationUrl: "", scopes: {} } }),
 				),
 			),
 		).toThrow(/must be a non-empty string/);
 		expect(() =>
 			validateSpec(
 				createSpec(
-					testCast({ implicit: { authorizationUrl: 123, scopes: {} } }),
+					createTestSpec({ implicit: { authorizationUrl: 123, scopes: {} } }),
 				),
 			),
 		).toThrow(/must be a non-empty string/);
@@ -4245,7 +4164,9 @@ describe("Core: Security Scheme Validation", () => {
 		expect(() =>
 			validateSpec(
 				createSpec(
-					testCast({ implicit: { authorizationUrl: "not-a-url", scopes: {} } }),
+					createTestSpec({
+						implicit: { authorizationUrl: "not-a-url", scopes: {} },
+					}),
 				),
 			),
 		).toThrow(/must be a valid URL/);
@@ -4254,7 +4175,7 @@ describe("Core: Security Scheme Validation", () => {
 		expect(() =>
 			validateSpec(
 				createSpec(
-					testCast({
+					createTestSpec({
 						implicit: {
 							authorizationUrl: "http://auth.example.com",
 							scopes: {},
@@ -4267,20 +4188,20 @@ describe("Core: Security Scheme Validation", () => {
 		// Check required URLs per flow
 		expect(() =>
 			validateSpec(
-				createSpec(testCast({ password: { tokenUrl: "", scopes: {} } })),
+				createSpec(createTestSpec({ password: { tokenUrl: "", scopes: {} } })),
 			),
 		).toThrow(/must be a non-empty string/);
 		expect(() =>
 			validateSpec(
 				createSpec(
-					testCast({ clientCredentials: { tokenUrl: "", scopes: {} } }),
+					createTestSpec({ clientCredentials: { tokenUrl: "", scopes: {} } }),
 				),
 			),
 		).toThrow(/must be a non-empty string/);
 		expect(() =>
 			validateSpec(
 				createSpec(
-					testCast({
+					createTestSpec({
 						deviceAuthorization: {
 							authorizationUrl: "https://auth.example.com",
 							tokenUrl: "https://auth.example.com",
@@ -4296,7 +4217,7 @@ describe("Core: Security Scheme Validation", () => {
 		expect(() =>
 			validateSpec(
 				createSpec(
-					testCast({
+					createTestSpec({
 						implicit: {
 							authorizationUrl: "https://auth.example.com",
 							refreshUrl: "not-a-url",
@@ -4311,7 +4232,7 @@ describe("Core: Security Scheme Validation", () => {
 		expect(() =>
 			validateSpec(
 				createSpec(
-					testCast({
+					createTestSpec({
 						implicit: { authorizationUrl: "https://auth.example.com" },
 					}),
 				),
@@ -4322,7 +4243,7 @@ describe("Core: Security Scheme Validation", () => {
 		expect(() =>
 			validateSpec(
 				createSpec(
-					testCast({
+					createTestSpec({
 						implicit: {
 							authorizationUrl: "https://auth.example.com",
 							scopes: {},
@@ -4334,78 +4255,68 @@ describe("Core: Security Scheme Validation", () => {
 		).toThrow(/must use https/);
 
 		// Test empty flows object
-		expect(() => validateSpec(createSpec(testCast({})))).toThrow(
+		expect(() => validateSpec(createSpec(createTestSpec({})))).toThrow(
 			/must define at least one flow/,
 		);
 	});
 
 	it("should require valid base fields for security schemes", () => {
 		expect(() =>
-			validateSpec(
-				testCast({
-					openapi: "3.1.0",
-					info,
-					paths: {},
-					components: { securitySchemes: { Bad: { type: 123 } } },
-				}),
-			),
+			validateSpec({
+				openapi: "3.1.0",
+				info,
+				paths: {},
+				components: { securitySchemes: { Bad: { type: 123 } } },
+			}),
 		).toThrow(/must define a string 'type'/);
 		expect(() =>
-			validateSpec(
-				testCast({
-					openapi: "3.1.0",
-					info,
-					paths: {},
-					components: {
-						securitySchemes: {
-							Bad: {
-								type: "string | number | boolean | object | undefined | null",
-							},
+			validateSpec({
+				openapi: "3.1.0",
+				info,
+				paths: {},
+				components: {
+					securitySchemes: {
+						Bad: {
+							type: "string | number | boolean | object | undefined | null",
 						},
 					},
-				}),
-			),
+				},
+			}),
 		).toThrow(/unsupported type/);
 	});
 
 	it("should ignore non-object or Ref security schemes", () => {
 		// Ref-like should just bypass type validation logic
 		expect(() =>
-			validateSpec(
-				testCast({
-					openapi: "3.1.0",
-					info,
-					paths: {},
-					components: {
-						securitySchemes: {
-							Ref: { $ref: "#/components/securitySchemes/Other" },
-						},
+			validateSpec({
+				openapi: "3.1.0",
+				info,
+				paths: {},
+				components: {
+					securitySchemes: {
+						Ref: { $ref: "#/components/securitySchemes/Other" },
 					},
-				}),
-			),
+				},
+			}),
 		).not.toThrow();
 		expect(() =>
-			validateSpec(
-				testCast({
-					openapi: "3.1.0",
-					info,
-					paths: {},
-					components: { securitySchemes: { NotObj: "foo" } },
-				}),
-			),
+			validateSpec({
+				openapi: "3.1.0",
+				info,
+				paths: {},
+				components: { securitySchemes: { NotObj: "foo" } },
+			}),
 		).not.toThrow();
 	});
 
 	it("should require valid mutualTLS properties", () => {
 		expect(() =>
-			validateSpec(
-				testCast({
-					openapi: "3.1.0",
-					info,
-					paths: {},
-					components: { securitySchemes: { Bad: { type: "mutualTLS" } } },
-				}),
-			),
+			validateSpec({
+				openapi: "3.1.0",
+				info,
+				paths: {},
+				components: { securitySchemes: { Bad: { type: "mutualTLS" } } },
+			}),
 		).not.toThrow();
 	});
 
@@ -4425,9 +4336,7 @@ describe("Core: Security Scheme Validation", () => {
 			},
 		};
 
-		expect(() => validateSpec(testCast(spec))).toThrow(
-			/openIdConnectUrl must use https/,
-		);
+		expect(() => validateSpec(spec)).toThrow(/openIdConnectUrl must use https/);
 	});
 
 	it("should accept valid oauth2 flows", () => {
@@ -4451,7 +4360,7 @@ describe("Core: Security Scheme Validation", () => {
 			},
 		};
 
-		expect(() => validateSpec(testCast(spec))).not.toThrow();
+		expect(() => validateSpec(spec)).not.toThrow();
 	});
 });
 // tests/core/example-validation.spec.ts
@@ -4493,12 +4402,14 @@ function cloneSpec(): SwaggerSpec {
 describe("Core: Example Object validation (OAS 3.2)", () => {
 	it("should accept dataValue alongside serializedValue", () => {
 		const spec = cloneSpec();
-		expect(() => validateSpec(testCast(spec))).not.toThrow();
+		expect(() => validateSpec(spec)).not.toThrow();
 	});
 
 	it("should reject Example Object with both value and dataValue", () => {
 		const spec = cloneSpec();
-		spec.paths!["/pets"].get!.parameters = testCast([
+		const getOp = spec.paths?.["/pets"]?.get;
+		if (!getOp) throw new Error("Expected getOp");
+		getOp.parameters = [
 			{
 				name: "q",
 				in: "query",
@@ -4510,24 +4421,25 @@ describe("Core: Example Object validation (OAS 3.2)", () => {
 					},
 				},
 			},
-		]);
-		expect(() => validateSpec(testCast(spec))).toThrow(/value.*dataValue/);
+		];
+		expect(() => validateSpec(spec)).toThrow(/value.*dataValue/);
 	});
 
 	it("should reject Example Object with both serializedValue and externalValue", () => {
 		const spec = cloneSpec();
-
-		testCast(spec.paths)["/pets"].get.responses["200"].content[
-			"application/json"
-		].examples = testCast({
-			bad: testCast({
-				serializedValue: testCast('{"a":1}'),
-				externalValue: testCast("http://example.com/example.json"),
-			}),
-		});
-		expect(() => validateSpec(testCast(spec))).toThrow(
-			/serializedValue.*externalValue/,
-		);
+		const media =
+			spec.paths?.["/pets"]?.get?.responses?.["200"]?.content?.[
+				"application/json"
+			];
+		if (media) {
+			media.examples = {
+				bad: {
+					serializedValue: '{"a":1}',
+					externalValue: "http://example.com/example.json",
+				},
+			};
+		}
+		expect(() => validateSpec(spec)).toThrow(/serializedValue.*externalValue/);
 	});
 
 	it("should reject component examples with both value and serializedValue", () => {
@@ -4540,20 +4452,20 @@ describe("Core: Example Object validation (OAS 3.2)", () => {
 				},
 			},
 		};
-		expect(() => validateSpec(testCast(spec))).toThrow(
-			/value.*serializedValue/,
-		);
+		expect(() => validateSpec(spec)).toThrow(/value.*serializedValue/);
 	});
 
 	it("should ignore non-object examples or refs", () => {
-		const spec = cloneSpec();
-		spec.components = {
-			examples: {
-				IgnoredStr: testCast("foo"),
-				RefExample: { $ref: "#/components/examples/Other" },
+		const spec = createTestSpec({
+			...cloneSpec(),
+			components: {
+				examples: {
+					IgnoredStr: "foo",
+					RefExample: { $ref: "#/components/examples/Other" },
+				},
 			},
-		};
-		expect(() => validateSpec(testCast(spec))).not.toThrow();
+		});
+		expect(() => validateSpec(spec)).not.toThrow();
 	});
 
 	it("should reject Example Object with both value and externalValue", () => {
@@ -4561,28 +4473,259 @@ describe("Core: Example Object validation (OAS 3.2)", () => {
 		spec.components = {
 			examples: { Bad: { value: "foo", externalValue: "foo" } },
 		};
-		expect(() => validateSpec(testCast(spec))).toThrow(/value.*externalValue/);
+		expect(() => validateSpec(spec)).toThrow(/value.*externalValue/);
 	});
 
 	it("should reject non-string serializedValue and externalValue", () => {
 		const spec1 = cloneSpec();
 		spec1.components = {
-			examples: testCast({
-				Bad: {
-					serializedValue: testCast(123),
-				},
-			}),
+			examples: {
+				Bad: createTestExample({
+					serializedValue: 123,
+				}),
+			},
 		};
 		expect(() => validateSpec(spec1)).toThrow(/non-string 'serializedValue'/);
 
 		const spec2 = cloneSpec();
 		spec2.components = {
 			examples: {
-				Bad: testCast({
-					externalValue: testCast(123),
+				Bad: createTestExample({
+					externalValue: 123,
 				}),
 			},
 		};
 		expect(() => validateSpec(spec2)).toThrow(/non-string 'externalValue'/);
+	});
+
+	it("should cover remaining sub-validator edge cases across info, schemas, parameters, headers, responses, links, paths, components, and servers/tags", async () => {
+		const {
+			isUriReference,
+			isEmailAddress,
+			isAbsoluteIri,
+			validateTemplateBraces,
+			validateExternalDocsObject,
+		} = await import("@src/openapi/validators/validate_info.js");
+		const { getSchemaTypeKind, validateSchemaExternalDocs } = await import(
+			"@src/openapi/validators/validate_schemas.js"
+		);
+		const { validateHeaderObject } = await import(
+			"@src/openapi/validators/validate_parameters_headers.js"
+		);
+		const {
+			validateMediaTypeObject,
+			validateLinkObject,
+			validateResponseObject,
+		} = await import("@src/openapi/validators/validate_responses_links.js");
+		const { validatePathItemOperations, validateOperationsContent } =
+			await import("@src/openapi/validators/validate_components.js");
+
+		expect(isUriReference("")).toBe(false);
+		expect(isUriReference("1badscheme:foo")).toBe(false);
+		expect(isUriReference("urn:example:animal:ferret:nose")).toBe(true);
+		expect(isEmailAddress("")).toBe(false);
+		expect(isAbsoluteIri("")).toBe(false);
+		expect(() => validateTemplateBraces("", "loc", "Label")).not.toThrow();
+		expect(() => validateExternalDocsObject(null, "loc")).not.toThrow();
+
+		const badLicenseUrlSpec = cloneSpec();
+		badLicenseUrlSpec.info = {
+			title: "T",
+			version: "1",
+			license: { name: "MIT", url: "http://bad url" },
+		};
+		expect(() => validateSpec(badLicenseUrlSpec)).toThrow(
+			/Info\.license\.url must be a valid URI/,
+		);
+
+		expect(getSchemaTypeKind(null)).toBe("unknown");
+		expect(getSchemaTypeKind({ $ref: "#/components/schemas/X" })).toBe(
+			"unknown",
+		);
+		expect(getSchemaTypeKind({ type: 123 })).toBe("unknown");
+		expect(getSchemaTypeKind({ type: ["string", "number"] })).toBe("unknown");
+		expect(getSchemaTypeKind({ type: [123, "null"] })).toBe("unknown");
+
+		const cyclicAllOf: Record<string, unknown> = {
+			discriminator: { propertyName: "kind", defaultMapping: "A" },
+			allOf: [],
+		};
+		(cyclicAllOf.allOf as unknown[]).push(cyclicAllOf);
+		expect(() =>
+			validateSchemaExternalDocs(
+				createTestSpec(cyclicAllOf),
+				"components.schemas.Cyclic",
+			),
+		).not.toThrow();
+		expect(() =>
+			validateSchemaExternalDocs(
+				{ discriminator: null, xml: null },
+				"components.schemas.NullDiscXml",
+			),
+		).not.toThrow();
+
+		expect(() =>
+			validateSchemaExternalDocs(
+				{ $dynamicRef: "#meta" },
+				"components.schemas.DynRef",
+			),
+		).not.toThrow();
+
+		expect(() => validateHeaderObject(null, "loc", true)).not.toThrow();
+
+		expect(() =>
+			validateMediaTypeObject(null, "loc", "text/plain"),
+		).not.toThrow();
+		expect(() =>
+			validateMediaTypeObject(
+				{ encoding: { field: { contentType: "text/plain" } } },
+				"loc",
+			),
+		).toThrow(/does not support it/);
+		expect(() =>
+			validateMediaTypeObject(
+				{ itemSchema: { type: "object" } },
+				"loc",
+				"multipart/mixed",
+			),
+		).not.toThrow();
+		expect(() =>
+			validateMediaTypeObject(
+				{ itemSchema: { type: "object" } },
+				"loc",
+				"application/vnd.custom+jsonl",
+			),
+		).not.toThrow();
+		expect(() => validateLinkObject(null, "loc")).not.toThrow();
+		expect(() =>
+			validateLinkObject(
+				{
+					operationId: "getPets",
+					parameters: {
+						limit: 10,
+						urlExpr: "$url",
+						bodyRoot: "$request.body#",
+					},
+				},
+				"loc",
+			),
+		).not.toThrow();
+		expect(() =>
+			validateLinkObject(
+				{
+					operationId: "getPets",
+					parameters: {
+						emptyExpr: "{ }",
+					},
+				},
+				"loc",
+			),
+		).toThrow(/invalid runtime expression/);
+		expect(() => validateResponseObject(null, "loc", true)).not.toThrow();
+		expect(() => validatePathItemOperations(null, "loc", true)).not.toThrow();
+		expect(() =>
+			validateOperationsContent({ "/null": null }, "paths.", true),
+		).not.toThrow();
+
+		const webhookMissingResp = cloneSpec();
+		webhookMissingResp.webhooks = createTestPaths({
+			newPet: {
+				post: {},
+			},
+		});
+		expect(() => validateSpec(webhookMissingResp)).toThrow(
+			/must define 'responses'/,
+		);
+
+		const webhookAddOpMissingResp = cloneSpec();
+		webhookAddOpMissingResp.webhooks = createTestPaths({
+			newPet: {
+				additionalOperations: {
+					COPY: {},
+				},
+			},
+		});
+		expect(() => validateSpec(webhookAddOpMissingResp)).toThrow(
+			/must define 'responses'/,
+		);
+
+		const addOpMissingResp = cloneSpec();
+		addOpMissingResp.paths = createTestPaths({
+			"/pets": {
+				additionalOperations: {
+					COPY: {},
+				},
+			},
+		});
+		expect(() => validateSpec(addOpMissingResp)).toThrow(
+			/must define 'responses'/,
+		);
+
+		const validEdgeSpec = createTestSpec({
+			...cloneSpec(),
+			paths: {
+				"/pets": {
+					get: null,
+					post: {
+						operationId: "postPets",
+						externalDocs: { url: "https://example.com" },
+						callbacks: {
+							nullCb: null,
+							validCb: {
+								"{$url}": null,
+							},
+						},
+						responses: { "200": { description: "ok" } },
+					},
+					additionalOperations: {
+						NULL_OP: null,
+						COPY: {
+							operationId: "copyPets",
+							externalDocs: { url: "https://example.com" },
+							servers: [{ url: "https://copy.example.com" }],
+							responses: { "200": { description: "ok" } },
+						},
+					},
+				},
+			},
+			webhooks: {
+				nullHook: null,
+				validHook: {
+					post: {
+						externalDocs: { url: "https://example.com" },
+						responses: { "200": { description: "ok" } },
+					},
+					additionalOperations: {
+						COPY: {
+							externalDocs: { url: "https://example.com" },
+							responses: { "200": { description: "ok" } },
+						},
+					},
+				},
+			},
+			components: {
+				parameters: {
+					RefParam: { $ref: "#/components/parameters/TargetParam" },
+					DynRefParam: { $dynamicRef: "#meta" },
+					ReservedHeaderParam: {
+						name: "Accept",
+						in: "header",
+					},
+					TargetParam: {
+						name: "q",
+						in: "query",
+						schema: { type: "string" },
+						examples: {
+							ex1: { value: "hello" },
+						},
+					},
+				},
+				callbacks: {
+					NullCompCb: null,
+				},
+			},
+			tags: [{ name: 123 }],
+		});
+		expect(() => validateSpec(validEdgeSpec)).not.toThrow();
 	});
 });

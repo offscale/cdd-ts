@@ -41,7 +41,14 @@ describe("Core Server Contracts (IServerFrameworkGenerator)", () => {
 		);
 		serverGen.generateServerEntrypoint?.(project, ["Widget"], "/out", parser);
 
-		expect(project.getSourceFile("/out/routes/widget.routes.ts")).toBeDefined();
-		expect(project.getSourceFile("/out/server.ts")).toBeDefined();
+		const routeSf = project.getSourceFileOrThrow(
+			"/out/routes/widget.routes.ts",
+		);
+		expect(routeSf.getFunction("createWidgetRouter")).toBeDefined();
+		expect(routeSf.getFullText()).toContain("dataSource.getRepository(Widget)");
+
+		const serverSf = project.getSourceFileOrThrow("/out/server.ts");
+		expect(serverSf.getFunction("startServer")).toBeDefined();
+		expect(serverSf.getFullText()).toContain("createWidgetRouter(dataSource)");
 	});
 });

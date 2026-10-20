@@ -10,7 +10,7 @@ import type { SwaggerSpec } from "../core/types/index.js";
 /** Directory creation options for `SnapshotFileSystem.mkdirSync`. */
 export interface SnapshotMkdirOptions {
 	/** Whether parent directories should be created recursively. */
-	recursive?: boolean;
+	recursive?: boolean | undefined;
 }
 
 /** File status entry returned by `SnapshotFileSystem.statSync`. */
@@ -83,7 +83,10 @@ const SNAPSHOT_YAML = "openapi.snapshot.yaml";
 
 const SNAPSHOT_YML = "openapi.snapshot.yml";
 
-function fileExists(fileSystem: SnapshotFileSystem, filePath: string): boolean {
+function fileExists(
+	fileSystem: Pick<SnapshotFileSystem, "existsSync" | "statSync">,
+	filePath: string,
+): boolean {
 	if (typeof fileSystem.existsSync === "function") {
 		return fileSystem.existsSync(filePath);
 	}
@@ -123,7 +126,10 @@ function parseSnapshot(contents: string, format: SnapshotFormat): SwaggerSpec {
  */
 function resolveSnapshotFile(
 	inputPath: string,
-	fileSystem: SnapshotFileSystem,
+	fileSystem: Pick<
+		SnapshotFileSystem,
+		"existsSync" | "statSync" | "readFileSync"
+	>,
 ): { filePath: string; format: SnapshotFormat } {
 	const stat = fileSystem.statSync(inputPath);
 
@@ -175,7 +181,10 @@ function resolveSnapshotFile(
  */
 export function readOpenApiSnapshot(
 	inputPath: string,
-	fileSystem: SnapshotFileSystem,
+	fileSystem: Pick<
+		SnapshotFileSystem,
+		"existsSync" | "statSync" | "readFileSync"
+	>,
 ): SnapshotReadResult {
 	const resolved = resolveSnapshotFile(inputPath, fileSystem);
 

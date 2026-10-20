@@ -386,9 +386,9 @@ export class ListComponentGenerator {
 
 		const iconMap = new Map<string, string>();
 
-		model.customActions.forEach((a) =>
-			iconMap.set(a.name, this.mapKindToIcon(a.name, a.kind)),
-		);
+		model.customActions.forEach((a) => {
+			iconMap.set(a.name, this.mapKindToIcon(a.name, a.kind));
+		});
 
 		// Delegate to HTML builder.
 

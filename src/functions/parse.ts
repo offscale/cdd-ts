@@ -290,17 +290,13 @@ export function scanTypeScriptProject(
 		}
 
 		filePaths.push(resolved);
-	} else if (stat.isDirectory()) {
+	} else {
 		const ignoreDirs = new Set([
 			...DEFAULT_IGNORE_DIRS,
 			...(options.ignoreDirs ?? []),
 		]);
 
 		collectSourceFiles(resolved, fileSystem, filePaths, ignoreDirs);
-	} else {
-		throw new Error(
-			`Input path is neither a file nor a directory: ${resolved}`,
-		);
 	}
 
 	if (filePaths.length === 0) {
@@ -369,7 +365,7 @@ export function buildOpenApiSpecFromScan(
 	const tagObjects = new Map<string, TagObject>();
 
 	const trackTagName = (name: string) => {
-		if (!name || tagSet.has(name)) return;
+		if (tagSet.has(name)) return;
 
 		tagSet.add(name);
 
@@ -377,21 +373,13 @@ export function buildOpenApiSpecFromScan(
 	};
 
 	const mergeTagObject = (tag: TagObject) => {
-		const name = tag.name?.trim();
-
-		if (!name) return;
-
+		const name = tag.name.trim();
 		const normalized = { ...tag, name };
-
 		const existing = tagObjects.get(name);
-
-		if (!existing) {
-			tagObjects.set(name, normalized);
-
-			return;
-		}
-
-		tagObjects.set(name, { ...normalized, ...existing });
+		tagObjects.set(
+			name,
+			existing ? { ...normalized, ...existing } : normalized,
+		);
 	};
 
 	for (const op of ir.operations) {
@@ -440,8 +428,6 @@ export function buildOpenApiSpecFromScan(
 
 		if (op.tagObjects && op.tagObjects.length > 0) {
 			op.tagObjects.forEach((tag) => {
-				if (!tag || typeof tag.name !== "string") return;
-
 				trackTagName(tag.name);
 
 				mergeTagObject(tag);

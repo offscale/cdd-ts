@@ -1,11 +1,10 @@
 import { TypeGenerator } from "@src/classes/emit.js";
-import type { GeneratorConfig } from "@src/core/types/index.js";
+import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { type TestCallable, testCast } from "../shared/helpers.js";
 
-const callbackSpec = {
+const callbackSpec: SwaggerSpec = {
 	openapi: "3.0.0",
 	info: { title: "Callback API", version: "1.0" },
 	paths: {
@@ -85,7 +84,7 @@ const callbackSpec = {
 
 describe("Emitter: TypeGenerator (Callbacks)", () => {
 	const runGenerator = (
-		spec: unknown,
+		spec: SwaggerSpec,
 		options: Partial<GeneratorConfig["options"]> = {},
 	) => {
 		const project = new Project({ useInMemoryFileSystem: true });
@@ -94,7 +93,7 @@ describe("Emitter: TypeGenerator (Callbacks)", () => {
 			output: "/out",
 			options: { enumStyle: "enum", ...options },
 		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(spec, config);
 		new TypeGenerator(parser, project, config).generate("/out");
 		const sourceFile = project.createSourceFile(
 			"/out/combined.ts",
@@ -108,35 +107,30 @@ describe("Emitter: TypeGenerator (Callbacks)", () => {
 		return sourceFile;
 	};
 
-	testCast<TestCallable>(it)(
-		"should generate a request interface for a callback operation",
-		() => {
-			const sourceFile = runGenerator(testCast(callbackSpec));
-			const interfaceName = "SubscribeOperationOnDataRequest";
-			const model = sourceFile.getInterfaceOrThrow(interfaceName);
+	it("should generate a request interface for a callback operation", () => {
+		const sourceFile = runGenerator(callbackSpec);
+		const interfaceName = "SubscribeOperationOnDataRequest";
+		const model = sourceFile.getInterfaceOrThrow(interfaceName);
 
-			expect(model).toBeDefined();
-			expect(model.isExported()).toBe(true);
-			expect(model.getProperty("timestamp")).toBeDefined();
-			expect(model.getProperty("data")).toBeDefined();
-		},
-	);
+		expect(model).toBeDefined();
+		expect(model.isExported()).toBe(true);
+		expect(model.getProperty("timestamp")).toBeDefined();
+		expect(model.getProperty("data")).toBeDefined();
+	});
 
 	it("should reuse existing schemas referenced in callbacks", () => {
-		const sourceFile = testCast<TestCallable>(runGenerator)(
-			testCast(callbackSpec),
-		);
+		const sourceFile = runGenerator(callbackSpec);
 		// The name is composed of OperationId + CallbackName + Request
 		// doComplex + MyEvent + Request
 		const interfaceName = "DoComplexMyEventRequest";
-		const typeAlias = sourceFile.getTypeAlias(interfaceName);
+		const typeAlias = sourceFile.getTypeAlias?.(interfaceName);
 
 		expect(typeAlias).toBeDefined();
 		// The type alias should point to ComplexPayload (or check that the type is ComplexPayload)
 		// Note: Type aliases to interfaces are usually generated as `type X = Y;`
-		expect(typeAlias?.getTypeNode()?.getText()).toBe("ComplexPayload");
+		expect(typeAlias?.getTypeNode?.()?.getText?.()).toBe("ComplexPayload");
 
 		// Verify ComplexPayload exists too
-		expect(sourceFile.getInterface("ComplexPayload")).toBeDefined();
+		expect(sourceFile.getInterface?.("ComplexPayload")).toBeDefined();
 	});
 });

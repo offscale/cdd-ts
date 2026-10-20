@@ -17,7 +17,7 @@ import { NodeClientGenerator } from "../../src/vendors/node/node-client.generato
 import { ReactClientGenerator } from "../../src/vendors/react/react-client.generator.js";
 import { TypeOrmGenerator } from "../../src/vendors/typeorm/emit.js";
 import { VueClientGenerator } from "../../src/vendors/vue/vue-client.generator.js";
-import { testCast } from "../shared/helpers.js";
+import { createTestConfig } from "../shared/helpers.js";
 
 vi.mock("../../src/openapi/parse.js", () => {
 	const MockSwaggerParser = vi.fn().mockImplementation(function (
@@ -120,7 +120,7 @@ describe("index.ts", () => {
 
 		beforeEach(() => {
 			project = new Project({ useInMemoryFileSystem: true });
-			config = testCast<GeneratorConfig>({
+			config = createTestConfig({
 				input: "http://example.com/spec.json",
 				output: "/out",
 				options: {
@@ -128,8 +128,12 @@ describe("index.ts", () => {
 				},
 				compilerOptions: {},
 			});
-			consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-			consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			consoleLogSpy = vi
+				.spyOn(console, "log")
+				.mockImplementation(() => undefined);
+			consoleErrorSpy = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => undefined);
 		});
 
 		afterEach(() => {
@@ -200,11 +204,11 @@ describe("index.ts", () => {
 		it("should default framework to vanilla if not provided", async () => {
 			delete config.options.framework;
 			const testConfig = {
-				spec: testCast<SwaggerParser>({
+				spec: {
 					openapi: "3.0.0",
 					info: { title: "Test", version: "1" },
 					paths: {},
-				}),
+				},
 			};
 			const activeProjectSaveSpy = vi
 				.spyOn(project, "saveSync")
@@ -252,11 +256,11 @@ describe("index.ts", () => {
 
 			// Should pass without project argument
 			generateFromConfigSync(config, undefined, {
-				spec: testCast<SwaggerParser>({
+				spec: {
 					openapi: "3.0.0",
 					info: { title: "Test", version: "1" },
 					paths: {},
-				}),
+				},
 			});
 
 			expect(generateSpy).toHaveBeenCalled();
@@ -325,9 +329,10 @@ describe("index.ts", () => {
 			}
 		});
 
-		it("should generate server with typeorm and express when targetScope is to_server", () => {
+		it("should generate server with typeorm and express when targetScope is to_server without mutating caller config", () => {
 			config.options.orm = "typeorm";
 			config.options.serverFramework = "express";
+			config.options.generateServices = true;
 			const typeOrmSpy = vi
 				.spyOn(TypeOrmGenerator.prototype, "generate")
 				.mockReturnValue(undefined);
@@ -347,8 +352,11 @@ describe("index.ts", () => {
 				},
 				"to_server",
 			);
-			expect(config.options.generateServices).toBe(false);
-			expect(typeOrmSpy).toHaveBeenCalled();
+			expect(config.options.generateServices).toBe(true);
+			expect(typeOrmSpy).toHaveBeenCalledTimes(1);
+			expect(typeOrmSpy.mock.calls[0]?.[2]?.options.generateServices).toBe(
+				false,
+			);
 			expect(typeGenSpy).toHaveBeenCalled();
 		});
 
@@ -365,7 +373,7 @@ describe("index.ts", () => {
 				.spyOn(ExpressServerGenerator.prototype, "generateServerEntrypoint")
 				.mockReturnValue(undefined);
 
-			const parserInstance = {
+			const customParserProps = {
 				spec: {
 					openapi: "3.0.0",
 					info: { title: "Test", version: "1" },
@@ -397,12 +405,19 @@ describe("index.ts", () => {
 				getDocumentServers: () => [],
 				operations: [],
 			};
-			testCast<import("vitest").Mock>(SwaggerParser).mockImplementationOnce(
-				function (this: unknown) {
-					void this;
-					return parserInstance;
+			const parserInstance = new SwaggerParser(
+				{
+					openapi: "3.0.0",
+					info: { title: "Test", version: "1" },
+					paths: {},
 				},
+				config,
 			);
+			Object.assign(parserInstance, customParserProps);
+			vi.mocked(SwaggerParser).mockImplementationOnce(function (this: unknown) {
+				void this;
+				return parserInstance;
+			});
 
 			generateFromConfigSync(
 				config,
@@ -422,7 +437,9 @@ describe("index.ts", () => {
 		});
 
 		it("should skip express server generation when serverFramework is not express", () => {
+			config.options.generateServices = true;
 			(config.options as Record<string, unknown>).serverFramework = "other";
+			const typeGenSpy = vi.spyOn(TypeGenerator.prototype, "generate");
 			generateFromConfigSync(
 				config,
 				project,
@@ -435,7 +452,8 @@ describe("index.ts", () => {
 				},
 				"to_server",
 			);
-			expect(config.options.generateServices).toBe(false);
+			expect(config.options.generateServices).toBe(true);
+			expect(typeGenSpy).not.toHaveBeenCalled();
 		});
 
 		it("should invoke McpGenerator when targetScope is to_sdk_cli and mcp is true", () => {

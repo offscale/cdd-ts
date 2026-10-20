@@ -7,14 +7,15 @@
 
 import * as path from "node:path";
 import type { Project, SourceFile } from "ts-morph";
-import type {
-	ExampleObject,
-	GeneratorConfig,
-	OpenApiValue,
-	Parameter,
-	PathInfo,
-	ReferenceLike,
-	SwaggerDefinition,
+import {
+	type ExampleObject,
+	type GeneratorConfig,
+	type OpenApiValue,
+	type Parameter,
+	type PathInfo,
+	type ReferenceLike,
+	type SwaggerDefinition,
+	UNKNOWN_PAYLOAD_TYPE,
 } from "../../../core/types/index.js";
 import {
 	camelCase,
@@ -29,7 +30,8 @@ import { MockDataGenerator } from "./mock-data.generator.js";
 
 /** Generator/utility class `ServiceTestGenerator`. */
 export class ServiceTestGenerator {
-	private mockDataGenerator: MockDataGenerator;
+	/** Mock data generator instance used for test fixture synthesis. */
+	public mockDataGenerator: MockDataGenerator;
 
 	/**
 	 * Creates a new `ServiceTestGenerator` instance.
@@ -187,28 +189,20 @@ export class ServiceTestGenerator {
 					mockData = mockData.startsWith('"') ? mockData : String(mockData);
 
 					lines.push(
-						`      const ${bodyParam.name} = ${mockData.replace(/"new globalThis\.Date\(\)"/g, "new globalThis.Date()")} as string | number | boolean | object | undefined | null as ${bodyParam.type};`,
+						`      const ${bodyParam.name} = ${mockData.replace(/"new globalThis\.Date\(\)"/g, "new globalThis.Date()")} as ${bodyParam.type};`,
 					);
 				} else if (bodyParam?.isPrimitive) {
 					lines.push(
-						`      const ${bodyParam.name} = 'test-body' as string | number | boolean | object | undefined | null as ${bodyParam.type};`,
+						`      const ${bodyParam.name} = 'test-body' as ${bodyParam.type};`,
 					);
 				} else if (bodyParam) {
 					lines.push(
-						`      const ${bodyParam.name} = { data: 'test-body' } as string | number | boolean | object | undefined | null as ${bodyParam.type};`,
+						`      const ${bodyParam.name} = { data: 'test-body' } as ${bodyParam.type};`,
 					);
 				}
 
 				params.forEach((p) => {
-					if (p.modelName) {
-						lines.push(
-							`      const ${p.name} = ${p.value} as string | number | boolean | object | undefined | null as ${p.type};`,
-						);
-					} else {
-						lines.push(
-							`      const ${p.name} = ${p.value} as string | number | boolean | object | undefined | null as ${p.type};`,
-						);
-					}
+					lines.push(`      const ${p.name} = ${p.value} as ${p.type};`);
 				});
 
 				return lines;
@@ -409,7 +403,7 @@ export class ServiceTestGenerator {
 					Object.hasOwn(firstExample, "$ref")
 				) {
 					const resolved = this.parser.resolveReference<ExampleObject>(
-						(firstExample as Record<string, string>).$ref,
+						(firstExample as { $ref: string }).$ref,
 					);
 
 					const resolvedValue = pickExampleValue(resolved);
@@ -449,10 +443,11 @@ export class ServiceTestGenerator {
 					potentialValue = media.example;
 				} else if (media?.examples) {
 					const keys = Object.keys(media.examples);
+					const firstKey = keys[0];
 
-					if (keys.length > 0) {
+					if (firstKey) {
 						const ex = (media.examples as Record<string, OpenApiValue>)[
-							keys[0]!
+							firstKey
 						];
 
 						const contentValue = pickExampleValue(ex);
@@ -527,7 +522,7 @@ export class ServiceTestGenerator {
 					this.config,
 					knownTypes,
 				)
-			: "string | number | boolean | object | undefined | null";
+			: UNKNOWN_PAYLOAD_TYPE;
 
 		const responseModelType = responseType.replace(/\[\]| \| null/g, "");
 
@@ -548,7 +543,7 @@ export class ServiceTestGenerator {
 					this.config,
 					knownTypes,
 				)
-			: "string | number | boolean | object | undefined | null";
+			: UNKNOWN_PAYLOAD_TYPE;
 
 		const bodyModelType = bodyType.replace(/\[\]| \| null/g, "");
 
@@ -576,7 +571,9 @@ export class ServiceTestGenerator {
 	 * @param operations - Parameter `operations`.
 	 * @returns Result of `collectModelImports`.
 	 */
-	public collectModelImports(operations: PathInfo[]): Set<string> {
+	public collectModelImports(
+		operations: PathInfo[] | null | undefined,
+	): Set<string> {
 		const modelImports = new Set<string>();
 
 		const knownTypes = this.parser.schemas.map((s) => s.name);

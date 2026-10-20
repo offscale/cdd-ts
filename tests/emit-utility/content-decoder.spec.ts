@@ -1,7 +1,7 @@
 import { ContentDecoderGenerator } from "@src/openapi/emit_content_decoder.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import { createTestProject } from "../shared/helpers.js";
 
 function getContentDecoder() {
 	const project = createTestProject();
@@ -17,12 +17,18 @@ function getContentDecoder() {
 		module: ts.ModuleKind.CommonJS,
 	});
 
-	const moduleScope = {
-		exports: testCast({}),
+	const moduleScope: {
+		exports: {
+			ContentDecoder?: {
+				decode: (val: unknown, cfg?: unknown) => unknown;
+			};
+		};
+	} = {
+		exports: {},
 	};
 	const finalCode = `const XmlParser = { parse: (xml) => ({ xml }) }; ${jsCode}; exports.ContentDecoder = ContentDecoder;`;
 
-	testCast(new Function("exports", finalCode)(moduleScope.exports));
+	new Function("exports", finalCode)(moduleScope.exports);
 
 	return moduleScope.exports.ContentDecoder;
 }
@@ -31,10 +37,12 @@ describe("Utility: ContentDecoder", () => {
 	const ContentDecoder = getContentDecoder();
 
 	it("should decode base64 strings to Uint8Array", () => {
-		const result = ContentDecoder.decode("AQID", { contentEncoding: "base64" });
+		const result = ContentDecoder?.decode?.("AQID", {
+			contentEncoding: "base64",
+		});
 
 		expect(result).toBeInstanceOf(Uint8Array);
-		expect(Array.from(result)).toEqual([1, 2, 3]);
+		expect(Array.from(result as Uint8Array)).toEqual([1, 2, 3]);
 	});
 
 	it("should decode base64url and parse JSON when decode is enabled", () => {
@@ -45,7 +53,7 @@ describe("Utility: ContentDecoder", () => {
 			.replace(/\//g, "_")
 			.replace(/=+$/g, "");
 
-		const result = ContentDecoder.decode(base64url, {
+		const result = ContentDecoder?.decode?.(base64url, {
 			contentEncoding: "base64url",
 			decode: true,
 		});

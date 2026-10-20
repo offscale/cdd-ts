@@ -4,7 +4,7 @@ import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 const sequentialSpec = {
 	openapi: "3.0.0",
@@ -109,7 +109,7 @@ describe("Emitter: ServiceMethodGenerator (Sequential Media Types)", () => {
 			options: { dateType: "Date", enumStyle: "enum" },
 		};
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(testCast(sequentialSpec), config);
+		const parser = new SwaggerParser(createTestSpec(sequentialSpec), config);
 
 		new TypeGenerator(parser, project, config).generate("/out");
 
@@ -141,12 +141,14 @@ describe("Emitter: ServiceMethodGenerator (Sequential Media Types)", () => {
 
 	it("should generate json-seq parsing logic splitting by Record Separator (0x1E)", () => {
 		const { methodGen, serviceClass, parser } = createTestEnv();
-		const op = parser.operations.find((o) => o.operationId === "getJsonSeq")!;
+		const op = parser.operations.find((o) => o.operationId === "getJsonSeq");
+		if (!op) throw new Error("Expected getJsonSeq");
 		op.methodName = "getJsonSeq";
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass.getMethodOrThrow("getJsonSeq").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getJsonSeq").getBodyText() ?? "";
 
 		expect(body).toContain(`responseType: 'text'`);
 		expect(body).toContain(".pipe(");
@@ -160,14 +162,14 @@ describe("Emitter: ServiceMethodGenerator (Sequential Media Types)", () => {
 
 	it("should treat structured +json-seq media types as json-seq", () => {
 		const { methodGen, serviceClass, parser } = createTestEnv();
-		const op = parser.operations.find(
-			(o) => o.operationId === "getGeoJsonSeq",
-		)!;
+		const op = parser.operations.find((o) => o.operationId === "getGeoJsonSeq");
+		if (!op) throw new Error("Expected getGeoJsonSeq");
 		op.methodName = "getGeoJsonSeq";
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass.getMethodOrThrow("getGeoJsonSeq").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getGeoJsonSeq").getBodyText() ?? "";
 
 		expect(body).toContain(`responseType: 'text'`);
 		expect(body).toContain("response.split('\\x1e')");
@@ -176,12 +178,14 @@ describe("Emitter: ServiceMethodGenerator (Sequential Media Types)", () => {
 
 	it("should generate jsonl parsing logic splitting by Newline", () => {
 		const { methodGen, serviceClass, parser } = createTestEnv();
-		const op = parser.operations.find((o) => o.operationId === "getJsonLines")!;
+		const op = parser.operations.find((o) => o.operationId === "getJsonLines");
+		if (!op) throw new Error("Expected getJsonLines");
 		op.methodName = "getJsonLines";
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass.getMethodOrThrow("getJsonLines").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getJsonLines").getBodyText() ?? "";
 
 		expect(body).toContain(`responseType: 'text'`);
 		expect(body).toContain("response.split('\\n')");
@@ -190,26 +194,27 @@ describe("Emitter: ServiceMethodGenerator (Sequential Media Types)", () => {
 
 	it("should treat application/x-ndjson as json-lines", () => {
 		const { methodGen, serviceClass, parser } = createTestEnv();
-		const op = parser.operations.find((o) => o.operationId === "getNdJson")!;
+		const op = parser.operations.find((o) => o.operationId === "getNdJson");
+		if (!op) throw new Error("Expected getNdJson");
 		op.methodName = "getNdJson";
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass.getMethodOrThrow("getNdJson").getBodyText()!;
+		const body = serviceClass.getMethodOrThrow("getNdJson").getBodyText() ?? "";
 
 		expect(body).toContain("response.split('\\n')");
 	});
 
 	it("should treat custom JSON media types with itemSchema as json-lines", () => {
 		const { methodGen, serviceClass, parser } = createTestEnv();
-		const op = parser.operations.find(
-			(o) => o.operationId === "getCustomJson",
-		)!;
+		const op = parser.operations.find((o) => o.operationId === "getCustomJson");
+		if (!op) throw new Error("Expected getCustomJson");
 		op.methodName = "getCustomJson";
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass.getMethodOrThrow("getCustomJson").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getCustomJson").getBodyText() ?? "";
 		expect(body).toContain("response.split('\\n')");
 		expect(body).toContain(`responseType: 'text'`);
 	});

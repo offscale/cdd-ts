@@ -19,12 +19,12 @@ export function downgradeOpenApiToSwagger2(out: SwaggerSpec): SwaggerSpec {
 	if (out.swagger) {
 		// Convert servers to host, basePath, schemes
 		if (out.servers && out.servers.length > 0) {
-			const serverUrl = out.servers[0].url;
+			const serverUrl = (out.servers[0] as { url: string }).url;
 			try {
 				let parsedUrl: URL;
 				if (serverUrl.startsWith("/")) {
 					out.basePath = serverUrl;
-				} else if (typeof URL !== "undefined") {
+				} else {
 					parsedUrl = new URL(serverUrl);
 					out.host = parsedUrl.host;
 					out.basePath = parsedUrl.pathname !== "/" ? parsedUrl.pathname : "/";
@@ -80,7 +80,7 @@ export function downgradeOpenApiToSwagger2(out: SwaggerSpec): SwaggerSpec {
 							};
 							consumes?: string[];
 							parameters?: OpenApiValue[];
-							responses?: Record<
+							responses: Record<
 								string,
 								{
 									content?: Record<string, { schema: unknown }>;
@@ -99,7 +99,11 @@ export function downgradeOpenApiToSwagger2(out: SwaggerSpec): SwaggerSpec {
 									if (!op.consumes.includes(mt)) op.consumes.push(mt);
 								}
 
-								const schema = op.requestBody.content[mediaTypes[0]].schema as {
+								const firstMediaType = mediaTypes[0] as string;
+								const firstMedia = op.requestBody.content[firstMediaType] as {
+									schema: unknown;
+								};
+								const schema = firstMedia.schema as {
 									properties?: Record<
 										string,
 										{ type?: string; format?: string; description?: string }
@@ -109,12 +113,13 @@ export function downgradeOpenApiToSwagger2(out: SwaggerSpec): SwaggerSpec {
 								op.parameters = op.parameters || [];
 
 								if (
-									mediaTypes[0] === "application/x-www-form-urlencoded" ||
-									mediaTypes[0] === "multipart/form-data"
+									firstMediaType === "application/x-www-form-urlencoded" ||
+									firstMediaType === "multipart/form-data"
 								) {
 									if (schema.properties) {
-										for (const propName of Object.keys(schema.properties)) {
-											const prop = schema.properties[propName];
+										for (const [propName, prop] of Object.entries(
+											schema.properties,
+										)) {
 											const isFile =
 												prop.type === "string" &&
 												(prop.format === "binary" || prop.format === "base64");
@@ -141,24 +146,28 @@ export function downgradeOpenApiToSwagger2(out: SwaggerSpec): SwaggerSpec {
 						}
 
 						// Handle Responses -> produces
-						if (op.responses) {
-							for (const status of Object.keys(op.responses)) {
-								const resp = op.responses[status] as {
-									content?: Record<string, { schema: unknown }>;
-									schema?: unknown;
-								};
-								if (resp.content) {
-									const mediaTypes = Object.keys(resp.content);
-									if (mediaTypes.length > 0) {
-										op.produces = op.produces || [];
-										for (const mt of mediaTypes) {
-											if (!op.produces.includes(mt)) op.produces.push(mt);
-										}
-										resp.schema = resp.content[mediaTypes[0]].schema;
+						const produces = new Set<string>(op.produces);
+						for (const status of Object.keys(op.responses)) {
+							const resp = op.responses[status] as {
+								content?: Record<string, { schema: unknown }>;
+								schema?: unknown;
+							};
+							if (resp.content) {
+								const mediaTypes = Object.keys(resp.content);
+								if (mediaTypes.length > 0) {
+									for (const mt of mediaTypes) {
+										produces.add(mt);
 									}
-									delete resp.content;
+									const firstRespMedia = resp.content[
+										mediaTypes[0] as string
+									] as { schema: unknown };
+									resp.schema = firstRespMedia.schema;
 								}
+								delete resp.content;
 							}
+						}
+						if (produces.size > 0) {
+							op.produces = [...produces];
 						}
 					}
 				}

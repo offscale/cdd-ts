@@ -127,7 +127,7 @@ export class ArazzoCliGenerator {
 						"const orchestrator = new WorkflowOrchestrator({});",
 					);
 					writer.writeLine(
-						`const result = await orchestrator.${methodName}(options as never);`,
+						`const result = await orchestrator.${methodName}(options as Parameters<WorkflowOrchestrator[${JSON.stringify(methodName)}]>[0]);`,
 					);
 					writer.writeLine("console.log(JSON.stringify(result, null, 2));");
 					writer.writeLine("void ARAZZO_SPEC_METADATA;");

@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 import type { OpenApiValue, PathItem } from "../core/types/index.js";
 import type { SwaggerParser } from "../openapi/parse.js";
 
@@ -71,9 +70,7 @@ export class PathsGenerator {
 		});
 
 		if (Object.keys(registry).length === 0) {
-			sourceFile.replaceWithText(
-				`${UTILITY_GENERATOR_HEADER_COMMENT}export { };\n`,
-			);
+			sourceFile.replaceWithText("export { };\n");
 
 			return;
 		}
@@ -93,7 +90,5 @@ export class PathsGenerator {
 		});
 
 		sourceFile.formatText();
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 	}
 }

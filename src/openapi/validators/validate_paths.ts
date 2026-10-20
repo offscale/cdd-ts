@@ -55,13 +55,8 @@ function getPathTemplateSignature(path: string): string {
 }
 
 function getPathTemplateParams(path: string): string[] {
-	const params: string[] = [];
-	const regex = /\{([^}]+)\}/g;
-	let match: RegExpExecArray | null;
-	while ((match = regex.exec(path)) !== null) {
-		if (match[1]) params.push(match[1]);
-	}
-	return params;
+	const matches = path.match(/\{[^}]+\}/g) ?? [];
+	return matches.map((m) => m.slice(1, -1));
 }
 
 /**
@@ -319,8 +314,8 @@ export function validatePathsWebhooksAndOperationIds(
 
 			const signature = getPathTemplateSignature(pathKey);
 			if (signature.includes("{}")) {
-				if (signatures.has(signature)) {
-					const existingPath = signatures.get(signature)!;
+				const existingPath = signatures.get(signature);
+				if (existingPath !== undefined) {
 					throw new SpecValidationError(
 						`Ambiguous path definition detected. OAS 3.2 forbids identical path hierarchies with different parameter names.
 ` +
@@ -336,7 +331,6 @@ export function validatePathsWebhooksAndOperationIds(
 			validateUniqueParameters(pathParams, `${pathKey}.parameters`);
 
 			const validatePathParam = (param: Parameter, location: string) => {
-				if (param.in !== "path") return;
 				if (!templateParamSet.has(param.name)) {
 					throw new SpecValidationError(
 						`Path parameter '${param.name}' in '${location}' does not match the template variable in path '${pathKey}'.`,
@@ -542,12 +536,6 @@ export function validatePathsWebhooksAndOperationIds(
 							if (param.schema !== undefined) {
 								throw new SpecValidationError(
 									`Parameter '${param.name}' in '${method.toUpperCase()} ${pathKey}' has location 'querystring' but defines 'schema'. Querystring parameters MUST use 'content' instead.`,
-								);
-							}
-
-							if (param.content === undefined) {
-								throw new SpecValidationError(
-									`Parameter '${param.name}' in '${method.toUpperCase()} ${pathKey}' has location 'querystring' but is missing 'content'. Querystring parameters MUST use 'content'.`,
 								);
 							}
 						}

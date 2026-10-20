@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import type { Project, SourceFile } from "ts-morph";
-import { PROVIDER_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 import type { GeneratorConfig } from "../../../core/types/index.js";
 import {
 	camelCase,
@@ -68,8 +67,6 @@ export class ProviderGenerator {
 		const sourceFile = this.project.createSourceFile(filePath, "", {
 			overwrite: true,
 		});
-
-		sourceFile.insertText(0, PROVIDER_GENERATOR_HEADER_COMMENT);
 
 		const hasSecurity =
 			this.hasApiKey || this.hasCookieAuth || this.hasBearer || this.hasMtls;

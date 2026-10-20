@@ -3,13 +3,14 @@
  *
  * @module classes/parse_type_converter
  */
-import type {
-	GeneratorConfig,
-	MediaTypeObject,
-	OpenApiValue,
-	RequestBody,
-	SwaggerDefinition,
-	SwaggerResponse,
+import {
+	type GeneratorConfig,
+	type MediaTypeObject,
+	type OpenApiValue,
+	type RequestBody,
+	type SwaggerDefinition,
+	type SwaggerResponse,
+	UNKNOWN_PAYLOAD_TYPE,
 } from "../core/types/index.js";
 import { pascalCase } from "../functions/utils_string.js";
 
@@ -30,11 +31,11 @@ export function isDataTypeInterface(type: string): boolean {
 		"string",
 		"number",
 		"boolean",
-		"string | number | boolean | object | undefined | null",
+		UNKNOWN_PAYLOAD_TYPE,
 		"void",
 		"undefined",
 		"null",
-		"string | number | boolean | object | undefined | null",
+		UNKNOWN_PAYLOAD_TYPE,
 		"void",
 		"object",
 		"Date",
@@ -71,7 +72,7 @@ function formatLiteralValue(val: OpenApiValue): string {
 
 	if (typeof val === "number" || typeof val === "boolean") return String(val);
 
-	return "string | number | boolean | object | undefined | null";
+	return UNKNOWN_PAYLOAD_TYPE;
 }
 
 /**
@@ -126,21 +127,18 @@ function mediaTypeSpecificity(normalized: string): number {
  * @returns `true` if `range` matches `candidate`.
  */
 function matchesMediaType(range: string, candidate: string): boolean {
-	const [rangeType, rangeSubtype] = range.split("/");
-
-	const [candType, candSubtype] = candidate.split("/");
-
-	if (!rangeType || !rangeSubtype || !candType || !candSubtype) return false;
+	const [rangeType = "", rangeSubtype = ""] = range.split("/");
+	const [candType = "", candSubtype = ""] = candidate.split("/");
 
 	if (rangeType !== "*" && rangeType !== candType) return false;
 
 	if (rangeSubtype === "*") return true;
 
-	if (!rangeSubtype.includes("*")) return rangeSubtype === candSubtype;
-
+	const bs = String.fromCharCode(92);
 	const escaped = rangeSubtype
-		.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-		.replace(/\\\*/g, ".*");
+		.replace(new RegExp(`[.*+?^${"$"}{}()|[${bs}]${bs}${bs}]`, "g"), `${bs}$&`)
+		.split(`${bs}*`)
+		.join(".*");
 
 	const regex = new RegExp(`^${escaped}$`);
 
@@ -177,7 +175,7 @@ function getMediaTypePriority(normalized: string): number {
 
 	if (normalized === "application/x-json") return 1;
 
-	if (normalized.includes("/json") || normalized.endsWith("+json")) return 2;
+	if (normalized.endsWith("+json") || normalized.includes("/json")) return 2;
 
 	if (normalized === "multipart/form-data") return 3;
 
@@ -219,8 +217,6 @@ function pickPreferredMediaType(
 
 	const filtered = filterMediaTypeEntries(entries);
 
-	if (filtered.length === 0) return undefined;
-
 	const sorted = [...filtered].sort((a, b) => {
 		const priorityDiff =
 			getMediaTypePriority(a.normalized) - getMediaTypePriority(b.normalized);
@@ -243,26 +239,12 @@ function pickPreferredMediaType(
  * @param mediaType - Normalized media type string.
  * @returns `true` if the media type is textual.
  */
-function isTextualMediaType(mediaType: string | undefined): boolean {
-	if (!mediaType) return false;
-
+function isTextualMediaType(mediaType: string): boolean {
 	if (mediaType.startsWith("text/")) return true;
 
 	if (mediaType === "application/x-www-form-urlencoded") return true;
 
-	if (
-		mediaType === "application/json" ||
-		mediaType.endsWith("+json") ||
-		mediaType.includes("json")
-	)
-		return true;
-
-	if (
-		mediaType === "application/xml" ||
-		mediaType.endsWith("+xml") ||
-		mediaType.includes("xml")
-	)
-		return true;
+	if (mediaType.includes("json") || mediaType.includes("xml")) return true;
 
 	return false;
 }
@@ -273,9 +255,7 @@ function isTextualMediaType(mediaType: string | undefined): boolean {
  * @param mediaType - Normalized media type string.
  * @returns `true` if the media type is binary.
  */
-function isBinaryMediaType(mediaType: string | undefined): boolean {
-	if (!mediaType) return false;
-
+function isBinaryMediaType(mediaType: string): boolean {
 	if (
 		mediaType.startsWith("image/") ||
 		mediaType.startsWith("audio/") ||
@@ -283,9 +263,7 @@ function isBinaryMediaType(mediaType: string | undefined): boolean {
 	)
 		return true;
 
-	if (mediaType === "application/octet-stream") return true;
-
-	return false;
+	return mediaType === "application/octet-stream";
 }
 
 /**
@@ -297,16 +275,15 @@ function isBinaryMediaType(mediaType: string | undefined): boolean {
  * @returns TypeScript type expression string.
  */
 export function getTypeScriptType(
-	schema: SwaggerDefinition | boolean | undefined,
+	schema: SwaggerDefinition | boolean | null | undefined,
 	config: GeneratorConfig,
 	knownTypes: string[] = [],
 ): string {
-	if (schema === true)
-		return "string | number | boolean | object | undefined | null";
+	if (schema === true) return UNKNOWN_PAYLOAD_TYPE;
 
 	if (schema === false) return "void";
 
-	if (!schema) return "string | number | boolean | object | undefined | null";
+	if (!schema) return UNKNOWN_PAYLOAD_TYPE;
 
 	// OAS 3.0 nullable support: add a null union when explicitly requested.
 
@@ -319,10 +296,7 @@ export function getTypeScriptType(
 			knownTypes,
 		);
 
-		if (
-			baseType === "string | number | boolean | object | undefined | null" ||
-			/\bnull\b/.test(baseType)
-		) {
+		if (baseType === UNKNOWN_PAYLOAD_TYPE || /\bnull\b/.test(baseType)) {
 			return baseType;
 		}
 
@@ -354,7 +328,7 @@ export function getTypeScriptType(
 				// TS Intersection: ( { prop: string | number | boolean | object | undefined | null } & DepType ) | { prop?: string | number | boolean | object | undefined | null }
 
 				dependencies.push(
-					`(({ ${safeKey}: string | number | boolean | object | undefined | null } & ${depType}) | { ${safeKey}?: string | number | boolean | object | undefined | null })`,
+					`(({ ${safeKey}: ${UNKNOWN_PAYLOAD_TYPE} } & ${depType}) | { ${safeKey}?: ${UNKNOWN_PAYLOAD_TYPE} })`,
 				);
 			});
 		}
@@ -375,16 +349,13 @@ export function getTypeScriptType(
 						/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(req) ? req : `'${req}'`,
 					)
 
-					.map(
-						(req) =>
-							`${req}: string | number | boolean | object | undefined | null`,
-					)
+					.map((req) => `${req}: ${UNKNOWN_PAYLOAD_TYPE}`)
 					.join("; ");
 
 				if (!requiredFields) return;
 
 				dependencies.push(
-					`(({ ${safeKey}: string | number | boolean | object | undefined | null } & { ${requiredFields} }) | { ${safeKey}?: string | number | boolean | object | undefined | null })`,
+					`(({ ${safeKey}: ${UNKNOWN_PAYLOAD_TYPE} } & { ${requiredFields} }) | { ${safeKey}?: ${UNKNOWN_PAYLOAD_TYPE} })`,
 				);
 			});
 		}
@@ -397,17 +368,13 @@ export function getTypeScriptType(
 	if (schema.$ref) {
 		const typeName = pascalCase(schema.$ref.split("/").pop() || "");
 
-		return knownTypes.includes(typeName)
-			? typeName
-			: "string | number | boolean | object | undefined | null";
+		return knownTypes.includes(typeName) ? typeName : UNKNOWN_PAYLOAD_TYPE;
 	}
 
 	if (schema.$dynamicRef) {
 		const typeName = pascalCase(schema.$dynamicRef.split("/").pop() || "");
 
-		return knownTypes.includes(typeName)
-			? typeName
-			: "string | number | boolean | object | undefined | null";
+		return knownTypes.includes(typeName) ? typeName : UNKNOWN_PAYLOAD_TYPE;
 	}
 
 	// OAS 3.1 / JSON Schema 2020-12: const support
@@ -514,9 +481,9 @@ export function getTypeScriptType(
 			)
 				return getObjectType(schema, config, knownTypes);
 
-			return "string | number | boolean | object | undefined | null";
+			return UNKNOWN_PAYLOAD_TYPE;
 		default:
-			return "string | number | boolean | object | undefined | null";
+			return UNKNOWN_PAYLOAD_TYPE;
 	}
 }
 
@@ -575,6 +542,9 @@ function getArrayType(
 	config: GeneratorConfig,
 	knownTypes: string[],
 ): string {
+	const wrapArrayElement = (t: string): string =>
+		/[|&]/.test(t) ? `(${t})` : t;
+
 	// OAS 3.1 Tuple support using prefixItems
 
 	if (schema.prefixItems && Array.isArray(schema.prefixItems)) {
@@ -591,19 +561,14 @@ function getArrayType(
 
 			const innerType = getTypeScriptType(itemsSchema, config, knownTypes);
 
-			const safeInnerType =
-				innerType.includes("|") || innerType.includes("&")
-					? `(${innerType})`
-					: innerType;
-
-			restType = `, ...${safeInnerType}[]`;
+			restType = `, ...${wrapArrayElement(innerType)}[]`;
 		} else if (schema.unevaluatedItems !== undefined) {
 			// JSON Schema 2020-12: unevaluatedItems applies to remaining tuple items
 
 			const unevaluated = schema.unevaluatedItems;
 
 			if (unevaluated === true) {
-				restType = `, ...(string | number | boolean | object | undefined | null)[]`;
+				restType = `, ...(${UNKNOWN_PAYLOAD_TYPE})[]`;
 			} else if (unevaluated === false) {
 				restType = "";
 			} else {
@@ -613,12 +578,7 @@ function getArrayType(
 					knownTypes,
 				);
 
-				const safeInnerType =
-					innerType.includes("|") || innerType.includes("&")
-						? `(${innerType})`
-						: innerType;
-
-				restType = `, ...${safeInnerType}[]`;
+				restType = `, ...${wrapArrayElement(innerType)}[]`;
 			}
 		}
 
@@ -636,9 +596,7 @@ function getArrayType(
 		knownTypes,
 	);
 
-	return itemsType.includes("|") || itemsType.includes("&")
-		? `(${itemsType})[]`
-		: `${itemsType}[]`;
+	return `${wrapArrayElement(itemsType)}[]`;
 }
 
 /**
@@ -661,7 +619,7 @@ function getObjectType(
 	if (schema.additionalProperties) {
 		const valueType =
 			schema.additionalProperties === true
-				? "string | number | boolean | object | undefined | null"
+				? UNKNOWN_PAYLOAD_TYPE
 				: getTypeScriptType(
 						schema.additionalProperties as SwaggerDefinition,
 						config,
@@ -677,20 +635,16 @@ function getObjectType(
 		schema.patternProperties &&
 		typeof schema.patternProperties === "object"
 	) {
-		const patternTypes = Object.values(schema.patternProperties)
-
-			.map((patternSchema) =>
+		const patternTypes = Object.values(schema.patternProperties).map(
+			(patternSchema) =>
 				getTypeScriptType(
 					patternSchema as SwaggerDefinition | boolean,
 					config,
 					knownTypes,
 				),
-			)
-			.filter(Boolean);
+		);
 
-		if (patternTypes.length > 0) {
-			indexSignatureTypes.push(...patternTypes);
-		}
+		indexSignatureTypes.push(...patternTypes);
 	}
 
 	// 2. unevaluatedProperties (OAS 3.1)
@@ -698,7 +652,7 @@ function getObjectType(
 	if (schema.unevaluatedProperties) {
 		const valueType =
 			schema.unevaluatedProperties === true
-				? "string | number | boolean | object | undefined | null"
+				? UNKNOWN_PAYLOAD_TYPE
 				: getTypeScriptType(
 						schema.unevaluatedProperties as SwaggerDefinition,
 						config,
@@ -713,13 +667,8 @@ function getObjectType(
 	let indexSignatureType = "";
 
 	if (indexSignatureTypes.length > 0) {
-		if (
-			indexSignatureTypes.includes(
-				"string | number | boolean | object | undefined | null",
-			)
-		) {
-			indexSignatureType =
-				"string | number | boolean | object | undefined | null";
+		if (indexSignatureTypes.includes(UNKNOWN_PAYLOAD_TYPE)) {
+			indexSignatureType = UNKNOWN_PAYLOAD_TYPE;
 		} else {
 			indexSignatureType = [...new Set(indexSignatureTypes)].join(" | ");
 		}
@@ -740,7 +689,7 @@ function getObjectType(
 
 			return indexSignatureType
 				? `{ [key: string]: ${indexSignatureType} }`
-				: "{ [key: string]: string | number | boolean | object | undefined | null }";
+				: `{ [key: string]: ${UNKNOWN_PAYLOAD_TYPE} }`;
 		}
 
 		const props = Object.entries(schema.properties).map(([key, propSchema]) => {
@@ -754,7 +703,7 @@ function getObjectType(
 		});
 
 		if (indexSignatureType) {
-			return `{ ${props.join("; ")}; [key: string]: ${indexSignatureType} | string | number | boolean | object | undefined | null }`;
+			return `{ ${props.join("; ")}; [key: string]: ${indexSignatureType} | ${UNKNOWN_PAYLOAD_TYPE} }`;
 		}
 
 		// Note: We rely on this exact formatting without trailing semicolon for unit tests assertions
@@ -766,7 +715,7 @@ function getObjectType(
 
 	return indexSignatureType
 		? `{ [key: string]: ${indexSignatureType} }`
-		: "{ [key: string]: string | number | boolean | object | undefined | null }";
+		: `{ [key: string]: ${UNKNOWN_PAYLOAD_TYPE} }`;
 }
 
 /**
@@ -782,8 +731,7 @@ export function getRequestBodyType(
 	config: GeneratorConfig,
 	knownTypes: string[],
 ): string {
-	if (!requestBody?.content)
-		return "string | number | boolean | object | undefined | null";
+	if (!requestBody?.content) return UNKNOWN_PAYLOAD_TYPE;
 
 	const content = requestBody.content as Record<string, MediaTypeObject>;
 
@@ -803,7 +751,7 @@ export function getRequestBodyType(
 		return `(${itemType})[]`;
 	}
 
-	return "string | number | boolean | object | undefined | null";
+	return UNKNOWN_PAYLOAD_TYPE;
 }
 
 /**

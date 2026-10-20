@@ -4,7 +4,6 @@
  * @module openapi/emit_snapshot
  */
 import type { Project } from "ts-morph";
-import type { OpenApiValue } from "../core/types/index.js";
 import type { SwaggerParser } from "./parse.js";
 import {
 	type SnapshotFileSystem,
@@ -36,7 +35,7 @@ export class SpecSnapshotGenerator {
 		writeOpenApiSnapshot(
 			this.parser.getSpec(),
 			outputDir,
-			this.project.getFileSystem() as OpenApiValue as SnapshotFileSystem,
+			this.project.getFileSystem() as Partial<SnapshotFileSystem> as SnapshotFileSystem,
 		);
 	}
 }

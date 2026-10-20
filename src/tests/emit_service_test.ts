@@ -105,8 +105,9 @@ export abstract class PromiseServiceTestGenerator {
 		if (op.requestBody) {
 			if (op.requestBody.content) {
 				const contentTypes = Object.keys(op.requestBody.content);
-				if (contentTypes.length > 0) {
-					const firstMedia = op.requestBody.content[contentTypes[0]!];
+				const firstContentType = contentTypes[0];
+				if (firstContentType) {
+					const firstMedia = op.requestBody.content[firstContentType];
 					const schema = firstMedia?.schema;
 					const rawVal = this.mockDataGenerator.generate(
 						((schema as SwaggerDefinition)?.name as string) || "Unknown",

@@ -5,7 +5,7 @@
  */
 import * as fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { SwaggerDefinition } from "../core/types/index.js";
+import { resolveLogger, type SwaggerDefinition } from "../core/types/index.js";
 import { pascalCase } from "../functions/utils_string.js";
 import type { SwaggerParser } from "../openapi/parse.js";
 
@@ -64,22 +64,6 @@ export class MockDataGenerator {
 				? this.parser.getDefinition(normalizedName)
 				: undefined);
 
-		switch (schemaName) {
-			case "WithBadRef":
-			case "JustARef":
-				return JSON.stringify({ id: "string-value" });
-			case "RefToNothing":
-				return "{}";
-			case "BooleanSchema":
-				return JSON.stringify(true);
-			case "ArrayNoItems":
-				return JSON.stringify([]);
-			case "NullType":
-				return JSON.stringify(null);
-			case "UnsupportedType":
-				return "{}";
-		}
-
 		if (!schemaDef) {
 			return "{}";
 		}
@@ -89,7 +73,7 @@ export class MockDataGenerator {
 			new Set<SwaggerDefinition>(),
 		);
 
-		return JSON.stringify(value ?? {});
+		return JSON.stringify(value === undefined ? {} : value);
 	}
 
 	/**
@@ -100,7 +84,7 @@ export class MockDataGenerator {
 	 * @param maxDepth - Maximum recursion depth.
 	 * @returns A generated `MockValue`.
 	 */
-	private generateValue(
+	public generateValue(
 		schema: SwaggerDefinition | undefined,
 		visited: Set<SwaggerDefinition>,
 		maxDepth: number = 10,
@@ -137,7 +121,9 @@ export class MockDataGenerator {
 							visited,
 							maxDepth - 1,
 						)
-					: null;
+					: maxDepth === 10
+						? undefined
+						: null;
 			}
 
 			const schemaRecord = schema as Record<string, MockValue>;
@@ -202,7 +188,7 @@ export class MockDataGenerator {
 				case "integer":
 					return this.generateNumberValue(schema);
 				case "null":
-					return undefined;
+					return maxDepth === 10 ? null : undefined;
 				default: {
 					const subSchema = schema.oneOf?.[0] || schema.anyOf?.[0];
 
@@ -222,7 +208,13 @@ export class MockDataGenerator {
 		}
 	}
 
-	private extractRefName(ref: string): string | undefined {
+	/**
+	 * Extracts the trailing schema name from a JSON Reference URI.
+	 *
+	 * @param ref - JSON Reference URI string.
+	 * @returns Extracted schema name, or `undefined` if not a local fragment reference.
+	 */
+	public extractRefName(ref: string): string | undefined {
 		if (!ref) return undefined;
 
 		const fragment = ref.split("#")[1];
@@ -272,7 +264,10 @@ export class MockDataGenerator {
 				}
 			}
 		} catch (e) {
-			console.warn(`Failed to resolve externalValue: ${externalValue}`, e);
+			resolveLogger(this.parser.config).warn(
+				`Failed to resolve externalValue: ${externalValue}`,
+				e,
+			);
 		}
 
 		return `External Content: ${externalValue}`;
@@ -319,10 +314,6 @@ export class MockDataGenerator {
 		maxDepth: number,
 	): MockValue[] {
 		if (!schema.items || Array.isArray(schema.items)) {
-			return [];
-		}
-
-		if ((schema.items as Record<string, unknown>).type === "function") {
 			return [];
 		}
 

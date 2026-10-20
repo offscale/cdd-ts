@@ -5,7 +5,10 @@
  */
 import * as path from "node:path";
 import type { Project } from "ts-morph";
-import type { GeneratorConfig } from "../../../core/types/config.js";
+import {
+	type GeneratorConfig,
+	resolveLogger,
+} from "../../../core/types/config.js";
 import type { Resource } from "../../../core/types/index.js";
 import type { SwaggerParser } from "../../../openapi/parse.js";
 import { AdminTestGenerator } from "./admin-test.generator.js";
@@ -43,12 +46,13 @@ export class AdminGenerator {
 	 * @param outputRoot The root directory path for generation.
 	 */
 	public generate(outputRoot: string): void {
-		console.log("🚀 Generating Admin UI...");
+		const logger = resolveLogger(this.config);
+		logger.info("🚀 Generating Admin UI...");
 
 		this.allResources = discoverAdminResources(this.parser);
 
 		if (this.allResources.length === 0) {
-			console.warn(
+			logger.warn(
 				"⚠️ No resources suitable for admin UI generation were found. Skipping.",
 			);
 
@@ -88,7 +92,7 @@ export class AdminGenerator {
 			false;
 
 		for (const resource of this.allResources) {
-			console.log(`  -> Generating for resource: ${resource.name}`);
+			logger.info(`  -> Generating for resource: ${resource.name}`);
 
 			const resourceDir = path.join(adminDir, resource.name);
 
@@ -113,19 +117,19 @@ export class AdminGenerator {
 
 		routeGen.generateMaster(this.allResources, adminDir);
 
-		console.log("  -> Generating i18n service...");
+		logger.info("  -> Generating i18n service...");
 		i18nGen.generate(adminDir);
 
 		if (needsCustomValidators) {
-			console.log("  -> Generating shared custom validators...");
+			logger.info("  -> Generating shared custom validators...");
 
 			validatorGen.generate(adminDir);
 		}
 
-		console.log("  -> Generating Web Components (Elements) registration...");
+		logger.info("  -> Generating Web Components (Elements) registration...");
 
 		elementsGen.generate(this.allResources, adminDir);
 
-		console.log("✅ Admin UI generation complete.");
+		logger.info("✅ Admin UI generation complete.");
 	}
 }

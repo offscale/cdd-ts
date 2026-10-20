@@ -81,6 +81,7 @@ export {
 /** Re-exports `GeneratorCompilerOptions` from `./config.js`. */
 /** Re-exports `GeneratorConfig` from `./config.js`. */
 /** Re-exports `GeneratorConfigOptions` from `./config.js`. */
+/** Re-exports `GeneratorLogger` from `./config.js`. */
 /** Re-exports `TargetFramework` from `./config.js`. */
 /** Re-exports `TargetImplementation` from `./config.js`. */
 /** Re-exports `TargetServerFramework` from `./config.js`. */
@@ -88,10 +89,13 @@ export type {
 	GeneratorCompilerOptions,
 	GeneratorConfig,
 	GeneratorConfigOptions,
+	GeneratorLogger,
 	TargetFramework,
 	TargetImplementation,
 	TargetServerFramework,
 } from "./config.js";
+/** Re-exports `resolveLogger` from `./config.js`. */
+export { resolveLogger } from "./config.js";
 /** Re-exports `ComponentsObject` from `./openapi.js`. */
 /** Re-exports `ContactObject` from `./openapi.js`. */
 /** Re-exports `DiscriminatorObject` from `./openapi.js`. */
@@ -102,6 +106,7 @@ export type {
 /** Re-exports `HeaderObject` from `./openapi.js`. */
 /** Re-exports `InfoObject` from `./openapi.js`. */
 /** Re-exports `JsonPrimitive` from `./openapi.js`. */
+/** Re-exports `JsonValue` from `./openapi.js`. */
 /** Re-exports `LicenseObject` from `./openapi.js`. */
 /** Re-exports `LinkObject` from `./openapi.js`. */
 /** Re-exports `MediaTypeObject` from `./openapi.js`. */
@@ -121,6 +126,7 @@ export type {
 /** Re-exports `SwaggerResponse` from `./openapi.js`. */
 /** Re-exports `SwaggerSpec` from `./openapi.js`. */
 /** Re-exports `TagObject` from `./openapi.js`. */
+/** Re-exports `UnknownPayload` from `./openapi.js`. */
 /** Re-exports `XmlObject` from `./openapi.js`. */
 export type {
 	ComponentsObject,
@@ -133,6 +139,7 @@ export type {
 	HeaderObject,
 	InfoObject,
 	JsonPrimitive,
+	JsonValue,
 	LicenseObject,
 	LinkObject,
 	MediaTypeObject,
@@ -152,8 +159,11 @@ export type {
 	SwaggerResponse,
 	SwaggerSpec,
 	TagObject,
+	UnknownPayload,
 	XmlObject,
 } from "./openapi.js";
+/** Re-exports `UNKNOWN_PAYLOAD_TYPE` from `./openapi.js`. */
+/** Re-exports `UNKNOWN_RECORD_TYPE` from `./openapi.js`. */
 /** Re-exports `isDynamicReferenceObject` from `./openapi.js`. */
 /** Re-exports `isOpenApiObject` from `./openapi.js`. */
 /** Re-exports `isParameterObject` from `./openapi.js`. */
@@ -165,4 +175,6 @@ export {
 	isParameterObject,
 	isReferenceObject,
 	isSwaggerDefinition,
+	UNKNOWN_PAYLOAD_TYPE,
+	UNKNOWN_RECORD_TYPE,
 } from "./openapi.js";

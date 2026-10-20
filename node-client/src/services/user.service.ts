@@ -7,7 +7,7 @@ import * as https from "node:https";
 import { URL } from "node:url";
 import type { User } from "../models";
 import { ParameterSerializer } from "../utils/parameter-serializer";
-import { getServerUrl, resolveServerUrl } from "../utils/server-url";
+import { getServerUrl } from "../utils/server-url";
 
 export class UserService {
 	private basePath = "";
@@ -45,7 +45,7 @@ export class UserService {
 			method: "POST",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -104,7 +104,7 @@ export class UserService {
 			method: "GET",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -170,7 +170,7 @@ export class UserService {
 			method: "PUT",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -229,7 +229,7 @@ export class UserService {
 			method: "DELETE",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -286,9 +286,9 @@ export class UserService {
 			},
 			username,
 		);
-		serialized_username.forEach((entry: { key: string; value: string }) =>
-			url.searchParams.append(entry.key, entry.value),
-		);
+		serialized_username.forEach((entry: { key: string; value: string }) => {
+			url.searchParams.append(entry.key, entry.value);
+		});
 		const serialized_password = ParameterSerializer.serializeQueryParam(
 			{
 				name: "password",
@@ -299,9 +299,9 @@ export class UserService {
 			},
 			password,
 		);
-		serialized_password.forEach((entry: { key: string; value: string }) =>
-			url.searchParams.append(entry.key, entry.value),
-		);
+		serialized_password.forEach((entry: { key: string; value: string }) => {
+			url.searchParams.append(entry.key, entry.value);
+		});
 		const headers: Record<string, string> = {
 			...(options?.headers as Record<string, string>),
 		};
@@ -312,7 +312,7 @@ export class UserService {
 			method: "GET",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -367,7 +367,7 @@ export class UserService {
 			method: "GET",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -430,7 +430,7 @@ export class UserService {
 			method: "POST",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -494,7 +494,7 @@ export class UserService {
 			method: "POST",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];

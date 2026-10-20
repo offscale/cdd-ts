@@ -1,0 +1,123 @@
+/**
+ * Framework-agnostic validation rule analyzer extracting JSON Schema constraints for Admin UI forms.
+ *
+ * @module core/admin/validation.analyzer
+ */
+import type { SwaggerDefinition } from "../types/index.js";
+import type { JsonValue } from "./form-types.js";
+import type { ValidationRule } from "./validation-types.js";
+
+/**
+ * Analyzes an OpenAPI/JSON Schema definition and returns its declarative validation rules.
+ *
+ * @param schema - OpenAPI schema definition.
+ * @returns Array of extracted `ValidationRule` descriptors.
+ */
+export function analyzeValidationRules(
+	schema: SwaggerDefinition | boolean | null | undefined,
+): ValidationRule[] {
+	if (!schema || typeof schema !== "object" || schema.readOnly) {
+		return [];
+	}
+
+	const rules: ValidationRule[] = [];
+
+	if ("required" in schema && schema.required) rules.push({ type: "required" });
+
+	if (schema.const !== undefined) {
+		rules.push({ type: "const", value: schema.const as JsonValue });
+	}
+
+	if (schema.minLength)
+		rules.push({ type: "minLength", value: schema.minLength });
+
+	if (schema.maxLength)
+		rules.push({ type: "maxLength", value: schema.maxLength });
+
+	const backslash = String.fromCharCode(92);
+	if (schema.pattern)
+		rules.push({
+			type: "pattern",
+			value: schema.pattern.replaceAll(backslash + backslash, backslash),
+		});
+
+	if (schema.format === "email") rules.push({ type: "email" });
+
+	if (schema.contentEncoding) {
+		if (schema.contentEncoding === "base64") {
+			rules.push({
+				type: "pattern",
+				value:
+					"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+			});
+		} else if (schema.contentEncoding === "base64url") {
+			rules.push({
+				type: "pattern",
+				value: `^[A-Za-z0-9${backslash}-_]*$`,
+			});
+		}
+	}
+
+	if (typeof schema.exclusiveMinimum === "number") {
+		rules.push({ type: "exclusiveMinimum", value: schema.exclusiveMinimum });
+	} else if (schema.minimum !== undefined) {
+		if (schema.exclusiveMinimum === true) {
+			rules.push({ type: "exclusiveMinimum", value: schema.minimum });
+		} else {
+			rules.push({ type: "min", value: schema.minimum });
+		}
+	}
+
+	if (typeof schema.exclusiveMaximum === "number") {
+		rules.push({ type: "exclusiveMaximum", value: schema.exclusiveMaximum });
+	} else if (schema.maximum !== undefined) {
+		if (schema.exclusiveMaximum === true) {
+			rules.push({ type: "exclusiveMaximum", value: schema.maximum });
+		} else {
+			rules.push({ type: "max", value: schema.maximum });
+		}
+	}
+
+	if (schema.multipleOf)
+		rules.push({ type: "multipleOf", value: schema.multipleOf });
+
+	if (schema.uniqueItems) rules.push({ type: "uniqueItems" });
+
+	if (schema.minItems) rules.push({ type: "minItems", value: schema.minItems });
+
+	if (schema.maxItems) rules.push({ type: "maxItems", value: schema.maxItems });
+
+	if (schema.minProperties !== undefined)
+		rules.push({ type: "minProperties", value: schema.minProperties });
+
+	if (schema.maxProperties !== undefined)
+		rules.push({ type: "maxProperties", value: schema.maxProperties });
+
+	const hasContains = schema.contains !== undefined;
+
+	if (hasContains) {
+		const min = typeof schema.minContains === "number" ? schema.minContains : 1;
+
+		const max =
+			typeof schema.maxContains === "number" ? schema.maxContains : undefined;
+
+		const containsSchema = schema.contains;
+
+		rules.push({
+			type: "contains",
+			schema: containsSchema as JsonValue,
+			min,
+			...(max !== undefined ? { max } : {}),
+		});
+	}
+
+	if (schema.not) {
+		const innerRules = analyzeValidationRules(schema.not);
+
+		if (innerRules.length > 0) {
+			rules.push({ type: "not", rules: innerRules });
+		}
+	}
+
+	return rules;
+}

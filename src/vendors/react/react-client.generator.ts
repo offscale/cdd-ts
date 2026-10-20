@@ -159,7 +159,9 @@ return service;`,
 				usedNames.add(finalName);
 				op.methodName = finalName;
 
-				const model = analyzer.analyze(op)!;
+				const model = analyzer.analyze(
+					op,
+				) as import("../../functions/types.js").ServiceMethodModel;
 
 				const isGet = model.httpMethod.toLowerCase() === "get";
 				const methodHookName = `use${pascalCase(model.methodName)}`;

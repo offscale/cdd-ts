@@ -19,12 +19,12 @@ import type {
 	RequestBody,
 	SecurityScheme,
 	ServerObject,
-	SpecOperation,
 	SwaggerResponse,
 	SwaggerSpec,
 	TagObject,
 	XmlObject,
 } from "../../core/types/index.js";
+import { applyWebhooksAndCallbacks } from "./assemble_webhooks_callbacks.js";
 
 /** Reverse Callback Meta */
 export interface ReverseCallbackMeta {
@@ -168,84 +168,70 @@ export function parseGeneratedMetadata(
 ): ReverseMetadata {
 	const meta: ReverseMetadata = {};
 
+	const readMetadataFile = (filePath: string): string | undefined => {
+		try {
+			if (!fileSystem.statSync(filePath).isFile()) return undefined;
+			return fileSystem.readFileSync(filePath, "utf-8");
+		} catch {
+			return undefined;
+		}
+	};
+
+	const parseExportedJson = (rawLiteral: string): OpenApiValue | undefined => {
+		try {
+			return JSON.parse(rawLiteral) as OpenApiValue;
+		} catch {
+			return undefined;
+		}
+	};
+
 	const tryParse = (
 		filename: string,
 		key: keyof ReverseMetadata,
 		varName: string,
 	) => {
 		const p = path.join(inputPath, filename);
+		const content = readMetadataFile(p);
+		if (!content) return;
 
-		try {
-			if (fileSystem.existsSync?.(p) || fileSystem.statSync(p).isFile()) {
-				const content = fileSystem.readFileSync(p, "utf-8");
+		const bs = String.fromCharCode(92);
+		const regex = new RegExp(
+			`export const ${varName}(?:[^=]*)=${bs}s*([^;]+);?`,
+		);
+		const m = regex.exec(content);
+		if (!m?.[1]) return;
 
-				const regex = new RegExp(
-					`export const ${varName}(?:[^=]*)=\\s*([^;]+);?`,
-				);
-
-				const m = regex.exec(content);
-
-				if (m) {
-					try {
-						(meta as Record<string, OpenApiValue>)[key] = JSON.parse(
-							m[1]!,
-						) as OpenApiValue;
-					} catch {
-						/* ignore */
-					}
-				}
-			}
-		} catch {
-			/* ignore */
+		const parsed = parseExportedJson(m[1]);
+		if (parsed !== undefined) {
+			(meta as Record<string, OpenApiValue>)[key] = parsed;
 		}
 	};
 
 	tryParse("info.ts", "info", "API_INFO");
-
 	tryParse("info.ts", "tags", "API_TAGS");
-
 	tryParse("info.ts", "externalDocs", "API_EXTERNAL_DOCS");
-
 	tryParse("security.ts", "securitySchemes", "API_SECURITY_SCHEMES");
-
 	tryParse("security.ts", "securityRequirements", "API_SECURITY_REQUIREMENTS");
-
 	tryParse("servers.ts", "servers", "API_SERVERS");
-
 	tryParse("document.ts", "documentMeta", "API_DOCUMENT_META");
-
 	tryParse("response-headers.ts", "responseHeaders", "API_RESPONSE_HEADERS");
-
 	tryParse(
 		"response-headers.ts",
 		"responseHeaderObjects",
 		"API_RESPONSE_HEADER_OBJECTS",
 	);
-
 	tryParse("response-headers.ts", "headerXmlConfigs", "API_HEADER_XML_CONFIGS");
-
 	tryParse("links.ts", "links", "API_LINKS");
-
 	tryParse("links.ts", "componentLinks", "API_COMPONENT_LINKS");
-
 	tryParse("callbacks.ts", "callbacks", "API_CALLBACKS");
-
 	tryParse("webhooks.ts", "webhooks", "API_WEBHOOKS");
-
 	tryParse("examples.ts", "examples", "API_EXAMPLES");
-
 	tryParse("media-types.ts", "mediaTypes", "API_MEDIA_TYPES");
-
 	tryParse("path-items.ts", "pathItems", "API_PATH_ITEMS");
-
 	tryParse("parameters.ts", "parameters", "API_PARAMETERS");
-
 	tryParse("headers.ts", "headers", "API_HEADERS");
-
 	tryParse("request-bodies.ts", "requestBodies", "API_REQUEST_BODIES");
-
 	tryParse("responses.ts", "responses", "API_RESPONSES");
-
 	tryParse("paths.ts", "paths", "API_PATHS");
 
 	meta.inferredSelf = pathToFileURL(
@@ -295,13 +281,9 @@ export function applyComponentsAndMetadata(
 	}
 
 	if (metadata.info) out.info = Object.assign({}, out.info, metadata.info);
-
 	if (metadata.tags) out.tags = metadata.tags;
-
 	if (metadata.externalDocs) out.externalDocs = metadata.externalDocs;
-
 	if (metadata.servers) out.servers = metadata.servers;
-
 	if (metadata.securityRequirements)
 		out.security = metadata.securityRequirements;
 
@@ -321,15 +303,17 @@ export function applyComponentsAndMetadata(
 		metadata.webhooks
 	) {
 		out.components = out.components || {};
+		const components = out.components;
 
 		if (metadata.securitySchemes)
-			out.components.securitySchemes = metadata.securitySchemes;
+			components.securitySchemes = metadata.securitySchemes;
 
 		if (metadata.headerXmlConfigs) {
-			out.components.headers = out.components.headers || {};
+			components.headers = components.headers || {};
+			const headers = components.headers;
 
 			Object.entries(metadata.headerXmlConfigs).forEach(([key, config]) => {
-				out.components!.headers![key] = {
+				headers[key] = {
 					content: {
 						"application/xml": {
 							schema: {
@@ -341,182 +325,15 @@ export function applyComponentsAndMetadata(
 			});
 		}
 
-		if (metadata.responseHeaderObjects) {
-			Object.entries(metadata.responseHeaderObjects).forEach(
-				([opId, statusMap]) => {
-					const findOp = (): SpecOperation | undefined => {
-						for (const pVal of Object.values(out.paths || {})) {
-							const pathObj = pVal as Record<string, OpenApiValue>;
-
-							for (const methodKey of [
-								"get",
-								"post",
-								"put",
-								"patch",
-								"delete",
-								"options",
-								"head",
-								"trace",
-								"query",
-							]) {
-								const methodRec = pathObj[methodKey] as
-									| Record<string, OpenApiValue>
-									| undefined;
-
-								if (methodRec?.operationId === opId)
-									return methodRec as OpenApiValue as SpecOperation;
-							}
-
-							if (pathObj.additionalOperations) {
-								for (const opValEntry of Object.values(
-									pathObj.additionalOperations as Record<string, OpenApiValue>,
-								)) {
-									const opRec = opValEntry as Record<string, OpenApiValue>;
-
-									if (opRec.operationId === opId)
-										return opRec as OpenApiValue as SpecOperation;
-								}
-							}
-						}
-
-						return undefined;
-					};
-
-					const op = findOp();
-
-					if (op?.responses) {
-						Object.entries(statusMap).forEach(([status, headers]) => {
-							const opRespRec = op.responses[status] as
-								| Record<string, OpenApiValue>
-								| undefined;
-
-							if (opRespRec) {
-								opRespRec.headers = {
-									...((opRespRec.headers as object) || {}),
-									...headers,
-								};
-							}
-						});
-					}
-				},
-			);
-		}
-
-		if (metadata.links) {
-			Object.entries(metadata.links).forEach(([opId, statusMap]) => {
-				const findOp = (): SpecOperation | undefined => {
-					for (const pVal of Object.values(out.paths || {})) {
-						const pathObj = pVal as Record<string, OpenApiValue>;
-
-						for (const methodKey of [
-							"get",
-							"post",
-							"put",
-							"patch",
-							"delete",
-							"options",
-							"head",
-							"trace",
-							"query",
-						]) {
-							const methodRec = pathObj[methodKey] as
-								| Record<string, OpenApiValue>
-								| undefined;
-
-							if (methodRec?.operationId === opId)
-								return methodRec as OpenApiValue as SpecOperation;
-						}
-
-						if (pathObj.additionalOperations) {
-							for (const opValEntry of Object.values(
-								pathObj.additionalOperations as Record<string, OpenApiValue>,
-							)) {
-								const opRec = opValEntry as Record<string, OpenApiValue>;
-
-								if (opRec.operationId === opId)
-									return opRec as OpenApiValue as SpecOperation;
-							}
-						}
-					}
-
-					return undefined;
-				};
-
-				const op = findOp();
-
-				if (op?.responses) {
-					Object.entries(statusMap).forEach(([status, links]) => {
-						const opRespRec = op.responses[status] as
-							| Record<string, OpenApiValue>
-							| undefined;
-
-						if (opRespRec) {
-							opRespRec.links = links;
-						}
-					});
-				}
-			});
-		}
-
-		if (metadata.callbacks) {
-			metadata.callbacks.forEach((cb) => {
-				out.components!.callbacks = out.components?.callbacks || {};
-
-				const callbacksRec = out.components?.callbacks as Record<
-					string,
-					OpenApiValue
-				>;
-
-				const m = (callbacksRec[cb.name] =
-					callbacksRec[cb.name] || {}) as Record<string, OpenApiValue>;
-
-				if (cb.expression) m[cb.expression] = cb.pathItem;
-			});
-		}
-
-		if (metadata.webhooks) {
-			metadata.webhooks.forEach((wh) => {
-				const scope = wh.scope || "root";
-
-				if (scope === "root") {
-					out.webhooks = out.webhooks || {};
-
-					(out.webhooks as Record<string, OpenApiValue>)[wh.name] = wh.pathItem;
-
-					out.components!.webhooks = out.components?.webhooks || {};
-
-					(out.components?.webhooks as Record<string, OpenApiValue>)[wh.name] =
-						wh.pathItem;
-				} else if (scope === "component") {
-					out.components!.webhooks = out.components?.webhooks || {};
-
-					(out.components?.webhooks as Record<string, OpenApiValue>)[wh.name] =
-						wh.pathItem;
-				}
-			});
-		}
-
-		if (metadata.paths) {
-			Object.entries(metadata.paths).forEach(([pth, item]) => {
-				out.paths![pth] = out.paths?.[pth] || {};
-
-				Object.assign(out.paths?.[pth]!, item);
-			});
-		}
+		applyWebhooksAndCallbacks(out, metadata);
 
 		if (metadata.componentLinks) out.components.links = metadata.componentLinks;
-
 		if (metadata.examples) out.components.examples = metadata.examples;
-
 		if (metadata.mediaTypes) out.components.mediaTypes = metadata.mediaTypes;
-
 		if (metadata.pathItems) out.components.pathItems = metadata.pathItems;
-
 		if (metadata.parameters) out.components.parameters = metadata.parameters;
-
 		if (metadata.requestBodies)
 			out.components.requestBodies = metadata.requestBodies;
-
 		if (metadata.responses) out.components.responses = metadata.responses;
 
 		if (metadata.headers) {

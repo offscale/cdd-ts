@@ -5,7 +5,7 @@ import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 const negotiationSpec = {
 	openapi: "3.0.0",
@@ -51,7 +51,7 @@ describe("Emitter: ServiceMethodGenerator (Content Negotiation)", () => {
 			options: { enumStyle: "enum", framework: "angular" },
 		};
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 
 		new TypeGenerator(parser, project, config).generate("/out");
 		new XmlBuilderGenerator(project).generate("/out");
@@ -85,7 +85,8 @@ describe("Emitter: ServiceMethodGenerator (Content Negotiation)", () => {
 		const { methodGen, serviceClass, parser } = createTestEnv();
 		const op = parser.operations.find(
 			(o) => o.operationId === "getNegotiatedData",
-		)!;
+		);
+		if (!op) throw new Error("Expected getNegotiatedData");
 		// Ensure methodName set to avoid warning skip
 		op.methodName = "getNegotiatedData";
 
@@ -120,13 +121,13 @@ describe("Emitter: ServiceMethodGenerator (Content Negotiation)", () => {
 		const { methodGen, serviceClass, parser } = createTestEnv();
 		const op = parser.operations.find(
 			(o) => o.operationId === "getNegotiatedData",
-		)!;
+		);
+		if (!op) throw new Error("Expected getNegotiatedData");
 		op.methodName = "getNegotiatedData";
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass
-			.getMethodOrThrow("getNegotiatedData")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getNegotiatedData").getBodyText() ?? "";
 
 		// Logic should extract Accept header
 		expect(body).toContain("const acceptHeader = headers.get('Accept');");
@@ -173,7 +174,8 @@ describe("Emitter: ServiceMethodGenerator (Content Negotiation)", () => {
 		const { methodGen, serviceClass, parser } = createTestEnv(wildcardSpec);
 		const op = parser.operations.find(
 			(o) => o.operationId === "getWildcardData",
-		)!;
+		);
+		if (!op) throw new Error("Expected getWildcardData");
 		op.methodName = "getWildcardData";
 
 		methodGen.addServiceMethod(serviceClass, op);

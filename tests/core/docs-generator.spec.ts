@@ -1,13 +1,12 @@
 import type { PathInfo } from "@src/core/types/analysis.js";
 import type { GeneratorConfig } from "@src/core/types/index.js";
 import { generateDocsJson } from "@src/functions/docs_generator.js";
-import type { SwaggerParser } from "@src/openapi/parse.js";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestConfig, createTestOptions } from "../shared/helpers.js";
 
 describe("generateDocsJson", () => {
 	it("should generate concise documentation correctly without imports or wrapping", () => {
-		const parser = testCast<SwaggerParser>({
+		const parser = {
 			operations: [
 				{
 					path: "/users",
@@ -17,9 +16,9 @@ describe("generateDocsJson", () => {
 					tags: ["Users"],
 				} as PathInfo,
 			],
-		});
+		};
 
-		const config: GeneratorConfig = testCast({
+		const config: GeneratorConfig = createTestConfig({
 			output: "",
 			input: "",
 			options: { imports: false, wrapping: false },
@@ -28,26 +27,26 @@ describe("generateDocsJson", () => {
 
 		expect(result.endpoints).toBeDefined();
 		expect(result.endpoints["/users"]).toBeDefined();
-		expect(result.endpoints["/users"].get).toBe(
+		expect(result.endpoints["/users"]?.get).toBe(
 			"const response = await this.service.getUsers();\nconsole.log(response);",
 		);
 	});
 
 	it("should generate documentation with imports and wrapping", () => {
-		const parser = testCast<SwaggerParser>({
+		const parser = {
 			operations: [
-				testCast<PathInfo>({
+				{
 					path: "/posts/{id}",
 					method: "post",
 					methodName: "createPost",
 					operationId: "createPost",
 					tags: [],
 					parameters: [{ name: "id", in: "path", required: true }],
-				}),
+				},
 			],
-		});
+		};
 
-		const config: GeneratorConfig = testCast({
+		const config: GeneratorConfig = createTestConfig({
 			output: "",
 			input: "",
 			options: { imports: false, wrapping: false },
@@ -57,7 +56,7 @@ describe("generateDocsJson", () => {
 			wrapping: true,
 		});
 
-		const snippet = result.endpoints["/posts/{id}"].post;
+		const snippet = result.endpoints["/posts/{id}"]?.post;
 		expect(snippet).toContain(
 			"import { PostsService } from './api/services/posts.service';",
 		);
@@ -70,19 +69,19 @@ describe("generateDocsJson", () => {
 	});
 
 	it("should handle imports without wrapping correctly", () => {
-		const parser = testCast<SwaggerParser>({
+		const parser = {
 			operations: [
-				testCast<PathInfo>({
+				{
 					path: "/comments",
 					method: "delete",
 					methodName: "deleteComment",
 					operationId: "deleteComment",
 					requestBody: { content: {} },
-				}),
+				},
 			],
-		});
+		};
 
-		const config: GeneratorConfig = testCast({
+		const config: GeneratorConfig = createTestConfig({
 			output: "",
 			input: "",
 			options: { imports: false, wrapping: false },
@@ -92,7 +91,7 @@ describe("generateDocsJson", () => {
 			wrapping: false,
 		});
 
-		const snippet = result.endpoints["/comments"].delete;
+		const snippet = result.endpoints["/comments"]?.delete;
 		expect(snippet).toContain(
 			"import { CommentsService } from './api/services/comments.service';",
 		);
@@ -103,23 +102,23 @@ describe("generateDocsJson", () => {
 	});
 
 	it("should generate documentation with imports and wrapping for react", () => {
-		const parser = testCast<SwaggerParser>({
+		const parser = {
 			operations: [
-				testCast<PathInfo>({
+				{
 					path: "/posts/{id}",
 					method: "post",
 					methodName: "createPost",
 					operationId: "createPost",
 					tags: [],
 					parameters: [{ name: "id", in: "path", required: true }],
-				}),
+				},
 			],
-		});
+		};
 
 		const config: GeneratorConfig = {
 			output: "",
 			input: "",
-			options: testCast({
+			options: createTestOptions({
 				framework: "react",
 				imports: false,
 				wrapping: false,
@@ -130,7 +129,7 @@ describe("generateDocsJson", () => {
 			wrapping: true,
 		});
 
-		const snippet = result.endpoints["/posts/{id}"].post;
+		const snippet = result.endpoints["/posts/{id}"]?.post;
 		expect(snippet).toContain(
 			"import { usePostsService } from './api/services/posts.service';",
 		);
@@ -143,30 +142,34 @@ describe("generateDocsJson", () => {
 	});
 
 	it("should generate documentation with imports and wrapping for vue", () => {
-		const parser = testCast<SwaggerParser>({
+		const parser = {
 			operations: [
-				testCast<PathInfo>({
+				{
 					path: "/posts/{id}",
 					method: "post",
 					methodName: "createPost",
 					operationId: "createPost",
 					tags: [],
 					parameters: [{ name: "id", in: "path", required: true }],
-				}),
+				},
 			],
-		});
+		};
 
 		const config: GeneratorConfig = {
 			output: "",
 			input: "",
-			options: testCast({ framework: "vue", imports: false, wrapping: false }),
+			options: createTestOptions({
+				framework: "vue",
+				imports: false,
+				wrapping: false,
+			}),
 		};
 		const result = generateDocsJson(parser, config, {
 			imports: true,
 			wrapping: true,
 		});
 
-		const snippet = result.endpoints["/posts/{id}"].post;
+		const snippet = result.endpoints["/posts/{id}"]?.post;
 		expect(snippet).toContain(
 			"import { usePostsService } from './api/services/posts.service';",
 		);
@@ -179,47 +182,47 @@ describe("generateDocsJson", () => {
 	});
 
 	it("should fallback method names correctly and deduplicate", () => {
-		const parser = testCast<SwaggerParser>({
+		const parser = {
 			operations: [
-				testCast<PathInfo>({
+				{
 					path: "/test1",
 					method: "get",
 					methodName: "",
 					operationId: "",
 					tags: ["TestTag"],
-				}),
-				testCast<PathInfo>({
+				},
+				{
 					path: "/test2",
 					method: "get",
 					methodName: "",
 					operationId: "Invalid-Name-Format!",
 					tags: ["TestTag"],
-				}),
-				testCast<PathInfo>({
+				},
+				{
 					path: "/test3",
 					method: "get",
 					methodName: "invalidNameFormat!",
 					operationId: "Invalid-Name-Format!",
 					tags: ["TestTag"],
-				}),
-				testCast<PathInfo>({
+				},
+				{
 					path: "/test4",
 					method: "get",
 					methodName: "validName",
 					operationId: "validName",
 					tags: ["TestTag"],
-				}),
-				testCast<PathInfo>({
+				},
+				{
 					path: "/",
 					method: "get",
 					methodName: "rootMethod",
 					operationId: "rootMethod",
 					tags: [],
-				}),
+				},
 			],
-		});
+		};
 
-		const config: GeneratorConfig = testCast({
+		const config: GeneratorConfig = createTestConfig({
 			output: "",
 			input: "",
 			options: { imports: false, wrapping: false },
@@ -227,64 +230,64 @@ describe("generateDocsJson", () => {
 
 		const result = generateDocsJson(parser, config, {});
 
-		expect(result.endpoints["/test1"].get).toContain(".getTest1()");
-		expect(result.endpoints["/test2"].get).toContain(".invalidNameFormat()");
-		expect(result.endpoints["/test3"].get).toContain(".invalidNameFormat2()"); // Deduplication
+		expect(result.endpoints["/test1"]?.get).toContain(".getTest1()");
+		expect(result.endpoints["/test2"]?.get).toContain(".invalidNameFormat()");
+		expect(result.endpoints["/test3"]?.get).toContain(".invalidNameFormat2()"); // Deduplication
 	});
 
 	it("should respect custom method name from config", () => {
-		const parser = testCast<SwaggerParser>({
+		const parser = {
 			operations: [
-				testCast<PathInfo>({
+				{
 					path: "/custom",
 					method: "get",
 					methodName: "getCustom",
 					operationId: "customId",
-				}),
+				},
 			],
-		});
+		};
 
 		const config: GeneratorConfig = {
 			output: "",
 			input: "",
 			options: {
-				customizeMethodName: testCast((id: string) => {
+				customizeMethodName: (id: string) => {
 					if (id === "customId") return "myCustomMethodName";
 					return undefined;
-				}),
+				},
 			},
 		};
 		const result = generateDocsJson(parser, config, {});
 
-		expect(result.endpoints["/custom"].get).toContain(".myCustomMethodName()");
+		expect(result.endpoints["/custom"]?.get).toContain(".myCustomMethodName()");
 	});
 
 	it("should handle multiple methods on the same path", () => {
-		const parser = testCast<SwaggerParser>({
+		const parser = {
 			operations: [
-				testCast<PathInfo>({
+				{
 					path: "/users",
 					method: "get",
 					methodName: "getUsers",
 					operationId: "getUsers",
-				}),
-				testCast<PathInfo>({
+				},
+				{
 					path: "/users",
 					method: "post",
 					methodName: "createUser",
 					operationId: "createUser",
-				}),
+				},
 			],
-		});
+		};
 
-		const config = testCast<GeneratorConfig>({
+		const config = {
 			output: "",
 			input: "",
 			options: {},
-		});
+		};
 		const result = generateDocsJson(parser, config, { wrapping: true });
 
-		expect(result.endpoints["/users"].get).toContain("getUsers");
-		expect(result.endpoints["/users"].post).toContain("createUser");
+		expect(result.endpoints["/users"]?.get).toContain("getUsers");
+		expect(result.endpoints["/users"]?.post).toContain("createUser");
 	});
 });

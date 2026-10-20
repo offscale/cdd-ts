@@ -3,7 +3,7 @@
  *
  * @module openapi/parse_ast_literal
  */
-import { type Node, SyntaxKind } from "ts-morph";
+import { Node, SyntaxKind } from "ts-morph";
 import type { OpenApiValue } from "../core/types/index.js";
 
 /**
@@ -22,30 +22,27 @@ export function evaluateAstLiteral(node: Node | undefined): OpenApiValue {
 		return undefined;
 	}
 
+	if (
+		Node.isAsExpression(node) ||
+		Node.isSatisfiesExpression(node) ||
+		Node.isParenthesizedExpression(node) ||
+		Node.isTypeAssertion(node)
+	) {
+		return evaluateAstLiteral(node.getExpression());
+	}
+
+	if (
+		Node.isStringLiteral(node) ||
+		Node.isNoSubstitutionTemplateLiteral(node)
+	) {
+		return node.getLiteralValue();
+	}
+
+	if (Node.isNumericLiteral(node)) {
+		return node.getLiteralValue();
+	}
+
 	const kind = node.getKind();
-
-	if (
-		kind === SyntaxKind.AsExpression ||
-		kind === SyntaxKind.SatisfiesExpression ||
-		kind === SyntaxKind.ParenthesizedExpression ||
-		kind === SyntaxKind.TypeAssertionExpression
-	) {
-		const expr = (
-			node as Node & { getExpression?: () => Node | undefined }
-		).getExpression?.();
-		return evaluateAstLiteral(expr);
-	}
-
-	if (
-		kind === SyntaxKind.StringLiteral ||
-		kind === SyntaxKind.NoSubstitutionTemplateLiteral
-	) {
-		return (node as Node & { getLiteralValue: () => string }).getLiteralValue();
-	}
-
-	if (kind === SyntaxKind.NumericLiteral) {
-		return (node as Node & { getLiteralValue: () => number }).getLiteralValue();
-	}
 
 	if (kind === SyntaxKind.TrueKeyword) {
 		return true;
@@ -61,18 +58,14 @@ export function evaluateAstLiteral(node: Node | undefined): OpenApiValue {
 
 	if (
 		kind === SyntaxKind.UndefinedKeyword ||
-		(kind === SyntaxKind.Identifier && node.getText() === "undefined")
+		(Node.isIdentifier(node) && node.getText() === "undefined")
 	) {
 		return undefined;
 	}
 
-	if (kind === SyntaxKind.PrefixUnaryExpression) {
-		const prefixNode = node as Node & {
-			getOperatorToken: () => SyntaxKind;
-			getOperand: () => Node;
-		};
-		const operator = prefixNode.getOperatorToken();
-		const operandVal = evaluateAstLiteral(prefixNode.getOperand());
+	if (Node.isPrefixUnaryExpression(node)) {
+		const operator = node.getOperatorToken();
+		const operandVal = evaluateAstLiteral(node.getOperand());
 		if (typeof operandVal === "number") {
 			if (operator === SyntaxKind.MinusToken) {
 				return -operandVal;
@@ -84,15 +77,13 @@ export function evaluateAstLiteral(node: Node | undefined): OpenApiValue {
 		return undefined;
 	}
 
-	if (kind === SyntaxKind.ArrayLiteralExpression) {
-		const arrayNode = node as Node & { getElements: () => Node[] };
-		const elements = arrayNode.getElements();
+	if (Node.isArrayLiteralExpression(node)) {
+		const elements = node.getElements();
 		const result: OpenApiValue[] = [];
 		for (const elem of elements) {
 			const isExplicitUndefined =
 				elem.getKind() === SyntaxKind.UndefinedKeyword ||
-				(elem.getKind() === SyntaxKind.Identifier &&
-					elem.getText() === "undefined");
+				(Node.isIdentifier(elem) && elem.getText() === "undefined");
 			const evaluated = evaluateAstLiteral(elem);
 			if (evaluated === undefined && !isExplicitUndefined) {
 				return undefined;
@@ -102,42 +93,31 @@ export function evaluateAstLiteral(node: Node | undefined): OpenApiValue {
 		return result;
 	}
 
-	if (kind === SyntaxKind.ObjectLiteralExpression) {
-		const objNode = node as Node & { getProperties: () => Node[] };
+	if (Node.isObjectLiteralExpression(node)) {
 		const result: Record<string, OpenApiValue> = {};
-		for (const prop of objNode.getProperties()) {
-			if (prop.getKind() !== SyntaxKind.PropertyAssignment) {
+		for (const prop of node.getProperties()) {
+			if (!Node.isPropertyAssignment(prop)) {
 				return undefined;
 			}
-			const propAssign = prop as Node & {
-				getNameNode: () => Node;
-				getInitializer: () => Node | undefined;
-			};
-			const nameNode = propAssign.getNameNode();
+			const nameNode = prop.getNameNode();
 			let key: string;
 			if (
-				nameNode.getKind() === SyntaxKind.StringLiteral ||
-				nameNode.getKind() === SyntaxKind.NoSubstitutionTemplateLiteral ||
-				nameNode.getKind() === SyntaxKind.NumericLiteral
+				Node.isStringLiteral(nameNode) ||
+				Node.isNoSubstitutionTemplateLiteral(nameNode)
 			) {
-				key = String(
-					(
-						nameNode as Node & { getLiteralValue: () => string | number }
-					).getLiteralValue(),
-				);
-			} else if (nameNode.getKind() === SyntaxKind.Identifier) {
+				key = nameNode.getLiteralValue();
+			} else if (Node.isNumericLiteral(nameNode)) {
+				key = String(nameNode.getLiteralValue());
+			} else if (Node.isIdentifier(nameNode)) {
 				key = nameNode.getText();
 			} else {
 				return undefined;
 			}
 
-			const initializer = propAssign.getInitializer();
-			if (!initializer) {
-				return undefined;
-			}
+			const initializer = prop.getInitializerOrThrow();
 			const isExplicitUndefined =
 				initializer.getKind() === SyntaxKind.UndefinedKeyword ||
-				(initializer.getKind() === SyntaxKind.Identifier &&
+				(Node.isIdentifier(initializer) &&
 					initializer.getText() === "undefined");
 			const evaluated = evaluateAstLiteral(initializer);
 			if (evaluated === undefined && !isExplicitUndefined) {

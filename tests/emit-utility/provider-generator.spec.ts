@@ -8,7 +8,12 @@ import { ProviderGenerator } from "@src/vendors/angular/utils/provider.generator
 import { TokenGenerator } from "@src/vendors/angular/utils/token.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestOptions,
+	createTestProject,
+	createTestSpec,
+} from "../shared/helpers.js";
 import { emptySpec, securitySpec } from "../shared/specs.js";
 
 describe("Emitter: ProviderGenerator", () => {
@@ -29,7 +34,7 @@ describe("Emitter: ProviderGenerator", () => {
 			...config,
 		};
 
-		const parser = new SwaggerParser(testCast(spec), fullConfig);
+		const parser = new SwaggerParser(createTestSpec(spec), fullConfig);
 
 		new TokenGenerator(project, fullConfig.clientName).generate(
 			fullConfig.output,
@@ -69,7 +74,7 @@ describe("Emitter: ProviderGenerator", () => {
 
 	it("should not generate if generateServices is false", () => {
 		const fileContent = runGenerator(emptySpec, {
-			options: testCast({ generateServices: false }),
+			options: createTestOptions({ generateServices: false }),
 		});
 		expect(fileContent).toBeUndefined();
 	});
@@ -149,7 +154,7 @@ describe("Emitter: ProviderGenerator", () => {
 	it('should add DateInterceptor if dateType is "Date"', () => {
 		const fileContent = runGenerator(emptySpec, {
 			clientName: "Test",
-			options: testCast({ dateType: "Date" }),
+			options: createTestOptions({ dateType: "Date" }),
 		});
 		expect(fileContent).toContain("if (config.enableDateTransform !== false)");
 		expect(fileContent).toContain("fns.push(dateInterceptor);");
@@ -199,7 +204,7 @@ describe("Emitter: ProviderGenerator", () => {
 				enumStyle: "enum",
 			},
 		};
-		const parser = new SwaggerParser(testCast(emptySpec), config);
+		const parser = new SwaggerParser(createTestSpec(emptySpec), config);
 		const generator = new ProviderGenerator(parser, project, []);
 
 		generator.generate("/out");
@@ -210,7 +215,7 @@ describe("Emitter: ProviderGenerator", () => {
 
 	it("should use default tokenNames when omitted", () => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({
+		const config: GeneratorConfig = createTestConfig({
 			input: "",
 			output: "/out",
 			options: {
@@ -219,7 +224,7 @@ describe("Emitter: ProviderGenerator", () => {
 				enumStyle: "enum",
 			},
 		});
-		const parser = new SwaggerParser(testCast(emptySpec), config);
+		const parser = new SwaggerParser(createTestSpec(emptySpec), config);
 
 		new ProviderGenerator(parser, project).generate("/out");
 

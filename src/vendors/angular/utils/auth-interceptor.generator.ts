@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import type { Project } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 import type { SecurityScheme } from "../../../core/types/index.js";
 import { pascalCase } from "../../../functions/utils.js";
 import type { SwaggerParser } from "../../../openapi/parse.js";
@@ -79,8 +78,6 @@ export class AuthInterceptorGenerator {
 			overwrite: true,
 		});
 
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
-
 		const tokenImports: string[] = ["SECURITY_CONTEXT_TOKEN"];
 
 		const tokenNames: string[] = [];
@@ -150,7 +147,7 @@ export class AuthInterceptorGenerator {
 					schemeLogicParts.push(
 						`'${name}': (req, scopes, deps) => deps.apiKey ? req.clone({ params: req.params.set('${scheme.name}', deps.apiKey) }) : null`,
 					);
-				} else if (scheme.in === "cookie") {
+				} else {
 					schemeLogicParts.push(`'${name}': (req, scopes, deps) => {
                         if (!deps.cookieAuth) return null;
                         if (typeof window !== 'undefined') {
@@ -169,7 +166,7 @@ export class AuthInterceptorGenerator {
                     const token = typeof deps.bearerToken === 'function' ? deps.bearerToken() : deps.bearerToken;
                     return token ? req.clone({ headers: req.headers.set('Authorization', \`${prefix} \${token}\`) }) : null;
                 }`);
-			} else if (scheme.type === "mutualTLS") {
+			} else {
 				schemeLogicParts.push(
 					`'${name}': (req, scopes, deps) => deps.mtlsConfig ? req.clone({ context: req.context.set(HTTPS_AGENT_CONTEXT_TOKEN, deps.mtlsConfig) }) : req`,
 				);

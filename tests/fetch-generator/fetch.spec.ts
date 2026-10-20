@@ -4,6 +4,7 @@ import type { GeneratorConfig } from "@src/core/types/index.js";
 import { generateFromConfigSync } from "@src/index.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { expectZeroTypeScriptDiagnostics } from "../shared/helpers.js";
 
 describe("Fetch Implementation", () => {
 	describe("Config Validation", () => {
@@ -31,6 +32,7 @@ describe("Fetch Implementation", () => {
 			expect(
 				project.getSourceFile(path.join(outDir, "mcp-adapter.ts")),
 			).toBeDefined();
+			expectZeroTypeScriptDiagnostics(project);
 		});
 
 		it("should execute FetchClientGenerator successfully when admin is false", async () => {

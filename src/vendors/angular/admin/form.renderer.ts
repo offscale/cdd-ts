@@ -17,7 +17,7 @@ export class ValidationRenderer {
 	 * @param rules - Validation rules to render.
 	 * @returns Rendered validator array expression, or `""` when `rules` is empty.
 	 */
-	public static render(rules: ValidationRule[]): string {
+	public static render(rules?: ValidationRule[] | null): string {
 		if (!rules || rules.length === 0) {
 			return "";
 		}
@@ -84,11 +84,6 @@ export class ValidationRenderer {
 				);
 
 				return `CustomValidators.notValidator(Validators.compose(${innerValidatorsArrayString})!)`;
-			}
-			default: {
-				throw new Error(
-					`Unhandled validation rule type: ${(rule as { type?: string }).type}`,
-				);
 			}
 		}
 	}
@@ -185,7 +180,7 @@ export class FormInitializerRenderer {
 	 * @returns TypeScript expression string creating the `FormGroup`.
 	 */
 	public static renderFormArrayItemInitializer(
-		controls: FormControlModel[],
+		controls?: FormControlModel[],
 	): string {
 		const formControls = (controls || [])
 			.map((c) => {

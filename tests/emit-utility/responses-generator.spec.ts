@@ -2,10 +2,13 @@ import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { ResponsesGenerator } from "@src/openapi/emit_responses.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestProject,
+} from "../shared/helpers.js";
 
 const specWithResponses: SwaggerSpec = {
 	openapi: "3.2.0",
@@ -31,37 +34,26 @@ const specWithResponses: SwaggerSpec = {
 describe("Emitter: ResponsesGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const parser = new SwaggerParser(spec, config);
 		new ResponsesGenerator(parser, project).generate("/out");
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/responses.ts");
-		const code = sourceFile.getText();
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/responses.ts");
 
 	it("should generate registry map for responses", () => {
 		const project = runGenerator(specWithResponses);
 
 		const { API_RESPONSES } = compileGeneratedFile(project);
 
-		expect(API_RESPONSES.NotFound).toBeDefined();
+		expect(API_RESPONSES?.NotFound).toBeDefined();
 
-		expect(API_RESPONSES.NotFound.description).toBe("Not found");
+		expect(API_RESPONSES?.NotFound?.description).toBe("Not found");
 	});
 
 	it("should handle specs without responses", () => {

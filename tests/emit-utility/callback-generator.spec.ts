@@ -6,12 +6,11 @@ import type {
 import { CallbackGenerator } from "@src/functions/emit_callback.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import {
+	compileGeneratedModule,
+	createTestConfig,
 	createTestProject,
-	type TestValue,
-	testCast,
 } from "../shared/helpers.js";
 
 const mockSpec: SwaggerSpec = {
@@ -124,7 +123,7 @@ const refRequestBodyCallbackSpec: SwaggerSpec = {
 describe("Emitter: CallbackGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({
+		const config: GeneratorConfig = createTestConfig({
 			output: "/out",
 			options: { dateType: "string", enumStyle: "enum" },
 		});
@@ -139,22 +138,8 @@ describe("Emitter: CallbackGenerator", () => {
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/callbacks.ts");
-		const code = sourceFile.getText();
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/callbacks.ts");
 
 	it("should generate interfaces for inline callbacks", () => {
 		const project = runGenerator(mockSpec);
@@ -172,12 +157,10 @@ describe("Emitter: CallbackGenerator", () => {
 
 		expect(API_CALLBACKS).toHaveLength(2);
 
-		const opCallback = API_CALLBACKS.find(
-			(c: TestValue) => c.name === "myWebhook",
-		);
+		const opCallback = API_CALLBACKS?.find?.((c) => c.name === "myWebhook");
 
-		const componentCallback = API_CALLBACKS.find(
-			(c: TestValue) => c.name === "MyCallback",
+		const componentCallback = API_CALLBACKS?.find?.(
+			(c) => c.name === "MyCallback",
 		);
 
 		expect(opCallback).toBeDefined();
@@ -200,9 +183,7 @@ describe("Emitter: CallbackGenerator", () => {
 
 		// Should NOT contain brokenWebhook because it resolves to undefined
 
-		const broken = API_CALLBACKS.find(
-			(c: TestValue) => c.name === "brokenWebhook",
-		);
+		const broken = API_CALLBACKS?.find?.((c) => c.name === "brokenWebhook");
 
 		expect(broken).toBeUndefined();
 	});

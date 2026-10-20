@@ -28,7 +28,9 @@ export interface ParsedTestBlock {
  * @param sourceFile - The `ts-morph` `SourceFile` to inspect.
  * @returns Array of parsed top-level `ParsedTestBlock` trees.
  */
-export function parseTests(sourceFile: SourceFile): ParsedTestBlock[] {
+export function parseTests(
+	sourceFile: SourceFile | null | undefined,
+): ParsedTestBlock[] {
 	if (!sourceFile) return [];
 
 	const testBlocks: ParsedTestBlock[] = [];

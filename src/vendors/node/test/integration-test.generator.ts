@@ -5,7 +5,7 @@
  */
 import * as path from "node:path";
 import type { Project } from "ts-morph";
-import type { PathInfo, SwaggerDefinition } from "../../../core/types/index.js";
+import type { PathInfo } from "../../../core/types/index.js";
 import { camelCase, pascalCase } from "../../../functions/utils.js";
 import { MockDataGenerator } from "../../../mocks/generate_mock_data.js";
 import type { SwaggerParser } from "../../../openapi/parse.js";
@@ -42,7 +42,9 @@ export class NodeIntegrationTestGenerator {
 
 		// Add imports
 		sourceFile.addStatements(`
-            import { describe, it, expect } from 'vitest';
+            import * as http from 'node:http';
+            import { EventEmitter } from 'node:events';
+            import { describe, it, expect, vi } from 'vitest';
         `);
 
 		// Import all services
@@ -72,55 +74,46 @@ export class NodeIntegrationTestGenerator {
             `);
 
 			for (const op of operations) {
-				const methodName =
-					op.methodName || camelCase(op.operationId || "unknown");
-				const parameters = op.parameters || [];
+				const methodName = op.methodName as string;
 				const mockArgs: string[] = [];
 
 				// Add mock data for parameters
-				for (const param of parameters) {
+				op.parameters?.forEach((param) => {
 					if (param.required) {
-						mockArgs.push(
-							String(
-								this.mockDataGenerator.generate(
-									((param.schema as SwaggerDefinition)?.name as string) ||
-										param.name,
-								),
-							),
-						);
+						mockArgs.push(String(this.mockDataGenerator.generate(param.name)));
 					} else {
 						mockArgs.push("undefined");
 					}
-				}
+				});
 
 				if (op.requestBody?.content) {
-					const contentTypes = Object.keys(op.requestBody.content);
-					if (contentTypes.length > 0) {
-						const schema = op.requestBody.content[contentTypes[0]].schema;
-						mockArgs.push(
-							String(
-								this.mockDataGenerator.generate(
-									((schema as SwaggerDefinition)?.name as string) || "Unknown",
-								),
-							),
-						);
-					}
+					mockArgs.push(String(this.mockDataGenerator.generate("Unknown")));
 				}
 
 				const argsString = mockArgs.join(", ");
 
 				sourceFile.addStatements(`
                     it('should call ${methodName} successfully', async () => {
+                        const requestSpy = vi.spyOn(http, 'request').mockImplementation((_opts: unknown, cb?: unknown) => {
+                            const req = new EventEmitter() as http.ClientRequest;
+                            req.write = vi.fn(() => true);
+                            req.end = vi.fn(() => {
+                                const res = new EventEmitter() as http.IncomingMessage;
+                                res.statusCode = 200;
+                                res.headers = { 'content-type': 'application/json' };
+                                if (typeof cb === 'function') cb(res);
+                                res.emit('data', Buffer.from(JSON.stringify({ ok: true })));
+                                res.emit('end');
+                                return req;
+                            });
+                            return req;
+                        });
                         try {
                             const result = await service.${methodName}(${argsString});
                             expect(result).toBeDefined();
-                        } catch (error: unknown) {
-                            const errObj = error as { code?: string } | null;
-                            if (errObj && (errObj.code === 'ECONNREFUSED' || String(error).includes('ECONNREFUSED') || String(error).includes('FormData') || String(error).includes('URLSearchParams'))) {
-                                expect(error).toBeDefined();
-                            } else {
-                                throw error;
-                            }
+                            expect(requestSpy).toHaveBeenCalled();
+                        } finally {
+                            requestSpy.mockRestore();
                         }
                     });
                 `);

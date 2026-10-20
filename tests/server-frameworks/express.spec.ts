@@ -1,7 +1,11 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { ExpressServerGenerator } from "../../src/vendors/express/express-server.generator.js";
-import { testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestSpec,
+	expectZeroTypeScriptDiagnostics,
+} from "../shared/helpers.js";
 
 describe("ExpressServerGenerator", () => {
 	it("should generate routes, route tests, and E2E tests for TypeORM configuration", () => {
@@ -13,7 +17,7 @@ describe("ExpressServerGenerator", () => {
 			"User",
 			"/out/routes",
 			"typeorm",
-			testCast({
+			createTestConfig({
 				options: { tests: true },
 			}),
 		);
@@ -56,7 +60,7 @@ describe("ExpressServerGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
 
-		const mockParser = testCast({
+		const mockParser = {
 			schemas: [
 				{
 					name: "User",
@@ -80,33 +84,29 @@ describe("ExpressServerGenerator", () => {
 					},
 				},
 			],
-		});
+		};
 
 		generator.generateEntityRoutes(
 			project,
 			"User",
 			"/out/routes",
 			undefined,
-			testCast({
+			createTestConfig({
 				options: { tests: true },
 			}),
-			testCast(mockParser),
+			mockParser,
 		);
 
 		// Check mock file generation
 		const mockFile = project.getSourceFileOrThrow("/out/mocks/user.mock.ts");
 		const mockText = mockFile.getFullText();
-		expect(mockText).toContain("name: faker.person.firstName() as any,");
-		expect(mockText).toContain("email: faker.internet.email() as any,");
-		expect(mockText).toContain(
-			"age: faker.number.int({ min: 1, max: 1000 }) as any,",
-		);
-		expect(mockText).toContain(
-			"createdAt: faker.date.past().toISOString() as any,",
-		);
-		expect(mockText).toContain("isActive: faker.datatype.boolean() as any,");
-		expect(mockText).toContain("tags: [] as any,");
-		expect(mockText).toContain("metadata: {} as any,");
+		expect(mockText).toContain("name: faker.person.firstName(),");
+		expect(mockText).toContain("email: faker.internet.email(),");
+		expect(mockText).toContain("age: faker.number.int({ min: 1, max: 1000 }),");
+		expect(mockText).toContain("createdAt: faker.date.past().toISOString(),");
+		expect(mockText).toContain("isActive: faker.datatype.boolean(),");
+		expect(mockText).toContain("tags: [],");
+		expect(mockText).toContain("metadata: {},");
 
 		// Check router file generation
 		const routeFile = project.getSourceFileOrThrow(
@@ -136,14 +136,14 @@ describe("ExpressServerGenerator", () => {
 	it("should respect config.options.tests being false", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
-		const config = testCast({ options: { tests: false } });
+		const config = { options: { tests: false } };
 
 		generator.generateEntityRoutes(
 			project,
 			"User",
 			"/out/routes",
 			undefined,
-			testCast(config),
+			createTestConfig(config),
 		);
 
 		// route file generated
@@ -188,38 +188,49 @@ describe("ExpressServerGenerator", () => {
 					tags: ["TestTag"],
 					operationId: "testOp",
 					path: "/test",
+					method: "GET",
 					summary: "A test operation",
 					parameters: [
-						{ name: "param1", required: true, description: "first param" },
-						{ name: "param2", required: false },
 						{
-							/* nameless parameter should be ignored */
+							name: "param1",
+							in: "query",
+							required: true,
+							description: "first param",
+						},
+						{ name: "param2", in: "query", required: false },
+						{
+							name: "",
+							in: "query",
 						},
 					],
-					requestBody: {},
+					requestBody: { content: {} },
 				},
 				{
 					// No tags, no operationId, no parameters, no body
 					path: "/fallback",
+					method: "GET",
 				},
 				{
-					// Tags as objects
-					tags: [{ name: "ObjTag" }],
+					// Tag
+					tags: ["ObjTag"],
 					path: "/obj",
+					method: "GET",
 				},
 				{
 					// Capital start letter
 					operationId: "TestCapital",
 					path: "/cap",
+					method: "GET",
 				},
 				{
-					// Tag as object without name
-					tags: [{}],
+					// Empty tag fallback
+					tags: [""],
 					path: "/objnoname",
+					method: "GET",
 				},
 			],
 		};
-		generator.generateMcpRoutes(project, testCast(parser), "/output");
+		generator.generateMcpRoutes(project, parser, "/output");
 
 		const mcpFile = project.getSourceFile("/output/mcp.routes.ts");
 		expect(mcpFile).toBeDefined();
@@ -240,10 +251,10 @@ describe("ExpressServerGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
 		const parser = {
-			spec: { info: {} },
+			spec: createTestSpec({ info: {} }),
 			operations: [],
 		};
-		generator.generateMcpRoutes(project, testCast(parser), "/output2");
+		generator.generateMcpRoutes(project, parser, "/output2");
 		const mcpFile = project.getSourceFile("/output2/mcp.routes.ts");
 		const text = mcpFile?.getFullText();
 		expect(text).toContain("name: 'api-mcp'");
@@ -254,13 +265,19 @@ describe("ExpressServerGenerator", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
 		const parser = {
-			operations: [{ operationId: "getSomeData" }],
+			operations: [
+				{
+					operationId: "getSomeData",
+					path: "/some-data",
+					method: "GET",
+				},
+			],
 		};
 		generator.generateMcpRoutes(
 			project,
-			testCast(parser),
+			parser,
 			"/output3",
-			testCast({
+			createTestConfig({
 				options: { generateServices: true },
 			}),
 		);
@@ -273,7 +290,7 @@ describe("ExpressServerGenerator", () => {
 	it("should generate the server entrypoint with CLI options and imports", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const generator = new ExpressServerGenerator();
-		const dummyParser = testCast({
+		const dummyParser = {
 			spec: {
 				info: { title: "Test", version: "1.0" },
 				openapi: "3.0",
@@ -281,12 +298,12 @@ describe("ExpressServerGenerator", () => {
 			},
 			schemas: [],
 			operations: [],
-		});
+		};
 		generator.generateServerEntrypoint(
 			project,
 			["User", "Post"],
 			"/out",
-			testCast(dummyParser),
+			dummyParser,
 		);
 
 		const entrypointFile = project.getSourceFileOrThrow("/out/server.ts");
@@ -324,5 +341,6 @@ describe("ExpressServerGenerator", () => {
 		expect(entrypointFile.getFullText()).toContain(
 			'import { Command } from "commander";',
 		);
+		expectZeroTypeScriptDiagnostics(project);
 	});
 });

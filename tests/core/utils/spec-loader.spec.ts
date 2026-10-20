@@ -15,7 +15,7 @@ import {
 	type Mock,
 	vi,
 } from "vitest";
-import { type TestValue, testCast } from "../../shared/helpers.js";
+import { createTestSchema } from "../../shared/helpers.js";
 
 vi.mock("@src/openapi/parse_validator.js");
 vi.mock("node:fs");
@@ -27,7 +27,7 @@ describe("Core Utils: SpecLoader", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		// Mock validation to pass by default
-		(validateSpec as Mock).mockImplementation(() => {});
+		(validateSpec as Mock).mockImplementation(() => undefined);
 		(fs.existsSync as Mock).mockReturnValue(true);
 		(fs.readFileSync as Mock).mockReturnValue('{"openapi":"3.0.0"}');
 	});
@@ -123,7 +123,9 @@ describe("Core Utils: SpecLoader", () => {
 	});
 
 	it("should skip parsing of invalid ref URIs inside recursive load", async () => {
-		const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const consoleSpy = vi
+			.spyOn(console, "warn")
+			.mockImplementation(() => undefined);
 		// Use a malformed absolute URL to guarantee URL constructor failure
 		vi.spyOn(ReferenceResolver, "findRefs").mockReturnValue([
 			"http://[invalid]",
@@ -166,12 +168,11 @@ properties:
 		const result = await SpecLoader.load("http://api.com/spec");
 		expect(result.entrySpec).toBeDefined();
 
-		expect(testCast(result.entrySpec).type).toBe("object");
+		expect(result.entrySpec.type).toBe("object");
 
 		expect(
-			testCast<TestValue>(
-				testCast<TestValue>(result.entrySpec).properties?.name,
-			).type,
+			createTestSchema(createTestSchema(result.entrySpec).properties?.name)
+				.type,
 		).toBe("string");
 	});
 
@@ -179,7 +180,7 @@ properties:
 		(fs.existsSync as Mock).mockReturnValue(true);
 		(fs.readFileSync as Mock).mockReturnValue('{"openapi":"3.0.0"}');
 
-		const content = await testCast(SpecLoader).loadContent("plain.json");
+		const content = await SpecLoader.loadContent("plain.json");
 
 		expect(content).toBe('{"openapi":"3.0.0"}');
 	});
@@ -512,12 +513,105 @@ properties:
 	});
 
 	it("should throw if load does not populate entry spec", async () => {
-		vi.spyOn(
-			testCast(SpecLoader),
-			"loadAndCacheSpecRecursive",
-		).mockResolvedValueOnce(undefined as never);
+		const spy = vi
+			.spyOn(SpecLoader, "loadAndCacheSpecRecursive")
+			.mockResolvedValueOnce(undefined);
 		await expect(SpecLoader.load("http://empty.com/spec.json")).rejects.toThrow(
 			"Failed to load entry spec from http://empty.com/spec.json",
 		);
+		spy.mockRestore();
+	});
+
+	it("should load specs synchronously via SpecLoader.loadSync and handle edge cases", () => {
+		const existsSpy = vi.spyOn(fs, "existsSync");
+		const readSpy = vi.spyOn(fs, "readFileSync");
+		const warnSpy = vi
+			.spyOn(console, "warn")
+			.mockImplementation(() => undefined);
+
+		existsSpy.mockImplementation((p) => {
+			const s = String(p);
+			return s.endsWith("main.json") || s.endsWith("ext.json");
+		});
+
+		readSpy.mockImplementation((p) => {
+			const s = String(p);
+			if (s.endsWith("main.json")) {
+				return JSON.stringify({
+					openapi: "3.2.0",
+					$self: "./main-self.json",
+					info: { title: "Sync", version: "1.0" },
+					paths: {
+						"/null-item": null,
+						"/items": {
+							get: {
+								operationId: "getItems",
+								responses: {
+									"200": {
+										description: "ok",
+										links: {
+											selfLink: { operationRef: "#/paths/~1items/get" },
+											extLink: { operationRef: "./ext.json#/paths/~1ext/get" },
+											badLink: { operationRef: "http://[::1#/paths/~1bad" },
+										},
+									},
+								},
+							},
+							additionalOperations: {
+								COPY: {
+									responses: { "200": { description: "ok" } },
+								},
+							},
+						},
+					},
+					components: {
+						callbacks: {
+							nullCb: null,
+						},
+					},
+				});
+			}
+			return JSON.stringify({
+				openapi: "3.2.0",
+				info: { title: "Ext", version: "1.0" },
+				paths: {
+					"/ext": {
+						get: {
+							operationId: "getExt",
+							responses: {
+								"200": {
+									description: "ok",
+									links: {
+										backLink: {
+											operationRef: "./main.json#/paths/~1items/get",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			});
+		});
+
+		const bundle = SpecLoader.loadSync("main.json");
+		expect(bundle.entrySpec.info.title).toBe("Sync");
+		expect(warnSpy).toHaveBeenCalled();
+
+		expect(() => SpecLoader.loadSync("http://example.com/remote.json")).toThrow(
+			"Synchronous fetch is not supported",
+		);
+		expect(() => SpecLoader.loadSync("missing.json")).toThrow(
+			"Input file not found",
+		);
+
+		readSpy.mockImplementationOnce(() => {
+			throw "string-err";
+		});
+		expect(() => SpecLoader.loadSync("main.json")).toThrow("string-err");
+
+		existsSpy.mockRestore();
+		readSpy.mockRestore();
+		warnSpy.mockRestore();
 	});
 });

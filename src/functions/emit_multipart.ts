@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, Scope } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 
 /**
  * Generates the `utils/multipart-builder.ts` file.
@@ -32,8 +31,6 @@ export class MultipartBuilderGenerator {
 		const sourceFile = this.project.createSourceFile(filePath, "", {
 			overwrite: true,
 		});
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
 		sourceFile.addInterface({
 			name: "EncodingConfig",
@@ -192,7 +189,7 @@ export class MultipartBuilderGenerator {
             const contentType = config.contentType;
 
             if (Array.isArray(value)) {
-                value.forEach(v => this.appendFormData(formData, key, v, contentType));
+                value.forEach(v => { this.appendFormData(formData, key, v, contentType); });
             } else {
                 this.appendFormData(formData, key, value, contentType);
             }

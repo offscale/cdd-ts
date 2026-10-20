@@ -6,7 +6,7 @@
 import { posix as path } from "node:path";
 import type { Project } from "ts-morph";
 import { AbstractClientGenerator } from "../../core/generator.js";
-import type { GeneratorConfig } from "../../core/types/index.js";
+import { type GeneratorConfig, resolveLogger } from "../../core/types/index.js";
 import { MultipartBuilderGenerator } from "../../functions/emit_multipart.js";
 import { camelCase } from "../../functions/utils.js";
 import { ContentDecoderGenerator } from "../../openapi/emit_content_decoder.js";
@@ -59,9 +59,10 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 		config: GeneratorConfig,
 		outputRoot: string,
 	): void {
+		const logger = resolveLogger(config);
 		// 1 & 2. Shared Models and Core OpenAPI Metadata
 		this.generateSharedCore(project, parser, config, outputRoot);
-		console.log("✅ Models generated.");
+		logger.info("✅ Models generated.");
 
 		// 3. Services and Angular Specifics
 		if (config.options.generateServices ?? true) {
@@ -74,7 +75,7 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 			);
 
 			new ServiceIndexGenerator(project).generateIndex(outputRoot);
-			console.log("✅ Services generated.");
+			logger.info("✅ Services generated.");
 
 			new TokenGenerator(project, config.clientName).generate(outputRoot);
 			new RequestContextGenerator(project).generate(outputRoot);
@@ -118,12 +119,12 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 				outputRoot,
 			);
 			new ProviderGenerator(parser, project, tokenNames).generate(outputRoot);
-			console.log("✅ Utilities and providers generated.");
+			logger.info("✅ Utilities and providers generated.");
 
 			const shouldGenerateTests =
 				config.options.tests ?? config.options.generateServiceTests ?? false;
 			if (shouldGenerateTests) {
-				console.log("📝 Generating tests for services...");
+				logger.info("📝 Generating tests for services...");
 
 				const testGenerator = new ServiceTestGenerator(parser, project, config);
 				const integrationTestGen = new IntegrationTestGenerator(
@@ -156,7 +157,7 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 					config.clientName,
 				);
 
-				console.log("✅ Service tests generated.");
+				logger.info("✅ Service tests generated.");
 			}
 
 			if (config.options.admin) {
@@ -166,7 +167,7 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 					config.options.tests ?? config.options.generateAdminTests ?? false;
 
 				if (shouldGenerateAdminTests) {
-					console.log("📝 Generating tests for admin UI...");
+					logger.info("📝 Generating tests for admin UI...");
 
 					const adminTestGen = new AdminTestGenerator(project);
 					const adminResources = discoverAdminResources(parser);
@@ -175,7 +176,7 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 						adminTestGen.generate(resource, path.join(outputRoot, "admin"));
 					}
 
-					console.log("✅ Admin UI tests generated.");
+					logger.info("✅ Admin UI tests generated.");
 				}
 			}
 		}
@@ -184,7 +185,7 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 			outputRoot,
 		);
 
-		console.log(
+		logger.info(
 			`🎉 Generation complete! Output written to: ${path.resolve(outputRoot)}`,
 		);
 	}

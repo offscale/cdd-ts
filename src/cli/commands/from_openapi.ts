@@ -1,5 +1,5 @@
 /**
- * Implements the `from_openapi` (`to_sdk`, `to_server`, `to_sdk_cli`) CLI commands and scaffolding logic.
+ * Implements the `from_openapi` (`to_sdk`, `to_server`, `to_sdk_cli`) CLI commands and configuration loading logic.
  *
  * @module cli/commands/from_openapi
  */
@@ -13,8 +13,21 @@ import type {
 	TargetFramework,
 	TargetServerFramework,
 } from "../../core/types/index.js";
+import {
+	createJavyFsPolyfill,
+	runJavyStdinIfPresent,
+} from "../../core/wasm-fs.js";
 import { isUrl } from "../../functions/utils.js";
 import { generateFromConfigSync } from "../../index.js";
+import {
+	emitGithubActionsScaffolding,
+	emitPackageScaffolding,
+} from "../scaffold.js";
+
+/** Re-exports `CliRunner` from `../../core/wasm-fs.js`. */
+export type { CliRunner } from "../../core/wasm-fs.js";
+/** Re-exports `createJavyFsPolyfill` and `runJavyStdinIfPresent` from `../../core/wasm-fs.js`. */
+export { createJavyFsPolyfill, runJavyStdinIfPresent };
 
 const NEWLINE = String.fromCharCode(10);
 
@@ -58,7 +71,7 @@ export interface FromOpenApiOptions {
 	/** Whether to generate an MCP server adapter. */
 	mcp?: boolean;
 	/** Whether to generate integration tests and mocks. */
-	tests?: boolean;
+	tests?: boolean | string;
 	/** Whether test generation is enabled (`--no-test-gen` sets `false`). */
 	testGen?: boolean;
 	/** Whether GitHub Actions scaffolding is enabled (`--no-github-actions` sets `false`). */
@@ -91,12 +104,14 @@ export type ToSdkCliGenOptions = FromOpenApiOptions;
  * @returns Validated `TargetFramework`.
  */
 export function parseFrameworkOption(value: string): TargetFramework {
+	if (value === "Vanilla JS") {
+		return "vanilla";
+	}
 	if (
 		value === "angular" ||
 		value === "react" ||
 		value === "vue" ||
-		value === "vanilla" ||
-		value === "Vanilla JS"
+		value === "vanilla"
 	) {
 		return value;
 	}
@@ -174,20 +189,18 @@ export async function generateFromOpenApi(
 	targetScope?: "to_sdk" | "to_sdk_cli" | "to_server",
 ): Promise<string> {
 	const startTime = Date.now();
-	const extractArg = (flag: string) => {
-		const argv = typeof process !== "undefined" ? process.argv : [];
+	const extractArg = (flag: string): string | undefined => {
+		const argv = process.argv;
 		for (let i = 0; i < argv.length; i++) {
-			if (argv[i] === flag && i + 1 < argv.length) return argv[i + 1];
-			if (argv[i].startsWith(`${flag}=`))
-				return argv[i].substring(flag.length + 1);
+			const arg = argv[i] as string;
+			if (arg === flag && i + 1 < argv.length) return argv[i + 1];
+			if (arg.startsWith(`${flag}=`)) return arg.substring(flag.length + 1);
 		}
 		return undefined;
 	};
 	try {
-		console.log("PARSED OPTIONS:", JSON.stringify(options));
 		let baseConfig: Partial<GeneratorConfig> = {};
 		if (options.config) {
-			console.log(`📜 Loading configuration from: ${options.config}`);
 			baseConfig = await loadConfigFile(options.config);
 		}
 
@@ -225,7 +238,7 @@ export async function generateFromOpenApi(
 			const isTestsEnabled =
 				typeof options.tests === "string"
 					? options.tests !== "false" && options.tests !== "0"
-					: !!options.tests;
+					: Boolean(options.tests);
 			cliOptions.composableTests = isTestsEnabled;
 			cliOptions.tests = isTestsEnabled;
 		}
@@ -307,9 +320,6 @@ export async function generateFromOpenApi(
 		}
 
 		console.log(
-			"🚀 Starting code generation with the following configuration:",
-		);
-		console.log(
 			yaml.dump(
 				{ ...finalConfigInProgress },
 				{
@@ -333,13 +343,6 @@ export async function generateFromOpenApi(
 			undefined,
 			targetScope,
 		);
-		if (targetScope === "to_sdk_cli") {
-			console.log("Target scope SDK CLI executed.");
-		} else if (targetScope === "to_server") {
-			console.log("Target scope Server executed.");
-		} else if (targetScope === "to_sdk") {
-			console.log("Target scope SDK executed.");
-		}
 
 		if (!finalConfigInProgress.options?.noInstallablePackage) {
 			emitPackageScaffolding(
@@ -350,190 +353,23 @@ export async function generateFromOpenApi(
 		}
 
 		if (!finalConfigInProgress.options?.noGithubActions) {
-			console.log("Generating GitHub actions...");
-			const ghDir = path.join(targetOutputRoot, ".github", "workflows");
-			fs.mkdirSync(ghDir, { recursive: true });
-			fs.writeFileSync(
-				path.join(ghDir, "ci.yml"),
-				[
-					"name: CI",
-					"on: [push]",
-					"jobs:",
-					"  build:",
-					"    runs-on: ubuntu-latest",
-					"    steps:",
-					"      - uses: actions/checkout@v6",
-					"      - run: npm install",
-					"      - run: npm run build",
-					"      - run: npm test",
-					"",
-				].join(NEWLINE),
-			);
+			emitGithubActionsScaffolding(targetOutputRoot);
 		}
 
 		return "Success";
 	} catch (error: unknown) {
 		console.error("runGeneration error:", error);
-		if (error instanceof Error && error.stack) console.error(error.stack);
 		throw error;
 	} finally {
 		const duration = (Date.now() - startTime) / 1000;
 		console.log(`${NEWLINE}⏱️  Duration: ${duration.toFixed(2)} seconds`);
 
-		if (
-			typeof globalThis !== "undefined" &&
-			(globalThis as { __FsData?: unknown }).__FsData
-		) {
+		if ((globalThis as { __FsData?: unknown }).__FsData) {
 			console.log(
 				"JAVY_FS_DUMP:" +
 					JSON.stringify((globalThis as { __FsData?: unknown }).__FsData),
 			);
 		}
-	}
-}
-
-/**
- * Emits `package.json`, `tsconfig.json`, and server `vitest.config.ts` / `README.md` scaffolding.
- *
- * @param targetOutputRoot - Root directory for package files.
- * @param finalConfig - Resolved generator configuration.
- * @param targetScope - Generation target scope.
- */
-function emitPackageScaffolding(
-	targetOutputRoot: string,
-	finalConfig: Partial<GeneratorConfig>,
-	targetScope?: "to_sdk" | "to_sdk_cli" | "to_server",
-): void {
-	console.log("Generating package scaffolding...");
-	const dependencies: Record<string, string> = {};
-	const devDependencies: Record<string, string> = {};
-
-	if (targetScope === "to_sdk_cli" || targetScope === "to_server") {
-		Object.assign(dependencies, {
-			"@modelcontextprotocol/sdk": "^1.29.0",
-			zod: "^4.4.3",
-			commander: "^14.0.0",
-		});
-	}
-	if (targetScope === "to_server") {
-		Object.assign(dependencies, {
-			express: "^4.21.2",
-			"@types/express": "^5.0.0",
-		});
-		Object.assign(devDependencies, {
-			supertest: "^7.2.2",
-			"@types/supertest": "^7.2.0",
-			vitest: "^4.1.0",
-			typescript: "^5.0.0",
-			"ts-node": "^10.9.2",
-		});
-		if (finalConfig.options?.orm === "typeorm") {
-			Object.assign(dependencies, {
-				typeorm: "^1.0.0",
-				"better-sqlite3": "^12.0.0",
-				pg: "^8.22.0",
-			});
-			Object.assign(devDependencies, {
-				"@faker-js/faker": "^10.5.0",
-				"@types/better-sqlite3": "^7.6.10",
-			});
-		}
-	}
-
-	const scripts: Record<string, string> = { build: "tsc" };
-	if (targetScope === "to_server" || finalConfig.options?.tests !== false) {
-		scripts.test = "vitest run";
-	}
-
-	fs.writeFileSync(
-		path.join(targetOutputRoot, "package.json"),
-		JSON.stringify(
-			{
-				name:
-					targetScope === "to_server" ? "generated-server" : "generated-client",
-				version: "1.0.0",
-				main: "dist/index.js",
-				types: "dist/index.d.ts",
-				scripts,
-				dependencies,
-				devDependencies:
-					Object.keys(devDependencies).length > 0 ? devDependencies : undefined,
-			},
-			null,
-			2,
-		),
-	);
-	const tsconfig: {
-		compilerOptions: Record<string, string | boolean>;
-		include: string[];
-	} = {
-		compilerOptions: {
-			target: "ES2022",
-			module: "CommonJS",
-			moduleResolution: "node",
-			outDir: "dist",
-			rootDir: "src",
-			declaration: true,
-			esModuleInterop: true,
-			skipLibCheck: true,
-		},
-		include: ["src/**/*"],
-	};
-	if (targetScope === "to_server" && finalConfig.options?.orm === "typeorm") {
-		tsconfig.compilerOptions.experimentalDecorators = true;
-		tsconfig.compilerOptions.emitDecoratorMetadata = true;
-	}
-	fs.writeFileSync(
-		path.join(targetOutputRoot, "tsconfig.json"),
-		JSON.stringify(tsconfig, null, 2),
-	);
-	if (targetScope === "to_server") {
-		fs.writeFileSync(
-			path.join(targetOutputRoot, "vitest.config.ts"),
-			[
-				"import { defineConfig } from 'vitest/config';",
-				"export default defineConfig({ test: { pool: 'forks', include: ['src/**/*.spec.ts', 'src/**/*.test.ts'] } });",
-				"",
-			].join(NEWLINE),
-		);
-		const readmeContent = [
-			"# Generated Mock Server",
-			"",
-			"This is an automatically generated Contract-Driven Development (CDD) Mock Server.",
-			"It supports multiple decoupled runtime modes to facilitate testing, sandbox development, and production scaffolding.",
-			"",
-			"## Server Modes",
-			"",
-			"You can run the server in the following operational modes:",
-			"",
-			"### 1. Stub Mode",
-			"```bash",
-			"npm run start",
-			"```",
-			"*(No `DATABASE_URL` configured and no `--ephemeral` flag)*",
-			"The server runs using traditional scaffolds. Endpoints return empty bodies or explicitly throw `NotImplementedError`.",
-			"",
-			"### 2. Production Mode",
-			"```bash",
-			"DATABASE_URL=postgres://user:pass@localhost:5432/mydb npm run start",
-			"```",
-			"*(Provided `DATABASE_URL`, no `--ephemeral` flag)*",
-			"The server uses actual ORM interactions against a real database connection. Data is persistent.",
-			"",
-			"### 3. Sandbox Mode",
-			"```bash",
-			"npm run start -- --ephemeral",
-			"```",
-			"The server ignores any external database configuration and provisions a fresh, throwaway in-memory database (e.g., SQLite `sqlite::memory:`). All ORM operations succeed, but data is ephemeral and isolated to the session.",
-			"",
-			"### 4. Full Mock Mode",
-			"```bash",
-			"npm run start -- --ephemeral --seed",
-			"```",
-			"The server provisions an ephemeral database and automatically populates it with a localized, topologically-sorted fake data graph. This exposes a rich, queryable dataset immediately upon startup without manual creation steps.",
-			"",
-		].join(NEWLINE);
-		fs.writeFileSync(path.join(targetOutputRoot, "README.md"), readmeContent);
 	}
 }
 
@@ -691,6 +527,27 @@ function addServerOptions(cmd: Command): Command {
 }
 
 /**
+ * Executes a `from_openapi` subcommand action and exits with code 1 on failure.
+ *
+ * @param options - Parsed CLI options.
+ * @param targetScope - Generation target scope.
+ */
+async function executeFromOpenApiSubcommand(
+	options: FromOpenApiOptions,
+	targetScope: "to_sdk" | "to_sdk_cli" | "to_server",
+): Promise<void> {
+	try {
+		await generateFromOpenApi(options, targetScope);
+	} catch (err: unknown) {
+		console.error(
+			"❌ Generation failed:",
+			err instanceof Error ? err.message : String(err),
+		);
+		process.exit(1);
+	}
+}
+
+/**
  * Registers the `from_openapi` command group (`to_sdk_cli`, `to_sdk`, `to_server`) on the root Commander program.
  *
  * @param program - Root Commander `Command` instance.
@@ -704,168 +561,19 @@ export function registerFromOpenApiCommands(program: Command): void {
 		.description(
 			"Generate a client SDK and a corresponding command-line interface (CLI) from an OpenAPI specification.",
 		)
-		.action(async (options: ToSdkCliGenOptions, cmd: Command) => {
-			console.log("CMD.OPTS() IS:", JSON.stringify(cmd.opts()));
-			console.log("PARENT OPTS() IS:", JSON.stringify(cmd.parent?.opts()));
-			console.log(
-				"PROGRAM OPTS() IS:",
-				JSON.stringify(cmd.parent?.parent?.opts()),
-			);
-			console.log("OPTIONS IS:", JSON.stringify(options));
-			try {
-				await generateFromOpenApi(options, "to_sdk_cli");
-			} catch (err: unknown) {
-				console.error(
-					"❌ Generation failed:",
-					err instanceof Error ? err.message : String(err),
-				);
-				if (err instanceof Error && err.stack) console.error(err.stack);
-				process.exit(1);
-			}
+		.action(async (options: ToSdkCliGenOptions) => {
+			await executeFromOpenApiSubcommand(options, "to_sdk_cli");
 		});
 
 	addSdkOptions(addCommonOptions(fromOpenApi.command("to_sdk")))
 		.description("Generate Client SDK from an OpenAPI specification.")
 		.action(async (options: ToSdkCliOptions) => {
-			try {
-				await generateFromOpenApi(options, "to_sdk");
-			} catch (err: unknown) {
-				console.error(
-					"❌ Generation failed:",
-					err instanceof Error ? err.message : String(err),
-				);
-				if (err instanceof Error && err.stack) console.error(err.stack);
-				process.exit(1);
-			}
+			await executeFromOpenApiSubcommand(options, "to_sdk");
 		});
 
 	addServerOptions(addCommonOptions(fromOpenApi.command("to_server")))
 		.description("Generate Server from an OpenAPI specification.")
 		.action(async (options: ToServerCliOptions) => {
-			try {
-				await generateFromOpenApi(options, "to_server");
-			} catch (err: unknown) {
-				console.error(
-					"❌ Generation failed:",
-					err instanceof Error ? err.message : String(err),
-				);
-				if (err instanceof Error && err.stack) console.error(err.stack);
-				process.exit(1);
-			}
+			await executeFromOpenApiSubcommand(options, "to_server");
 		});
-}
-
-/**
- * Creates a `ts-morph` `FileSystemHost` polyfill when running inside the Javy WebAssembly environment.
- *
- * @returns `FileSystemHost` polyfill if `globalThis.__FsData` is defined; otherwise `undefined`.
- */
-export function createJavyFsPolyfill():
-	| import("ts-morph").FileSystemHost
-	| undefined {
-	const isJavy =
-		typeof globalThis !== "undefined" &&
-		Boolean((globalThis as { __FsData?: unknown }).__FsData);
-	if (!isJavy) {
-		return undefined;
-	}
-	return {
-		getCurrentDirectory: () => "/",
-		directoryExistsSync: () => true,
-		fileExistsSync: (p: string) => fs.existsSync(p),
-		readFileSync: (p: string) => fs.readFileSync(p, "utf8"),
-		readdirSync: () => [],
-		statSync: () => ({ isDirectory: () => false, isFile: () => true }),
-		realpathSync: (p: string) => p,
-		mkdirSync: () => {},
-		writeFileSync: (p: string, d: string) => {
-			fs.writeFileSync(p, d);
-		},
-		deleteSync: () => {},
-		moveSync: () => {},
-		copySync: () => {},
-		isCaseSensitive: () => true,
-	} as Partial<
-		import("ts-morph").FileSystemHost
-	> as import("ts-morph").FileSystemHost;
-}
-
-/**
- * Callback signature for running the CLI program with an argument vector.
- */
-export interface CliRunner {
-	/**
-	 * Parses and executes the CLI with `argv`.
-	 * @param argv - Command-line arguments.
-	 * @returns Promise resolving when execution finishes.
-	 */
-	(argv: string[]): Promise<void>;
-}
-
-/**
- * Reads JSON payload from Javy WebAssembly stdin (`Javy.IO.readSync`) when `globalThis.__FsData` is active.
- *
- * @param runFn - CLI runner callback to invoke with parsed arguments.
- */
-export function runJavyStdinIfPresent(runFn: CliRunner): void {
-	if (
-		typeof globalThis === "undefined" ||
-		!(globalThis as { __FsData?: unknown }).__FsData
-	) {
-		return;
-	}
-	const Javy = (
-		globalThis as {
-			Javy?: { IO?: { readSync: (fd: number, buffer: Uint8Array) => number } };
-		}
-	).Javy;
-	if (!Javy?.IO) {
-		return;
-	}
-	const buffer = new Uint8Array(20 * 1024 * 1024);
-	let offset = 0;
-	try {
-		while (offset < buffer.length) {
-			const chunk = buffer.subarray(offset);
-			const bytesRead = Javy.IO.readSync(0, chunk);
-			if (!bytesRead || bytesRead === 0) break;
-			offset += bytesRead;
-		}
-	} catch {
-		// Ignore EOF errors
-	}
-
-	const stdinContent = new TextDecoder().decode(buffer.subarray(0, offset));
-	if (!stdinContent) {
-		return;
-	}
-	try {
-		const parsed = JSON.parse(stdinContent) as {
-			input?: unknown;
-			args?: string[];
-		};
-		if (parsed.input) {
-			(globalThis as { __SPEC_JSON?: unknown }).__SPEC_JSON = parsed.input;
-		}
-		if (parsed.args) {
-			const actualArgs =
-				parsed.args[0] === "cdd-ts" ? parsed.args.slice(1) : parsed.args;
-			const runArgs = ["node", "cdd-ts", ...actualArgs];
-			if (typeof process !== "undefined") process.argv = runArgs;
-			console.log("RUNNING WITH ARGS:", JSON.stringify(runArgs));
-			runFn(runArgs)
-				.then(() => {
-					console.log(
-						`JAVY_FS_DUMP:${JSON.stringify(
-							(globalThis as { __FsData?: unknown }).__FsData,
-						)}`,
-					);
-				})
-				.catch((err: unknown) => {
-					console.error(err);
-				});
-		}
-	} catch (e: unknown) {
-		console.error("Failed to parse stdin:", e);
-	}
 }

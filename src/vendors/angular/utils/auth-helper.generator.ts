@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type ClassDeclaration, type Project, Scope } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 
 /** Generator/utility class `AuthHelperGenerator`. */
 export class AuthHelperGenerator {
@@ -27,8 +26,6 @@ export class AuthHelperGenerator {
 		const sourceFile = this.project.createSourceFile(filePath, "", {
 			overwrite: true,
 		});
-
-		sourceFile.addStatements(UTILITY_GENERATOR_HEADER_COMMENT);
 
 		sourceFile.addImportDeclarations([
 			{

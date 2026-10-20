@@ -3,15 +3,19 @@ import { AdminGenerator } from "@src/vendors/angular/admin/admin.generator.js";
 import { CustomValidatorsGenerator } from "@src/vendors/angular/admin/custom-validators.generator.js";
 import * as resourceDiscovery from "@src/vendors/angular/admin/resource-discovery.js";
 import { describe, expect, it, vi } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestProject,
+	createTestSpec,
+} from "../shared/helpers.js";
 import { adminFormSpec, coverageSpec } from "../shared/specs.js";
 
 describe("Admin: AdminGenerator (Orchestrator)", () => {
 	it("should call specialist generators for each suitable resource", async () => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			testCast(coverageSpec),
-			testCast({ options: { admin: true } }),
+			createTestSpec(coverageSpec),
+			createTestConfig({ options: { admin: true } }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 
@@ -56,8 +60,8 @@ describe("Admin: AdminGenerator (Orchestrator)", () => {
 	it("should generate a master routing file", async () => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			testCast(coverageSpec),
-			testCast({ options: { admin: true } }),
+			createTestSpec(coverageSpec),
+			createTestConfig({ options: { admin: true } }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 
@@ -68,8 +72,8 @@ describe("Admin: AdminGenerator (Orchestrator)", () => {
 	it("should NOT generate custom validators file if not needed", async () => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			testCast(coverageSpec),
-			testCast({ options: { admin: true } }),
+			createTestSpec(coverageSpec),
+			createTestConfig({ options: { admin: true } }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 
@@ -85,8 +89,8 @@ describe("Admin: AdminGenerator (Orchestrator)", () => {
 	it("should generate custom validators file WHEN needed", async () => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			testCast(adminFormSpec),
-			testCast({ options: { admin: true } }),
+			createTestSpec(adminFormSpec),
+			createTestConfig({ options: { admin: true } }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 
@@ -102,7 +106,7 @@ describe("Admin: AdminGenerator (Orchestrator)", () => {
 	it("should warn and exit gracefully if no resources are discovered", async () => {
 		const consoleWarnSpy = vi
 			.spyOn(console, "warn")
-			.mockImplementation(() => {});
+			.mockImplementation(() => undefined);
 		vi.spyOn(resourceDiscovery, "discoverAdminResources").mockReturnValue([]);
 
 		const project = createTestProject();
@@ -112,8 +116,8 @@ describe("Admin: AdminGenerator (Orchestrator)", () => {
 			paths: {},
 		};
 		const parser = new SwaggerParser(
-			testCast(validEmptySpec),
-			testCast({ options: {} }),
+			createTestSpec(validEmptySpec),
+			createTestConfig({ options: {} }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 
@@ -130,17 +134,22 @@ describe("Admin: AdminGenerator (Orchestrator)", () => {
 		const fsHost = project.getFileSystem();
 		const dirSpy = vi
 			.spyOn(fsHost, "directoryExistsSync")
-			.mockReturnValue(testCast(testCast<Promise<boolean>>(false)));
+			.mockReturnValue(false);
 		const mkdirSpy = vi.spyOn(fsHost, "mkdirSync");
 
 		const parser = new SwaggerParser(
-			testCast(coverageSpec),
-			testCast({ options: { admin: true } }),
+			createTestSpec(coverageSpec),
+			createTestConfig({ options: { admin: true } }),
 		);
 		const adminGen = new AdminGenerator(parser, project);
 		await adminGen.generate("/out");
 
 		expect(dirSpy).toHaveBeenCalled();
 		expect(mkdirSpy).toHaveBeenCalledWith("/out/admin");
+
+		dirSpy.mockReturnValue(true);
+		mkdirSpy.mockClear();
+		await adminGen.generate("/out");
+		expect(mkdirSpy).not.toHaveBeenCalledWith("/out/admin");
 	});
 });

@@ -4,7 +4,6 @@ import { AbstractClientGenerator } from "../../src/core/generator.js";
 import type { GeneratorConfig } from "../../src/core/types/config.js";
 import type { SwaggerSpec } from "../../src/core/types/openapi.js";
 import { SwaggerParser } from "../../src/openapi/parse.js";
-import { testCast } from "../shared/helpers.js";
 
 class ConcreteClientGenerator extends AbstractClientGenerator {
 	generate(
@@ -89,11 +88,9 @@ describe("AbstractClientGenerator", () => {
 			project.getFileSystem().fileExistsSync("/out/openapi.snapshot.json"),
 		).toBe(true);
 
-		const groupsJson = testCast(
-			JSON.parse(
-				project.getSourceFileOrThrow("/out/groups.json").getFullText(),
-			),
-		);
+		const groupsJson = JSON.parse(
+			project.getSourceFileOrThrow("/out/groups.json").getFullText(),
+		) as string[];
 		expect(groupsJson).toEqual(["UserAccounts", "Orders", "Default"]);
 	});
 });

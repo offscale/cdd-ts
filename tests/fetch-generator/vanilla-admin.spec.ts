@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { runGenerator, testCast } from "../shared/helpers.js";
+import { createTestOptions, runGenerator } from "../shared/helpers.js";
 import { coverageSpec } from "../shared/specs.js";
 
 describe("Vanilla Admin UI Generation (Fetch)", () => {
 	it("should generate vanilla web components for admin UI", async () => {
 		const project = await runGenerator(coverageSpec, {
-			options: testCast({
+			options: createTestOptions({
 				implementation: "fetch",
 				admin: true,
 				generateServices: true,

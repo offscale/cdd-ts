@@ -3,7 +3,7 @@ import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it, vi } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 const specEdgeTests = {
 	openapi: "3.0.0",
@@ -77,7 +77,7 @@ describe("Emitter: ServiceMethodGenerator (Edge Cases)", () => {
 			output: "/out",
 			options: { dateType: "Date", enumStyle: "enum", ...configOverrides },
 		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		const methodGen = new ServiceMethodGenerator(config, parser);
 		const sourceFile = project.createSourceFile("/out/tmp.service.ts");
 		const serviceClass = sourceFile.addClass({ name: "TmpService" });
@@ -105,7 +105,9 @@ describe("Emitter: ServiceMethodGenerator (Edge Cases)", () => {
 
 	it("should warn and skip generation if operation has no methodName", () => {
 		const { methodGen, serviceClass } = createTestEnvironment(specEdgeTests);
-		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const warnSpy = vi
+			.spyOn(console, "warn")
+			.mockImplementation(() => undefined);
 		const operationWithoutName: PathInfo = {
 			path: "/test",
 			method: "GET",
@@ -129,11 +131,12 @@ describe("Emitter: ServiceMethodGenerator (Edge Cases)", () => {
 		const { methodGen, serviceClass, parser } =
 			createTestEnvironment(specEdgeTests);
 
-		const op = parser.operations.find((o) => o.operationId === "getPublic")!;
+		const op = parser.operations.find((o) => o.operationId === "getPublic");
+		if (!op) throw new Error("Expected getPublic");
 		op.methodName = "getPublic";
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass.getMethodOrThrow("getPublic").getBodyText()!;
+		const body = serviceClass.getMethodOrThrow("getPublic").getBodyText() ?? "";
 		// Effective security is empty, so no token is added
 		expect(body).not.toContain("SECURITY_CONTEXT_TOKEN");
 	});
@@ -144,13 +147,13 @@ describe("Emitter: ServiceMethodGenerator (Edge Cases)", () => {
 
 		const op = parser.operations.find(
 			(o) => o.operationId === "getOauthProtected",
-		)!;
+		);
+		if (!op) throw new Error("Expected getOauthProtected");
 		op.methodName = "getOauthProtected";
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass
-			.getMethodOrThrow("getOauthProtected")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getOauthProtected").getBodyText() ?? "";
 		expect(body).toContain(
 			'.set(SECURITY_CONTEXT_TOKEN, [{"OAuth2":["read:admin"]}])',
 		);
@@ -165,9 +168,9 @@ describe("Emitter: ServiceMethodGenerator (Edge Cases)", () => {
 			servers: [{ url: "https://custom.api.com" }],
 		};
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass
-			.getMethodOrThrow("getWithServerOverride")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getWithServerOverride").getBodyText() ??
+			"";
 		expect(body).toContain("const operationServers =");
 		expect(body).toContain("resolveServerUrl(operationServers");
 		expect(body).not.toContain("const basePath = this.basePath;");
@@ -176,11 +179,13 @@ describe("Emitter: ServiceMethodGenerator (Edge Cases)", () => {
 	it("should generate generic request call for custom HTTP methods (COPY)", () => {
 		const { methodGen, serviceClass, parser } =
 			createTestEnvironment(specEdgeTests);
-		const op = parser.operations.find((o) => o.method === "COPY")!;
+		const op = parser.operations.find((o) => o.method === "COPY");
+		if (!op) throw new Error("Expected COPY op");
 		op.methodName = "copyResource";
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass.getMethodOrThrow("copyResource").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("copyResource").getBodyText() ?? "";
 		expect(body).toContain(
 			`return this.http.request<string | number | boolean | object | undefined | null>('COPY', url, requestOptions as object);`,
 		);
@@ -199,7 +204,8 @@ describe("Emitter: ServiceMethodGenerator (Edge Cases)", () => {
 		};
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass.getMethodOrThrow("querySearch").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("querySearch").getBodyText() ?? "";
 		expect(body).toContain(
 			`return this.http.request('QUERY', url, { ...requestOptions, body: body } as Record<string, string | number | boolean | object | undefined | null>)`,
 		);
@@ -217,7 +223,8 @@ describe("Emitter: ServiceMethodGenerator (Edge Cases)", () => {
 		};
 
 		methodGen.addServiceMethod(serviceClass, op);
-		const body = serviceClass.getMethodOrThrow("cookieTest").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("cookieTest").getBodyText() ?? "";
 		expect(body).not.toContain("console.warn");
 		expect(body).toContain("headers = headers.set('Cookie'");
 	});

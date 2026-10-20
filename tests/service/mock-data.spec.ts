@@ -2,13 +2,13 @@ import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { MockDataGenerator } from "@src/vendors/angular/test/mock-data.generator.js";
 import { beforeAll, describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestOptions, createTestSpec } from "../shared/helpers.js";
 
 // Minimal mock config required by SwaggerParser
 const mockConfig: GeneratorConfig = {
 	input: "",
 	output: "",
-	options: testCast({}),
+	options: createTestOptions({}),
 };
 
 // A comprehensive in-memory spec to test various schema scenarios
@@ -70,6 +70,18 @@ const dummySpec = {
 					{ type: "object", properties: { meow: { type: "boolean" } } },
 				],
 			},
+
+			// 7. Reference and boundary schemas
+			Base: {
+				type: "object",
+				properties: {
+					id: { type: "string" },
+				},
+			},
+			JustARef: { $ref: "#/components/schemas/Base" },
+			RefToNothing: { $ref: "#/components/schemas/NonExistent" },
+			BooleanSchema: { type: "boolean" },
+			ArrayNoItems: { type: "array" },
 		},
 	},
 };
@@ -81,11 +93,11 @@ describe("MockDataGenerator", () => {
 	beforeAll(() => {
 		// Initialize parser with the dummy spec
 		// We use a fake map/URI because we aren't loading from disk
-		const cache = new Map([["file://test", testCast(dummySpec)]]);
+		const cache = new Map([["file://test", createTestSpec(dummySpec)]]);
 		parser = new SwaggerParser(
-			testCast(dummySpec),
+			createTestSpec(dummySpec),
 			mockConfig,
-			testCast(cache),
+			cache,
 			"file://test",
 		);
 		generator = new MockDataGenerator(parser);
@@ -93,27 +105,27 @@ describe("MockDataGenerator", () => {
 
 	describe("Primitives", () => {
 		it("should generate a string", () => {
-			const result = testCast(JSON.parse(generator.generate("SimpleString")));
+			const result: unknown = JSON.parse(generator.generate("SimpleString"));
 
 			expect(typeof result).toBe("string");
 		});
 
 		it("should respect string formats (email)", () => {
-			const result = testCast(
-				JSON.parse(generator.generate("StringWithFormat")),
+			const result: unknown = JSON.parse(
+				generator.generate("StringWithFormat"),
 			);
 
 			expect(result).toBe("test@example.com"); // Match the hardcoded value in your generator
 		});
 
 		it("should use default values for booleans", () => {
-			const result = testCast(JSON.parse(generator.generate("SimpleBoolean")));
+			const result: unknown = JSON.parse(generator.generate("SimpleBoolean"));
 
 			expect(result).toBe(true);
 		});
 
 		it("should generate numbers respecting constraints or defaults", () => {
-			const result = testCast(JSON.parse(generator.generate("SimpleNumber")));
+			const result: unknown = JSON.parse(generator.generate("SimpleNumber"));
 
 			expect(result).toBeTypeOf("number");
 			// Your generator uses 123 for integers by default, ignoring min/max unless defaults exist
@@ -124,7 +136,7 @@ describe("MockDataGenerator", () => {
 
 	describe("Objects & References", () => {
 		it("should generate an object with properties", () => {
-			const result = testCast(JSON.parse(generator.generate("User")));
+			const result: unknown = JSON.parse(generator.generate("User"));
 
 			expect(result).toHaveProperty("id");
 
@@ -134,7 +146,7 @@ describe("MockDataGenerator", () => {
 		});
 
 		it("should handle arrays of primitives", () => {
-			const result = testCast(JSON.parse(generator.generate("StringArray")));
+			const result = JSON.parse(generator.generate("StringArray")) as unknown[];
 
 			expect(Array.isArray(result)).toBe(true);
 
@@ -144,7 +156,7 @@ describe("MockDataGenerator", () => {
 		});
 
 		it("should handle arrays of objects (via Ref)", () => {
-			const result = testCast(JSON.parse(generator.generate("ObjectArray")));
+			const result = JSON.parse(generator.generate("ObjectArray")) as unknown[];
 
 			expect(Array.isArray(result)).toBe(true);
 
@@ -154,13 +166,13 @@ describe("MockDataGenerator", () => {
 
 	describe("Advanced Schema Features", () => {
 		it("should use the first value for Enums", () => {
-			const result = testCast(JSON.parse(generator.generate("StatusEnum")));
+			const result: unknown = JSON.parse(generator.generate("StatusEnum"));
 
 			expect(result).toBe("active");
 		});
 
 		it("should merge properties for allOf", () => {
-			const result = testCast(JSON.parse(generator.generate("AdminUser")));
+			const result: unknown = JSON.parse(generator.generate("AdminUser"));
 			// From User
 
 			expect(result).toHaveProperty("name");
@@ -170,7 +182,7 @@ describe("MockDataGenerator", () => {
 		});
 
 		it("should pick the first option for oneOf", () => {
-			const result = testCast(JSON.parse(generator.generate("Pet")));
+			const result: unknown = JSON.parse(generator.generate("Pet"));
 
 			expect(result).toHaveProperty("bark");
 
@@ -183,25 +195,25 @@ describe("MockDataGenerator", () => {
 		// ensuring robust fallback when schemas are broken or specific types are requested
 
 		it('should handle "JustARef" override', () => {
-			const result = testCast(JSON.parse(generator.generate("JustARef")));
+			const result: unknown = JSON.parse(generator.generate("JustARef"));
 
 			expect(result).toEqual({ id: "string-value" });
 		});
 
 		it('should handle "RefToNothing" override', () => {
-			const result = testCast(JSON.parse(generator.generate("RefToNothing")));
+			const result: unknown = JSON.parse(generator.generate("RefToNothing"));
 
 			expect(result).toEqual({});
 		});
 
 		it('should handle "BooleanSchema" override', () => {
-			const result = testCast(JSON.parse(generator.generate("BooleanSchema")));
+			const result: unknown = JSON.parse(generator.generate("BooleanSchema"));
 
 			expect(result).toBe(true);
 		});
 
 		it('should handle "ArrayNoItems" override', () => {
-			const result = testCast(JSON.parse(generator.generate("ArrayNoItems")));
+			const result: unknown = JSON.parse(generator.generate("ArrayNoItems"));
 
 			expect(result).toEqual([]);
 		});
@@ -209,8 +221,8 @@ describe("MockDataGenerator", () => {
 
 	describe("Edge Cases", () => {
 		it("should return empty object for string | number | boolean | object | undefined | null schema", () => {
-			const result = testCast(
-				JSON.parse(generator.generate("NonExistentSchema")),
+			const result: unknown = JSON.parse(
+				generator.generate("NonExistentSchema"),
 			);
 
 			expect(result).toEqual({});

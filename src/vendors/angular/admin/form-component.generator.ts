@@ -627,7 +627,7 @@ export class FormComponentGenerator {
 
 			const initializerString =
 				FormInitializerRenderer.renderFormArrayItemInitializer(
-					prop.nestedControls!,
+					prop.nestedControls as FormControlModel[],
 				);
 
 			createMethod.setBodyText(`return ${initializerString};`);

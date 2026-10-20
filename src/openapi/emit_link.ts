@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 import type {
 	LinkObject,
 	PathInfo,
@@ -151,8 +150,6 @@ export class LinkGenerator {
 		}
 
 		sourceFile.formatText();
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 	}
 
 	private decodePointerToken(token: string): string {
@@ -193,7 +190,7 @@ export class LinkGenerator {
 			tokens.length >= 4 && tokens[2] === "additionalOperations";
 		const methodIndex = isAdditional ? 3 : 2;
 
-		const method = tokens[methodIndex];
+		const method = tokens[methodIndex] as string;
 
 		const pool =
 			root === "webhooks" ? this.parser.webhooks : this.parser.operations;

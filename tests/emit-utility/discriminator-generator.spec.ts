@@ -2,10 +2,15 @@ import { DiscriminatorGenerator } from "@src/classes/emit_discriminator.js";
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
 
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestProject,
+	createTestSchema,
+	createTestSpec,
+} from "../shared/helpers.js";
 
 const oas3Spec: SwaggerSpec = {
 	openapi: "3.0.0",
@@ -48,7 +53,7 @@ const oas3Spec: SwaggerSpec = {
 	},
 };
 
-const swagger2Spec: SwaggerSpec = testCast({
+const swagger2Spec: SwaggerSpec = createTestSpec({
 	swagger: "2.0",
 	info: { title: "Legacy Test", version: "1.0" },
 	paths: {},
@@ -69,7 +74,10 @@ const swagger2Spec: SwaggerSpec = testCast({
 describe("Emitter: DiscriminatorGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const parser = new SwaggerParser(spec, config);
 
 		if (spec.components?.schemas) {
@@ -87,22 +95,8 @@ describe("Emitter: DiscriminatorGenerator", () => {
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/discriminators.ts");
-		const code = sourceFile.getText();
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/discriminators.ts");
 
 	it("should generate registry for OAS3 explicit discriminators", () => {
 		const project = runGenerator(oas3Spec);
@@ -111,17 +105,17 @@ describe("Emitter: DiscriminatorGenerator", () => {
 
 		expect(API_DISCRIMINATORS).toBeDefined();
 
-		expect(API_DISCRIMINATORS.Pet).toBeDefined();
+		expect(API_DISCRIMINATORS?.Pet).toBeDefined();
 
-		expect(API_DISCRIMINATORS.Pet.propertyName).toBe("petType");
+		expect(API_DISCRIMINATORS?.Pet?.propertyName).toBe("petType");
 
-		const mapping = API_DISCRIMINATORS.Pet.mapping;
+		const mapping = API_DISCRIMINATORS?.Pet?.mapping;
 
 		expect(mapping).toBeDefined();
 
-		expect(mapping.cat_obj).toBe("Cat");
+		expect(mapping?.cat_obj).toBe("Cat");
 
-		expect(mapping.dog_obj).toBe("Dog");
+		expect(mapping?.dog_obj).toBe("Dog");
 	});
 
 	it("should generate registry for Swagger 2 string discriminators", () => {
@@ -131,11 +125,11 @@ describe("Emitter: DiscriminatorGenerator", () => {
 
 		expect(API_DISCRIMINATORS).toBeDefined();
 
-		expect(API_DISCRIMINATORS.Animal).toBeDefined();
+		expect(API_DISCRIMINATORS?.Animal).toBeDefined();
 
-		expect(API_DISCRIMINATORS.Animal.propertyName).toBe("kind");
+		expect(API_DISCRIMINATORS?.Animal?.propertyName).toBe("kind");
 
-		expect(API_DISCRIMINATORS.Animal.mapping).toBeUndefined();
+		expect(API_DISCRIMINATORS?.Animal?.mapping).toBeUndefined();
 	});
 
 	it("should produce valid module for specs with no discriminators", () => {
@@ -182,18 +176,24 @@ describe("Emitter: DiscriminatorGenerator", () => {
 		};
 
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const parser = new SwaggerParser(uriSpec, config);
 
 		const externalDef = uriSpec.components?.schemas?.ExternalModel;
 		const contextDef = uriSpec.components?.schemas?.Context;
 
 		parser.schemas.push({
-			name: testCast("ExternalModel"),
-			definition: testCast(externalDef),
+			name: "ExternalModel",
+			definition: createTestSchema(externalDef),
 		});
 
-		parser.schemas.push({ name: "Context", definition: testCast(contextDef) });
+		parser.schemas.push({
+			name: "Context",
+			definition: createTestSchema(contextDef),
+		});
 
 		vi.spyOn(parser, "resolveReference").mockImplementation((ref) => {
 			if (ref === "https://schemas.example.com/models/ExternalModel")
@@ -205,17 +205,19 @@ describe("Emitter: DiscriminatorGenerator", () => {
 
 		const { API_DISCRIMINATORS } = compileGeneratedFile(project);
 
-		expect(API_DISCRIMINATORS.Context.mapping.external).toBe("ExternalModel");
+		expect(API_DISCRIMINATORS?.Context?.mapping?.external).toBe(
+			"ExternalModel",
+		);
 	});
 
 	it("should skip if definition is boolean or missing", () => {
-		const spec: SwaggerSpec = {
+		const spec: SwaggerSpec = createTestSpec({
 			openapi: "3.0.0",
 			info: { title: "Boolean Test", version: "1.0" },
 			paths: {},
 			components: {
 				schemas: {
-					BooleanDef: testCast(true),
+					BooleanDef: true,
 					NormalDef: {
 						discriminator: {
 							propertyName: "type",
@@ -226,12 +228,12 @@ describe("Emitter: DiscriminatorGenerator", () => {
 					UnknownPet: { type: "object" },
 				},
 			},
-		};
+		});
 		const project = runGenerator(spec);
 		const { API_DISCRIMINATORS } = compileGeneratedFile(project);
 		expect(API_DISCRIMINATORS).toBeDefined();
-		expect(API_DISCRIMINATORS.BooleanDef).toBeUndefined();
-		expect(API_DISCRIMINATORS.NormalDef).toBeDefined();
+		expect(API_DISCRIMINATORS?.BooleanDef).toBeUndefined();
+		expect(API_DISCRIMINATORS?.NormalDef).toBeDefined();
 	});
 
 	it("should skip if mapping is empty", () => {
@@ -254,12 +256,12 @@ describe("Emitter: DiscriminatorGenerator", () => {
 		};
 		const project = runGenerator(spec);
 		const { API_DISCRIMINATORS } = compileGeneratedFile(project);
-		expect(API_DISCRIMINATORS.EmptyMapDef.propertyName).toBe("type");
-		expect(API_DISCRIMINATORS.EmptyMapDef.mapping).toBeUndefined();
+		expect(API_DISCRIMINATORS?.EmptyMapDef?.propertyName).toBe("type");
+		expect(API_DISCRIMINATORS?.EmptyMapDef?.mapping).toBeUndefined();
 	});
 
 	it("should return empty string if candidate is empty", () => {
-		const fallbackSpec: SwaggerSpec = testCast({
+		const fallbackSpec: SwaggerSpec = createTestSpec({
 			openapi: "3.2.0",
 			info: { title: "Fallback", version: "1" },
 			paths: {},
@@ -283,11 +285,11 @@ describe("Emitter: DiscriminatorGenerator", () => {
 
 		const project = runGenerator(fallbackSpec);
 		const { API_DISCRIMINATORS } = compileGeneratedFile(project);
-		expect(API_DISCRIMINATORS.Item.mapping).toBeUndefined();
+		expect(API_DISCRIMINATORS?.Item?.mapping).toBeUndefined();
 	});
 
 	it("should use pascalCase fallback for unresolvable references", () => {
-		const fallbackSpec: SwaggerSpec = testCast({
+		const fallbackSpec: SwaggerSpec = createTestSpec({
 			openapi: "3.2.0",
 			info: { title: "Fallback", version: "1" },
 			paths: {},
@@ -313,11 +315,11 @@ describe("Emitter: DiscriminatorGenerator", () => {
 
 		const { API_DISCRIMINATORS } = compileGeneratedFile(project);
 
-		expect(API_DISCRIMINATORS.Item.mapping.remote).toBe("WeirdName");
+		expect(API_DISCRIMINATORS?.Item?.mapping?.remote).toBe("WeirdName");
 	});
 
 	it("should skip mapping entries when resolved name is empty", () => {
-		const spec: SwaggerSpec = testCast({
+		const spec: SwaggerSpec = createTestSpec({
 			openapi: "3.0.0",
 			info: { title: "Empty Mapping", version: "1" },
 			paths: {},
@@ -346,11 +348,11 @@ describe("Emitter: DiscriminatorGenerator", () => {
 
 		const { API_DISCRIMINATORS } = compileGeneratedFile(project);
 
-		expect(API_DISCRIMINATORS.Thing.mapping).toBeUndefined();
+		expect(API_DISCRIMINATORS?.Thing?.mapping).toBeUndefined();
 	});
 
 	it("should throw for discriminators without a propertyName", () => {
-		const spec: SwaggerSpec = testCast({
+		const spec: SwaggerSpec = createTestSpec({
 			openapi: "3.0.0",
 			info: { title: "No Property", version: "1" },
 			paths: {},
@@ -366,7 +368,7 @@ describe("Emitter: DiscriminatorGenerator", () => {
 	});
 
 	it("should fall back when resolved schema is not in parser.schemas", () => {
-		const spec: SwaggerSpec = testCast({
+		const spec: SwaggerSpec = createTestSpec({
 			openapi: "3.0.0",
 			info: { title: "Fallback", version: "1" },
 			paths: {},
@@ -389,18 +391,21 @@ describe("Emitter: DiscriminatorGenerator", () => {
 		});
 
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const parser = new SwaggerParser(spec, config);
 
-		vi.spyOn(parser, "resolveReference").mockReturnValue(
-			testCast({ type: "object" }),
-		);
+		vi.spyOn(parser, "resolveReference").mockReturnValue({ type: "object" });
 
 		new DiscriminatorGenerator(parser, project).generate("/out");
 
 		const { API_DISCRIMINATORS } = compileGeneratedFile(project);
 
-		expect(API_DISCRIMINATORS.Context.mapping.external).toBe("ExternalModel");
+		expect(API_DISCRIMINATORS?.Context?.mapping?.external).toBe(
+			"ExternalModel",
+		);
 	});
 
 	it("should include defaultMapping in registry when present", () => {
@@ -431,8 +436,8 @@ describe("Emitter: DiscriminatorGenerator", () => {
 
 		const { API_DISCRIMINATORS } = compileGeneratedFile(project);
 
-		expect(API_DISCRIMINATORS.GenericPet).toBeDefined();
+		expect(API_DISCRIMINATORS?.GenericPet).toBeDefined();
 
-		expect(API_DISCRIMINATORS.GenericPet.defaultMapping).toBe("UnknownPet");
+		expect(API_DISCRIMINATORS?.GenericPet?.defaultMapping).toBe("UnknownPet");
 	});
 });

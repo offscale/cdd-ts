@@ -168,7 +168,12 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 		}
 
 		const hasXmlResponse = operations.some((op) =>
-			Object.values(op.responses!).some((r) => r.content?.["application/xml"]),
+			Object.values(
+				op.responses as Record<
+					string,
+					import("../../../core/types/index.js").SwaggerResponse
+				>,
+			).some((r) => r.content?.["application/xml"]),
 		);
 
 		if (hasXmlResponse) {
@@ -207,7 +212,12 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 		for (const op of operations) {
 			hasDecoding =
 				hasDecoding ||
-				Object.values(op.responses!).some((r) => {
+				Object.values(
+					op.responses as Record<
+						string,
+						import("../../../core/types/index.js").SwaggerResponse
+					>,
+				).some((r) => {
 					if (!r.content) return false;
 
 					return Object.values(r.content).some((media) => {
@@ -228,9 +238,12 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 
 			if (op.parameters && op.parameters.length > 0) {
 				const hasParamEncoding = op.parameters.some((param) => {
+					const firstContentKey = param.content
+						? Object.keys(param.content)[0]
+						: undefined;
 					const contentSchema =
-						param.content && Object.keys(param.content).length > 0
-							? param.content[Object.keys(param.content)[0]!]?.schema
+						param.content && firstContentKey
+							? param.content[firstContentKey]?.schema
 							: undefined;
 
 					const schema = param.schema ?? contentSchema;
@@ -294,7 +307,12 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 		const modelImports = new Set<string>();
 
 		for (const op of operations) {
-			for (const resp of Object.values(op.responses!)) {
+			for (const resp of Object.values(
+				op.responses as Record<
+					string,
+					import("../../../core/types/index.js").SwaggerResponse
+				>,
+			)) {
 				if (resp.content) {
 					Object.values(resp.content).forEach((media) => {
 						const schema = media?.schema ?? media?.itemSchema;
@@ -344,10 +362,12 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 			(m: string) => /^[A-Z]/.test(m) && !["Date", "Blob", "File"].includes(m),
 		);
 
-		sourceFile.addImportDeclaration({
-			moduleSpecifier: "../models",
-			namedImports: validModels,
-		});
+		if (validModels.length > 0) {
+			sourceFile.addImportDeclaration({
+				moduleSpecifier: "../models",
+				namedImports: validModels,
+			});
+		}
 
 		sourceFile.addImportDeclaration({
 			moduleSpecifier: "../tokens",

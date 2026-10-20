@@ -7,18 +7,71 @@ import type { ModuleKind, ScriptTarget } from "ts-morph";
 import type { SwaggerSpec } from "./openapi.js";
 
 /** Supported target UI/client frameworks. */
-export type TargetFramework =
-	| "angular"
-	| "react"
-	| "vue"
-	| "vanilla"
-	| "Vanilla JS";
+export type TargetFramework = "angular" | "react" | "vue" | "vanilla";
 
 /** Supported HTTP transport implementations. */
 export type TargetImplementation = "angular" | "fetch" | "axios" | "node";
 
 /** Supported server route frameworks. */
 export type TargetServerFramework = "express";
+
+/**
+ * Injectable logger interface for controlling diagnostic output during code generation and parsing.
+ */
+export interface GeneratorLogger {
+	/**
+	 * Logs an informational progress message.
+	 * @param message - Message text.
+	 */
+	info?(message: string): void;
+	/**
+	 * Logs a warning message.
+	 * @param message - Warning message text.
+	 * @param args - Optional additional context arguments.
+	 */
+	warn?(message: string, ...args: unknown[]): void;
+	/**
+	 * Logs an error message.
+	 * @param message - Error message text.
+	 * @param args - Optional additional context arguments.
+	 */
+	error?(message: string, ...args: unknown[]): void;
+}
+
+/**
+ * Resolves a complete `GeneratorLogger` from an optional `GeneratorConfig`,
+ * falling back to standard `console.log`, `console.warn`, and `console.error` when no custom logger is provided.
+ *
+ * @param config - Optional generator configuration.
+ * @returns Resolved logger with guaranteed `info`, `warn`, and `error` methods.
+ */
+export function resolveLogger(
+	config?: GeneratorConfig,
+): Required<GeneratorLogger> {
+	return {
+		info: (message: string) => {
+			if (config?.logger?.info) {
+				config.logger.info(message);
+			} else {
+				console.log(message);
+			}
+		},
+		warn: (message: string, ...args: unknown[]) => {
+			if (config?.logger?.warn) {
+				config.logger.warn(message, ...args);
+			} else {
+				console.warn(message, ...args);
+			}
+		},
+		error: (message: string, ...args: unknown[]) => {
+			if (config?.logger?.error) {
+				config.logger.error(message, ...args);
+			} else {
+				console.error(message, ...args);
+			}
+		},
+	};
+}
 
 /** Options that customize the output of the generated code. */
 export interface GeneratorConfigOptions {
@@ -76,7 +129,7 @@ export interface GeneratorConfigOptions {
 	 * @param operationId - The OpenAPI operationId.
 	 * @returns The customized method name.
 	 */
-	customizeMethodName?(operationId: string): string;
+	customizeMethodName?(operationId: string): string | undefined;
 	/**
 	 * The ORM implementation to generate entities for or parse entities from.
 	 * - 'typeorm': Uses TypeORM decorators and patterns.
@@ -123,4 +176,6 @@ export interface GeneratorConfig {
 	options: GeneratorConfigOptions;
 	/** ts-morph compiler options for the generated project. */
 	compilerOptions?: GeneratorCompilerOptions;
+	/** Optional injectable logger for diagnostic output. */
+	logger?: GeneratorLogger;
 }

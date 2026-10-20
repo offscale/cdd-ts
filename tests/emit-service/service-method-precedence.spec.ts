@@ -6,7 +6,7 @@ import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestOperation, createTestSpec } from "../shared/helpers.js";
 
 describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 	const createTestEnv = () => {
@@ -32,7 +32,7 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 		};
 
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 
 		// Pre-generate types so the generator recognizes "SpecificModel" as a type name
 		new TypeGenerator(parser, project, config).generate("/out");
@@ -45,7 +45,7 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 	};
 
 	it("should prioritize specific 200 response over generic 2XX response", () => {
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			method: "GET",
 			path: "/test",
 			methodName: "testSpecific",
@@ -75,14 +75,14 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 		const returnType = serviceClass
 			.getMethodOrThrow("testSpecific")
 			.getOverloads()[0]
-			.getReturnType()
+			?.getReturnType()
 			.getText();
 		expect(returnType).toContain("SpecificModel");
 		expect(returnType).not.toContain("GenericModel");
 	});
 
 	it("should fallback to 2XX response if no specific status code exists", () => {
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			method: "GET",
 			path: "/test",
 			methodName: "testRange",
@@ -105,13 +105,13 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 		const returnType = serviceClass
 			.getMethodOrThrow("testRange")
 			.getOverloads()[0]
-			.getReturnType()
+			?.getReturnType()
 			.getText();
 		expect(returnType).toContain("GenericModel");
 	});
 
 	it("should fallback to default response if no success codes (specific or range) exist", () => {
-		const op: PathInfo = testCast({
+		const op: PathInfo = createTestOperation({
 			method: "GET",
 			path: "/test",
 			methodName: "testDefault",
@@ -133,7 +133,7 @@ describe("Emitter: ServiceMethodGenerator (Response Precedence)", () => {
 		const returnType = serviceClass
 			.getMethodOrThrow("testDefault")
 			.getOverloads()[0]
-			.getReturnType()
+			?.getReturnType()
 			.getText();
 		// Corrected Expectation: We expect the Alias Name 'DefaultModel' because it was defined via $ref.
 		expect(returnType).toContain("DefaultModel");

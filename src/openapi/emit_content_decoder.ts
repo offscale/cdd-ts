@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, Scope } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 
 /**
  * Generates the `utils/content-decoder.ts` utility file.
@@ -31,8 +30,6 @@ export class ContentDecoderGenerator {
 		const sourceFile = this.project.createSourceFile(filePath, "", {
 			overwrite: true,
 		});
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 
 		// Add XmlParser import for XML decoding support
 

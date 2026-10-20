@@ -32,6 +32,23 @@ const RESERVED_HEADER_NAMES = new Set([
 	"authorization",
 ]);
 
+const PRIMITIVE_REF_MAP: Record<string, SwaggerDefinition> = {
+	String: { type: "string" },
+	Number: { type: "number" },
+	Boolean: { type: "boolean" },
+	Object: { type: "object" },
+};
+
+const PRIMITIVE_SCHEMA_TYPES = new Set([
+	"string",
+	"number",
+	"integer",
+	"boolean",
+	"object",
+	"array",
+	"null",
+]);
+
 /** Parsed `@querystring` JSDoc tag metadata. */
 export interface QuerystringMeta {
 	/** Parameter name. */
@@ -120,18 +137,18 @@ export function addParam(
 		paramMap.set(key, param);
 		return;
 	}
-	if (param.required && !existing.required) {
-		existing.required = true;
-	}
-	if (param.description && !existing.description) {
-		existing.description = param.description;
-	}
-	if (param.contentType && !existing.contentType) {
-		existing.contentType = param.contentType;
-	}
-	if (param.encoding && !existing.encoding) {
-		existing.encoding = param.encoding;
-	}
+	if (param.required) existing.required = true;
+}
+
+function getRawTagPayload(tag: JSDocTag): string {
+	const [firstLine] = tag.getText().split(String.fromCharCode(10));
+	const bs = String.fromCharCode(92);
+	return (firstLine as string)
+		.replace(
+			new RegExp(`^${bs}s*${bs}*?${bs}s*@${tag.getTagName()}${bs}s*`, "i"),
+			"",
+		)
+		.trim();
 }
 
 /**
@@ -141,24 +158,19 @@ export function addParam(
  * @returns Extracted operation JSDoc metadata.
  */
 export function extractDocMeta(node: Node): ExtractedOperationDocMeta {
+	const nl = String.fromCharCode(10);
 	const docs = getJsDocs(node);
-
-	if (!docs.length) return {};
-
 	const primary = docs[0];
+	if (!primary) return {};
 
-	const rawComment = normalizeDocComment(primary.getComment());
-
+	const rawComment = primary.getDescription().trim();
 	const lines = rawComment
-
-		.split(/\r?\n/)
-
+		.split(nl)
 		.map((line) => line.trim())
 		.filter(Boolean);
 
-	const summary = lines.length > 0 ? lines[0] : undefined;
-
-	const description = lines.length > 1 ? lines.slice(1).join("\n") : undefined;
+	const summary = lines[0];
+	const description = lines.length > 1 ? lines.slice(1).join(nl) : undefined;
 
 	const tags = primary.getTags();
 	const deprecated =
@@ -166,205 +178,99 @@ export function extractDocMeta(node: Node): ExtractedOperationDocMeta {
 		rawComment.toLowerCase().includes("@deprecated");
 
 	const parsedTags = tags
-
 		.filter((tag) => tag.getTagName() === "tag" || tag.getTagName() === "tags")
-
-		.map((tag) => parseTagInput(normalizeDocComment(tag.getComment())))
+		.map((tag) => parseTagInput(getRawTagPayload(tag)))
 		.reduce(
 			(acc, next) => {
 				acc.names.push(...next.names);
-
 				acc.objects.push(...next.objects);
-
 				return acc;
 			},
 			{ names: [] as string[], objects: [] as TagObject[] },
 		);
 
 	const tagNames = Array.from(new Set(parsedTags.names));
-
 	const tagObjects = parsedTags.objects;
 
 	const externalDocs = extractExternalDocs(tags);
-
 	const servers = extractServers(tags);
-
 	const security = extractSecurity(tags);
-
 	const querystring = extractQuerystringParam(tags);
 
 	const extensions: Record<string, OpenApiValue> = {};
-
 	const responseHints: ResponseDocMeta[] = [];
-
 	const responseSummaries: Record<string, string> = {};
-
 	const paramDocs: Record<string, string> = {};
-
 	const paramExamples: Record<string, OpenApiValue> = {};
-
 	const paramSchemas: Record<string, SwaggerDefinition | boolean> = {};
-
 	const requestExamples: Record<string, OpenApiValue> = {};
-
 	const responseExamples: Record<string, Record<string, OpenApiValue>> = {};
 	let operationId: string | undefined;
 
 	tags.forEach((tag) => {
 		const tagName = tag.getTagName();
 
+		if (tagName === "param") {
+			const paramTag = tag as JSDocTag & { getName: () => string };
+			const desc = (paramTag.getCommentText() ?? "").trim();
+			paramDocs[paramTag.getName()] = desc;
+			return;
+		}
+
+		const rawTagText = getRawTagPayload(tag);
+
+		if (tagName.startsWith("x-")) {
+			extensions[tagName] = rawTagText ? parseDocValue(rawTagText) : true;
+			return;
+		}
+
 		if (tagName === "operationId") {
-			const raw = normalizeDocComment(tag.getComment()).trim();
-
-			if (raw) {
-				const [value] = raw.split(/\s+/).filter(Boolean);
-
-				if (value) operationId = value;
-			}
-
+			operationId = rawTagText.split(/\s+/)[0];
 			return;
 		}
 
 		if (tagName === "response") {
-			const raw = normalizeDocComment(tag.getComment()).trim();
-
-			const parsed = parseResponseDocMeta(raw);
-
-			if (parsed) responseHints.push(parsed);
-
+			responseHints.push(parseResponseDocMeta(rawTagText));
 			return;
 		}
 
 		if (tagName === "responseSummary") {
-			const raw = normalizeDocComment(tag.getComment()).trim();
-
-			const parsed = parseResponseSummary(raw);
-
-			if (parsed) responseSummaries[parsed.status] = parsed.summary;
-
+			const [status, ...rest] = rawTagText.split(/\s+/);
+			responseSummaries[status as string] = rest.join(" ").trim();
 			return;
 		}
 
 		if (tagName === "paramExample") {
-			const rawTagText = normalizeDocComment(tag.getComment()).trim();
-
-			if (!rawTagText) return;
-
-			const parts = rawTagText.split(/\s+/).filter(Boolean);
-
-			const name = parts.shift();
-
-			if (!name || parts.length === 0) return;
-
-			const valueText = parts.join(" ").trim();
-
-			if (!valueText) return;
-
-			paramExamples[name] = parseDocValue(valueText);
-
+			const [name, ...rest] = rawTagText.split(/\s+/);
+			paramExamples[name as string] = parseDocValue(rest.join(" ").trim());
 			return;
 		}
 
 		if (tagName === "paramSchema") {
-			const rawTagText = normalizeDocComment(tag.getComment()).trim();
-
-			if (!rawTagText) return;
-
-			const parts = rawTagText.split(/\s+/).filter(Boolean);
-
-			const name = parts.shift();
-
-			if (!name || parts.length === 0) return;
-
-			const valueText = parts.join(" ").trim();
-
-			if (!valueText) return;
-
-			const parsed = parseDocValue(valueText);
-
-			const normalized = normalizeParamSchemaOverride(parsed);
-
-			if (normalized !== undefined) paramSchemas[name] = normalized;
-
+			const [name, ...rest] = rawTagText.split(/\s+/);
+			const normalized = normalizeParamSchemaOverride(
+				parseDocValue(rest.join(" ").trim()),
+			);
+			if (normalized !== undefined) paramSchemas[name as string] = normalized;
 			return;
 		}
 
 		if (tagName === "requestExample") {
-			const rawTagText = normalizeDocComment(tag.getComment()).trim();
-
-			if (!rawTagText) return;
-
 			const parts = rawTagText.split(/\s+/).filter(Boolean);
-
-			if (parts.length === 0) return;
-
-			let mediaType: string | undefined;
-
-			if (parts[0].includes("/")) {
-				mediaType = parts.shift();
-			}
-
-			const valueText = parts.join(" ").trim();
-
-			if (!valueText) return;
-
-			requestExamples[mediaType ?? "*"] = parseDocValue(valueText);
-
+			const mediaType = parts[0]?.includes("/")
+				? (parts.shift() as string)
+				: "*";
+			requestExamples[mediaType] = parseDocValue(parts.join(" ").trim());
 			return;
 		}
 
 		if (tagName === "responseExample") {
-			const rawTagText = normalizeDocComment(tag.getComment()).trim();
-
-			if (!rawTagText) return;
-
-			const parts = rawTagText.split(/\s+/).filter(Boolean);
-
-			const status = parts.shift();
-
-			if (!status || parts.length === 0) return;
-
-			let mediaType: string | undefined;
-
-			if (parts[0].includes("/")) {
-				mediaType = parts.shift();
-			}
-
-			const valueText = parts.join(" ").trim();
-
-			if (!valueText) return;
-
-			if (!responseExamples[status]) responseExamples[status] = {};
-
-			responseExamples[status][mediaType ?? "*"] = parseDocValue(valueText);
-
-			return;
-		}
-
-		if (tagName === "param") {
-			const parsed = parseParamDoc(tag);
-
-			if (parsed) {
-				paramDocs[parsed.name] = parsed.description;
-			}
-
-			return;
-		}
-
-		if (!tagName.startsWith("x-")) return;
-
-		const raw = normalizeDocComment(tag.getComment()).trim();
-
-		if (!raw) {
-			extensions[tagName] = true;
-
-			return;
-		}
-
-		try {
-			extensions[tagName] = JSON.parse(raw);
-		} catch {
-			extensions[tagName] = raw;
+			const [status, ...rest] = rawTagText.split(/\s+/).filter(Boolean);
+			const mediaType = rest[0]?.includes("/") ? (rest.shift() as string) : "*";
+			const statusKey = status as string;
+			const statusMap = responseExamples[statusKey] ?? {};
+			responseExamples[statusKey] = statusMap;
+			statusMap[mediaType] = parseDocValue(rest.join(" ").trim());
 		}
 	});
 
@@ -373,22 +279,18 @@ export function extractDocMeta(node: Node): ExtractedOperationDocMeta {
 			responseHints.map((entry) => [entry.status, entry]),
 		);
 
-		Object.entries(responseSummaries).forEach(([status, summary]) => {
+		Object.entries(responseSummaries).forEach(([status, sum]) => {
 			const existing = responseIndex.get(status);
-
 			if (existing) {
-				existing.summary = existing.summary ?? summary;
-
-				return;
+				existing.summary = sum;
+			} else {
+				responseHints.push({ status, summary: sum });
 			}
-
-			responseHints.push({ status, summary });
 		});
 	}
 
 	return {
 		...(summary ? { summary } : {}),
-
 		...(description ? { description } : {}),
 		...(deprecated ? { deprecated } : {}),
 		...(tagNames.length > 0 ? { tags: tagNames } : {}),
@@ -412,100 +314,60 @@ function extractQuerystringParam(
 	tags: JSDocTag[],
 ): QuerystringMeta | undefined {
 	const qsTag = tags.find((tag) => tag.getTagName() === "querystring");
-
 	if (!qsTag) return undefined;
 
-	const raw = normalizeDocComment(qsTag.getComment()).trim();
-
-	if (!raw) return undefined;
+	const raw = getRawTagPayload(qsTag);
 
 	if (raw.startsWith("{")) {
-		try {
-			const parsed = JSON.parse(raw) as QuerystringMeta;
-
-			if (
-				parsed &&
-				typeof parsed === "object" &&
-				typeof parsed.name === "string" &&
-				parsed.name.trim()
-			) {
-				const encoding =
-					parsed.encoding &&
-					typeof parsed.encoding === "object" &&
-					!Array.isArray(parsed.encoding)
-						? parsed.encoding
-						: undefined;
-
-				return {
-					name: parsed.name.trim(),
-
-					...(parsed.contentType
-						? { contentType: String(parsed.contentType) }
-						: {}),
-
-					...(encoding ? { encoding } : {}),
-
-					...(typeof parsed.required === "boolean"
-						? { required: parsed.required }
-						: {}),
-
-					...(parsed.description
-						? { description: String(parsed.description) }
-						: {}),
-				};
-			}
-		} catch {
-			// Ignore malformed JSON to avoid crashing scans
+		const parsed = parseJsonMaybe(raw) as QuerystringMeta | undefined;
+		if (!parsed || typeof parsed.name !== "string" || !parsed.name.trim()) {
+			return undefined;
 		}
+		const encoding =
+			parsed.encoding &&
+			typeof parsed.encoding === "object" &&
+			!Array.isArray(parsed.encoding)
+				? parsed.encoding
+				: undefined;
 
-		return undefined;
+		return {
+			name: parsed.name.trim(),
+			...(parsed.contentType
+				? { contentType: String(parsed.contentType) }
+				: {}),
+			...(encoding ? { encoding } : {}),
+			...(typeof parsed.required === "boolean"
+				? { required: parsed.required }
+				: {}),
+			...(parsed.description
+				? { description: String(parsed.description) }
+				: {}),
+		};
 	}
 
-	const parts = raw.split(/\s+/).filter(Boolean);
-
-	const name = parts.shift();
-
-	if (!name) return undefined;
-
+	const [name, ...parts] = raw.split(/\s+/).filter(Boolean);
 	let contentType: string | undefined;
 	let required: boolean | undefined;
-
 	const descriptionParts: string[] = [];
 
 	parts.forEach((part) => {
 		const lower = part.toLowerCase();
-
-		if (lower === "required") {
-			required = true;
-
-			return;
-		}
-
-		if (lower === "optional") {
-			required = false;
-
-			return;
-		}
-
-		if (!contentType && part.includes("/")) {
+		if (lower === "required" || lower === "optional") {
+			required = lower === "required";
+		} else if (!contentType && part.includes("/")) {
 			contentType = part;
-
-			return;
+		} else {
+			descriptionParts.push(part);
 		}
-
-		descriptionParts.push(part);
 	});
 
 	const description =
 		descriptionParts.length > 0 ? descriptionParts.join(" ") : undefined;
 
 	return {
-		name,
-
+		name: name as string,
 		...(contentType ? { contentType } : {}),
-
 		...(required !== undefined ? { required } : {}),
-
 		...(description ? { description } : {}),
 	};
 }
@@ -521,26 +383,11 @@ export function applyQuerystringMeta(
 	paramMap: Map<string, CodeScanParam>,
 ): void {
 	const querystring = docMeta.querystring;
-
 	if (!querystring) return;
 
 	addParam(paramMap, {
-		name: querystring.name,
+		...querystring,
 		in: "querystring",
-
-		...(querystring.required !== undefined
-			? { required: querystring.required }
-			: {}),
-
-		...(querystring.description
-			? { description: querystring.description }
-			: {}),
-
-		...(querystring.contentType
-			? { contentType: querystring.contentType }
-			: {}),
-
-		...(querystring.encoding ? { encoding: querystring.encoding } : {}),
 	});
 }
 
@@ -557,14 +404,7 @@ export function applyParamDocs(
 	if (!paramDocs) return;
 
 	for (const param of paramMap.values()) {
-		if (param.description) continue;
-
-		const direct = paramDocs[param.name];
-
-		const normalized = paramDocs[param.name.replace(/[{}]/g, "")];
-
-		const description = direct ?? normalized;
-
+		const description = paramDocs[param.name];
 		if (description) {
 			param.description = description;
 		}
@@ -584,14 +424,7 @@ export function applyParamExamples(
 	if (!paramExamples) return;
 
 	for (const param of paramMap.values()) {
-		if (param.example !== undefined) continue;
-
-		const direct = paramExamples[param.name];
-
-		const normalized = paramExamples[param.name.replace(/[{}]/g, "")];
-
-		const example = direct ?? normalized;
-
+		const example = paramExamples[param.name];
 		if (example !== undefined) {
 			param.example = example;
 		}
@@ -612,13 +445,7 @@ export function applyParamSchemas(
 
 	for (const param of paramMap.values()) {
 		if (param.in === "querystring") continue;
-
-		const direct = paramSchemas[param.name];
-
-		const normalized = paramSchemas[param.name.replace(/[{}]/g, "")];
-
-		const schema = direct ?? normalized;
-
+		const schema = paramSchemas[param.name];
 		if (schema !== undefined) {
 			param.schema = schema;
 		}
@@ -635,13 +462,7 @@ export function applyRequestExamples(
 	requestBody: CodeScanRequestBody | undefined,
 	requestExamples?: Record<string, OpenApiValue>,
 ): void {
-	if (
-		!requestBody ||
-		!requestExamples ||
-		Object.keys(requestExamples).length === 0
-	)
-		return;
-
+	if (!requestBody || !requestExamples) return;
 	requestBody.examples = { ...requestExamples };
 }
 
@@ -659,8 +480,7 @@ export function applyResponseExamples(
 
 	responses.forEach((response) => {
 		const examples = responseExamples[response.status];
-
-		if (examples && Object.keys(examples).length > 0) {
+		if (examples) {
 			response.examples = { ...examples };
 		}
 	});
@@ -680,12 +500,10 @@ export function mergeResponseHints(
 	if (!hints || hints.length === 0) return responses;
 
 	const responseMap = new Map<string, CodeScanResponse>();
-
 	const ordered: string[] = [];
 
 	responses.forEach((response) => {
 		responseMap.set(response.status, { ...response });
-
 		ordered.push(response.status);
 	});
 
@@ -695,61 +513,37 @@ export function mergeResponseHints(
 		if (!existing) {
 			responseMap.set(hint.status, {
 				status: hint.status,
-
 				...(hint.summary ? { summary: hint.summary } : {}),
-
 				...(hint.description ? { description: hint.description } : {}),
-
 				contentTypes: hint.contentTypes ?? [],
 			});
-
 			ordered.push(hint.status);
-
 			return;
 		}
 
-		if (hint.summary) {
-			existing.summary = hint.summary;
-		}
+		if (hint.summary) existing.summary = hint.summary;
+		if (hint.description) existing.description = hint.description;
 
-		if (hint.description) {
-			existing.description = hint.description;
-		}
-
-		if (hint.contentTypes && hint.contentTypes.length > 0) {
-			if (existing.contentTypes.length === 0) {
-				existing.contentTypes = [...hint.contentTypes];
-			} else {
-				const contentTypes = new Set(existing.contentTypes);
-
-				hint.contentTypes.forEach((entry) => contentTypes.add(entry));
-
-				existing.contentTypes = Array.from(contentTypes);
-			}
+		if (hint.contentTypes) {
+			const contentTypes = new Set([
+				...existing.contentTypes,
+				...hint.contentTypes,
+			]);
+			existing.contentTypes = Array.from(contentTypes);
 		}
 	});
 
 	return ordered.map((status) => responseMap.get(status) as CodeScanResponse);
 }
 
-function parseResponseDocMeta(raw: string): ResponseDocMeta | undefined {
-	if (!raw) return undefined;
-
-	const parts = raw.split(/\s+/).filter(Boolean);
-
-	const status = parts.shift();
-
-	if (!status) return undefined;
+function parseResponseDocMeta(raw: string): ResponseDocMeta {
+	const [status, ...parts] = raw.split(/\s+/).filter(Boolean);
 
 	let contentTypes: string[] | undefined;
-
-	if (parts.length > 0 && parts[0].includes("/")) {
+	if (parts[0]?.includes("/")) {
 		const mediaRaw = parts.shift() as string;
-
 		contentTypes = mediaRaw
-
 			.split(",")
-
 			.map((entry) => entry.trim())
 			.filter(Boolean);
 	}
@@ -757,87 +551,10 @@ function parseResponseDocMeta(raw: string): ResponseDocMeta | undefined {
 	const description = parts.join(" ").trim();
 
 	return {
-		status,
-
-		...(contentTypes && contentTypes.length > 0 ? { contentTypes } : {}),
-
+		status: status as string,
+		...(contentTypes ? { contentTypes } : {}),
 		...(description ? { description } : {}),
 	};
-}
-
-function parseResponseSummary(
-	raw: string,
-): { status: string; summary: string } | undefined {
-	if (!raw) return undefined;
-
-	const parts = raw.split(/\s+/).filter(Boolean);
-
-	const status = parts.shift();
-
-	if (!status) return undefined;
-
-	const summary = parts.join(" ").trim();
-
-	if (!summary) return undefined;
-
-	return { status, summary };
-}
-
-function parseParamDoc(
-	tag: JSDocTag,
-): { name: string; description: string } | undefined {
-	if (Node.isJSDocParameterTag(tag)) {
-		const name = tag.getName();
-
-		const description = normalizeDocComment(tag.getComment()).trim();
-
-		if (name && description) {
-			return { name, description };
-		}
-
-		return undefined;
-	}
-
-	const rawText = tag
-
-		.getText()
-		.replace(/^\s*\*?\s*@param\s+/i, "")
-		.trim();
-	let name: string | undefined;
-
-	let description = "";
-
-	if (rawText) {
-		const cleaned = rawText.replace(/\r?\n\s*\*\s?/g, " ").trim();
-
-		const match = cleaned.match(/^(?:\{[^}]+\}\s*)?(\S+)\s*([\s\S]*)$/);
-
-		if (match) {
-			name = match[1];
-
-			description = (match[2] || "").trim();
-		}
-	}
-
-	if (!name) {
-		const fallback = normalizeDocComment(tag.getComment());
-
-		const parts = fallback.split(/\s+/).filter(Boolean);
-
-		if (parts.length === 0) return undefined;
-
-		name = parts.shift();
-
-		if (name?.startsWith("{")) {
-			name = parts.shift();
-		}
-
-		description = parts.join(" ").trim();
-	}
-
-	if (!name || !description) return undefined;
-
-	return { name, description };
 }
 
 /**
@@ -878,63 +595,36 @@ function extractExternalDocs(
 	tags: JSDocTag[],
 ): ExternalDocumentationObject | undefined {
 	const seeTag = tags.find((tag) => tag.getTagName() === "see");
-
-	if (!seeTag) return undefined;
-
-	let raw = normalizeDocComment(seeTag.getComment()).trim();
-
-	if (!raw || raw.startsWith("://")) {
-		const text = seeTag.getText();
-
-		const line = text.split(/\r?\n/)[0] ?? "";
-
-		const cleaned = line.replace(/^\s*\*?\s*@see\s+/i, "").trim();
-
-		if (cleaned) {
-			raw = cleaned;
-		}
-	}
-
+	const raw = seeTag ? getRawTagPayload(seeTag) : "";
 	if (!raw) return undefined;
 
-	const parts = raw.split(/\s+/);
-
-	const url = parts.shift();
-
-	if (!url) return undefined;
-
-	const descriptionStr = parts.join(" ").trim();
-
-	return descriptionStr ? { url, description: descriptionStr } : { url };
+	const [url, ...rest] = raw.split(/\s+/);
+	const descriptionStr = rest.join(" ").trim();
+	return descriptionStr
+		? { url: url as string, description: descriptionStr }
+		: { url: url as string };
 }
 
 function extractServers(tags: JSDocTag[]): ServerObject[] {
 	const serverTags = tags.filter((tag) => tag.getTagName() === "server");
-
 	const servers: ServerObject[] = [];
 
 	serverTags.forEach((tag) => {
-		const raw = normalizeDocComment(tag.getComment()).trim();
-
-		if (!raw) return;
+		const raw = getRawTagPayload(tag);
 
 		const jsonServers = parseServerJson(raw);
-
 		if (jsonServers) {
 			servers.push(...jsonServers);
-
 			return;
 		}
 
-		const parts = raw.split(/\s+/);
-
-		const url = parts.shift();
-
-		if (!url) return;
-
-		const description = parts.join(" ").trim();
-
-		servers.push(description ? { url, description } : { url });
+		const [url, ...rest] = raw.split(/\s+/);
+		const description = rest.join(" ").trim();
+		servers.push(
+			description
+				? { url: url as string, description }
+				: { url: url as string },
+		);
 	});
 
 	return servers;
@@ -942,75 +632,43 @@ function extractServers(tags: JSDocTag[]): ServerObject[] {
 
 function extractSecurity(tags: JSDocTag[]): Record<string, string[]>[] {
 	const securityTags = tags.filter((tag) => tag.getTagName() === "security");
-
 	const requirements: Record<string, string[]>[] = [];
 
 	securityTags.forEach((tag) => {
-		const raw = normalizeDocComment(tag.getComment()).trim();
-
-		if (!raw) return;
+		const raw = getRawTagPayload(tag);
 
 		if (raw.startsWith("{") || raw.startsWith("[")) {
-			const parsed = parseSecurityJson(raw);
-
-			if (parsed.length > 0) {
-				requirements.push(...parsed);
-			}
-
+			const parsed = parseJsonMaybe(raw);
+			const entries = Array.isArray(parsed) ? parsed : [parsed];
+			entries.forEach((entry) => {
+				if (entry && typeof entry === "object") {
+					requirements.push(entry as Record<string, string[]>);
+				}
+			});
 			return;
 		}
 
 		const [scheme, ...rest] = raw.split(/\s+/);
-
-		if (!scheme) return;
-
 		const scopes = rest
-
 			.join(" ")
 			.split(/[,\s]+/)
-
 			.map((scope) => scope.trim())
 			.filter(Boolean);
-
-		requirements.push({ [scheme]: scopes });
+		requirements.push({ [scheme as string]: scopes });
 	});
 
 	return requirements;
 }
 
-function parseSecurityJson(raw: string): Record<string, string[]>[] {
-	try {
-		const parsed = JSON.parse(raw) as OpenApiValue;
-
-		if (Array.isArray(parsed)) {
-			return parsed.filter(
-				(entry: OpenApiValue): entry is Record<string, string[]> =>
-					!!entry && typeof entry === "object",
-			);
-		}
-
-		if (parsed && typeof parsed === "object") {
-			return [parsed as Record<string, string[]>];
-		}
-	} catch {
-		return [];
-	}
-
-	return [];
-}
-
 function getJsDocs(node: Node): JSDoc[] {
 	let current: Node | undefined = node;
 
-	for (let depth = 0; current && depth < 4; depth += 1) {
+	for (let depth = 0; current && depth < 5; depth += 1) {
 		const withDocs = current as Node & {
 			getJsDocs?: () => JSDoc[];
 		};
-
-		const docs = withDocs.getJsDocs ? withDocs.getJsDocs() : [];
-
+		const docs = withDocs.getJsDocs?.() ?? [];
 		if (docs.length > 0) return docs;
-
 		current = current.getParent();
 	}
 
@@ -1019,27 +677,19 @@ function getJsDocs(node: Node): JSDoc[] {
 
 function parseTagList(comment: string): string[] {
 	return comment
-
 		.split(",")
-
 		.flatMap((part) => part.trim().split(/\s+/))
-
 		.map((part) => part.trim())
 		.filter(Boolean);
 }
 
 function parseTagInput(raw: string): { names: string[]; objects: TagObject[] } {
-	const trimmed = raw.trim();
-
-	if (!trimmed) return { names: [], objects: [] };
-
-	if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-		const parsed = parseJsonMaybe(trimmed);
-
+	if (raw.startsWith("{") || raw.startsWith("[")) {
+		const parsed = parseJsonMaybe(raw);
 		return normalizeTagJson(parsed);
 	}
 
-	return { names: parseTagList(trimmed), objects: [] };
+	return { names: parseTagList(raw), objects: [] };
 }
 
 function normalizeTagJson(parsed: OpenApiValue): {
@@ -1047,59 +697,40 @@ function normalizeTagJson(parsed: OpenApiValue): {
 	objects: TagObject[];
 } {
 	const names: string[] = [];
-
 	const objects: TagObject[] = [];
 
 	const pushTag = (entry: OpenApiValue) => {
 		if (typeof entry === "string") {
 			if (entry.trim()) names.push(entry.trim());
-
 			return;
 		}
-
 		if (!entry || typeof entry !== "object" || Array.isArray(entry)) return;
-
 		const tag = entry as TagObject;
-
 		if (typeof tag.name !== "string" || !tag.name.trim()) return;
-
 		const normalized = { ...tag, name: tag.name.trim() };
-
 		names.push(normalized.name);
-
 		objects.push(normalized);
 	};
 
-	if (Array.isArray(parsed)) {
-		parsed.forEach((entry: OpenApiValue) => pushTag(entry));
-	} else {
-		pushTag(parsed);
-	}
+	const list = Array.isArray(parsed) ? parsed : [parsed];
+	list.forEach(pushTag);
 
 	return { names, objects };
 }
 
 function parseServerJson(raw: string): ServerObject[] | null {
-	const trimmed = raw.trim();
+	if (!raw.startsWith("{") && !raw.startsWith("[")) return null;
 
-	if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return null;
-
-	const parsed = parseJsonMaybe(trimmed);
-
+	const parsed = parseJsonMaybe(raw);
 	if (!parsed) return [];
 
 	const entries = Array.isArray(parsed) ? parsed : [parsed];
-
 	const servers: ServerObject[] = [];
 
 	entries.forEach((entry: OpenApiValue) => {
 		if (!entry || typeof entry !== "object" || Array.isArray(entry)) return;
-
 		const candidate = entry as ServerObject;
-
-		if (typeof candidate.url !== "string" || candidate.url.trim().length === 0)
-			return;
-
+		if (typeof candidate.url !== "string" || !candidate.url.trim()) return;
 		servers.push({ ...candidate, url: candidate.url.trim() });
 	});
 
@@ -1114,21 +745,6 @@ function parseJsonMaybe(raw: string): OpenApiValue | undefined {
 	}
 }
 
-function normalizeDocComment(comment: OpenApiValue): string {
-	if (!comment) return "";
-
-	if (typeof comment === "string") return comment;
-
-	if (Array.isArray(comment))
-		return comment
-			.map((part: OpenApiValue) => normalizeDocComment(part))
-			.join("");
-
-	if (Node.isNode(comment)) return comment.getText();
-
-	return String(comment);
-}
-
 const EXAMPLE_WRAPPER_KEY = "__oasExample";
 
 type ExampleCarrier = {
@@ -1137,12 +753,7 @@ type ExampleCarrier = {
 
 function isExampleCarrier(value: OpenApiValue): value is ExampleCarrier {
 	if (!value || typeof value !== "object") return false;
-
-	if (!(EXAMPLE_WRAPPER_KEY in (value as Record<string, OpenApiValue>)))
-		return false;
-
 	const wrapped = (value as Record<string, OpenApiValue>)[EXAMPLE_WRAPPER_KEY];
-
 	return !!wrapped && typeof wrapped === "object" && !Array.isArray(wrapped);
 }
 
@@ -1156,8 +767,7 @@ export function unwrapExampleCarrier(
 	value: OpenApiValue,
 ): ExampleObject | undefined {
 	if (!isExampleCarrier(value)) return undefined;
-
-	return (value as ExampleCarrier)[EXAMPLE_WRAPPER_KEY];
+	return value[EXAMPLE_WRAPPER_KEY];
 }
 
 function parseDocValue(value: string): OpenApiValue {
@@ -1172,36 +782,16 @@ function normalizeParamSchemaOverride(
 	value: OpenApiValue,
 ): SwaggerDefinition | boolean | undefined {
 	if (typeof value === "boolean") return value;
-
 	if (value && typeof value === "object" && !Array.isArray(value))
 		return value as SwaggerDefinition;
-
 	if (typeof value !== "string") return undefined;
 
 	const trimmed = value.trim();
-
-	if (!trimmed) return undefined;
-
-	const primitiveTypes = new Set([
-		"string",
-		"number",
-		"integer",
-		"boolean",
-		"object",
-		"array",
-		"null",
-	]);
-
-	if (primitiveTypes.has(trimmed)) {
+	if (PRIMITIVE_SCHEMA_TYPES.has(trimmed)) {
 		return { type: trimmed as "string" };
 	}
 
-	if (
-		trimmed.startsWith("#") ||
-		trimmed.startsWith("./") ||
-		trimmed.startsWith("../") ||
-		/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)
-	) {
+	if (trimmed.includes("/") || trimmed.includes(":")) {
 		return { $ref: trimmed };
 	}
 
@@ -1221,18 +811,10 @@ function normalizeParamSchemaOverride(
 export function extractLiteralText(
 	expression?: Expression,
 ): string | undefined {
-	if (!expression) return undefined;
-
-	if (Node.isNumericLiteral(expression)) return expression.getText();
-
-	if (
-		Node.isStringLiteral(expression) ||
-		Node.isNoSubstitutionTemplateLiteral(expression)
-	) {
-		return expression.getLiteralText();
+	if (expression && Node.isNumericLiteral(expression)) {
+		return expression.getText();
 	}
-
-	return undefined;
+	return extractStringLiteral(expression);
 }
 
 /**
@@ -1244,15 +826,13 @@ export function extractLiteralText(
 export function extractStringLiteral(
 	expression?: Expression,
 ): string | undefined {
-	if (!expression) return undefined;
-
 	if (
-		Node.isStringLiteral(expression) ||
-		Node.isNoSubstitutionTemplateLiteral(expression)
+		expression &&
+		(Node.isStringLiteral(expression) ||
+			Node.isNoSubstitutionTemplateLiteral(expression))
 	) {
 		return expression.getLiteralText();
 	}
-
 	return undefined;
 }
 
@@ -1272,9 +852,7 @@ export function trimQuotes(value: string): string {
  * @param name - Candidate header name.
  * @returns `true` if `name` is a reserved header.
  */
-export function isReservedHeaderParam(name?: string): boolean {
-	if (!name) return false;
-
+export function isReservedHeaderParam(name: string): boolean {
 	return RESERVED_HEADER_NAMES.has(name.toLowerCase());
 }
 
@@ -1285,64 +863,32 @@ export function isReservedHeaderParam(name?: string): boolean {
  * @returns Inferred `ExpressSchemaHints`.
  */
 export function inferExpressSchemaHints(handler: Node): ExpressSchemaHints {
-	const fnNode = handler as Node;
-
-	if (
-		!fnNode ||
-		typeof (
-			fnNode as OpenApiValue as {
-				getParameters(): ParameterDeclaration[];
-			}
-		).getParameters !== "function"
-	)
-		return {};
-
-	const params = (
-		fnNode as OpenApiValue as {
-			getParameters(): ParameterDeclaration[];
-		}
-	).getParameters();
-
+	const fnNode = handler as Node & {
+		getParameters: () => ParameterDeclaration[];
+	};
+	const params = fnNode.getParameters();
 	const reqParam = params[0];
-
 	const resParam = params[1];
 	let requestSchema: SwaggerDefinition | boolean | undefined;
 	let responseSchema: SwaggerDefinition | boolean | undefined;
 
 	if (reqParam) {
-		const reqTypeNode = reqParam.getTypeNode();
-
-		const extracted = extractSchemasFromRequestType(reqTypeNode);
-
-		if (extracted.requestSchema !== undefined) {
-			requestSchema = extracted.requestSchema;
-		}
-
-		if (extracted.responseSchema !== undefined) {
-			responseSchema = extracted.responseSchema;
-		}
+		const extracted = extractSchemasFromRequestType(reqParam.getTypeNode());
+		requestSchema = extracted.requestSchema;
+		responseSchema = extracted.responseSchema;
 	}
 
 	if (resParam) {
-		const resTypeNode = resParam.getTypeNode();
-
-		const inferred = extractSchemaFromResponseType(resTypeNode);
-
+		const inferred = extractSchemaFromResponseType(resParam.getTypeNode());
 		if (inferred !== undefined) {
 			responseSchema = inferred;
 		}
 	}
 
-	const result: {
-		requestSchema?: SwaggerDefinition | boolean;
-		responseSchema?: SwaggerDefinition | boolean;
-	} = {};
-
-	if (requestSchema !== undefined) result.requestSchema = requestSchema;
-
-	if (responseSchema !== undefined) result.responseSchema = responseSchema;
-
-	return result;
+	return {
+		...(requestSchema !== undefined ? { requestSchema } : {}),
+		...(responseSchema !== undefined ? { responseSchema } : {}),
+	};
 }
 
 /**
@@ -1354,27 +900,19 @@ export function inferExpressSchemaHints(handler: Node): ExpressSchemaHints {
 export function inferReturnSchemaFromSignature(
 	handler: Node,
 ): SwaggerDefinition | boolean | undefined {
-	const returnTypeNode =
-		"getReturnTypeNode" in handler &&
-		typeof (
-			handler as OpenApiValue as {
-				getReturnTypeNode: () => TypeNode | undefined;
-			}
-		).getReturnTypeNode === "function"
-			? (
-					handler as OpenApiValue as {
-						getReturnTypeNode: () => TypeNode | undefined;
-					}
-				).getReturnTypeNode()
-			: undefined;
-
+	const handlerWithReturn = handler as Node & {
+		getReturnTypeNode: () => TypeNode | undefined;
+	};
+	const returnTypeNode = handlerWithReturn.getReturnTypeNode();
 	if (!returnTypeNode) return undefined;
 
 	const unwrapped = unwrapContainerTypeNode(returnTypeNode);
-
-	if (isVoidTypeNode(unwrapped)) return undefined;
-
-	if (isResponseTypeName(getTypeNodeName(unwrapped))) return undefined;
+	if (
+		isVoidTypeNode(unwrapped) ||
+		isResponseTypeName(getTypeNodeName(unwrapped))
+	) {
+		return undefined;
+	}
 
 	return inferSchemaFromTypeNode(unwrapped);
 }
@@ -1384,45 +922,24 @@ function extractSchemasFromRequestType(typeNode?: TypeNode): {
 	responseSchema?: SwaggerDefinition | boolean;
 } {
 	if (!typeNode || !Node.isTypeReference(typeNode)) return {};
-
 	if (!isRequestTypeName(getTypeNodeName(typeNode))) return {};
 
 	const args = typeNode.getTypeArguments();
+	const infReq = inferSchemaFromTypeNode(args[2]);
+	const infRes = inferSchemaFromTypeNode(args[1]);
 
-	const responseArg = args[1];
-
-	const requestArg = args[2];
-
-	const result: {
-		requestSchema?: SwaggerDefinition | boolean;
-		responseSchema?: SwaggerDefinition | boolean;
-	} = {};
-
-	if (requestArg) {
-		const infReq = inferSchemaFromTypeNode(requestArg);
-
-		if (infReq !== undefined) result.requestSchema = infReq;
-	}
-
-	if (responseArg) {
-		const infRes = inferSchemaFromTypeNode(responseArg);
-
-		if (infRes !== undefined) result.responseSchema = infRes;
-	}
-
-	return result;
+	return {
+		...(infReq !== undefined ? { requestSchema: infReq } : {}),
+		...(infRes !== undefined ? { responseSchema: infRes } : {}),
+	};
 }
 
 function extractSchemaFromResponseType(
 	typeNode?: TypeNode,
 ): SwaggerDefinition | boolean | undefined {
 	if (!typeNode || !Node.isTypeReference(typeNode)) return undefined;
-
 	if (!isResponseTypeName(getTypeNodeName(typeNode))) return undefined;
-
-	const arg = typeNode.getTypeArguments()[0];
-
-	return inferSchemaFromTypeNode(arg);
+	return inferSchemaFromTypeNode(typeNode.getTypeArguments()[0]);
 }
 
 /**
@@ -1437,67 +954,34 @@ export function inferSchemaFromTypeNode(
 	if (!typeNode) return undefined;
 
 	const unwrapped = unwrapContainerTypeNode(typeNode);
-
 	if (isVoidTypeNode(unwrapped)) return undefined;
 
 	if (Node.isTypeReference(unwrapped)) {
-		const typeName = getTypeNodeName(unwrapped);
-
-		const primitiveSchema = schemaForPrimitiveReference(typeName);
-
+		const primitiveSchema = PRIMITIVE_REF_MAP[getTypeNodeName(unwrapped)];
 		if (primitiveSchema) return primitiveSchema;
 	}
 
 	const schema = schemaFromTypeNode(unwrapped);
-
-	return isEmptySchema(schema as SwaggerDefinition) ? undefined : schema;
+	return Object.keys(schema).length === 0 ? undefined : schema;
 }
 
 function unwrapContainerTypeNode(typeNode: TypeNode): TypeNode {
 	if (!Node.isTypeReference(typeNode)) return typeNode;
 
 	const typeName = getTypeNodeName(typeNode);
-
 	if (
 		typeName === "Promise" ||
 		typeName === "PromiseLike" ||
 		typeName === "Observable"
 	) {
-		const arg = typeNode.getTypeArguments()[0];
-
-		if (arg) {
-			return unwrapContainerTypeNode(arg);
-		}
+		return unwrapContainerTypeNode(typeNode.getTypeArguments()[0] as TypeNode);
 	}
 
 	return typeNode;
 }
 
 function getTypeNodeName(typeNode: TypeNode): string {
-	if (!Node.isTypeReference(typeNode)) return "";
-
-	return typeNode.getTypeName().getText();
-}
-
-function schemaForPrimitiveReference(
-	typeName: string,
-): SwaggerDefinition | undefined {
-	switch (typeName) {
-		case "String":
-			return { type: "string" };
-
-		case "Number":
-			return { type: "number" };
-
-		case "Boolean":
-			return { type: "boolean" };
-
-		case "Object":
-			return { type: "object" };
-
-		default:
-			return undefined;
-	}
+	return Node.isTypeReference(typeNode) ? typeNode.getTypeName().getText() : "";
 }
 
 function isVoidTypeNode(typeNode: TypeNode): boolean {
@@ -1513,8 +997,4 @@ function isRequestTypeName(typeName: string): boolean {
 
 function isResponseTypeName(typeName: string): boolean {
 	return typeName === "Response" || typeName.endsWith(".Response");
-}
-
-function isEmptySchema(schema: SwaggerDefinition): boolean {
-	return Object.keys(schema).length === 0;
 }

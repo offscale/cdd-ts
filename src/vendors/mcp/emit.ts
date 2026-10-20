@@ -21,7 +21,7 @@ export class McpGenerator {
 	 */
 	public generate(
 		project: Project,
-		parser: SwaggerParser,
+		parser: Pick<SwaggerParser, "spec" | "operations">,
 		_config: GeneratorConfig,
 		outputDir: string,
 	) {
@@ -98,12 +98,7 @@ export function createMcpServer() {
 `;
 
 		for (const op of parser.operations) {
-			const groupName = op.tags?.[0]
-				? typeof op.tags[0] === "string"
-					? op.tags[0]
-					: (op.tags[0] as object as { name?: string }).name ||
-						String(op.tags[0])
-				: "Default";
+			const groupName = op.tags?.[0] || "Default";
 			const groupPascal = String(groupName).replace(/(^\w|-\w)/g, (m) =>
 				m.replace("-", "").toUpperCase(),
 			);
@@ -143,7 +138,7 @@ export function createMcpServer() {
 				}
 			}
 			if (op.requestBody) {
-				statements += `\n            body: z.any().optional().describe('JSON request body'),`;
+				statements += `\n            body: z.unknown().optional().describe('JSON request body'),`;
 			}
 
 			statements += `
@@ -151,7 +146,7 @@ export function createMcpServer() {
         async (args) => {
             try {
                 const client = new services.${serviceName}();
-                const res = await client.${methodName}(args as any);
+                const res = await client.${methodName}(args);
                 return {
                     content: [{ type: 'text', text: JSON.stringify(res, null, 2) }]
                 };
@@ -181,12 +176,12 @@ export function serveMcpSse(port = 3001) {
     const server = createMcpServer();
     let transport: SSEServerTransport;
 
-    app.get("/mcp/sse", async (req: any, res: any) => {
+    app.get("/mcp/sse", async (_req: express.Request, res: express.Response) => {
         transport = new SSEServerTransport("/mcp/messages", res);
         await server.connect(transport);
     });
 
-    app.post("/mcp/messages", async (req: any, res: any) => {
+    app.post("/mcp/messages", async (req: express.Request, res: express.Response) => {
         if (transport) {
             await transport.handlePostMessage(req, res);
         } else {
@@ -241,6 +236,7 @@ export function serveMcpSse(port = 3001) {
 				"ListResourceTemplatesResult",
 				"CreateMessageResult",
 				"ReadResourceResult",
+				"LoggingLevel",
 			],
 		});
 
@@ -296,7 +292,7 @@ export class McpClient {
         await this.client.ping();
     }
 
-    async executeTool(name: string, args: Record<string, any>) {
+    async executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
         return await this.client.callTool({
             name,
             arguments: args
@@ -338,14 +334,14 @@ export class McpClient {
         await this.client.unsubscribeResource({ uri });
     }
 
-    async complete(ref: any, argument: { name: string, value: string }): Promise<CompleteResult> {
+    async complete(ref: CompleteRequest["params"]["ref"], argument: { name: string, value: string }): Promise<CompleteResult> {
         return await this.client.complete({
             ref,
             argument
         });
     }
 
-    async setLoggingLevel(level: any): Promise<void> {
+    async setLoggingLevel(level: LoggingLevel): Promise<void> {
         await this.client.setLoggingLevel(level);
     }
 
@@ -373,7 +369,11 @@ export class McpClient {
 		});
 
 		let adapterStatements = `
+		export type McpServiceMap = typeof services;
+
 		export class McpAdapter {
+		public readonly services: McpServiceMap = services;
+
 		getResources(): Resource[] {
 		return [
 		{
@@ -405,17 +405,12 @@ export class McpClient {
 		return [`;
 
 		let executeStatements = `
-		async executeTool(name: string, args: any): Promise<CallToolResult> {
+		async executeTool(name: string, args: Record<string, unknown>): Promise<CallToolResult> {
 		try {
 		switch (name) {`;
 
 		for (const op of parser.operations) {
-			const groupName = op.tags?.[0]
-				? typeof op.tags[0] === "string"
-					? op.tags[0]
-					: (op.tags[0] as object as { name?: string }).name ||
-						String(op.tags[0])
-				: "Default";
+			const groupName = op.tags?.[0] || "Default";
 			const groupPascal = String(groupName).replace(/(^\w|-\w)/g, (m) =>
 				m.replace("-", "").toUpperCase(),
 			);

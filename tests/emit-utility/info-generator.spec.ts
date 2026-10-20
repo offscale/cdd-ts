@@ -1,35 +1,28 @@
 import { InfoGenerator } from "@src/openapi/emit_info.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestProject,
+	createTestSpec,
+} from "../shared/helpers.js";
 import { emptySpec } from "../shared/specs.js";
 
 describe("Emitter: InfoGenerator", () => {
 	const runGenerator = (spec: object) => {
 		const project = createTestProject();
-		const parser = new SwaggerParser(testCast(spec), testCast({ options: {} }));
+		const parser = new SwaggerParser(
+			createTestSpec(spec),
+			createTestConfig({ options: {} }),
+		);
 		new InfoGenerator(parser, project).generate("/out");
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/info.ts");
-		const fileContent = sourceFile.getText();
-		const jsCode = ts.transpile(fileContent, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/info.ts");
 
 	it("should generate info.ts based on the spec", () => {
 		const spec = {
@@ -45,11 +38,11 @@ describe("Emitter: InfoGenerator", () => {
 
 		const { API_INFO } = compileGeneratedFile(project);
 
-		expect(API_INFO.title).toBe("My Test API");
+		expect(API_INFO?.title).toBe("My Test API");
 
-		expect(API_INFO.version).toBe("2.0.0-beta");
+		expect(API_INFO?.version).toBe("2.0.0-beta");
 
-		expect(API_INFO.description).toBe("A description of the API");
+		expect(API_INFO?.description).toBe("A description of the API");
 	});
 
 	it("should include summary field (OAS 3.1 feature)", () => {
@@ -74,7 +67,7 @@ describe("Emitter: InfoGenerator", () => {
 
 		const { API_INFO } = compileGeneratedFile(project);
 
-		expect(API_INFO.summary).toBe("A short summary of the API.");
+		expect(API_INFO?.summary).toBe("A short summary of the API.");
 	});
 
 	it("should generate correct structure for contact and license", () => {
@@ -100,18 +93,18 @@ describe("Emitter: InfoGenerator", () => {
 
 		const { API_INFO } = compileGeneratedFile(project);
 
-		expect(API_INFO.contact).toEqual({
+		expect(API_INFO?.contact).toEqual({
 			name: "Support",
 			email: "support@example.com",
 			url: "https://example.com/support",
 		});
 
-		expect(API_INFO.license).toEqual({
+		expect(API_INFO?.license).toEqual({
 			name: "Apache 2.0",
 			identifier: "Apache-2.0",
 		});
 
-		expect(API_INFO.termsOfService).toBe("https://example.com/terms");
+		expect(API_INFO?.termsOfService).toBe("https://example.com/terms");
 	});
 
 	it("should export API tags including summary (OAS 3.x)", () => {
@@ -137,13 +130,13 @@ describe("Emitter: InfoGenerator", () => {
 
 		expect(API_TAGS).toHaveLength(2);
 
-		expect(API_TAGS[0]).toEqual({
+		expect(API_TAGS?.[0]).toEqual({
 			name: "Admin",
 			description: "Administrative operations",
 			summary: "Admin Stuff",
 		});
 
-		expect(API_TAGS[1].externalDocs.url).toBe("https://users.doc");
+		expect(API_TAGS?.[1]?.externalDocs?.url).toBe("https://users.doc");
 	});
 
 	it("should export global External Docs", () => {
@@ -160,9 +153,9 @@ describe("Emitter: InfoGenerator", () => {
 
 		const { API_EXTERNAL_DOCS } = compileGeneratedFile(project);
 
-		expect(API_EXTERNAL_DOCS.url).toBe("https://api.docs.com");
+		expect(API_EXTERNAL_DOCS?.url).toBe("https://api.docs.com");
 
-		expect(API_EXTERNAL_DOCS.description).toBe("Full Documentation");
+		expect(API_EXTERNAL_DOCS?.description).toBe("Full Documentation");
 	});
 
 	it("should preserve x- extensions and allow them in metadata types", () => {
@@ -193,15 +186,15 @@ describe("Emitter: InfoGenerator", () => {
 		const { API_INFO, API_TAGS, API_EXTERNAL_DOCS } =
 			compileGeneratedFile(project);
 
-		expect(API_INFO["x-info"]).toBe(true);
+		expect(API_INFO?.["x-info"]).toBe(true);
 
-		expect(API_INFO.contact["x-contact"]).toBe(123);
+		expect(API_INFO?.contact?.["x-contact"]).toBe(123);
 
-		expect(API_INFO.license["x-license"]).toBe("meta");
+		expect(API_INFO?.license?.["x-license"]).toBe("meta");
 
-		expect(API_TAGS[0]["x-tag"]).toBe("flag");
+		expect(API_TAGS?.[0]?.["x-tag"]).toBe("flag");
 
-		expect(API_EXTERNAL_DOCS["x-doc"]).toBe("extra");
+		expect(API_EXTERNAL_DOCS?.["x-doc"]).toBe("extra");
 
 		const sourceFile = project.getSourceFileOrThrow("/out/info.ts");
 		expect(
@@ -235,7 +228,7 @@ describe("Emitter: InfoGenerator", () => {
 
 		// Swagger 2.0 does not have summary, it should be undefined, matching optional interface prop
 
-		expect(API_INFO.summary).toBeUndefined();
+		expect(API_INFO?.summary).toBeUndefined();
 
 		expect(API_TAGS).toEqual([]);
 
@@ -260,12 +253,12 @@ describe("Emitter: InfoGenerator", () => {
 	it("should fall back to empty info object if parser info is missing", () => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			testCast(emptySpec),
-			testCast({ options: {} }),
+			createTestSpec(emptySpec),
+			createTestConfig({ options: {} }),
 		);
 		// Simulate a defensive fallback scenario after validation
 
-		parser.spec.info = testCast(undefined);
+		Reflect.deleteProperty(parser.spec, "info");
 
 		new InfoGenerator(parser, project).generate("/out");
 

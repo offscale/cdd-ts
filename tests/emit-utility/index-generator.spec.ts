@@ -7,7 +7,11 @@ import {
 } from "@src/vendors/angular/utils/index.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestProject,
+	createTestSpec,
+} from "../shared/helpers.js";
 import { emptySpec, securitySpec } from "../shared/specs.js";
 
 describe("Emitter: IndexGenerators", () => {
@@ -27,7 +31,7 @@ describe("Emitter: IndexGenerators", () => {
 					...options,
 				},
 			};
-			const parser = new SwaggerParser(testCast(spec), config);
+			const parser = new SwaggerParser(createTestSpec(spec), config);
 			new MainIndexGenerator(project, config, parser).generateMainIndex("/out");
 			return project.getSourceFileOrThrow("/out/index.ts").getText();
 		};
@@ -273,6 +277,58 @@ describe("Emitter: IndexGenerators", () => {
 				generateServices: true,
 			});
 			expect(content).toContain(`export * from "./paths";`);
+
+			const specWithPathParams = {
+				...emptySpec,
+				paths: {
+					"/pets": {
+						parameters: [
+							{ name: "q", in: "query", schema: { type: "string" } },
+						],
+						get: { responses: { "200": { description: "ok" } } },
+					},
+				},
+			};
+			expect(
+				runGenerator(specWithPathParams, { generateServices: true }),
+			).toContain(`export * from "./paths";`);
+
+			const specWithPathServers = {
+				...emptySpec,
+				paths: {
+					"/pets": {
+						servers: [{ url: "https://pets.example.com" }],
+						get: { responses: { "200": { description: "ok" } } },
+					},
+				},
+			};
+			expect(
+				runGenerator(specWithPathServers, { generateServices: true }),
+			).toContain(`export * from "./paths";`);
+
+			const specWithPathExt = {
+				...emptySpec,
+				paths: {
+					"/pets": {
+						"x-custom": true,
+						get: { responses: { "200": { description: "ok" } } },
+					},
+				},
+			};
+			expect(
+				runGenerator(specWithPathExt, { generateServices: true }),
+			).toContain(`export * from "./paths";`);
+
+			const specWithoutPaths = {
+				openapi: "3.1.0",
+				info: { title: "Components Only", version: "1.0" },
+				components: {
+					schemas: { Item: { type: "string" } },
+				},
+			};
+			expect(
+				runGenerator(specWithoutPaths, { generateServices: true }),
+			).not.toContain(`export * from "./paths";`);
 		});
 
 		it("should not export server-url for Swagger specs without servers", () => {
@@ -289,11 +345,11 @@ describe("Emitter: IndexGenerators", () => {
 
 		it("should handle missing services dir when generateServices is false", () => {
 			const project = createTestProject();
-			const config: GeneratorConfig = testCast({
+			const config: GeneratorConfig = createTestConfig({
 				output: "/",
 				options: { framework: "angular", generateServices: false },
 			});
-			const parser = new SwaggerParser(testCast(emptySpec), config);
+			const parser = new SwaggerParser(createTestSpec(emptySpec), config);
 			new MainIndexGenerator(project, parser.config, parser).generateMainIndex(
 				"/",
 			);

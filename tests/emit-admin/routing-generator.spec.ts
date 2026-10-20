@@ -5,7 +5,11 @@ import { RoutingGenerator } from "@src/vendors/angular/admin/routing.generator.j
 import type { Project } from "ts-morph";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestProject,
+	createTestSpec,
+} from "../shared/helpers.js";
 import { coverageSpec } from "../shared/specs.js";
 
 describe("Admin: RoutingGenerator", () => {
@@ -15,8 +19,8 @@ describe("Admin: RoutingGenerator", () => {
 	beforeAll(() => {
 		project = createTestProject();
 		const parser = new SwaggerParser(
-			testCast(coverageSpec),
-			testCast({ options: { admin: true } }),
+			createTestSpec(coverageSpec),
+			createTestConfig({ options: { admin: true } }),
 		);
 		resources = discoverAdminResources(parser);
 		const routingGen = new RoutingGenerator(project);

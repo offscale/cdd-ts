@@ -2,7 +2,11 @@ import { Project } from "ts-morph";
 import { describe, expect, it, vi } from "vitest";
 import { SwaggerParser } from "../../src/openapi/parse.js";
 import { VueAdminGenerator } from "../../src/vendors/vue/admin/admin.generator.js";
-import { runGeneratorWithConfig, testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestSpec,
+	runGeneratorWithConfig,
+} from "../shared/helpers.js";
 import { coverageSpec, polymorphismSpec } from "../shared/specs.js";
 
 describe("Vue Admin Generation", () => {
@@ -13,10 +17,10 @@ describe("Vue Admin Generation", () => {
 			.mockReturnValue(false);
 		const mkdirSpy = vi
 			.spyOn(project.getFileSystem(), "mkdirSync")
-			.mockImplementation(() => {});
+			.mockImplementation(() => undefined);
 
 		const parser = new SwaggerParser(
-			testCast({
+			createTestSpec({
 				openapi: "3.0.0",
 				info: { title: "Test API", version: "1.0.0" },
 				paths: {
@@ -28,13 +32,13 @@ describe("Vue Admin Generation", () => {
 					},
 				},
 			}),
-			testCast({}),
+			createTestConfig({}),
 		);
 
 		const adminGen = new VueAdminGenerator(
 			parser,
 			project,
-			testCast({
+			createTestConfig({
 				options: { tests: true },
 			}),
 		);
@@ -52,11 +56,14 @@ describe("Vue Admin Generation", () => {
 		});
 
 		// Call a second time to cover directoryExistsSync(dir) branch
-		const parser = new SwaggerParser(testCast(coverageSpec), testCast({}));
+		const parser = new SwaggerParser(
+			createTestSpec(coverageSpec),
+			createTestConfig({}),
+		);
 		const adminGen = new VueAdminGenerator(
 			parser,
 			project,
-			testCast({
+			createTestConfig({
 				options: { tests: true },
 			}),
 		);
@@ -124,7 +131,9 @@ describe("Vue Admin Generation", () => {
 			info: { title: "Empty API", version: "1.0.0" },
 			paths: {},
 		};
-		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const warnSpy = vi
+			.spyOn(console, "warn")
+			.mockImplementation(() => undefined);
 
 		const project = await runGeneratorWithConfig(emptySpec, {
 			framework: "vue",

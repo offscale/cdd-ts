@@ -1,8 +1,12 @@
-import type { SwaggerDefinition } from "@src/core/types/index.js";
+import type { OpenApiValue, SwaggerDefinition } from "@src/core/types/index.js";
 import { ReferenceResolver } from "@src/openapi/parse_reference_resolver.js";
 import * as utils from "@src/openapi/parse_spec_extractor.js";
 import { describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../../shared/helpers.js";
+import {
+	createTestPaths,
+	createTestSchema,
+	createTestSpec,
+} from "../../shared/helpers.js";
 
 describe("Core Utils: Spec Extractor", () => {
 	describe("extractPaths", () => {
@@ -22,11 +26,11 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const paths = utils.extractPaths(testCast(swaggerPaths));
+			const paths = utils.extractPaths(createTestPaths(swaggerPaths));
 			expect(paths.length).toBe(1);
-			expect(paths[0].requestBody).toBeDefined();
+			expect(paths[0]?.requestBody).toBeDefined();
 			expect(
-				paths[0].requestBody?.content?.["application/json"].schema,
+				paths[0]?.requestBody?.content?.["application/json"]?.schema,
 			).toEqual({ type: "string" });
 		});
 
@@ -42,8 +46,8 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			const content = pathInfo.requestBody?.content || {};
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			const content = pathInfo?.requestBody?.content || {};
 			expect(Object.keys(content)).toContain("application/xml");
 			expect(Object.keys(content)).toContain("multipart/form-data");
 		});
@@ -59,9 +63,9 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
 			expect(
-				pathInfo.responses?.["200"].content?.["text/plain"]?.schema,
+				pathInfo?.responses?.["200"]?.content?.["text/plain"]?.schema,
 			).toEqual({ type: "string" });
 		});
 
@@ -79,7 +83,7 @@ describe("Core Utils: Spec Extractor", () => {
 				},
 			};
 			const [pathInfo] = utils.extractPaths(
-				testCast(swaggerPaths),
+				createTestPaths(swaggerPaths),
 				undefined,
 				undefined,
 				{
@@ -89,10 +93,10 @@ describe("Core Utils: Spec Extractor", () => {
 				},
 			);
 			expect(
-				pathInfo.requestBody?.content?.["application/xml"]?.schema,
+				pathInfo?.requestBody?.content?.["application/xml"]?.schema,
 			).toEqual({ type: "string" });
 			expect(
-				pathInfo.responses?.["200"].content?.["application/xml"]?.schema,
+				pathInfo?.responses?.["200"]?.content?.["application/xml"]?.schema,
 			).toEqual({ type: "string" });
 		});
 
@@ -111,9 +115,9 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
 			// Should use the requestBody definition
-			expect(pathInfo.requestBody?.content?.["text/plain"].schema).toEqual({
+			expect(pathInfo?.requestBody?.content?.["text/plain"]?.schema).toEqual({
 				type: "number",
 			});
 		});
@@ -127,8 +131,8 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			expect(pathInfo.method).toBe("QUERY");
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			expect(pathInfo?.method).toBe("QUERY");
 		});
 
 		it("should extract the TRACE method", () => {
@@ -140,8 +144,8 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			expect(pathInfo.method).toBe("TRACE");
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			expect(pathInfo?.method).toBe("TRACE");
 		});
 
 		it("should extract additionalOperations (OAS 3.2)", () => {
@@ -155,8 +159,8 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			expect(pathInfo.method).toBe("LOCK");
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			expect(pathInfo?.method).toBe("LOCK");
 		});
 
 		it("should preserve security pointer URIs", () => {
@@ -169,8 +173,8 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			expect(pathInfo.security?.[0]).toHaveProperty(
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			expect(pathInfo?.security?.[0]).toHaveProperty(
 				"#/components/securitySchemes/MyAuth",
 			);
 		});
@@ -194,16 +198,16 @@ describe("Core Utils: Spec Extractor", () => {
 			};
 
 			const [pathInfo] = utils.extractPaths(
-				testCast(swaggerPaths),
+				createTestPaths(swaggerPaths),
 				undefined,
-				testCast(components),
+				components,
 			);
 
-			expect(pathInfo.security).toBeDefined();
+			expect(pathInfo?.security).toBeDefined();
 			// Should have preserved the key exactly
-			expect(pathInfo.security?.[0]).toHaveProperty("http://auth.com");
+			expect(pathInfo?.security?.[0]).toHaveProperty("http://auth.com");
 			// Should NOT have normalized it to 'auth.com' or similar
-			expect(Object.keys(testCast(pathInfo.security?.[0]))[0]).toBe(
+			expect(Object.keys(pathInfo?.security?.[0] ?? {})[0]).toBe(
 				"http://auth.com",
 			);
 		});
@@ -224,14 +228,14 @@ describe("Core Utils: Spec Extractor", () => {
 			};
 
 			const [pathInfo] = utils.extractPaths(
-				testCast(swaggerPaths),
+				createTestPaths(swaggerPaths),
 				undefined,
-				testCast(components),
+				components,
 			);
 
-			expect(pathInfo.security).toBeDefined();
-			expect(pathInfo.security?.[0]).toHaveProperty("./ApiKey");
-			expect(Object.keys(testCast(pathInfo.security?.[0]))[0]).toBe("./ApiKey");
+			expect(pathInfo?.security).toBeDefined();
+			expect(pathInfo?.security?.[0]).toHaveProperty("./ApiKey");
+			expect(Object.keys(pathInfo?.security?.[0] ?? {})[0]).toBe("./ApiKey");
 		});
 
 		it("should merge Path Item $ref properties", () => {
@@ -247,10 +251,10 @@ describe("Core Utils: Spec Extractor", () => {
 				"/p": { $ref: "Target", summary: "Override" },
 			};
 			const [pathInfo] = utils.extractPaths(
-				testCast(swaggerPaths),
-				testCast(resolveRef),
+				createTestPaths(swaggerPaths),
+				resolveRef,
 			);
-			expect(pathInfo.summary).toBe("Override");
+			expect(pathInfo?.summary).toBe("Override");
 		});
 
 		it("should resolve parameter $ref and apply description override", () => {
@@ -281,11 +285,13 @@ describe("Core Utils: Spec Extractor", () => {
 			};
 
 			const [pathInfo] = utils.extractPaths(
-				testCast(swaggerPaths),
-				testCast(resolveRef),
+				createTestPaths(swaggerPaths),
+				resolveRef,
 			);
-			expect(pathInfo.parameters?.[0].name).toBe("limit");
-			expect(pathInfo.parameters?.[0].description).toBe("override description");
+			expect(pathInfo?.parameters?.[0]?.name).toBe("limit");
+			expect(pathInfo?.parameters?.[0]?.description).toBe(
+				"override description",
+			);
 		});
 
 		it("should resolve response $ref to concrete content", () => {
@@ -312,11 +318,11 @@ describe("Core Utils: Spec Extractor", () => {
 			};
 
 			const [pathInfo] = utils.extractPaths(
-				testCast(swaggerPaths),
-				testCast(resolveRef),
+				createTestPaths(swaggerPaths),
+				resolveRef,
 			);
 			expect(
-				pathInfo.responses?.["200"].content?.["application/json"].schema,
+				pathInfo?.responses?.["200"]?.content?.["application/json"]?.schema,
 			).toEqual({ type: "string" });
 		});
 
@@ -369,8 +375,8 @@ describe("Core Utils: Spec Extractor", () => {
 				string,
 				import("@src/core/types/index.js").SwaggerSpec
 			>([
-				[entryUri, testCast(entrySpec)],
-				[externalUri, testCast(externalSpec)],
+				[entryUri, createTestSpec(entrySpec)],
+				[externalUri, createTestSpec(externalSpec)],
 			]);
 			ReferenceResolver.indexSchemaIds(entrySpec, entryUri, cache, entryUri);
 			ReferenceResolver.indexSchemaIds(
@@ -383,18 +389,18 @@ describe("Core Utils: Spec Extractor", () => {
 			const resolver = new ReferenceResolver(cache, entryUri);
 			const resolveRef = (ref: string) =>
 				resolver.resolveReference(ref, entryUri);
-			const resolveObj = (obj: TestValue) => resolver.resolve(testCast(obj));
+			const resolveObj = (obj: OpenApiValue) => resolver.resolve(obj);
 
 			const [pathInfo] = utils.extractPaths(
-				testCast(entrySpec.paths),
+				createTestPaths(entrySpec.paths),
 				resolveRef,
-				testCast(entrySpec.components),
+				undefined,
 				{ isOpenApi3: true },
-				testCast(resolveObj),
+				resolveObj,
 			);
 
-			expect(pathInfo.parameters?.[0].description).toBe("external-limit");
-			expect(pathInfo.parameters?.[0].schema).toEqual({ type: "string" });
+			expect(pathInfo?.parameters?.[0]?.description).toBe("external-limit");
+			expect(pathInfo?.parameters?.[0]?.schema).toEqual({ type: "string" });
 		});
 
 		it("should ignore reserved header parameters in OpenAPI 3", () => {
@@ -417,12 +423,12 @@ describe("Core Utils: Spec Extractor", () => {
 			};
 
 			const [pathInfo] = utils.extractPaths(
-				testCast(swaggerPaths),
+				createTestPaths(swaggerPaths),
 				undefined,
 				undefined,
 				{ isOpenApi3: true },
 			);
-			const names = (pathInfo.parameters || []).map((p) => p.name);
+			const names = (pathInfo?.parameters || []).map((p) => p.name);
 			expect(names).toEqual(["X-Trace"]);
 		});
 
@@ -449,11 +455,11 @@ describe("Core Utils: Spec Extractor", () => {
 			};
 
 			const [pathInfo] = utils.extractPaths(
-				testCast(swaggerPaths),
-				testCast(resolveRef),
+				createTestPaths(swaggerPaths),
+				resolveRef,
 			);
 			expect(
-				pathInfo.requestBody?.content?.["application/json"].schema,
+				pathInfo?.requestBody?.content?.["application/json"]?.schema,
 			).toEqual({ type: "string" });
 		});
 
@@ -497,15 +503,15 @@ describe("Core Utils: Spec Extractor", () => {
 			};
 
 			const [pathInfo] = utils.extractPaths(
-				testCast(swaggerPaths),
-				testCast(resolveRef),
+				createTestPaths(swaggerPaths),
+				resolveRef,
 			);
-			const requestSchema = pathInfo.requestBody?.content?.["application/json"]
-				.schema as SwaggerDefinition;
+			const requestSchema = pathInfo?.requestBody?.content?.["application/json"]
+				?.schema as SwaggerDefinition;
 
-			const responseSchema = testCast(pathInfo.responses)["200"]?.content?.[
+			const responseSchema = pathInfo?.responses?.["200"]?.content?.[
 				"application/json"
-			].schema as SwaggerDefinition;
+			]?.schema as SwaggerDefinition;
 
 			expect(requestSchema).toEqual({
 				type: "object",
@@ -532,8 +538,8 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			const ps = pathInfo.parameters!;
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			const ps = pathInfo?.parameters ?? [];
 
 			expect(ps.find((p) => p.name === "c")?.style).toBe("form");
 			expect(ps.find((p) => p.name === "c")?.explode).toBe(false);
@@ -609,10 +615,10 @@ describe("Core Utils: Spec Extractor", () => {
 			};
 
 			const [pathInfo] = utils.extractPaths(
-				testCast(swaggerPaths),
-				testCast(resolveRef),
+				createTestPaths(swaggerPaths),
+				resolveRef,
 			);
-			const ps = pathInfo.parameters!;
+			const ps = pathInfo?.parameters ?? [];
 
 			expect(ps.find((p) => p.name === "q")?.schema).toEqual({
 				type: "string",
@@ -642,13 +648,13 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			const schema = pathInfo.parameters?.[0].schema;
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			const schema = pathInfo?.parameters?.[0]?.schema;
 			expect(schema).toBeDefined();
 			const schema0: SwaggerDefinition = schema as SwaggerDefinition;
 			expect(schema0.type).toBe("array");
 
-			expect(testCast(schema0?.items).type).toBe("string");
+			expect(createTestSchema(schema0?.items).type).toBe("string");
 			expect(schema0?.format).toBe("uuid");
 		});
 
@@ -666,16 +672,14 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
 			expect(pathInfo).toBeDefined();
-			const resp = pathInfo.responses?.["200"];
+			const resp = pathInfo?.responses?.["200"];
 			// Swagger 2 response schema moves to content.application/json.schema
-			expect(
-				testCast<TestValue>(resp).content?.["application/json"].schema,
-			).toEqual({
+			expect(resp?.content?.["application/json"]?.schema).toEqual({
 				type: "string",
 			});
-			expect(testCast<TestValue>(resp).headers?.X).toBeDefined();
+			expect(resp?.headers?.X).toBeDefined();
 		});
 
 		it("should extract the QUERY method from paths (OAS 3.2)", () => {
@@ -688,10 +692,10 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
 			expect(pathInfo).toBeDefined();
-			expect(pathInfo.method).toBe("QUERY");
-			expect(pathInfo.operationId).toBe("querySearch");
+			expect(pathInfo?.method).toBe("QUERY");
+			expect(pathInfo?.operationId).toBe("querySearch");
 		});
 
 		it("should propagate x- properties on operations and parameters", () => {
@@ -712,11 +716,9 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			expect(testCast(pathInfo)["x-custom-op"]).toBe("op-value");
-			expect(testCast(pathInfo.parameters?.[0])["x-custom-param"]).toBe(
-				"param-value",
-			);
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			expect(pathInfo?.["x-custom-op"]).toBe("op-value");
+			expect(pathInfo?.parameters?.[0]?.["x-custom-param"]).toBe("param-value");
 		});
 
 		it("should merge path-level and operation-level parameters and preserve flags", () => {
@@ -745,15 +747,15 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			const idParam = pathInfo.parameters?.find((p) => p.name === "id")!;
-			const filterParam = pathInfo.parameters?.find(
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			const idParam = pathInfo?.parameters?.find((p) => p.name === "id");
+			const filterParam = pathInfo?.parameters?.find(
 				(p) => p.name === "filter",
-			)!;
+			);
 
-			expect(idParam.description).toBe("Path id");
-			expect(filterParam.allowReserved).toBe(true);
-			expect(filterParam.allowEmptyValue).toBe(true);
+			expect(idParam?.description).toBe("Path id");
+			expect(filterParam?.allowReserved).toBe(true);
+			expect(filterParam?.allowEmptyValue).toBe(true);
 		});
 
 		it("should tolerate non-array path parameters and use path-level description fallback", () => {
@@ -764,8 +766,8 @@ describe("Core Utils: Spec Extractor", () => {
 					get: { responses: { "200": { description: "ok" } } },
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			expect(pathInfo.description).toBe("Path description");
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			expect(pathInfo?.description).toBe("Path description");
 		});
 
 		it("should include externalDocs when provided on operation", () => {
@@ -781,8 +783,8 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			expect(pathInfo.externalDocs?.url).toBe("https://example.com");
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			expect(pathInfo?.externalDocs?.url).toBe("https://example.com");
 		});
 
 		it("should ignore undefined parameters and apply default explode rules", () => {
@@ -811,10 +813,10 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			const opParam = pathInfo.parameters?.find((p) => p.name === "op");
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			const opParam = pathInfo?.parameters?.find((p) => p.name === "op");
 			expect(opParam?.explode).toBe(true);
-			const cParam = pathInfo.parameters?.find((p) => p.name === "c");
+			const cParam = pathInfo?.parameters?.find((p) => p.name === "c");
 			expect(cParam?.schema).toEqual({ type: "number" });
 		});
 
@@ -834,8 +836,76 @@ describe("Core Utils: Spec Extractor", () => {
 					},
 				},
 			};
-			const [pathInfo] = utils.extractPaths(testCast(swaggerPaths));
-			expect(pathInfo.parameters?.[0].explode).toBe(false);
+			const [pathInfo] = utils.extractPaths(createTestPaths(swaggerPaths));
+			expect(pathInfo?.parameters?.[0]?.explode).toBe(false);
+		});
+
+		it("should handle resolveObj without resolveRef, summary/description ref overrides, Swagger 2.0 bodyParam metadata, empty content, and missing responses", () => {
+			const swaggerPaths = {
+				"/ref-summary": {
+					get: {
+						parameters: [
+							{
+								$ref: "#/components/parameters/P1",
+								summary: "OnlySummary",
+							},
+						],
+						requestBody: {
+							content: {
+								"application/json": undefined,
+							},
+						},
+					},
+					post: {
+						parameters: [
+							{
+								in: "body",
+								name: "body",
+								description: "Body desc",
+								required: true,
+								schema: { type: "object" },
+							},
+						],
+						responses: {
+							"200": {
+								schema: { type: "string" },
+								headers: {
+									"X-Null": undefined,
+								},
+							},
+						},
+					},
+				},
+			};
+
+			const opsWithResolveRef = utils.extractPaths(
+				createTestPaths(swaggerPaths),
+				(ref: string) =>
+					ref === "#/components/parameters/P1"
+						? { name: "p1", in: "query", schema: { type: "string" } }
+						: undefined,
+			);
+			expect(opsWithResolveRef).toHaveLength(2);
+			expect(opsWithResolveRef[1]?.requestBody?.description).toBe("Body desc");
+			expect(opsWithResolveRef[1]?.requestBody?.required).toBe(true);
+
+			const opsWithResolveObjOnly = utils.extractPaths(
+				createTestPaths({
+					"/obj-only": {
+						get: {
+							parameters: [
+								{ name: "p", in: "query", schema: { type: "string" } },
+							],
+							responses: { "200": { description: "ok" } },
+						},
+					},
+				}),
+				undefined,
+				undefined,
+				{ isOpenApi3: true },
+				(_obj) => undefined,
+			);
+			expect(opsWithResolveObjOnly).toHaveLength(1);
 		});
 	});
 });

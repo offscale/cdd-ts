@@ -16,6 +16,6 @@ export class FormRenderer {
 	 */
 	public static extractFields(resource: Resource): FormProperty[] {
 		// Form properties are resolved during resource discovery, so we can just return them.
-		return resource.formProperties || [];
+		return resource.formProperties;
 	}
 }

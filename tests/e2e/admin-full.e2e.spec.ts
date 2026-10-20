@@ -1,6 +1,6 @@
 import type { ClassDeclaration, Project, SourceFile } from "ts-morph";
 import { beforeAll, describe, expect, it } from "vitest";
-import { runGenerator, testCast } from "../shared/helpers.js";
+import { createTestOptions, runGenerator } from "../shared/helpers.js";
 import { coverageSpec, polymorphismSpec } from "../shared/specs.js";
 
 describe("E2E: Admin UI Generation", () => {
@@ -9,7 +9,7 @@ describe("E2E: Admin UI Generation", () => {
 	// Helper to generate the admin UI and return the project
 	const runAdminGen = async (spec: object) => {
 		project = await runGenerator(spec, {
-			options: testCast({
+			options: createTestOptions({
 				admin: true,
 				generateServices: true,
 				dateType: "string",
@@ -30,15 +30,15 @@ describe("E2E: Admin UI Generation", () => {
 				.getSourceFileOrThrow(
 					"/generated/admin/users/users-list/users-list.component.ts",
 				)
-				.getClass("UsersListComponent")!;
+				.getClassOrThrow("UsersListComponent");
 			formComponent = project
 				.getSourceFileOrThrow(
 					"/generated/admin/users/users-form/users-form.component.ts",
 				)
-				.getClass("UserFormComponent")!;
+				.getClassOrThrow("UserFormComponent");
 			routingFile = project.getSourceFileOrThrow(
 				"/generated/admin/users/users.routes.ts",
-			)!;
+			);
 		});
 		it("should generate a fully-featured list component", () => {
 			expect(listComponent).toBeDefined();
@@ -52,9 +52,8 @@ describe("E2E: Admin UI Generation", () => {
 
 		it("should generate a fully-featured form component", () => {
 			expect(formComponent).toBeDefined();
-			const initFormBody = formComponent
-				.getMethodOrThrow("initForm")
-				.getBodyText()!;
+			const initFormBody =
+				formComponent.getMethodOrThrow("initForm").getBodyText() ?? "";
 
 			expect(initFormBody).toContain(
 				"'name': new FormControl<string | null>(null)",
@@ -64,9 +63,8 @@ describe("E2E: Admin UI Generation", () => {
 			expect(initFormBody).toContain("'id':");
 			expect(initFormBody).toContain("this.form.get('id')?.disable");
 
-			const submitBody = formComponent
-				.getMethodOrThrow("onSubmit")
-				.getBodyText()!;
+			const submitBody =
+				formComponent.getMethodOrThrow("onSubmit").getBodyText() ?? "";
 			expect(submitBody).toContain(
 				"this.usersService.createUser(finalPayload)",
 			);
@@ -103,7 +101,7 @@ describe("E2E: Admin UI Generation", () => {
 				.getSourceFileOrThrow(
 					"/generated/admin/pets/pets-form/pets-form.component.ts",
 				)
-				?.getClass("PetFormComponent")!;
+				.getClassOrThrow("PetFormComponent");
 			const html = project
 				.getFileSystem()
 				.readFileSync(

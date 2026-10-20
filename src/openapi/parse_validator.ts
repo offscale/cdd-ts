@@ -25,20 +25,24 @@ export { SpecValidationError } from "./validators/validate_info.js";
  * @param spec - The parsed specification object.
  * @throws {SpecValidationError} When the specification violates OpenAPI or Swagger constraints.
  */
-export function validateSpec(spec: SwaggerSpec): void {
-	const { isOpenApi3 } = validateInfoAndRootMeta(spec);
+export function validateSpec(spec: unknown): asserts spec is SwaggerSpec {
+	const candidate = spec as SwaggerSpec;
+	const { isOpenApi3 } = validateInfoAndRootMeta(candidate);
 
-	const callbackPaths = validatePathsWebhooksAndOperationIds(spec, isOpenApi3);
+	const callbackPaths = validatePathsWebhooksAndOperationIds(
+		candidate,
+		isOpenApi3,
+	);
 
 	if (isOpenApi3) {
-		validateAllServerLocations(spec, callbackPaths);
+		validateAllServerLocations(candidate, callbackPaths);
 	}
 
-	validateComponentsAndDefinitions(spec, isOpenApi3);
+	validateComponentsAndDefinitions(candidate, isOpenApi3);
 
-	const hasPaths = spec.paths !== undefined && spec.paths !== null;
-	const hasComponents = !!spec.components;
-	const hasWebhooks = !!spec.webhooks;
+	const hasPaths = candidate.paths !== undefined && candidate.paths !== null;
+	const hasComponents = !!candidate.components;
+	const hasWebhooks = !!candidate.webhooks;
 
 	if (isOpenApi3) {
 		if (!hasPaths && !hasComponents && !hasWebhooks) {
@@ -46,8 +50,8 @@ export function validateSpec(spec: SwaggerSpec): void {
 				"OpenAPI 3.x specification must contain at least one of: 'paths', 'components', or 'webhooks'.",
 			);
 		}
-		validateTags(spec.tags);
-		validateJsonSchemaDialect(spec);
+		validateTags(candidate.tags);
+		validateJsonSchemaDialect(candidate);
 	} else {
 		if (!hasPaths) {
 			throw new SpecValidationError(

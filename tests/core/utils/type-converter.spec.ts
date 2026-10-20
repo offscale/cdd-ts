@@ -4,7 +4,12 @@ import type {
 	SwaggerDefinition,
 } from "@src/core/types/index.js";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../../shared/helpers.js";
+import {
+	createTestOptions,
+	createTestRequestBody,
+	createTestResponse,
+	createTestSchema,
+} from "../../shared/helpers.js";
 
 describe("Core Utils: Type Converter", () => {
 	const config: GeneratorConfig = {
@@ -28,7 +33,11 @@ describe("Core Utils: Type Converter", () => {
 						"invalid-key": { type: "object" },
 					},
 				};
-				const result = utils.getTypeScriptType(testCast(schema), config, []);
+				const result = utils.getTypeScriptType(
+					createTestSchema(schema),
+					config,
+					[],
+				);
 				expect(result).toContain("{ foo?: string }");
 				expect(result).toContain(
 					"({ foo: string | number | boolean | object | undefined | null }",
@@ -47,7 +56,11 @@ describe("Core Utils: Type Converter", () => {
 						empty: [],
 					},
 				};
-				const result = utils.getTypeScriptType(testCast(schema), config, []);
+				const result = utils.getTypeScriptType(
+					createTestSchema(schema),
+					config,
+					[],
+				);
 				expect(result).toContain("{ foo?: string }");
 				expect(result).toContain(
 					"({ foo: string | number | boolean | object | undefined | null } & { bar: string | number | boolean | object | undefined | null; baz: string | number | boolean | object | undefined | null })",
@@ -62,10 +75,14 @@ describe("Core Utils: Type Converter", () => {
 					type: "object",
 					properties: { foo: { type: "string" } },
 					dependentRequired: {
-						foo: testCast<string[]>([123]),
+						foo: [123],
 					},
 				};
-				const result = utils.getTypeScriptType(testCast(schema), config, []);
+				const result = utils.getTypeScriptType(
+					createTestSchema(schema),
+					config,
+					[],
+				);
 				expect(result).not.toContain("&"); // No dependencies added
 			});
 
@@ -75,7 +92,11 @@ describe("Core Utils: Type Converter", () => {
 					dependentSchemas: {},
 					dependentRequired: {},
 				};
-				const result = utils.getTypeScriptType(testCast(schema), config, []);
+				const result = utils.getTypeScriptType(
+					createTestSchema(schema),
+					config,
+					[],
+				);
 				expect(result).toBe(
 					"{ [key: string]: string | number | boolean | object | undefined | null }",
 				);
@@ -195,7 +216,7 @@ describe("Core Utils: Type Converter", () => {
 
 		it("should handle array of types (nullable)", () => {
 			const schema: SwaggerDefinition = {
-				type: testCast(["string", "null"]),
+				type: ["string", "null"],
 			};
 			expect(utils.getTypeScriptType(schema, config)).toBe("string | null");
 		});
@@ -276,14 +297,14 @@ describe("Core Utils: Type Converter", () => {
 		it("should handle null values in enums", () => {
 			const schema: SwaggerDefinition = {
 				type: "string",
-				enum: ["A", testCast(null)],
+				enum: ["A", null],
 			};
 			expect(
 				utils.getTypeScriptType(
 					schema,
 					{
 						...config,
-						options: testCast({ enumStyle: "union" }),
+						options: createTestOptions({ enumStyle: "union" }),
 					},
 					[],
 				),
@@ -683,23 +704,23 @@ describe("Core Utils: Type Converter", () => {
 
 		it("should infer object type from properties if type undefined", () => {
 			const schema = { properties: { id: { type: "string" } } };
-			expect(utils.getTypeScriptType(testCast(schema), config, [])).toContain(
-				"id?: string",
-			);
+			expect(
+				utils.getTypeScriptType(createTestSchema(schema), config, []),
+			).toContain("id?: string");
 		});
 
 		it('should return "string | number | boolean | object | undefined | null" for string | number | boolean | object | undefined | null schema types in switch default', () => {
 			const schema = { type: "alien-type" };
-			expect(utils.getTypeScriptType(testCast(schema), config)).toBe(
+			expect(utils.getTypeScriptType(createTestSchema(schema), config)).toBe(
 				"string | number | boolean | object | undefined | null",
 			);
 		});
 
 		it('should return "string | number | boolean | object | undefined | null" for null or undefined schema input', () => {
-			expect(utils.getTypeScriptType(testCast(undefined), config, [])).toBe(
+			expect(utils.getTypeScriptType(undefined, config, [])).toBe(
 				"string | number | boolean | object | undefined | null",
 			);
-			expect(utils.getTypeScriptType(testCast(null), config, [])).toBe(
+			expect(utils.getTypeScriptType(null, config, [])).toBe(
 				"string | number | boolean | object | undefined | null",
 			);
 		});
@@ -712,9 +733,9 @@ describe("Core Utils: Type Converter", () => {
 			);
 			expect(
 				utils.getRequestBodyType(
-					{
-						content: testCast(undefined),
-					},
+					createTestRequestBody({
+						content: undefined,
+					}),
 					config,
 					[],
 				),
@@ -728,7 +749,9 @@ describe("Core Utils: Type Converter", () => {
 					"application/json": { schema: { type: "number" } },
 				},
 			};
-			expect(utils.getRequestBodyType(testCast(rb), config, [])).toBe("number");
+			expect(
+				utils.getRequestBodyType(createTestRequestBody(rb), config, []),
+			).toBe("number");
 		});
 
 		it("should prefer specific media types over wildcard ranges", () => {
@@ -738,7 +761,9 @@ describe("Core Utils: Type Converter", () => {
 					"application/json": { schema: { type: "number" } },
 				},
 			};
-			expect(utils.getRequestBodyType(testCast(rb), config, [])).toBe("number");
+			expect(
+				utils.getRequestBodyType(createTestRequestBody(rb), config, []),
+			).toBe("number");
 		});
 
 		it("should handle sorting by index as a final tie-breaker", () => {
@@ -749,7 +774,9 @@ describe("Core Utils: Type Converter", () => {
 				},
 			};
 			// image/png is first, so it wins
-			expect(utils.getRequestBodyType(testCast(rb), config, [])).toBe("string");
+			expect(
+				utils.getRequestBodyType(createTestRequestBody(rb), config, []),
+			).toBe("string");
 		});
 
 		it("should match regex media subtypes (OAS range tests)", () => {
@@ -762,7 +789,9 @@ describe("Core Utils: Type Converter", () => {
 			// Wait, this is used in matching ranges against candidates. Let's just create
 			// a custom function to test `matchesMediaType` if possible, or trigger it via the existing code.
 			// It's used in filterMediaTypeEntries.
-			expect(utils.getRequestBodyType(testCast(rb), config, [])).toBe("number");
+			expect(
+				utils.getRequestBodyType(createTestRequestBody(rb), config, []),
+			).toBe("number");
 		});
 
 		it("should hit Priority 6 fallback in getMediaTypePriority", () => {
@@ -771,7 +800,9 @@ describe("Core Utils: Type Converter", () => {
 					"audio/mpeg": { schema: { type: "string" } },
 				},
 			};
-			expect(utils.getRequestBodyType(testCast(rb), config, [])).toBe("string");
+			expect(
+				utils.getRequestBodyType(createTestRequestBody(rb), config, []),
+			).toBe("string");
 		});
 
 		it("should prefer structured JSON media types over text", () => {
@@ -781,9 +812,9 @@ describe("Core Utils: Type Converter", () => {
 					"application/vnd.acme+json": { schema: { type: "boolean" } },
 				},
 			};
-			expect(utils.getRequestBodyType(testCast(rb), config, [])).toBe(
-				"boolean",
-			);
+			expect(
+				utils.getRequestBodyType(createTestRequestBody(rb), config, []),
+			).toBe("boolean");
 		});
 
 		it("should fallback to first available key if no priority match", () => {
@@ -792,7 +823,9 @@ describe("Core Utils: Type Converter", () => {
 					"image/png": { schema: { type: "string", format: "binary" } },
 				},
 			};
-			expect(utils.getRequestBodyType(testCast(rb), config, [])).toBe("Blob");
+			expect(
+				utils.getRequestBodyType(createTestRequestBody(rb), config, []),
+			).toBe("Blob");
 		});
 
 		it('should return "string | number | boolean | object | undefined | null" if content map exists but fallback schema is missing', () => {
@@ -803,9 +836,9 @@ describe("Core Utils: Type Converter", () => {
 					},
 				},
 			};
-			expect(utils.getRequestBodyType(testCast(rb), config, [])).toBe(
-				"string | number | boolean | object | undefined | null",
-			);
+			expect(
+				utils.getRequestBodyType(createTestRequestBody(rb), config, []),
+			).toBe("string | number | boolean | object | undefined | null");
 		});
 
 		it("should return array type based on itemSchema for sequential payloads", () => {
@@ -816,9 +849,9 @@ describe("Core Utils: Type Converter", () => {
 					},
 				},
 			};
-			expect(utils.getRequestBodyType(testCast(rb), config, [])).toBe(
-				"(boolean)[]",
-			);
+			expect(
+				utils.getRequestBodyType(createTestRequestBody(rb), config, []),
+			).toBe("(boolean)[]");
 		});
 	});
 
@@ -832,7 +865,9 @@ describe("Core Utils: Type Converter", () => {
 			const resp = {
 				content: { "application/json": { schema: { type: "boolean" } } },
 			};
-			expect(utils.getResponseType(testCast(resp), config, [])).toBe("boolean");
+			expect(utils.getResponseType(createTestResponse(resp), config, [])).toBe(
+				"boolean",
+			);
 		});
 
 		it("should prefer specific media types over wildcard ranges", () => {
@@ -842,7 +877,9 @@ describe("Core Utils: Type Converter", () => {
 					"text/plain": { schema: { type: "number" } },
 				},
 			};
-			expect(utils.getResponseType(testCast(resp), config, [])).toBe("number");
+			expect(utils.getResponseType(createTestResponse(resp), config, [])).toBe(
+				"number",
+			);
 		});
 
 		it("should prefer structured JSON media types over text", () => {
@@ -852,7 +889,9 @@ describe("Core Utils: Type Converter", () => {
 					"application/vnd.acme+json": { schema: { type: "boolean" } },
 				},
 			};
-			expect(utils.getResponseType(testCast(resp), config, [])).toBe("boolean");
+			expect(utils.getResponseType(createTestResponse(resp), config, [])).toBe(
+				"boolean",
+			);
 		});
 
 		it("should return array type based on itemSchema for sequential responses", () => {
@@ -863,19 +902,23 @@ describe("Core Utils: Type Converter", () => {
 					},
 				},
 			};
-			expect(utils.getResponseType(testCast(resp), config, [])).toBe(
+			expect(utils.getResponseType(createTestResponse(resp), config, [])).toBe(
 				"(string)[]",
 			);
 		});
 
 		it('should return "void" if no keys exist in content', () => {
 			const resp = { content: {} };
-			expect(utils.getResponseType(testCast(resp), config, [])).toBe("void");
+			expect(utils.getResponseType(createTestResponse(resp), config, [])).toBe(
+				"void",
+			);
 		});
 
 		it("should fallback to first key if no JSON found", () => {
 			const resp = { content: { "text/csv": { schema: { type: "string" } } } };
-			expect(utils.getResponseType(testCast(resp), config, [])).toBe("string");
+			expect(utils.getResponseType(createTestResponse(resp), config, [])).toBe(
+				"string",
+			);
 		});
 
 		it('should return "void" if fallback content has no schema', () => {
@@ -886,7 +929,9 @@ describe("Core Utils: Type Converter", () => {
 					},
 				},
 			};
-			expect(utils.getResponseType(testCast(resp), config, [])).toBe("void");
+			expect(utils.getResponseType(createTestResponse(resp), config, [])).toBe(
+				"void",
+			);
 		});
 	});
 
@@ -927,8 +972,127 @@ describe("Core Utils: Type Converter", () => {
 		it("should return false for quoted string unions", () => {
 			expect(utils.isDataTypeInterface("'active' | 'inactive'")).toBe(false);
 		});
-		it("should return false for empty strings", () => {
+		it("should return empty string for empty strings", () => {
 			expect(utils.isDataTypeInterface("")).toBe(false);
+		});
+
+		it("should cover media type specificity, priority, textual/binary helpers, and tuple rest intersection wrapping", () => {
+			// 1. contentMediaType = application/x-www-form-urlencoded (textual) and audio/video/octet-stream (binary)
+			expect(
+				utils.getTypeScriptType(
+					{
+						type: "string",
+						contentMediaType: "application/x-www-form-urlencoded",
+					},
+					config,
+					[],
+				),
+			).toBe("string");
+			expect(
+				utils.getTypeScriptType(
+					{ type: "string", contentMediaType: "audio/mp3" },
+					config,
+					[],
+				),
+			).toBe("Blob");
+			expect(
+				utils.getTypeScriptType(
+					{ type: "string", contentMediaType: "video/mp4" },
+					config,
+					[],
+				),
+			).toBe("Blob");
+			expect(
+				utils.getTypeScriptType(
+					{ type: "string", contentMediaType: "application/octet-stream" },
+					config,
+					[],
+				),
+			).toBe("Blob");
+
+			// 2. prefixItems with items/unevaluatedItems containing | or &
+			expect(
+				utils.getTypeScriptType(
+					{
+						type: "array",
+						prefixItems: [{ type: "string" }],
+						items: { oneOf: [{ type: "string" }, { type: "number" }] },
+					},
+					config,
+					[],
+				),
+			).toBe("[string, ...(string | number)[]]");
+			expect(
+				utils.getTypeScriptType(
+					{
+						type: "array",
+						prefixItems: [{ type: "string" }],
+						items: { allOf: [{ type: "string" }, { type: "number" }] },
+					},
+					config,
+					[],
+				),
+			).toBe("[string, ...(string & number)[]]");
+			expect(
+				utils.getTypeScriptType(
+					{
+						type: "array",
+						prefixItems: [{ type: "string" }],
+						unevaluatedItems: {
+							oneOf: [{ type: "string" }, { type: "number" }],
+						},
+					},
+					config,
+					[],
+				),
+			).toBe("[string, ...(string | number)[]]");
+			expect(
+				utils.getTypeScriptType(
+					{
+						type: "array",
+						prefixItems: [{ type: "string" }],
+						unevaluatedItems: {
+							allOf: [{ type: "string" }, { type: "number" }],
+						},
+					},
+					config,
+					[],
+				),
+			).toBe("[string, ...(string & number)[]]");
+
+			// 3. getRequestBodyType with invalid mediaType (no slash), empty key, undefined media entry, x-json, multipart/form-data, x-www-form-urlencoded, and specificity tie-break
+			expect(
+				utils.getRequestBodyType(
+					createTestRequestBody({
+						content: {
+							"": { schema: { type: "string" } },
+							invalid: { schema: { type: "string" } },
+							"text/*": { schema: { type: "string" } },
+							"application/x-json": { schema: { type: "number" } },
+							"multipart/form-data": { schema: { type: "boolean" } },
+							"application/x-www-form-urlencoded": {
+								schema: { type: "string" },
+							},
+							"ignored/null": undefined,
+						},
+					}),
+					config,
+					[],
+				),
+			).toBe("number");
+
+			expect(
+				utils.getRequestBodyType(
+					createTestRequestBody({
+						content: {
+							"image/*": { schema: { type: "string" } },
+							"audio/mpeg": { schema: { type: "number" } },
+						},
+					}),
+					config,
+					[],
+				),
+			).toBe("number");
 		});
 	});
 });

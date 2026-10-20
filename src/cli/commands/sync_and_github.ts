@@ -36,13 +36,8 @@ export async function syncDir(options: SyncCliOptions): Promise<void> {
 		if (options.truth === "typeorm") {
 			toActionOpts.orm = "typeorm";
 		}
-		const spec = await generateToOpenApi(toActionOpts, true);
-		if (spec) {
-			console.log("✅ Synced implementation to OpenAPI Spec");
-		} else {
-			console.error("❌ Sync failed to extract spec");
-			process.exit(1);
-		}
+		await generateToOpenApi(toActionOpts, true);
+		console.log("✅ Synced implementation to OpenAPI Spec");
 	} else if (options.truth === "arazzo") {
 		generateToArazzo({
 			input: options.input,

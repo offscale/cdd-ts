@@ -92,8 +92,10 @@ const safeDecodeFragment = (value: string): string => {
  * @param value - Full URI string.
  * @returns Base URI without fragment.
  */
-const stripFragment = (value: string): string =>
-	value.split("#", 1)[0] ?? value;
+const stripFragment = (value: string): string => {
+	const hashIndex = value.indexOf("#");
+	return hashIndex === -1 ? value : value.slice(0, hashIndex);
+};
 
 /**
  * Resolves OpenAPI references ($ref and $dynamicRef) including context-aware resolution for OAS 3.1.
@@ -166,10 +168,7 @@ export class ReferenceResolver {
 
 			if ("$id" in objRec && typeof objRec.$id === "string") {
 				try {
-					nextBase =
-						typeof URL !== "undefined"
-							? new URL(objRec.$id, currentBase).href
-							: objRec.$id;
+					nextBase = new URL(objRec.$id, currentBase).href;
 
 					if (!cache.has(nextBase)) {
 						cache.set(nextBase, obj as SwaggerSpec);
@@ -248,7 +247,7 @@ export class ReferenceResolver {
 	 * @param resolutionStack - Stack of previously visited reference URIs for cycle detection and dynamic scope.
 	 * @returns The resolved target object of type `T`, or `undefined`.
 	 */
-	public resolve<T>(
+	public resolve<T = SwaggerDefinition>(
 		obj:
 			| T
 			| { $ref: string }
@@ -318,7 +317,7 @@ export class ReferenceResolver {
 		currentDocUri: string = this.entryDocumentUri,
 		resolutionStack: string[] = [],
 	): T | undefined {
-		if (typeof ref !== "string") {
+		if (!ref) {
 			return undefined;
 		}
 
@@ -331,26 +330,18 @@ export class ReferenceResolver {
 
 		let logicalBaseUri = currentDocUri;
 		if (currentDocSpec?.$self) {
-			if (typeof URL !== "undefined") {
-				try {
-					logicalBaseUri = new URL(currentDocSpec.$self, currentDocUri).href;
-				} catch {
-					logicalBaseUri = currentDocSpec.$self;
-				}
-			} else {
+			try {
+				logicalBaseUri = new URL(currentDocSpec.$self, currentDocUri).href;
+			} catch {
 				logicalBaseUri = currentDocSpec.$self;
 			}
 		}
 
 		let targetUri = logicalBaseUri;
 		if (filePath) {
-			if (typeof URL !== "undefined") {
-				try {
-					targetUri = new URL(filePath, logicalBaseUri).href;
-				} catch {
-					targetUri = filePath;
-				}
-			} else {
+			try {
+				targetUri = new URL(filePath, logicalBaseUri).href;
+			} catch {
 				targetUri = filePath;
 			}
 		}

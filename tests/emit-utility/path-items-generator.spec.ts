@@ -2,10 +2,13 @@ import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { PathItemsGenerator } from "@src/routes/emit_path_items.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestProject,
+} from "../shared/helpers.js";
 
 const specWithPathItems: SwaggerSpec = {
 	openapi: "3.2.0",
@@ -26,37 +29,26 @@ const specWithPathItems: SwaggerSpec = {
 describe("Emitter: PathItemsGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const parser = new SwaggerParser(spec, config);
 		new PathItemsGenerator(parser, project).generate("/out");
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/path-items.ts");
-		const code = sourceFile.getText();
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/path-items.ts");
 
 	it("should generate registry map for path items", () => {
 		const project = runGenerator(specWithPathItems);
 
 		const { API_PATH_ITEMS } = compileGeneratedFile(project);
 
-		expect(API_PATH_ITEMS.Ping).toBeDefined();
+		expect(API_PATH_ITEMS?.Ping).toBeDefined();
 
-		expect(API_PATH_ITEMS.Ping.get.operationId).toBe("ping");
+		expect(API_PATH_ITEMS?.Ping?.get?.operationId).toBe("ping");
 	});
 
 	it("should handle specs without pathItems", () => {

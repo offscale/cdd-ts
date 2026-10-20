@@ -38,14 +38,9 @@ export class SpecLoader {
 	 * @throws {Error} When the file cannot be read, parsed, or fails specification validation.
 	 */
 	public static loadSync(inputPath: string): LoadedSpecBundle {
-		let documentUri = inputPath;
-		try {
-			documentUri = isUrl(inputPath)
-				? inputPath
-				: `file://${path.resolve(process.cwd(), inputPath)}`;
-		} catch {
-			/* ignore */
-		}
+		const documentUri = isUrl(inputPath)
+			? inputPath
+			: pathToFileURL(path.resolve(process.cwd(), inputPath)).href;
 
 		const cache = new Map<string, SwaggerSpec>();
 		SpecLoader.loadAndCacheSpecRecursiveSync(
@@ -54,20 +49,65 @@ export class SpecLoader {
 			new Set<string>(),
 		);
 
+		return SpecLoader.finalizeLoadedBundle(documentUri, cache);
+	}
+
+	private static indexAndCollectExternalRefs(
+		uri: string,
+		spec: SwaggerSpec,
+		cache: Map<string, SwaggerSpec>,
+	): { baseUri: string; fileRefs: Set<string> } {
+		cache.set(uri, spec);
+
+		const baseUri = spec.$self ? new URL(spec.$self, uri).href : uri;
+
+		if (baseUri !== uri) {
+			cache.set(baseUri, spec);
+		}
+
+		ReferenceResolver.indexSchemaIds(spec, baseUri, cache, uri);
+
+		const refs = ReferenceResolver.findRefs(spec);
+		const operationRefs = SpecLoader.findOperationRefs(spec);
+		const fileRefs = new Set<string>();
+
+		refs.forEach((ref) => {
+			const [filePath] = ref.split("#", 2);
+			if (filePath) fileRefs.add(filePath);
+		});
+
+		operationRefs.forEach((ref) => {
+			const [filePath] = ref.split("#", 2);
+			if (filePath) fileRefs.add(filePath);
+		});
+
+		return { baseUri, fileRefs };
+	}
+
+	private static finalizeLoadedBundle(
+		documentUri: string,
+		cache: Map<string, SwaggerSpec>,
+	): LoadedSpecBundle {
 		const entrySpec = cache.get(documentUri);
+
 		if (!entrySpec) {
 			throw new Error(`Failed to load entry spec from ${documentUri}`);
 		}
 
 		const validated = new Set<SwaggerSpec>();
+
 		for (const doc of cache.values()) {
-			if (!doc || typeof doc !== "object") continue;
 			if (!SpecLoader.isOpenApiOrSwaggerDoc(doc)) continue;
+
 			if (validated.has(doc)) continue;
+
 			validateSpec(doc);
+
 			validated.add(doc);
 		}
+
 		SpecLoader.validateOperationIdsAcrossDocuments(cache);
+
 		return { entrySpec, cache, documentUri };
 	}
 
@@ -81,41 +121,15 @@ export class SpecLoader {
 
 		const content = SpecLoader.loadContentSync(uri);
 		const spec = SpecLoader.parseSpecContent(content, uri);
-		cache.set(uri, spec);
-
-		let baseUri = uri;
-		try {
-			baseUri = spec.$self ? new URL(spec.$self, uri).href : uri;
-		} catch {
-			/* ignore */
-		}
-
-		if (baseUri !== uri) {
-			cache.set(baseUri, spec);
-		}
-
-		ReferenceResolver.indexSchemaIds(spec, baseUri, cache, uri);
-		const refs = ReferenceResolver.findRefs(spec);
-		const operationRefs = SpecLoader.findOperationRefs(spec);
-		const fileRefs = new Set<string>();
-
-		refs.forEach((ref) => {
-			const [filePath] = ref.split("#", 2);
-			if (filePath) fileRefs.add(filePath);
-		});
-		operationRefs.forEach((ref) => {
-			const [filePath] = ref.split("#", 2);
-			if (filePath) fileRefs.add(filePath);
-		});
+		const { baseUri, fileRefs } = SpecLoader.indexAndCollectExternalRefs(
+			uri,
+			spec,
+			cache,
+		);
 
 		for (const filePath of fileRefs) {
 			try {
-				let nextUri = filePath;
-				try {
-					nextUri = new URL(filePath, baseUri).href;
-				} catch {
-					/* ignore */
-				}
+				const nextUri = new URL(filePath, baseUri).href;
 				SpecLoader.loadAndCacheSpecRecursiveSync(nextUri, cache, visited);
 			} catch (_e) {
 				console.warn(
@@ -129,23 +143,11 @@ export class SpecLoader {
 		try {
 			if (isUrl(pathOrUrl) && !pathOrUrl.startsWith("file:")) {
 				throw new Error("Synchronous fetch is not supported");
-			} else {
-				let filePath = pathOrUrl;
-				try {
-					filePath = pathOrUrl.startsWith("file:")
-						? new URL(pathOrUrl).pathname
-						: pathOrUrl;
-				} catch {
-					if (pathOrUrl.startsWith("file://"))
-						filePath = pathOrUrl.substring(7);
-				}
-				if (!fs.existsSync(filePath))
-					throw new Error(`Input file not found at ${filePath}`);
-				console.log("TRACE: ReadFileSync");
-				const ret = fs.readFileSync(filePath, "utf8");
-				console.log("TRACE: ReadFileSync DONE");
-				return ret;
 			}
+			const filePath = new URL(pathOrUrl).pathname;
+			if (!fs.existsSync(filePath))
+				throw new Error(`Input file not found at ${filePath}`);
+			return fs.readFileSync(filePath, "utf8");
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e);
 			throw new Error(`Failed to read content from "${pathOrUrl}": ${message}`);
@@ -172,32 +174,17 @@ export class SpecLoader {
 			new Set<string>(),
 		);
 
-		const entrySpec = cache.get(documentUri);
-
-		if (!entrySpec) {
-			throw new Error(`Failed to load entry spec from ${documentUri}`);
-		}
-
-		const validated = new Set<SwaggerSpec>();
-
-		for (const doc of cache.values()) {
-			if (!doc || typeof doc !== "object") continue;
-
-			if (!SpecLoader.isOpenApiOrSwaggerDoc(doc)) continue;
-
-			if (validated.has(doc)) continue;
-
-			validateSpec(doc);
-
-			validated.add(doc);
-		}
-
-		SpecLoader.validateOperationIdsAcrossDocuments(cache);
-
-		return { entrySpec, cache, documentUri };
+		return SpecLoader.finalizeLoadedBundle(documentUri, cache);
 	}
 
-	private static async loadAndCacheSpecRecursive(
+	/**
+	 * Recursively loads and caches an OpenAPI/Swagger document and its referenced external documents.
+	 *
+	 * @param uri - Resolved document URI.
+	 * @param cache - Document cache map.
+	 * @param visited - Set of already visited URIs.
+	 */
+	public static async loadAndCacheSpecRecursive(
 		uri: string,
 		cache: Map<string, SwaggerSpec>,
 		visited: Set<string>,
@@ -206,39 +193,15 @@ export class SpecLoader {
 
 		visited.add(uri);
 
-		console.log("TRACE: Before loadContent");
 		const content = await SpecLoader.loadContent(uri);
-		console.log("TRACE: After loadContent");
 
 		const spec = SpecLoader.parseSpecContent(content, uri);
 
-		cache.set(uri, spec);
-
-		const baseUri = spec.$self ? new URL(spec.$self, uri).href : uri;
-
-		if (baseUri !== uri) {
-			cache.set(baseUri, spec);
-		}
-
-		ReferenceResolver.indexSchemaIds(spec, baseUri, cache, uri);
-
-		const refs = ReferenceResolver.findRefs(spec);
-
-		const operationRefs = SpecLoader.findOperationRefs(spec);
-
-		const fileRefs = new Set<string>();
-
-		refs.forEach((ref) => {
-			const [filePath] = ref.split("#", 2);
-
-			if (filePath) fileRefs.add(filePath);
-		});
-
-		operationRefs.forEach((ref) => {
-			const [filePath] = ref.split("#", 2);
-
-			if (filePath) fileRefs.add(filePath);
-		});
+		const { baseUri, fileRefs } = SpecLoader.indexAndCollectExternalRefs(
+			uri,
+			spec,
+			cache,
+		);
 
 		for (const filePath of fileRefs) {
 			try {
@@ -275,7 +238,13 @@ export class SpecLoader {
 		return Array.from(refs);
 	}
 
-	private static async loadContent(pathOrUrl: string): Promise<string> {
+	/**
+	 * Loads raw specification content from a local file path, `file://` URL, or remote `http(s)://` URL.
+	 *
+	 * @param pathOrUrl - File path or URL string.
+	 * @returns Raw text content of the specification.
+	 */
+	public static async loadContent(pathOrUrl: string): Promise<string> {
 		try {
 			if (isUrl(pathOrUrl) && !pathOrUrl.startsWith("file:")) {
 				const response = await fetch(pathOrUrl);
@@ -294,10 +263,7 @@ export class SpecLoader {
 				if (!fs.existsSync(filePath))
 					throw new Error(`Input file not found at ${filePath}`);
 
-				console.log("TRACE: ReadFileSync");
-				const ret = fs.readFileSync(filePath, "utf8");
-				console.log("TRACE: ReadFileSync DONE");
-				return ret;
+				return fs.readFileSync(filePath, "utf8");
 			}
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e);
@@ -427,15 +393,16 @@ export class SpecLoader {
 		};
 
 		const collectFromCallbacks = (
-			callbacks: Record<string, OpenApiValue> | undefined,
+			callbacks: Record<string, OpenApiValue>,
 			prefix: string,
 		) => {
-			if (!callbacks) return;
-
 			for (const [callbackName, callbackObj] of Object.entries(callbacks)) {
-				if (!callbackObj || typeof callbackObj !== "object") continue;
-
-				if (isRefLike(callbackObj)) continue;
+				if (
+					!callbackObj ||
+					typeof callbackObj !== "object" ||
+					isRefLike(callbackObj)
+				)
+					continue;
 
 				for (const [expression, callbackPathItem] of Object.entries(
 					callbackObj as Record<string, OpenApiValue>,
@@ -450,8 +417,6 @@ export class SpecLoader {
 		};
 
 		for (const [uri, doc] of cache.entries()) {
-			if (!doc || typeof doc !== "object") continue;
-
 			if (seenDocs.has(doc)) continue;
 
 			if (!SpecLoader.isOpenApiOrSwaggerDoc(doc)) continue;

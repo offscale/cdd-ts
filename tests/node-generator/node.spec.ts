@@ -4,6 +4,7 @@ import type { GeneratorConfig } from "@src/core/types/index.js";
 import { generateFromConfigSync } from "@src/index.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { expectZeroTypeScriptDiagnostics } from "../shared/helpers.js";
 
 describe("Node Implementation", () => {
 	describe("Config Validation", () => {
@@ -63,6 +64,7 @@ describe("Node Implementation", () => {
 			const statements = getTestMethod?.getStatements().map((s) => s.getText());
 			const methodBody = statements?.join(String.fromCharCode(10));
 			expect(methodBody).toContain("requestOptions");
+			expectZeroTypeScriptDiagnostics(project);
 		});
 
 		it("should execute NodeClientGenerator successfully when admin is true", async () => {
@@ -151,6 +153,19 @@ describe("Node Implementation", () => {
 				info: { title: "Test API", version: "1.0" },
 				paths: {
 					"/complex/{id}": {
+						get: {
+							tags: ["Complex"],
+							operationId: "getComplex",
+							parameters: [
+								{
+									name: "id",
+									in: "path",
+									required: true,
+									schema: { type: "string" },
+								},
+							],
+							responses: { "200": { description: "OK" } },
+						},
 						post: {
 							tags: ["Complex"],
 							operationId: "createComplex",

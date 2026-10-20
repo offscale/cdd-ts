@@ -3,7 +3,7 @@ import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 	it("should emit schema identifier JSDoc tags for round-trip", () => {
@@ -26,7 +26,7 @@ describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 			},
 		};
 
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 
 		const sourceFile = project.createSourceFile(
@@ -100,7 +100,7 @@ describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 								"{$request.query.empty}": {
 									post: {
 										requestBody: {
-											content: { "application/json": {} },
+											content: { "*/*": {} },
 										},
 										responses: { "200": { description: "ok" } },
 									},
@@ -142,6 +142,11 @@ describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 				},
 			},
 			webhooks: {
+				webhookGetOnly: {
+					get: {
+						responses: { "200": { description: "ok" } },
+					},
+				},
 				webhookNoContent: {
 					post: {
 						requestBody: {
@@ -169,11 +174,35 @@ describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 					},
 					Composite: {
 						allOf: [
+							true,
+							{ $ref: "#/components/schemas/Missing" },
 							{ $ref: "#/components/schemas/Base" },
 							{ $ref: "#/components/schemas/Plain" },
 							{ $ref: "#/components/schemas/" },
-							{ $ref: "#/components/schemas/Missing" },
+							{ type: "object" },
+							{
+								type: "object",
+								properties: {
+									inlineProp: { type: "string" },
+									boolProp: true,
+								},
+							},
 						],
+					},
+					InlineAllOfOnly: {
+						allOf: [
+							true,
+							{
+								type: "object",
+								properties: {
+									onlyInline: { type: "string" },
+								},
+							},
+						],
+					},
+					PostNoOpid200Headers: {
+						type: "object",
+						properties: { existing: { type: "string" } },
 					},
 					EnumWithNumber: { type: "string", enum: ["1st", "SECOND"] },
 				},
@@ -185,7 +214,7 @@ describe("Emitter: TypeGenerator (Coverage Edges)", () => {
 			},
 		};
 
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 
 		const sourceFile = project.createSourceFile(

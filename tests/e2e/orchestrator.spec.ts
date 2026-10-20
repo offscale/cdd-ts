@@ -3,9 +3,9 @@ import type { GeneratorConfig } from "@src/core/types/index.js";
 import { generateFromConfigSync } from "@src/index.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+	createTestOptions,
 	createTestProject,
 	runGeneratorWithConfig,
-	testCast,
 } from "../shared/helpers.js";
 import { coverageSpec, securitySpec } from "../shared/specs.js";
 
@@ -28,7 +28,10 @@ describe("E2E: Full Generation Orchestrator", () => {
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/generated",
-			options: testCast({ generateServices: true, framework: "angular" }),
+			options: createTestOptions({
+				generateServices: true,
+				framework: "angular",
+			}),
 		};
 		generateFromConfigSync(config, project, { spec: coverageSpec });
 
@@ -50,7 +53,10 @@ describe("E2E: Full Generation Orchestrator", () => {
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/generated",
-			options: testCast({ generateServices: true, framework: "angular" }),
+			options: createTestOptions({
+				generateServices: true,
+				framework: "angular",
+			}),
 		};
 		generateFromConfigSync(config, project, { spec: securitySpec });
 
@@ -65,7 +71,10 @@ describe("E2E: Full Generation Orchestrator", () => {
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/generated",
-			options: testCast({ generateServices: true, framework: "angular" }),
+			options: createTestOptions({
+				generateServices: true,
+				framework: "angular",
+			}),
 		};
 		const cookieSecuritySpec = {
 			openapi: "3.0.0",
@@ -101,7 +110,7 @@ describe("E2E: Full Generation Orchestrator", () => {
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/generated",
-			options: testCast({}),
+			options: createTestOptions({}),
 		};
 		generateFromConfigSync(config, project, { spec: coverageSpec });
 
@@ -114,7 +123,9 @@ describe("E2E: Full Generation Orchestrator", () => {
 	});
 
 	it("should NOT default to generating admin tests when admin option is present but test option is absent", async () => {
-		const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const consoleSpy = vi
+			.spyOn(console, "log")
+			.mockImplementation(() => undefined);
 
 		await runGeneratorWithConfig(coverageSpec, { admin: true });
 
@@ -155,7 +166,9 @@ describe("E2E: Full Generation Orchestrator", () => {
 	});
 
 	it("should skip admin test generation when config is false", async () => {
-		const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const consoleSpy = vi
+			.spyOn(console, "log")
+			.mockImplementation(() => undefined);
 		await runGeneratorWithConfig(coverageSpec, {
 			admin: true,
 			generateAdminTests: false,

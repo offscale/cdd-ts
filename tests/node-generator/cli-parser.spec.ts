@@ -29,11 +29,12 @@ usersCommand.command('getUser')
 		expect(spec.info?.description).toBe("Test CLI");
 
 		expect(spec.servers).toBeDefined();
-		expect(spec.servers?.[0].url).toBe("http://localhost");
+		expect(spec.servers?.[0]?.url).toBe("http://localhost");
 
 		expect(spec.paths).toBeDefined();
-		const getUserOp = spec.paths?.["/users/getUser"].post!;
+		const getUserOp = spec.paths?.["/users/getUser"]?.post;
 		expect(getUserOp).toBeDefined();
+		if (!getUserOp) throw new Error("Expected getUserOp");
 		expect(getUserOp.operationId).toBe("getUser");
 		expect(getUserOp.tags).toEqual(["Users"]);
 		expect(getUserOp.description).toBe("Get User by ID");
@@ -43,18 +44,18 @@ usersCommand.command('getUser')
 			getUserOp.parameters as import("../../src/core/types/openapi.js").Parameter[];
 		expect(parameters.length).toBe(2);
 
-		expect(parameters[0].name).toBe("id");
-		expect(parameters[0].required).toBe(true);
-		expect(parameters[0].description).toBe("User ID");
+		expect(parameters[0]?.name).toBe("id");
+		expect(parameters[0]?.required).toBe(true);
+		expect(parameters[0]?.description).toBe("User ID");
 
-		expect(parameters[1].name).toBe("format");
-		expect(parameters[1].required).toBe(false);
+		expect(parameters[1]?.name).toBe("format");
+		expect(parameters[1]?.required).toBe(false);
 	});
 
 	it("should handle an empty file gracefully", () => {
 		const spec = parseGeneratedCliSource("");
 		expect(spec.info?.title).toBe("api-cli");
-		expect(Object.keys(spec.paths!).length).toBe(0);
+		expect(Object.keys(spec.paths ?? {}).length).toBe(0);
 	});
 
 	it("should handle an invalid call expression and return undefined", () => {
@@ -76,7 +77,7 @@ defaultCommand.command('getSomething')
     .action(() => {});
 `;
 		const spec = parseGeneratedCliSource(sourceText);
-		expect(spec.paths?.["/default/getSomething"].post?.tags).toEqual([
+		expect(spec.paths?.["/default/getSomething"]?.post?.tags).toEqual([
 			"Default",
 		]);
 	});
@@ -111,5 +112,29 @@ usersCommand.command('getUser').description;
 `;
 		const spec = parseGeneratedCliSource(sourceText);
 		expect(spec.paths).toBeDefined();
+	});
+
+	it("should infer delete, put, and patch HTTP methods and handle program.description directly", () => {
+		const sourceText = `
+import { Command } from "commander";
+const program = new Command();
+program.description('Direct program description');
+program.version('1.0.0').description('Ignored non-name description');
+program.option('--server <url>');
+
+const itemsCommand = program.command('items');
+console.log('direct call expression');
+itemsCommand.command('deleteItem')
+    .option('--invalid-flag-format')
+    .action(() => {});
+itemsCommand.command('updateItem').action(() => {});
+itemsCommand.command('patchItem').action(() => {});
+itemsCommand.command();
+`;
+		const spec = parseGeneratedCliSource(sourceText);
+		expect(spec.info?.description).toBe("Direct program description");
+		expect(spec.paths?.["/items/deleteItem"]?.delete).toBeDefined();
+		expect(spec.paths?.["/items/updateItem"]?.put).toBeDefined();
+		expect(spec.paths?.["/items/patchItem"]?.patch).toBeDefined();
 	});
 });

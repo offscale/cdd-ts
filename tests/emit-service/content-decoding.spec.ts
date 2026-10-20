@@ -5,7 +5,7 @@ import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../shared/helpers.js";
+import { createTestOperation } from "../shared/helpers.js";
 
 const encodedContentSpec = {
 	openapi: "3.1.0",
@@ -124,7 +124,7 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 			options: { enumStyle: "enum", framework: "angular" },
 		};
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(testCast(encodedContentSpec), config);
+		const parser = new SwaggerParser(encodedContentSpec, config);
 
 		new TypeGenerator(parser, project, config).generate("/out");
 		new ParameterSerializerGenerator(project).generate("/out");
@@ -158,16 +158,17 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 	it("should generate ContentDecoder.decode call for contentSchema fields", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: TestValue = testCast({
-			method: testCast("GET"),
-			path: testCast("/blob-data"),
-			methodName: testCast("getBlobData"),
-			responses: testCast(encodedContentSpec.paths["/blob-data"].get.responses),
+		const op = createTestOperation({
+			method: "GET",
+			path: "/blob-data",
+			methodName: "getBlobData",
+			responses: encodedContentSpec.paths["/blob-data"].get.responses,
 		});
 
-		methodGen.addServiceMethod(serviceClass, testCast(op));
+		methodGen.addServiceMethod(serviceClass, createTestOperation(op));
 
-		const body = serviceClass.getMethodOrThrow("getBlobData").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getBlobData").getBodyText() ?? "";
 
 		expect(body).toContain(".pipe(");
 		expect(body).toContain(
@@ -180,14 +181,14 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 	it("should generate correct return type signature for contentSchema", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: TestValue = testCast({
-			method: testCast("GET"),
-			path: testCast("/blob-data"),
-			methodName: testCast("getBlobData"),
-			responses: testCast(encodedContentSpec.paths["/blob-data"].get.responses),
+		const op = createTestOperation({
+			method: "GET",
+			path: "/blob-data",
+			methodName: "getBlobData",
+			responses: encodedContentSpec.paths["/blob-data"].get.responses,
 		});
 
-		methodGen.addServiceMethod(serviceClass, testCast(op));
+		methodGen.addServiceMethod(serviceClass, createTestOperation(op));
 
 		const method = serviceClass.getMethodOrThrow("getBlobData");
 		const returnType = method.getReturnType().getText();
@@ -201,18 +202,17 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 	it('should generate XML decoding config for contentMediaType="application/xml"', () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: TestValue = testCast({
-			method: testCast("GET"),
-			path: testCast("/xml-embedded"),
-			methodName: testCast("getXmlEmbedded"),
-			responses: testCast(
-				encodedContentSpec.paths["/xml-embedded"].get.responses,
-			),
+		const op = createTestOperation({
+			method: "GET",
+			path: "/xml-embedded",
+			methodName: "getXmlEmbedded",
+			responses: encodedContentSpec.paths["/xml-embedded"].get.responses,
 		});
 
-		methodGen.addServiceMethod(serviceClass, testCast(op));
+		methodGen.addServiceMethod(serviceClass, createTestOperation(op));
 
-		const body = serviceClass.getMethodOrThrow("getXmlEmbedded").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getXmlEmbedded").getBodyText() ?? "";
 
 		expect(body).toContain("ContentDecoder.decode(response,");
 		expect(body).toContain('"xmlContainer":{"decode":"xml"');
@@ -226,17 +226,14 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 			method: "GET",
 			path: "/json-param",
 			methodName: "getWithJsonParam",
-			parameters: testCast(
-				encodedContentSpec.paths["/json-param"].get.parameters,
-			),
+			parameters: encodedContentSpec.paths["/json-param"].get.parameters,
 			responses: encodedContentSpec.paths["/json-param"].get.responses,
 		};
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass
-			.getMethodOrThrow("getWithJsonParam")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getWithJsonParam").getBodyText() ?? "";
 
 		expect(body).toContain('"serialization":"json"');
 		expect(body).toContain("ParameterSerializer.serializeQueryParam(");
@@ -246,20 +243,17 @@ describe("Emitter: ServiceMethodGenerator (Auto Decoding & Encoding)", () => {
 	it("should include contentEncoding in response decoding config", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: TestValue = testCast({
-			method: testCast("GET"),
-			path: testCast("/base64-response"),
-			methodName: testCast("getBase64Response"),
-			responses: testCast(
-				encodedContentSpec.paths["/base64-response"].get.responses,
-			),
+		const op = createTestOperation({
+			method: "GET",
+			path: "/base64-response",
+			methodName: "getBase64Response",
+			responses: encodedContentSpec.paths["/base64-response"].get.responses,
 		});
 
-		methodGen.addServiceMethod(serviceClass, testCast(op));
+		methodGen.addServiceMethod(serviceClass, createTestOperation(op));
 
-		const body = serviceClass
-			.getMethodOrThrow("getBase64Response")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("getBase64Response").getBodyText() ?? "";
 		expect(body).toContain("ContentDecoder.decode(response,");
 		expect(body).toContain(
 			'"properties":{"blob":{"contentEncoding":"base64"}}',

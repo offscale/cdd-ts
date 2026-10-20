@@ -53,7 +53,7 @@ and then randomly selecting from this pool when generating dependent child recor
 
 	classDef.addProperty({
 		name: "entityPool",
-		type: "Record<string, any[]>",
+		type: "Record<string, Array<{ id?: number | string }>>",
 		initializer: "{}",
 		docs: [
 			{
@@ -65,7 +65,7 @@ and then randomly selecting from this pool when generating dependent child recor
 
 	// Generate mapping functions
 	for (const schema of schemas) {
-		let mappingBody = `const entity = new ${schema.name}();\n`;
+		let mappingBody = `const entity = new ${schema.name}();\nconst record = entity as unknown as Record<string, unknown>;\n`;
 		const props = schema.definition.properties || {};
 		for (const [propName, propDef] of Object.entries(props)) {
 			if (
@@ -99,12 +99,12 @@ and then randomly selecting from this pool when generating dependent child recor
 					parentName.charAt(0).toUpperCase() + parentName.slice(1);
 				mappingBody += `        if (this.entityPool['${capitalizedParent}'] && this.entityPool['${capitalizedParent}'].length > 0) {
             const pool = this.entityPool['${capitalizedParent}'];
-            (entity as any).${propName} = pool[Math.floor(Math.random() * pool.length)].id;
+            record.${propName} = pool[Math.floor(Math.random() * pool.length)].id;
         } else {
-            (entity as any).${propName} = ${fakerCall};
+            record.${propName} = ${fakerCall};
         }\n`;
 			} else {
-				mappingBody += `        (entity as any).${propName} = ${fakerCall};\n`;
+				mappingBody += `        record.${propName} = ${fakerCall};\n`;
 			}
 		}
 		mappingBody += `        return entity;`;

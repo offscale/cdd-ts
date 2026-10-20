@@ -1,4 +1,3 @@
-import type { Resource } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ReactAdminGenerator } from "@src/vendors/react/admin/admin.generator.js";
 import { AdminTestGenerator } from "@src/vendors/react/admin/admin-test.generator.js";
@@ -12,9 +11,13 @@ import { RoutingGenerator } from "@src/vendors/react/admin/routing.generator.js"
 import { StylingBuilder } from "@src/vendors/react/admin/styling.builder.js";
 import { Project } from "ts-morph";
 import { beforeEach, describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestResource,
+	createTestSpec,
+} from "../shared/helpers.js";
 
-const mockDoc = testCast({
+const mockDoc = {
 	openapi: "3.0.0",
 	info: { title: "Test API", version: "1.0.0" },
 	paths: {
@@ -35,7 +38,7 @@ const mockDoc = testCast({
 			},
 		},
 	},
-});
+};
 
 describe("ReactAdminGenerator", () => {
 	let project: Project;
@@ -43,14 +46,14 @@ describe("ReactAdminGenerator", () => {
 
 	beforeEach(async () => {
 		project = new Project({ useInMemoryFileSystem: true });
-		parser = new SwaggerParser(testCast(mockDoc), testCast({}));
+		parser = new SwaggerParser(createTestSpec(mockDoc), createTestConfig({}));
 	});
 
 	it("generates admin UI files successfully", async () => {
 		const generator = new ReactAdminGenerator(
 			parser,
 			project,
-			testCast({
+			createTestConfig({
 				options: { tests: true },
 			}),
 		);
@@ -78,7 +81,7 @@ describe("ReactAdminGenerator", () => {
 		const generator = new ReactAdminGenerator(
 			parser,
 			project,
-			testCast({
+			createTestConfig({
 				options: { tests: true },
 			}),
 		);
@@ -87,12 +90,15 @@ describe("ReactAdminGenerator", () => {
 	});
 
 	it("skips generation when no admin resources are found", async () => {
-		const emptyDoc = testCast({
+		const emptyDoc = {
 			openapi: "3.0.0",
 			info: { title: "Empty API", version: "1.0.0" },
 			paths: {},
-		});
-		const emptyParser = new SwaggerParser(testCast(emptyDoc), testCast({}));
+		};
+		const emptyParser = new SwaggerParser(
+			createTestSpec(emptyDoc),
+			createTestConfig({}),
+		);
 
 		const generator = new ReactAdminGenerator(emptyParser, project);
 		await generator.generate("/out");
@@ -102,7 +108,7 @@ describe("ReactAdminGenerator", () => {
 	});
 
 	it("generates only list components and skips forms when resources are read-only", async () => {
-		const readOnlyDoc = testCast({
+		const readOnlyDoc = {
 			openapi: "3.0.0",
 			info: { title: "Read Only API", version: "1.0.0" },
 			paths: {
@@ -113,10 +119,10 @@ describe("ReactAdminGenerator", () => {
 					},
 				},
 			},
-		});
+		};
 		const readOnlyParser = new SwaggerParser(
-			testCast(readOnlyDoc),
-			testCast({}),
+			createTestSpec(readOnlyDoc),
+			createTestConfig({}),
 		);
 
 		const generator = new ReactAdminGenerator(readOnlyParser, project);
@@ -136,11 +142,11 @@ describe("ReactAdminGenerator", () => {
 	});
 
 	it("should respect config.options.tests being false", () => {
-		const config = testCast({ options: { tests: false } });
+		const config = { options: { tests: false } };
 		const generator = new ReactAdminGenerator(
 			parser,
 			project,
-			testCast(config),
+			createTestConfig(config),
 		);
 		generator.generate("/out");
 
@@ -157,7 +163,7 @@ describe("ListComponentGenerator", () => {
 	it("generates a React list component", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const gen = new ListComponentGenerator(project);
-		const resource = testCast<Resource>({
+		const resource = createTestResource({
 			name: "products",
 			operations: [],
 			isEditable: false,
@@ -169,7 +175,7 @@ describe("ListComponentGenerator", () => {
 	it("uses operation method name if provided", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const gen = new ListComponentGenerator(project);
-		const resource = testCast<Resource>({
+		const resource = createTestResource({
 			name: "products",
 			operations: [{ action: "list", methodName: "fetchProducts" }],
 			isEditable: false,
@@ -183,7 +189,7 @@ describe("FormComponentGenerator", () => {
 	it("generates a React form component", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const gen = new FormComponentGenerator(project);
-		const resource = testCast<Resource>({
+		const resource = createTestResource({
 			name: "products",
 			operations: [],
 			isEditable: true,
@@ -196,7 +202,7 @@ describe("FormComponentGenerator", () => {
 	it("uses operation method names if provided", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const gen = new FormComponentGenerator(project);
-		const resource = testCast<Resource>({
+		const resource = createTestResource({
 			name: "products",
 			operations: [
 				{ action: "getById", methodName: "fetchProduct" },
@@ -218,7 +224,7 @@ describe("RoutingGenerator", () => {
 	it("generates routes and app shell", () => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const gen = new RoutingGenerator(project);
-		const resource = testCast<Resource>({
+		const resource = createTestResource({
 			name: "products",
 			operations: [],
 			isEditable: true,
@@ -286,14 +292,14 @@ describe("FormRenderer", () => {
 			isEditable: true,
 			formProperties: [{ name: "id", schema: { type: "string" } }],
 		};
-		const fields = FormRenderer.extractFields(testCast(resource));
+		const fields = FormRenderer.extractFields(createTestResource(resource));
 		expect(fields.length).toBeGreaterThan(0);
-		expect(fields[0].name).toBe("id");
+		expect(fields[0]?.name).toBe("id");
 	});
 
 	it("returns an empty array if no form properties exist", () => {
 		const resource = { name: "users", operations: [], isEditable: true };
-		const fields = FormRenderer.extractFields(testCast(resource));
+		const fields = FormRenderer.extractFields(createTestResource(resource));
 		expect(fields).toEqual([]);
 	});
 });

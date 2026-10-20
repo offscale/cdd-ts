@@ -2,17 +2,21 @@ import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { TagGenerator } from "@src/openapi/emit_tag.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestProject,
+	createTestTag,
+} from "../shared/helpers.js";
 
 const tagsSpec: SwaggerSpec = {
 	openapi: "3.2.0",
 	info: { title: "Tags Test", version: "1.0" },
 	paths: {},
 	tags: [
-		testCast({
+		createTestTag({
 			name: "Pet",
 			summary: "Pet Operations",
 			description: "Everything about your Pets",
@@ -23,7 +27,7 @@ const tagsSpec: SwaggerSpec = {
 				url: "http://swagger.io",
 			},
 		}),
-		testCast({
+		createTestTag({
 			name: "Store",
 			description: "Access to Petstore orders",
 			parent: "Pet",
@@ -34,28 +38,17 @@ const tagsSpec: SwaggerSpec = {
 describe("Emitter: TagGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const parser = new SwaggerParser(spec, config);
 		new TagGenerator(parser, project).generate("/out");
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/tags.ts");
-		const code = sourceFile.getText();
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/tags.ts");
 
 	it("should generate registry array for tags including OAS 3.2 fields", () => {
 		const project = runGenerator(tagsSpec);
@@ -64,15 +57,15 @@ describe("Emitter: TagGenerator", () => {
 
 		expect(API_TAGS).toHaveLength(2);
 
-		expect(API_TAGS[0].name).toBe("Pet");
+		expect(API_TAGS?.[0]?.name).toBe("Pet");
 
-		expect(API_TAGS[0].summary).toBe("Pet Operations");
+		expect(API_TAGS?.[0]?.summary).toBe("Pet Operations");
 
-		expect(API_TAGS[0].kind).toBe("resource");
+		expect(API_TAGS?.[0]?.kind).toBe("resource");
 
-		expect(API_TAGS[0]["x-audience"]).toBe("internal");
+		expect(API_TAGS?.[0]?.["x-audience"]).toBe("internal");
 
-		expect(API_TAGS[0].externalDocs.url).toBe("http://swagger.io");
+		expect(API_TAGS?.[0]?.externalDocs?.url).toBe("http://swagger.io");
 	});
 
 	it("should generate lookup map handling parent field", () => {
@@ -80,13 +73,13 @@ describe("Emitter: TagGenerator", () => {
 
 		const { API_TAGS_MAP } = compileGeneratedFile(project);
 
-		expect(API_TAGS_MAP.Store).toBeDefined();
+		expect(API_TAGS_MAP?.Store).toBeDefined();
 
-		expect(API_TAGS_MAP.Store.description).toContain("orders");
+		expect(API_TAGS_MAP?.Store?.description).toContain("orders");
 
-		expect(API_TAGS_MAP.Store.parent).toBe("Pet");
+		expect(API_TAGS_MAP?.Store?.parent).toBe("Pet");
 
-		expect(API_TAGS_MAP.Pet.name).toBe("Pet");
+		expect(API_TAGS_MAP?.Pet?.name).toBe("Pet");
 	});
 
 	it("should handle specs without tags", () => {
@@ -117,7 +110,7 @@ describe("Emitter: TagGenerator", () => {
 			openapi: "3.2.0",
 			info: { title: "MinimalTags", version: "1.0" },
 			paths: {},
-			tags: [testCast({ name: "Minimal" })],
+			tags: [createTestTag({ name: "Minimal" })],
 		};
 		const project = runGenerator(minimalSpec);
 
@@ -125,6 +118,6 @@ describe("Emitter: TagGenerator", () => {
 
 		expect(API_TAGS).toHaveLength(1);
 
-		expect(API_TAGS[0].description).toBeUndefined();
+		expect(API_TAGS?.[0]?.description).toBeUndefined();
 	});
 });

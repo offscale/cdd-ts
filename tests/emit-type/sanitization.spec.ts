@@ -3,7 +3,7 @@ import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 describe("Emitter: TypeGenerator (Sanitization)", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
@@ -44,9 +44,9 @@ describe("Emitter: TypeGenerator (Sanitization)", () => {
 			},
 		};
 
-		const sourceFile = runGenerator(testCast(spec));
+		const sourceFile = runGenerator(createTestSpec(spec));
 		const iface = sourceFile.getInterfaceOrThrow("Unsafe");
-		const doc = iface.getJsDocs()[0].getDescription();
+		const doc = iface.getJsDocs()[0]?.getDescription();
 
 		expect(doc).not.toContain("*/");
 		expect(doc).toContain("*\\/");
@@ -56,7 +56,7 @@ describe("Emitter: TypeGenerator (Sanitization)", () => {
 		const propDoc = iface
 			.getPropertyOrThrow("prop")
 			.getJsDocs()[0]
-			.getDescription();
+			?.getDescription();
 		expect(propDoc).not.toContain("<script>");
 		expect(propDoc).toBe("Also");
 	});
@@ -79,10 +79,10 @@ describe("Emitter: TypeGenerator (Sanitization)", () => {
 			},
 		};
 
-		const sourceFile = runGenerator(testCast(spec));
+		const sourceFile = runGenerator(createTestSpec(spec));
 		const typeAlias = sourceFile.getTypeAliasOrThrow("Doc");
-		const tags = typeAlias.getJsDocs()[0].getTags();
-		const seeTag = tags.find((t) => t.getTagName() === "see");
+		const tags = typeAlias.getJsDocs()[0]?.getTags();
+		const seeTag = tags?.find((t) => t.getTagName() === "see");
 
 		expect(seeTag?.getText()).not.toContain("iframe");
 		expect(seeTag?.getText()).toContain("@see http://link");

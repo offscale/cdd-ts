@@ -8,7 +8,11 @@ import {
 } from "@src/vendors/angular/admin/resource-discovery.js";
 import type { Project } from "ts-morph";
 import { beforeAll, describe, expect, it } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestProject,
+	createTestSpec,
+} from "../shared/helpers.js";
 import { coverageSpecPart2 } from "../shared/specs.js";
 
 /**
@@ -227,20 +231,20 @@ const formGenCoverageSpec = {
 describe("Admin Generators (Coverage)", () => {
 	it("resource-discovery should use fallback action name when no operationId is present", () => {
 		const parser = new SwaggerParser(
-			testCast(coverageSpecPart2),
-			testCast({ options: {} }),
+			createTestSpec(coverageSpecPart2),
+			createTestConfig({ options: {} }),
 		);
 		const resources = discoverAdminResources(parser);
 		const resource = resources.find((r: Resource) => r.name === "noIdOpId");
 		expect(resource).toBeDefined();
 		// The final fallback computes the name from the method 'head' and path 'no-id-opid', which becomes 'headNoIdOpid'.
-		expect(resource?.operations[0].action).toBe("headNoIdOpid");
+		expect(resource?.operations[0]?.action).toBe("headNoIdOpid");
 	});
 
 	it("resource-discovery should handle resources with no defined schemas", () => {
 		const parser = new SwaggerParser(
-			testCast(coverageSpecPart2),
-			testCast({ options: {} }),
+			createTestSpec(coverageSpecPart2),
+			createTestConfig({ options: {} }),
 		);
 		const resources = discoverAdminResources(parser);
 		const resource = resources.find(
@@ -263,9 +267,12 @@ describe("Admin Generators (Coverage)", () => {
 				},
 			},
 		};
-		const parser = new SwaggerParser(testCast(spec), testCast({ options: {} }));
+		const parser = new SwaggerParser(
+			createTestSpec(spec),
+			createTestConfig({ options: {} }),
+		);
 		const resources = discoverAdminResources(parser);
-		expect(resources[0].name).toBe("default");
+		expect(resources[0]?.name).toBe("default");
 	});
 
 	it("resource-discovery should merge formData params and allOf schema properties", () => {
@@ -325,7 +332,10 @@ describe("Admin Generators (Coverage)", () => {
 				},
 			},
 		};
-		const parser = new SwaggerParser(testCast(spec), testCast({ options: {} }));
+		const parser = new SwaggerParser(
+			createTestSpec(spec),
+			createTestConfig({ options: {} }),
+		);
 		const ops = parser.operations.filter((op) => op.path === "/upload");
 		const props = getFormProperties(ops, parser);
 		const fileProp = props.find((p) => p.name === "file");
@@ -377,8 +387,16 @@ describe("Admin Generators (Coverage)", () => {
 			},
 			components: { schemas: {} },
 		};
-		const parser = new SwaggerParser(testCast(spec), testCast({ options: {} }));
+		const parser = new SwaggerParser(
+			createTestSpec(spec),
+			createTestConfig({ options: {} }),
+		);
 		const ops = parser.operations.filter((op) => op.path === "/upload");
+		ops[0]?.parameters?.push({
+			name: "untypedFormParam",
+			in: "formData",
+			schema: {},
+		});
 		const props = getFormProperties(ops, parser);
 		const metaProp = props.find((p) => p.name === "meta");
 		expect((metaProp?.schema as SwaggerDefinition).type).toBeUndefined();
@@ -386,8 +404,8 @@ describe("Admin Generators (Coverage)", () => {
 
 	it("resource-discovery should handle operations without parameters or method names", () => {
 		const parser = new SwaggerParser(
-			testCast(coverageSpecPart2),
-			testCast({ options: {} }),
+			createTestSpec(coverageSpecPart2),
+			createTestConfig({ options: {} }),
 		);
 
 		parser.operations.push({
@@ -456,12 +474,13 @@ describe("Admin Generators (Coverage)", () => {
 		};
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			testCast(spec),
-			testCast({ options: { admin: true } }),
+			createTestSpec(spec),
+			createTestConfig({ options: { admin: true } }),
 		);
 		const resource = discoverAdminResources(parser).find(
 			(r: Resource) => r.name === "reports",
-		)!;
+		);
+		if (!resource) throw new Error("Expected reports resource");
 		const generator = new ListComponentGenerator(project);
 
 		generator.generate(resource, "/admin");
@@ -514,12 +533,13 @@ describe("Admin Generators (Coverage)", () => {
 		};
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			testCast(spec),
-			testCast({ options: { admin: true } }),
+			createTestSpec(spec),
+			createTestConfig({ options: { admin: true } }),
 		);
 		const resource = discoverAdminResources(parser).find(
 			(r: Resource) => r.name === "diagnostics",
-		)!;
+		);
+		if (!resource) throw new Error("Expected diagnostics resource");
 		const generator = new ListComponentGenerator(project);
 		generator.generate(resource, "/admin");
 		const listClass = project
@@ -547,8 +567,8 @@ describe("Admin: FormComponentGenerator (Coverage)", () => {
 	beforeAll(() => {
 		project = createTestProject();
 		parser = new SwaggerParser(
-			testCast(formGenCoverageSpec),
-			testCast({ options: { admin: true } }),
+			createTestSpec(formGenCoverageSpec),
+			createTestConfig({ options: { admin: true } }),
 		);
 		const resources = discoverAdminResources(parser);
 		const formGen = new FormComponentGenerator(project, parser);
@@ -591,8 +611,8 @@ describe("Admin: FormComponentGenerator (Coverage)", () => {
 			"if (this.isType_SubObject(entity))",
 		);
 
-		const updateMethod = formClass.getMethod("updateFormForType");
-		const body = updateMethod?.getBodyText()!;
+		const updateMethod = formClass.getMethodOrThrow("updateFormForType");
+		const body = updateMethod.getBodyText() ?? "";
 		expect(body).toContain(`case 'sub':`);
 	});
 

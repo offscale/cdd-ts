@@ -4,14 +4,16 @@ import { WebhookHelperGenerator } from "@src/vendors/angular/utils/webhook-helpe
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import {
+	type CompiledModuleExports,
+	createTestConfig,
 	createTestProject,
-	type TestValue,
-	testCast,
+	createTestSpec,
+	instantiateWebhookService,
 } from "../shared/helpers.js";
 
 describe("Emitter: WebhookHelperGenerator", () => {
-	const createParser = (spec: TestValue) =>
-		new SwaggerParser(testCast(spec), testCast({ options: {} }));
+	const createParser = (spec: object) =>
+		new SwaggerParser(createTestSpec(spec), createTestConfig({ options: {} }));
 
 	it("should skip generation if no webhooks are defined", () => {
 		const project = createTestProject();
@@ -20,7 +22,7 @@ describe("Emitter: WebhookHelperGenerator", () => {
 			info: { title: "No Webhooks", version: "1.0" },
 			paths: {},
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 
 		new WebhookHelperGenerator(parser, project).generate("/out");
 		const sourceFile = project.getSourceFile("/out/utils/webhook.service.ts");
@@ -39,7 +41,7 @@ describe("Emitter: WebhookHelperGenerator", () => {
 				},
 			},
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 
 		new WebhookHelperGenerator(parser, project).generate("/out");
 		const sourceFile = project.getSourceFileOrThrow(
@@ -65,7 +67,7 @@ describe("Emitter: WebhookHelperGenerator", () => {
 				},
 			},
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 
 		// Need both generators: Shared definition + Helper service
 		new WebhookGenerator(parser, project).generate("/out");
@@ -92,11 +94,14 @@ describe("Emitter: WebhookHelperGenerator", () => {
 			module: ts.ModuleKind.CommonJS,
 		});
 
-		const moduleScope = {
-			exports: testCast({}),
+		const moduleScope: { exports: CompiledModuleExports } = {
+			exports: {},
 		};
 
-		const mockService = () => (target: TestValue) => target;
+		const mockService =
+			() =>
+			<T>(target: T): T =>
+				target;
 
 		const wrappedCode = `
             ${jsDefs} 
@@ -104,16 +109,12 @@ describe("Emitter: WebhookHelperGenerator", () => {
             ${jsService} 
         `;
 
-		testCast(
-			new Function("exports", "Service", wrappedCode)(
-				moduleScope.exports,
-				mockService,
-			),
+		new Function("exports", "Service", wrappedCode)(
+			moduleScope.exports,
+			mockService,
 		);
 
-		const ServiceClass = moduleScope.exports.WebhookService;
-
-		const service = new ServiceClass();
+		const service = instantiateWebhookService(moduleScope.exports);
 
 		// Test Find Logic
 
@@ -121,13 +122,13 @@ describe("Emitter: WebhookHelperGenerator", () => {
 
 		expect(shipped).toBeDefined();
 
-		expect(shipped.method).toBe("POST");
+		expect(shipped?.method).toBe("POST");
 
 		const cancelled = service.findEntry("order.cancelled", "PUT");
 
 		expect(cancelled).toBeDefined();
 
-		expect(cancelled.method).toBe("PUT");
+		expect(cancelled?.method).toBe("PUT");
 
 		// Test Type Guard Logic
 
@@ -152,10 +153,10 @@ describe("Emitter: WebhookHelperGenerator", () => {
 				},
 			},
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 		// Force parser.webhooks empty to exercise fallback branch
 
-		testCast<TestValue>(parser).webhooks = testCast([]);
+		Object.assign(parser, { webhooks: [] });
 
 		new WebhookHelperGenerator(parser, project).generate("/out");
 		const sourceFile = project.getSourceFile("/out/utils/webhook.service.ts");

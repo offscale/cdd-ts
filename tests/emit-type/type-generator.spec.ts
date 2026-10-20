@@ -3,7 +3,7 @@ import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 const typeGenSpec = {
 	openapi: "3.0.0",
@@ -102,7 +102,7 @@ describe("Emitter: TypeGenerator", () => {
 			output: "/out",
 			options: { enumStyle: "enum" },
 		};
-		const parser = new SwaggerParser(testCast(typeGenSpec), config);
+		const parser = new SwaggerParser(createTestSpec(typeGenSpec), config);
 		const generator = new TypeGenerator(parser, project, config);
 		return { generator, project };
 	};
@@ -120,10 +120,10 @@ describe("Emitter: TypeGenerator", () => {
 			{ overwrite: true },
 		);
 		const iface = sourceFile.getInterfaceOrThrow("Simple");
-		expect(iface.getJsDocs()[0].getText()).toContain("A simple model.");
-		expect(iface.getPropertyOrThrow("name").getJsDocs()[0].getText()).toContain(
-			"The name.",
-		);
+		expect(iface.getJsDocs()[0]?.getText()).toContain("A simple model.");
+		expect(
+			iface.getPropertyOrThrow("name").getJsDocs()[0]?.getText(),
+		).toContain("The name.");
 	});
 
 	it("should split models with readOnly properties", () => {
@@ -165,11 +165,11 @@ describe("Emitter: TypeGenerator", () => {
 		const model = sourceFile.getInterfaceOrThrow("Documented");
 		const prop = model.getPropertyOrThrow("prop");
 
-		const modelDoc = model.getJsDocs()[0].getText();
+		const modelDoc = model.getJsDocs()[0]?.getText();
 		expect(modelDoc).toContain("@deprecated");
 		expect(modelDoc).toContain("@see https://example.com - More info");
 
-		const propDoc = prop.getJsDocs()[0].getText();
+		const propDoc = prop.getJsDocs()[0]?.getText();
 		expect(propDoc).toContain("@deprecated");
 		expect(propDoc).toContain('@example "test-value"');
 		expect(propDoc).toContain('@default "default-val"');
@@ -188,7 +188,7 @@ describe("Emitter: TypeGenerator", () => {
 			{ overwrite: true },
 		);
 		const model = sourceFile.getInterfaceOrThrow("ExampleObj");
-		const doc = model.getJsDocs()[0].getText();
+		const doc = model.getJsDocs()[0]?.getText();
 		expect(doc).toContain("@example");
 		expect(doc).toContain('"id": 123');
 	});
@@ -206,10 +206,10 @@ describe("Emitter: TypeGenerator", () => {
 			{ overwrite: true },
 		);
 		const model = sourceFile.getInterfaceOrThrow("WithMultipleExamples");
-		const doc = model.getJsDocs()[0].getText();
+		const doc = model.getJsDocs()[0]?.getText();
 
 		// Ensure multiple @example blocks are generated
-		const exampleMatches = doc.match(/@example/g);
+		const exampleMatches = doc?.match(/@example/g);
 		expect(exampleMatches?.length).toBe(2);
 		expect(doc).toContain('"count": 1');
 		expect(doc).toContain('"count": 2');
@@ -231,7 +231,7 @@ describe("Emitter: TypeGenerator", () => {
 		const indexSig = iface.getIndexSignatures()[0];
 
 		// It should unite string and number
-		expect(indexSig.getReturnType().getText()).toContain("string | number");
+		expect(indexSig?.getReturnType().getText()).toContain("string | number");
 		// It might be "number | string" or "string | number", order varies
 	});
 
@@ -251,7 +251,7 @@ describe("Emitter: TypeGenerator", () => {
 		const indexSig = iface.getIndexSignatures()[0];
 
 		// It should unite string and boolean
-		expect(indexSig.getReturnType().getText()).toContain("string | boolean");
+		expect(indexSig?.getReturnType().getText()).toContain("string | boolean");
 	});
 
 	describe("OAS 3.1 unevaluatedProperties Support", () => {
@@ -271,7 +271,7 @@ describe("Emitter: TypeGenerator", () => {
 
 			const indexSig = iface.getIndexSignatures()[0];
 			expect(indexSig).toBeDefined();
-			expect(indexSig.getReturnType().getText()).toContain(
+			expect(indexSig?.getReturnType().getText()).toContain(
 				"string | number | boolean | object",
 			);
 		});
@@ -293,7 +293,7 @@ describe("Emitter: TypeGenerator", () => {
 			const indexSig = iface.getIndexSignatures()[0];
 			expect(indexSig).toBeDefined();
 			// Should contain number from unevaluatedProperties
-			const returnText = indexSig.getReturnType().getText();
+			const returnText = indexSig?.getReturnType().getText();
 			expect(returnText).toContain("number");
 		});
 

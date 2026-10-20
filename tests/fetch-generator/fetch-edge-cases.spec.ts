@@ -7,7 +7,11 @@ import { FetchServiceMethodGenerator } from "@src/vendors/fetch/service/service-
 import { FetchServiceTestGenerator } from "@src/vendors/fetch/test/service-test.generator.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestOperation,
+	createTestSpec,
+} from "../shared/helpers.js";
 
 describe("Fetch Implementation Edge Cases", () => {
 	it("should generate .client.ts files when framework is vanilla", () => {
@@ -78,16 +82,16 @@ describe("Fetch Implementation Edge Cases", () => {
 			},
 		};
 
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		const project = new Project({ useInMemoryFileSystem: true });
 		const testGen = new FetchServiceTestGenerator(parser, project, config);
 
 		const ops = parser.operations;
-		ops[2].methodName = "customPutMocked"; // cover op.methodName
+		if (ops[2]) ops[2].methodName = "customPutMocked"; // cover op.methodName
 
 		testGen.generateServiceTestFile(
 			"mocked",
-			testCast(ops),
+			ops,
 			path.join(os.tmpdir(), "test-output-mocked/services"),
 		);
 
@@ -195,9 +199,9 @@ describe("Fetch Implementation Edge Cases", () => {
 					(f) =>
 						f.getFilePath().includes("json-only") ||
 						f.getFilePath().includes("service.ts"),
-				)!;
+				);
 
-		const serviceClass = serviceFile.getClasses()[0];
+		const serviceClass = serviceFile?.getClasses()[0];
 		const method = serviceClass?.getMethod("getJson");
 		const body = method
 			?.getStatements()
@@ -207,23 +211,27 @@ describe("Fetch Implementation Edge Cases", () => {
 		expect(body).toContain("return response.json();");
 	});
 
-	it("should handle analyzer returning null (e.g. invalid operation)", () => {
-		const generator = new FetchServiceMethodGenerator(
-			testCast({}),
-			testCast({ paths: {} }),
+	it("should handle analyzer returning null (e.g. operation without methodName)", () => {
+		const parser = new SwaggerParser(
+			createTestSpec({
+				openapi: "3.0.0",
+				info: { title: "T", version: "1" },
+				paths: {},
+			}),
+			createTestConfig({}),
 		);
-		// We mock analyzer so we can force it to return null
-		(
-			testCast(generator) as {
-				analyzer: { analyze: () => null };
-			}
-		).analyzer = { analyze: () => null };
+		const generator = new FetchServiceMethodGenerator(
+			createTestConfig({}),
+			parser,
+		);
 		const project = new Project();
 		const sf = project.createSourceFile("test.ts", "class Test {}");
-		const cls = sf.getClass("Test")!;
+		const cls = sf.getClassOrThrow("Test");
 
-		// Should not throw, should just return early
-		expect(() => generator.addServiceMethod(cls, testCast({}))).not.toThrow();
+		// Should not throw, should just return early when methodName is missing
+		expect(() =>
+			generator.addServiceMethod(cls, createTestOperation({ methodName: "" })),
+		).not.toThrow();
 		expect(cls.getMethods().length).toBe(0);
 	});
 
@@ -499,7 +507,7 @@ it("should generate composable tests when config.options.composableTests is true
 	};
 
 	const project = new Project();
-	generateFromConfigSync(testCast(config), project, { spec });
+	generateFromConfigSync(createTestConfig(config), project, { spec });
 
 	const testFile = project.getSourceFile(
 		path.join(
@@ -533,19 +541,22 @@ it("should cover missing branches in FetchServiceTestGenerator when isComposable
 		},
 	};
 
-	const parser = new SwaggerParser(testCast(spec), testCast(config));
+	const parser = new SwaggerParser(
+		createTestSpec(spec),
+		createTestConfig(config),
+	);
 	const project = new Project({ useInMemoryFileSystem: true });
 	const testGen = new FetchServiceTestGenerator(
 		parser,
 		project,
-		testCast(config),
+		createTestConfig(config),
 	);
 
 	const ops = parser.operations;
 
 	testGen.generateServiceTestFile(
 		"mocked",
-		testCast(ops),
+		ops,
 		path.join(os.tmpdir(), "test-output-mocked-composable/services"),
 	);
 

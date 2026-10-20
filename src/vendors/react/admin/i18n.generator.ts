@@ -27,19 +27,34 @@ export class I18nGenerator {
 			overwrite: true,
 		});
 
-		sourceFile.addStatements(`import { useCallback } from 'react';
+		sourceFile.addStatements(`import { useCallback, useState } from 'react';
+
+const messages: Record<string, Record<string, string>> = {
+    en: {
+        'admin.save': 'Save',
+        'admin.cancel': 'Cancel',
+        'admin.delete': 'Delete',
+        'admin.edit': 'Edit',
+        'admin.create': 'Create',
+        'admin.list': 'List',
+        'admin.actions': 'Actions',
+        'admin.confirmDelete': 'Are you sure you want to delete this item?',
+        'admin.loading': 'Loading...',
+        'admin.error': 'An error occurred.',
+        'admin.noData': 'No data available.'
+    }
+};
 
 /**
- * A lightweight translation hook scaffold.
- * Replace this with react-i18next or react-intl for production environments.
+ * A lightweight translation hook with dictionary lookup and fallback support.
  */
-export const useTranslation = () => {
-    const t = useCallback((key: string, defaultValue: string) => {
-        // Fallback translation logic
-        return defaultValue;
-    }, []);
+export const useTranslation = (initialLocale = 'en') => {
+    const [locale, setLocale] = useState<string>(initialLocale);
+    const t = useCallback((key: string, defaultValue?: string) => {
+        return messages[locale]?.[key] ?? defaultValue ?? key;
+    }, [locale]);
 
-    return { t };
+    return { t, locale, setLocale };
 };\n`);
 		return sourceFile;
 	}

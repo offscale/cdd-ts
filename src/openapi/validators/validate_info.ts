@@ -3,23 +3,12 @@
  *
  * @module openapi/validators/validate_info
  */
+import { SpecValidationError } from "../../core/errors.js";
 import type { OpenApiValue, SwaggerSpec } from "../../core/types/index.js";
 import { isUrl } from "../../functions/utils.js";
 
-/**
- * Error thrown when the OpenAPI specification fails validation.
- */
-export class SpecValidationError extends Error {
-	/**
-	 * Creates a new `SpecValidationError`.
-	 *
-	 * @param message - Human-readable validation failure description.
-	 */
-	constructor(message: string) {
-		super(message);
-		this.name = "SpecValidationError";
-	}
-}
+/** Re-exports `SpecValidationError` from `../../core/errors.js`. */
+export { SpecValidationError };
 
 /**
  * Checks whether `value` is a syntactically valid RFC 3986 URI reference.
@@ -30,11 +19,10 @@ export class SpecValidationError extends Error {
 export function isUriReference(value: string): boolean {
 	if (!value || typeof value !== "string") return false;
 	if (/\s/.test(value)) return false;
-	if (isUrl(value)) return true;
 
 	const schemeMatch = value.match(/^([^:/?#]+):/);
 	if (schemeMatch) {
-		if (!/^[a-zA-Z][a-zA-Z0-9+.-]*$/.test(schemeMatch[1])) {
+		if (!/^[a-zA-Z][a-zA-Z0-9+.-]*$/.test(schemeMatch[1] as string)) {
 			return false;
 		}
 	}

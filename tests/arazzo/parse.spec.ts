@@ -54,8 +54,17 @@ const sampleOpenApi: SwaggerSpec = {
 	},
 };
 
-function createValidSpec(): ArazzoSpec {
-	return {
+type NonEmptyIndexed<T> = T[] & { 0: T; 1: T };
+
+function createValidSpec(): ArazzoSpec & {
+	sourceDescriptions: NonEmptyIndexed<ArazzoSpec["sourceDescriptions"][number]>;
+	workflows: NonEmptyIndexed<
+		Omit<ArazzoSpec["workflows"][number], "steps"> & {
+			steps: NonEmptyIndexed<ArazzoSpec["workflows"][number]["steps"][number]>;
+		}
+	>;
+} {
+	const spec: ArazzoSpec = {
 		arazzo: "1.1.0",
 		$self: "https://example.com/workflows/petstore.arazzo.yaml",
 		info: {
@@ -250,6 +259,7 @@ function createValidSpec(): ArazzoSpec {
 			},
 		],
 	};
+	return spec as ReturnType<typeof createValidSpec>;
 }
 
 describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
@@ -278,26 +288,26 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 				/non-empty 'version'/,
 			);
 
-			const emptySources = createValidSpec();
+			const emptySources: ArazzoSpec = createValidSpec();
 			emptySources.sourceDescriptions = [];
 			expect(() => validateArazzoSpec(emptySources)).toThrow(
 				/sourceDescriptions/,
 			);
 
 			const badSourceName = createValidSpec();
-			badSourceName.sourceDescriptions[0]!.name = "invalid name!";
+			badSourceName.sourceDescriptions[0].name = "invalid name!";
 			expect(() => validateArazzoSpec(badSourceName)).toThrow(
 				/Invalid sourceDescription name/,
 			);
 
 			const dupSourceName = createValidSpec();
-			dupSourceName.sourceDescriptions[1]!.name = "petstore";
+			dupSourceName.sourceDescriptions[1].name = "petstore";
 			expect(() => validateArazzoSpec(dupSourceName)).toThrow(
 				/Duplicate sourceDescription name/,
 			);
 
 			const badSourceUrl = createValidSpec();
-			badSourceUrl.sourceDescriptions[0]!.url = "";
+			badSourceUrl.sourceDescriptions[0].url = "";
 			expect(() => validateArazzoSpec(badSourceUrl)).toThrow(/non-empty 'url'/);
 
 			const badSourceType = createValidSpec();
@@ -308,56 +318,56 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 				/Invalid sourceDescription type/,
 			);
 
-			const emptyWfs = createValidSpec();
+			const emptyWfs: ArazzoSpec = createValidSpec();
 			emptyWfs.workflows = [];
 			expect(() => validateArazzoSpec(emptyWfs)).toThrow(
 				/at least one Workflow/,
 			);
 
 			const dupWfId = createValidSpec();
-			dupWfId.workflows[1]!.workflowId = "adoptPet";
+			dupWfId.workflows[1].workflowId = "adoptPet";
 			expect(() => validateArazzoSpec(dupWfId)).toThrow(/Duplicate workflowId/);
 
 			const emptyWfId = createValidSpec();
-			emptyWfId.workflows[0]!.workflowId = "";
+			emptyWfId.workflows[0].workflowId = "";
 			expect(() => validateArazzoSpec(emptyWfId)).toThrow(
 				/non-empty 'workflowId'/,
 			);
 
 			const emptySteps = createValidSpec();
-			emptySteps.workflows[0]!.steps = [];
+			(emptySteps.workflows[0] as ArazzoSpec["workflows"][number]).steps = [];
 			expect(() => validateArazzoSpec(emptySteps)).toThrow(/at least one step/);
 
 			const dupStepId = createValidSpec();
-			dupStepId.workflows[0]!.steps[1]!.stepId = "createPet";
+			dupStepId.workflows[0].steps[1].stepId = "createPet";
 			expect(() => validateArazzoSpec(dupStepId)).toThrow(/Duplicate stepId/);
 
 			const emptyStepId = createValidSpec();
-			emptyStepId.workflows[0]!.steps[0]!.stepId = "";
+			emptyStepId.workflows[0].steps[0].stepId = "";
 			expect(() => validateArazzoSpec(emptyStepId)).toThrow(
 				/non-empty 'stepId'/,
 			);
 
 			const multiTarget = createValidSpec();
-			multiTarget.workflows[0]!.steps[0]!.operationPath = "#/paths/~1pet/post";
+			multiTarget.workflows[0].steps[0].operationPath = "#/paths/~1pet/post";
 			expect(() => validateArazzoSpec(multiTarget)).toThrow(
 				/mutually exclusively/,
 			);
 
 			const negTimeout = createValidSpec();
-			negTimeout.workflows[0]!.steps[0]!.timeout = 0;
+			negTimeout.workflows[0].steps[0].timeout = 0;
 			expect(() => validateArazzoSpec(negTimeout)).toThrow(/positive number/);
 
 			const badAction = createValidSpec();
 			(
-				badAction.workflows[0]!.steps[0] as unknown as { action: string }
+				badAction.workflows[0]?.steps[0] as unknown as { action: string }
 			).action = "invalid";
 			expect(() => validateArazzoSpec(badAction)).toThrow(
 				/action MUST be 'send' or 'receive'/,
 			);
 
 			const badParamRef = createValidSpec();
-			badParamRef.workflows[0]!.parameters = [
+			badParamRef.workflows[0].parameters = [
 				{ reference: "$components.invalid.ref" },
 			];
 			expect(() => validateArazzoSpec(badParamRef)).toThrow(
@@ -365,7 +375,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const unresolvedParamRef = createValidSpec();
-			unresolvedParamRef.workflows[0]!.parameters = [
+			unresolvedParamRef.workflows[0].parameters = [
 				{ reference: "$components.parameters.missing" },
 			];
 			expect(() => validateArazzoSpec(unresolvedParamRef)).toThrow(
@@ -373,13 +383,13 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const emptyParamName = createValidSpec();
-			emptyParamName.workflows[0]!.parameters = [{ name: "", value: 1 }];
+			emptyParamName.workflows[0].parameters = [{ name: "", value: 1 }];
 			expect(() => validateArazzoSpec(emptyParamName)).toThrow(
 				/Parameter Object MUST have a non-empty 'name'/,
 			);
 
 			const badParamIn = createValidSpec();
-			(badParamIn.workflows[0]!.parameters as unknown as Array<{
+			(badParamIn.workflows[0].parameters as unknown as Array<{
 				name: string;
 				in: string;
 				value: number;
@@ -389,7 +399,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const missingParamVal = createValidSpec();
-			(missingParamVal.workflows[0]!.parameters as unknown as Array<{
+			(missingParamVal.workflows[0].parameters as unknown as Array<{
 				name: string;
 				value?: unknown;
 			}>) = [{ name: "p", value: undefined }];
@@ -398,7 +408,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const emptyCriterion = createValidSpec();
-			emptyCriterion.workflows[0]!.steps[0]!.successCriteria = [
+			emptyCriterion.workflows[0].steps[0].successCriteria = [
 				{ condition: "" },
 			];
 			expect(() => validateArazzoSpec(emptyCriterion)).toThrow(
@@ -406,7 +416,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const badCritTypeStr = createValidSpec();
-			(badCritTypeStr.workflows[0]!.steps[0]!
+			(badCritTypeStr.workflows[0].steps[0]
 				.successCriteria as unknown as Array<{
 				condition: string;
 				type: string;
@@ -416,7 +426,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const badCritTypeObj = createValidSpec();
-			(badCritTypeObj.workflows[0]!.steps[0]!
+			(badCritTypeObj.workflows[0].steps[0]
 				.successCriteria as unknown as Array<{
 				condition: string;
 				type: object;
@@ -426,7 +436,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const badSuccessRef = createValidSpec();
-			badSuccessRef.workflows[0]!.successActions = [
+			badSuccessRef.workflows[0].successActions = [
 				{ reference: "$components.wrong.act" },
 			];
 			expect(() => validateArazzoSpec(badSuccessRef)).toThrow(
@@ -434,7 +444,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const missingSuccessRef = createValidSpec();
-			missingSuccessRef.workflows[0]!.successActions = [
+			missingSuccessRef.workflows[0].successActions = [
 				{ reference: "$components.successActions.missing" },
 			];
 			expect(() => validateArazzoSpec(missingSuccessRef)).toThrow(
@@ -442,7 +452,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const emptySuccessName = createValidSpec();
-			emptySuccessName.workflows[0]!.steps[0]!.onSuccess = [
+			emptySuccessName.workflows[0].steps[0].onSuccess = [
 				{ name: "", type: "end" },
 			];
 			expect(() => validateArazzoSpec(emptySuccessName)).toThrow(
@@ -450,7 +460,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const badSuccessType = createValidSpec();
-			(badSuccessType.workflows[0]!.steps[0]!.onSuccess as unknown as Array<{
+			(badSuccessType.workflows[0].steps[0].onSuccess as unknown as Array<{
 				name: string;
 				type: string;
 			}>) = [{ name: "a", type: "retry" }];
@@ -459,7 +469,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const badSuccessGoto = createValidSpec();
-			badSuccessGoto.workflows[0]!.steps[0]!.onSuccess = [
+			badSuccessGoto.workflows[0].steps[0].onSuccess = [
 				{ name: "a", type: "goto" },
 			];
 			expect(() => validateArazzoSpec(badSuccessGoto)).toThrow(
@@ -467,7 +477,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const unknownSuccessStep = createValidSpec();
-			unknownSuccessStep.workflows[0]!.steps[0]!.onSuccess = [
+			unknownSuccessStep.workflows[0].steps[0].onSuccess = [
 				{ name: "a", type: "goto", stepId: "noSuchStep" },
 			];
 			expect(() => validateArazzoSpec(unknownSuccessStep)).toThrow(
@@ -475,7 +485,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const dupSuccessName = createValidSpec();
-			dupSuccessName.workflows[0]!.steps[0]!.onSuccess = [
+			dupSuccessName.workflows[0].steps[0].onSuccess = [
 				{ name: "dup", type: "end" },
 				{ name: "dup", type: "end" },
 			];
@@ -484,7 +494,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const badFailureRef = createValidSpec();
-			badFailureRef.workflows[0]!.failureActions = [
+			badFailureRef.workflows[0].failureActions = [
 				{ reference: "$components.wrong.act" },
 			];
 			expect(() => validateArazzoSpec(badFailureRef)).toThrow(
@@ -492,7 +502,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const missingFailureRef = createValidSpec();
-			missingFailureRef.workflows[0]!.failureActions = [
+			missingFailureRef.workflows[0].failureActions = [
 				{ reference: "$components.failureActions.missing" },
 			];
 			expect(() => validateArazzoSpec(missingFailureRef)).toThrow(
@@ -500,7 +510,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const emptyFailureName = createValidSpec();
-			emptyFailureName.workflows[0]!.steps[0]!.onFailure = [
+			emptyFailureName.workflows[0].steps[0].onFailure = [
 				{ name: "", type: "end" },
 			];
 			expect(() => validateArazzoSpec(emptyFailureName)).toThrow(
@@ -508,7 +518,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const badFailureType = createValidSpec();
-			(badFailureType.workflows[0]!.steps[0]!.onFailure as unknown as Array<{
+			(badFailureType.workflows[0].steps[0].onFailure as unknown as Array<{
 				name: string;
 				type: string;
 			}>) = [{ name: "f", type: "abort" }];
@@ -517,7 +527,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const badFailureGoto = createValidSpec();
-			badFailureGoto.workflows[0]!.steps[0]!.onFailure = [
+			badFailureGoto.workflows[0].steps[0].onFailure = [
 				{ name: "f", type: "goto" },
 			];
 			expect(() => validateArazzoSpec(badFailureGoto)).toThrow(
@@ -525,7 +535,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const unknownFailureStep = createValidSpec();
-			unknownFailureStep.workflows[0]!.steps[0]!.onFailure = [
+			unknownFailureStep.workflows[0].steps[0].onFailure = [
 				{ name: "f", type: "goto", stepId: "missingStep" },
 			];
 			expect(() => validateArazzoSpec(unknownFailureStep)).toThrow(
@@ -533,7 +543,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const negRetryAfter = createValidSpec();
-			negRetryAfter.workflows[0]!.steps[0]!.onFailure = [
+			negRetryAfter.workflows[0].steps[0].onFailure = [
 				{ name: "f", type: "retry", retryAfter: -1 },
 			];
 			expect(() => validateArazzoSpec(negRetryAfter)).toThrow(
@@ -541,7 +551,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const negRetryLimit = createValidSpec();
-			negRetryLimit.workflows[0]!.steps[0]!.onFailure = [
+			negRetryLimit.workflows[0].steps[0].onFailure = [
 				{ name: "f", type: "retry", retryLimit: -2 },
 			];
 			expect(() => validateArazzoSpec(negRetryLimit)).toThrow(
@@ -549,7 +559,7 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const dupFailureName = createValidSpec();
-			dupFailureName.workflows[0]!.steps[0]!.onFailure = [
+			dupFailureName.workflows[0].steps[0].onFailure = [
 				{ name: "dupF", type: "end" },
 				{ name: "dupF", type: "end" },
 			];
@@ -558,13 +568,13 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const emptyOutExpr = createValidSpec();
-			emptyOutExpr.workflows[0]!.steps[0]!.outputs = { bad: "  " };
+			emptyOutExpr.workflows[0].steps[0].outputs = { bad: "  " };
 			expect(() => validateArazzoSpec(emptyOutExpr)).toThrow(
 				/output 'bad' expression MUST NOT be empty/,
 			);
 
 			const invalidOutObj = createValidSpec();
-			(invalidOutObj.workflows[0]!.steps[0]!.outputs as unknown as Record<
+			(invalidOutObj.workflows[0].steps[0].outputs as unknown as Record<
 				string,
 				unknown
 			>) = { bad: { notSelector: true } };
@@ -573,13 +583,13 @@ describe("Arazzo 1.1.0 Validator, Loader & Parser", () => {
 			);
 
 			const cyclicSteps = createValidSpec();
-			cyclicSteps.workflows[0]!.steps[0]!.dependsOn = ["fetchPet"];
+			cyclicSteps.workflows[0].steps[0].dependsOn = ["fetchPet"];
 			expect(() => validateArazzoSpec(cyclicSteps)).toThrow(
 				/Cyclic step dependency/,
 			);
 
 			const cyclicWfs = createValidSpec();
-			cyclicWfs.workflows[0]!.dependsOn = ["fallbackWorkflow"];
+			cyclicWfs.workflows[0].dependsOn = ["fallbackWorkflow"];
 			expect(() => validateArazzoSpec(cyclicWfs)).toThrow(
 				/Cyclic workflow dependency/,
 			);
@@ -669,7 +679,7 @@ channels:
 			const errDefaultPath = new ArazzoValidationError("default path test");
 			expect(errDefaultPath.path).toBe("#");
 
-			const spec = createValidSpec();
+			const spec: ArazzoSpec = createValidSpec();
 			delete spec.$self;
 			delete spec.components;
 			spec.sourceDescriptions = [
@@ -704,11 +714,14 @@ channels:
 			expect(minimalParser.inputSchemas).toEqual([]);
 
 			const specWithDupInput = createValidSpec();
-			specWithDupInput.components!.inputs = {
-				...specWithDupInput.components!.inputs,
-				AdoptPetInputs: { type: "object" },
+			specWithDupInput.components = {
+				...specWithDupInput.components,
+				inputs: {
+					...specWithDupInput.components?.inputs,
+					AdoptPetInputs: { type: "object" },
+				},
 			};
-			specWithDupInput.workflows[0]!.inputs = {
+			specWithDupInput.workflows[0].inputs = {
 				$ref: "#/components/inputs/MissingInput",
 			};
 			const dupParser = new ArazzoParser(specWithDupInput, mockConfig);

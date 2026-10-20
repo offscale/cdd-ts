@@ -79,19 +79,19 @@ export async function serveJsonRpc(
 							break;
 						case "from_openapi_to_sdk":
 							result = await generateFromOpenApi(
-								parsed.params as OpenApiValue as FromOpenApiOptions,
+								parsed.params as Partial<FromOpenApiOptions> as FromOpenApiOptions,
 								"to_sdk",
 							);
 							break;
 						case "from_openapi_to_server":
 							result = await generateFromOpenApi(
-								parsed.params as OpenApiValue as FromOpenApiOptions,
+								parsed.params as Partial<FromOpenApiOptions> as FromOpenApiOptions,
 								"to_server",
 							);
 							break;
 						case "to_openapi":
 							result = (await generateToOpenApi(
-								parsed.params as OpenApiValue as ToActionOptions,
+								parsed.params as Partial<ToActionOptions> as ToActionOptions,
 								true,
 							)) as OpenApiValue;
 							break;
@@ -121,14 +121,14 @@ export async function serveJsonRpc(
 							break;
 						case "to_arazzo":
 							result = generateToArazzo(
-								parsed.params as OpenApiValue as ToArazzoActionOptions,
+								parsed.params as Partial<ToArazzoActionOptions> as ToArazzoActionOptions,
 							) as unknown as OpenApiValue;
 							break;
 						case "to_docs_json":
 							result = (await generateDocsJson(
-								parsed.params as OpenApiValue as DocsJsonOptions,
+								parsed.params as Partial<DocsJsonOptions> as DocsJsonOptions,
 								true,
-							)) as OpenApiValue;
+							)) as unknown as OpenApiValue;
 							break;
 						case "version":
 							result = cliVersion;

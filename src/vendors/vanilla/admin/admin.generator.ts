@@ -5,9 +5,9 @@
  */
 import * as path from "node:path";
 import type { Project } from "ts-morph";
-import type { Resource } from "../../../core/types/index.js";
+import { discoverAdminResources } from "../../../core/admin/resource-discovery.js";
+import { type Resource, resolveLogger } from "../../../core/types/index.js";
 import type { SwaggerParser } from "../../../openapi/parse.js";
-import { discoverAdminResources } from "../../angular/admin/resource-discovery.js";
 import { AppShellGenerator } from "./app-shell.generator.js";
 import { FormComponentGenerator } from "./form-component.generator.js";
 import { ListComponentGenerator } from "./list-component.generator.js";
@@ -32,12 +32,13 @@ export class VanillaAdminGenerator {
 	 * @param outputRoot - Parameter `outputRoot` (string).
 	 */
 	public generate(outputRoot: string): void {
-		console.log("🚀 Generating Vanilla Web Components Admin UI...");
+		const logger = resolveLogger(this.parser.config);
+		logger.info("🚀 Generating Vanilla Web Components Admin UI...");
 
 		this.allResources = discoverAdminResources(this.parser);
 
 		if (this.allResources.length === 0) {
-			console.warn(
+			logger.warn(
 				"⚠️ No resources suitable for admin UI generation were found. Skipping.",
 			);
 
@@ -57,7 +58,7 @@ export class VanillaAdminGenerator {
 		const appShellGen = new AppShellGenerator(this.project);
 
 		for (const resource of this.allResources) {
-			console.log(`  -> Generating for resource: ${resource.name}`);
+			logger.info(`  -> Generating for resource: ${resource.name}`);
 
 			if (resource.operations.some((op) => op.action === "list")) {
 				listGen.generate(resource, adminDir);
@@ -68,10 +69,10 @@ export class VanillaAdminGenerator {
 			}
 		}
 
-		console.log("  -> Generating App Shell (Router & Layout)...");
+		logger.info("  -> Generating App Shell (Router & Layout)...");
 
 		appShellGen.generate(this.allResources, adminDir);
 
-		console.log("✅ Vanilla Admin UI generation complete.");
+		logger.info("✅ Vanilla Admin UI generation complete.");
 	}
 }

@@ -2,11 +2,16 @@ import { ParameterSerializerGenerator } from "@src/functions/emit_parameter_seri
 import { ContentEncoderGenerator } from "@src/openapi/emit_content_encoder.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import {
-	createTestProject,
-	type TestValue,
-	testCast,
-} from "../shared/helpers.js";
+import { createTestProject } from "../shared/helpers.js";
+
+interface CompiledParameterSerializer {
+	serializePathParam: (...args: unknown[]) => string;
+	serializeQueryParam: (...args: unknown[]) => string[];
+	serializeHeaderParam: (...args: unknown[]) => string;
+	serializeCookieParam: (...args: unknown[]) => string;
+	serializeRawQuerystring: (...args: unknown[]) => string;
+	serializeUrlEncodedBody: (...args: unknown[]) => string;
+}
 
 function getSerializerContext() {
 	const project = createTestProject();
@@ -33,21 +38,19 @@ function getSerializerContext() {
 		module: ts.ModuleKind.CommonJS,
 	});
 
-	const exportsMock: Record<string, TestValue> = {};
-	const encoderExports: Record<string, TestValue> = {};
-	testCast(new Function("exports", encoderJsCode)(encoderExports));
+	const exportsMock: { ParameterSerializer?: CompiledParameterSerializer } = {};
+	const encoderExports: { ContentEncoder?: unknown } = {};
+	new Function("exports", encoderJsCode)(encoderExports);
 
 	const ContentEncoder = encoderExports.ContentEncoder;
 
-	testCast(
-		new Function("exports", "ContentEncoder", jsCode)(
-			exportsMock,
-			ContentEncoder,
-		),
+	new Function("exports", "ContentEncoder", jsCode)(
+		exportsMock,
+		ContentEncoder,
 	);
 
 	return {
-		ParameterSerializer: testCast(exportsMock).ParameterSerializer,
+		ParameterSerializer: exportsMock.ParameterSerializer,
 	};
 }
 
@@ -55,7 +58,7 @@ describe("Utility: ParameterSerializer", () => {
 	const { ParameterSerializer } = getSerializerContext();
 
 	it("should serialize x-www-form-urlencoded querystring payloads with encoding", () => {
-		const result = ParameterSerializer.serializeRawQuerystring(
+		const result = ParameterSerializer?.serializeRawQuerystring?.(
 			{ foo: "a b", bar: "c+d" },
 			undefined,
 			"application/x-www-form-urlencoded",
@@ -65,7 +68,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should honor per-property encoding hints for x-www-form-urlencoded querystring payloads", () => {
-		const result = ParameterSerializer.serializeRawQuerystring(
+		const result = ParameterSerializer?.serializeRawQuerystring?.(
 			{ tags: ["a", "b"] },
 			undefined,
 			"application/x-www-form-urlencoded",
@@ -76,7 +79,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should percent-encode non-form querystring payloads when contentType is provided", () => {
-		const result = ParameterSerializer.serializeRawQuerystring(
+		const result = ParameterSerializer?.serializeRawQuerystring?.(
 			"<tag>Hello World</tag>",
 			undefined,
 			"application/xml",
@@ -86,7 +89,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should percent-encode text/plain querystring payloads", () => {
-		const result = ParameterSerializer.serializeRawQuerystring(
+		const result = ParameterSerializer?.serializeRawQuerystring?.(
 			"hello world",
 			undefined,
 			"text/plain",
@@ -96,7 +99,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should honor contentType serialization for urlencoded bodies", () => {
-		const result = ParameterSerializer.serializeUrlEncodedBody(
+		const result = ParameterSerializer?.serializeUrlEncodedBody?.(
 			{ meta: { a: 1 }, note: "hi" },
 			{ meta: { contentType: "application/json" } },
 		);
@@ -108,7 +111,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should support nested encoding maps for urlencoded bodies", () => {
-		const result = ParameterSerializer.serializeUrlEncodedBody(
+		const result = ParameterSerializer?.serializeUrlEncodedBody?.(
 			{ meta: { a: 1, b: 2 } },
 			{
 				meta: {
@@ -124,7 +127,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should serialize spaceDelimited objects in query params", () => {
-		const result = ParameterSerializer.serializeQueryParam(
+		const result = ParameterSerializer?.serializeQueryParam?.(
 			{ name: "color", style: "spaceDelimited", explode: false },
 			{ R: 100, G: 200, B: 150 },
 		);
@@ -135,7 +138,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should serialize content-based form-urlencoded query params as a single encoded value", () => {
-		const result = ParameterSerializer.serializeQueryParam(
+		const result = ParameterSerializer?.serializeQueryParam?.(
 			{ name: "filter", contentType: "application/x-www-form-urlencoded" },
 			{ a: 1, b: 2 },
 		);
@@ -144,7 +147,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should serialize header params using form-urlencoded contentType when provided", () => {
-		const result = ParameterSerializer.serializeHeaderParam(
+		const result = ParameterSerializer?.serializeHeaderParam?.(
 			{ a: "x", b: "y" },
 			false,
 			undefined,
@@ -155,7 +158,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should keep RFC6570 comma delimiters for form arrays", () => {
-		const result = ParameterSerializer.serializeQueryParam(
+		const result = ParameterSerializer?.serializeQueryParam?.(
 			{ name: "color", style: "form", explode: false },
 			["blue", "black"],
 		);
@@ -164,7 +167,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should keep RFC6570 comma delimiters for form objects", () => {
-		const result = ParameterSerializer.serializeQueryParam(
+		const result = ParameterSerializer?.serializeQueryParam?.(
 			{ name: "color", style: "form", explode: false },
 			{ R: 100, G: 200 },
 		);
@@ -173,7 +176,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should preserve percent-encoded triples when allowReserved is true for query params", () => {
-		const result = ParameterSerializer.serializeQueryParam(
+		const result = ParameterSerializer?.serializeQueryParam?.(
 			{ name: "q", style: "form", explode: false, allowReserved: true },
 			"a%2Fb",
 		);
@@ -182,7 +185,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should encode query delimiters when allowReserved is true for query params", () => {
-		const result = ParameterSerializer.serializeQueryParam(
+		const result = ParameterSerializer?.serializeQueryParam?.(
 			{ name: "q", style: "form", explode: false, allowReserved: true },
 			"a?b#c&d=e+f",
 		);
@@ -191,7 +194,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should serialize pipeDelimited objects in query params", () => {
-		const result = ParameterSerializer.serializeQueryParam(
+		const result = ParameterSerializer?.serializeQueryParam?.(
 			{ name: "color", style: "pipeDelimited", explode: false },
 			{ R: 100, G: 200, B: 150 },
 		);
@@ -202,7 +205,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should serialize tabDelimited arrays in query params", () => {
-		const result = ParameterSerializer.serializeQueryParam(
+		const result = ParameterSerializer?.serializeQueryParam?.(
 			{ name: "ids", style: "tabDelimited", explode: false },
 			["a", "b"],
 		);
@@ -211,7 +214,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should keep cookie form delimiters unescaped", () => {
-		const result = ParameterSerializer.serializeCookieParam(
+		const result = ParameterSerializer?.serializeCookieParam?.(
 			"color",
 			["blue", "black"],
 			"form",
@@ -222,7 +225,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should preserve percent-encoded triples when allowReserved is true for path params", () => {
-		const result = ParameterSerializer.serializePathParam(
+		const result = ParameterSerializer?.serializePathParam?.(
 			"id",
 			"a%2Fb",
 			"simple",
@@ -234,7 +237,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it('should keep "/" "?" "#" percent-encoded in path params with allowReserved', () => {
-		const result = ParameterSerializer.serializePathParam(
+		const result = ParameterSerializer?.serializePathParam?.(
 			"id",
 			"a/b?c#d",
 			"simple",
@@ -246,7 +249,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should apply contentEncoding for query params before serialization", () => {
-		const result = ParameterSerializer.serializeQueryParam(
+		const result = ParameterSerializer?.serializeQueryParam?.(
 			{ name: "bin", contentEncoderConfig: { contentEncoding: "base64" } },
 			"hi",
 		);
@@ -255,7 +258,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should apply contentEncoding for path params before encoding", () => {
-		const result = ParameterSerializer.serializePathParam(
+		const result = ParameterSerializer?.serializePathParam?.(
 			"id",
 			"hi",
 			"simple",
@@ -271,7 +274,7 @@ describe("Utility: ParameterSerializer", () => {
 	});
 
 	it("should apply contentEncoding for header params without percent-encoding", () => {
-		const result = ParameterSerializer.serializeHeaderParam(
+		const result = ParameterSerializer?.serializeHeaderParam?.(
 			"hi",
 			false,
 			undefined,

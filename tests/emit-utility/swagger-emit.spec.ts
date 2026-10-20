@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SwaggerSpec } from "../../src/core/types/index.js";
 import { applyReverseMetadata } from "../../src/openapi/emit.js";
-import { testCast } from "../shared/helpers.js";
 
 describe("Utility: Swagger 2.0 Emitter", () => {
 	it("should emit swagger 2.0 spec when documentMeta has swagger", () => {
@@ -53,17 +52,17 @@ describe("Utility: Swagger 2.0 Emitter", () => {
 		expect(result.servers).toBeUndefined();
 
 		// Path operation translation
-		const op = testCast(result.paths)["/test"].post;
-		expect(op.requestBody).toBeUndefined();
-		expect(op.consumes).toEqual(["application/json"]);
-		expect(op.produces).toEqual(["application/json"]);
+		const op = result.paths?.["/test"]?.post;
+		expect(op?.requestBody).toBeUndefined();
+		expect(op?.consumes).toEqual(["application/json"]);
+		expect(op?.produces).toEqual(["application/json"]);
 
-		expect(op.parameters).toBeDefined();
-		expect(op.parameters[0].in).toBe("body");
-		expect(op.parameters[0].schema).toEqual({ type: "object" });
+		expect(op?.parameters).toBeDefined();
+		expect(op?.parameters?.[0]?.in).toBe("body");
+		expect(op?.parameters?.[0]?.schema).toEqual({ type: "object" });
 
-		const resp = op.responses["200"];
-		expect(resp.content).toBeUndefined();
-		expect(resp.schema).toEqual({ type: "string" });
+		const resp = op?.responses?.["200"];
+		expect(resp?.content).toBeUndefined();
+		expect(resp?.schema).toEqual({ type: "string" });
 	});
 });

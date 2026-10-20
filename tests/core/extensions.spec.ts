@@ -9,7 +9,7 @@ import type {
 import { extractPaths } from "@src/functions/utils.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestPaths, createTestSpec } from "../shared/helpers.js";
 
 /**
  * Tests for the Specification Extensions (`x-*`) feature support.
@@ -75,17 +75,21 @@ describe("Core: Specification Extensions", () => {
 	};
 
 	it("should allow accessing x- properties on InfoObject types", () => {
-		const parser = new SwaggerParser(testCast(specWithExtensions), config);
+		const parser = new SwaggerParser(
+			createTestSpec(specWithExtensions),
+			config,
+		);
 		const info: InfoObject = parser.getSpec().info;
 
-		expect(info["x-logo"]).toBeDefined();
-
-		expect(testCast(info)["x-logo"].url).toBe("https://example.com/logo.png");
+		expect(info["x-logo"]).toEqual({ url: "https://example.com/logo.png" });
 		expect(info["x-internal-id"]).toBe(12345);
 	});
 
 	it("should allow accessing x- properties on TagObject types", () => {
-		const parser = new SwaggerParser(testCast(specWithExtensions), config);
+		const parser = new SwaggerParser(
+			createTestSpec(specWithExtensions),
+			config,
+		);
 		const tags: TagObject[] = parser.getSpec().tags || [];
 
 		expect(tags.length).toBe(1);
@@ -93,7 +97,10 @@ describe("Core: Specification Extensions", () => {
 	});
 
 	it("should allow accessing x- properties on ServerObject types", () => {
-		const parser = new SwaggerParser(testCast(specWithExtensions), config);
+		const parser = new SwaggerParser(
+			createTestSpec(specWithExtensions),
+			config,
+		);
 		const servers: ServerObject[] = parser.servers || [];
 
 		expect(servers.length).toBe(1);
@@ -101,7 +108,10 @@ describe("Core: Specification Extensions", () => {
 	});
 
 	it("should allow accessing x- properties on SecurityScheme types", () => {
-		const parser = new SwaggerParser(testCast(specWithExtensions), config);
+		const parser = new SwaggerParser(
+			createTestSpec(specWithExtensions),
+			config,
+		);
 		const schemes = parser.getSecuritySchemes();
 
 		expect(schemes.ApiKey).toBeDefined();
@@ -109,7 +119,9 @@ describe("Core: Specification Extensions", () => {
 	});
 
 	it("should propagate operation x- properties to PathInfo via extractPaths", () => {
-		const pathInfoList = extractPaths(testCast(specWithExtensions.paths));
+		const pathInfoList = extractPaths(
+			createTestPaths(specWithExtensions.paths),
+		);
 		const op = pathInfoList.find(
 			(p) => p.path === "/users" && p.method === "GET",
 		);
@@ -119,13 +131,17 @@ describe("Core: Specification Extensions", () => {
 	});
 
 	it("should propagate parameter x- properties via extractPaths", () => {
-		const pathInfoList = extractPaths(testCast(specWithExtensions.paths));
+		const pathInfoList = extractPaths(
+			createTestPaths(specWithExtensions.paths),
+		);
 		const op = pathInfoList.find(
 			(p) => p.path === "/users" && p.method === "GET",
 		);
 		const param = op?.parameters?.find((p) => p.name === "limit");
 
 		expect(param).toBeDefined();
-		expect(testCast(param)?.["x-custom-validation"]).toBe("max-100");
+		expect(
+			param && "in" in param ? param["x-custom-validation"] : undefined,
+		).toBe("max-100");
 	});
 });

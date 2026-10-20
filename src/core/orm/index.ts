@@ -37,7 +37,7 @@ export interface IOrmGenerator {
 	 */
 	generate(
 		project: Project,
-		parser: SwaggerParser,
+		parser: { schemas?: SwaggerParser["schemas"] | undefined },
 		config: GeneratorConfig,
 		outputDir: string,
 	): void;

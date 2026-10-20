@@ -2,12 +2,16 @@ import type { SwaggerSpec } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServerGenerator } from "@src/routes/emit_server.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestProject,
+	createTestSpec,
+} from "../shared/helpers.js";
 
-const multiEnvSpec: SwaggerSpec = testCast({
+const multiEnvSpec: SwaggerSpec = createTestSpec({
 	openapi: "3.2.0",
 	info: { title: "Server Test", version: "1.0" },
 	paths: {},
@@ -28,27 +32,13 @@ const multiEnvSpec: SwaggerSpec = testCast({
 describe("Emitter: ServerGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const parser = new SwaggerParser(spec, testCast({ options: {} }));
+		const parser = new SwaggerParser(spec, createTestConfig({ options: {} }));
 		new ServerGenerator(parser, project).generate("/out");
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/servers.ts");
-		const code = sourceFile.getText();
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/servers.ts");
 
 	it("should generate registry for static servers with name (OAS 3.2)", () => {
 		const project = runGenerator(multiEnvSpec);
@@ -57,22 +47,22 @@ describe("Emitter: ServerGenerator", () => {
 
 		expect(API_SERVERS).toHaveLength(2);
 
-		expect(API_SERVERS[0].url).toBe("https://api.production.com/v1");
+		expect(API_SERVERS?.[0]?.url).toBe("https://api.production.com/v1");
 
-		expect(API_SERVERS[0].name).toBe("prod");
+		expect(API_SERVERS?.[0]?.name).toBe("prod");
 
-		expect(API_SERVERS[1].description).toBe("Staging");
+		expect(API_SERVERS?.[1]?.description).toBe("Staging");
 
-		expect(API_SERVERS[1].name).toBe("staging");
+		expect(API_SERVERS?.[1]?.name).toBe("staging");
 	});
 
 	it("should generate default server for OAS specs with empty servers array", () => {
-		const spec: SwaggerSpec = testCast({
+		const spec: SwaggerSpec = {
 			openapi: "3.0.0",
 			info: { title: "E", version: "1" },
 			paths: {},
 			servers: [],
-		});
+		};
 		const project = runGenerator(spec);
 		const sourceFile = project.getSourceFileOrThrow("/out/servers.ts");
 
@@ -81,22 +71,21 @@ describe("Emitter: ServerGenerator", () => {
 	});
 
 	it("should not generate servers for Swagger 2.0 specs without servers", () => {
-		const spec: SwaggerSpec = testCast({
+		const spec: SwaggerSpec = {
 			swagger: "2.0",
 			info: { title: "E", version: "1" },
 			paths: {},
-		});
+		};
 		const project = runGenerator(spec);
 		const sourceFile = project.getSourceFileOrThrow("/out/servers.ts");
 		expect(sourceFile.getText()).toMatch(/export\s*{\s*};/);
 	});
 
-	it("should handle undefined parser.servers array (defensive fallback coverage)", () => {
+	it("should handle empty parser.servers array", () => {
 		const project = createTestProject();
-		// Mock parser structure to force undefined servers, hitting the fallback branch `|| []`
-		const parser = testCast<SwaggerParser>({
-			servers: undefined,
-		});
+		const parser = {
+			servers: [],
+		};
 
 		new ServerGenerator(parser, project).generate("/out");
 

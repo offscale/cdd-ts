@@ -8,7 +8,7 @@ import { URL } from "node:url";
 import type { ApiResponse, Pet } from "../models";
 import { MultipartBuilder } from "../utils/multipart-builder";
 import { ParameterSerializer } from "../utils/parameter-serializer";
-import { getServerUrl, resolveServerUrl } from "../utils/server-url";
+import { getServerUrl } from "../utils/server-url";
 
 export class PetService {
 	private basePath = "";
@@ -64,7 +64,7 @@ export class PetService {
 			method: "POST",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -128,7 +128,7 @@ export class PetService {
 			method: "POST",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -192,7 +192,7 @@ export class PetService {
 			method: "PUT",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -249,9 +249,9 @@ export class PetService {
 			},
 			status,
 		);
-		serialized_status.forEach((entry: { key: string; value: string }) =>
-			url.searchParams.append(entry.key, entry.value),
-		);
+		serialized_status.forEach((entry: { key: string; value: string }) => {
+			url.searchParams.append(entry.key, entry.value);
+		});
 		const headers: Record<string, string> = {
 			...(options?.headers as Record<string, string>),
 		};
@@ -262,7 +262,7 @@ export class PetService {
 			method: "GET",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -318,9 +318,9 @@ export class PetService {
 			},
 			tags,
 		);
-		serialized_tags.forEach((entry: { key: string; value: string }) =>
-			url.searchParams.append(entry.key, entry.value),
-		);
+		serialized_tags.forEach((entry: { key: string; value: string }) => {
+			url.searchParams.append(entry.key, entry.value);
+		});
 		const headers: Record<string, string> = {
 			...(options?.headers as Record<string, string>),
 		};
@@ -331,7 +331,7 @@ export class PetService {
 			method: "GET",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -389,7 +389,7 @@ export class PetService {
 			method: "GET",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -463,7 +463,7 @@ export class PetService {
 			method: "POST",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];
@@ -526,7 +526,7 @@ export class PetService {
 			method: "DELETE",
 			headers,
 		};
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const client = url.protocol === "https:" ? https : http;
 			const req = client.request(url, requestOptions, (res) => {
 				const chunks: Buffer[] = [];

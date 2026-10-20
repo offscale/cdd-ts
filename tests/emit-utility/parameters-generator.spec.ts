@@ -2,10 +2,13 @@ import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { ParametersGenerator } from "@src/routes/emit_parameters.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestProject,
+} from "../shared/helpers.js";
 
 const specWithParameters: SwaggerSpec = {
 	openapi: "3.2.0",
@@ -25,39 +28,28 @@ const specWithParameters: SwaggerSpec = {
 describe("Emitter: ParametersGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const parser = new SwaggerParser(spec, config);
 		new ParametersGenerator(parser, project).generate("/out");
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/parameters.ts");
-		const code = sourceFile.getText();
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/parameters.ts");
 
 	it("should generate registry map for parameters", () => {
 		const project = runGenerator(specWithParameters);
 
 		const { API_PARAMETERS } = compileGeneratedFile(project);
 
-		expect(API_PARAMETERS.LimitParam).toBeDefined();
+		expect(API_PARAMETERS?.LimitParam).toBeDefined();
 
-		expect(API_PARAMETERS.LimitParam.name).toBe("limit");
+		expect(API_PARAMETERS?.LimitParam?.name).toBe("limit");
 
-		expect(API_PARAMETERS.LimitParam.in).toBe("query");
+		expect(API_PARAMETERS?.LimitParam?.in).toBe("query");
 	});
 
 	it("should handle specs without parameters", () => {

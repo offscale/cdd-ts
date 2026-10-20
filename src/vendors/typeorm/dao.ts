@@ -253,7 +253,7 @@ function generateDaoTests(
 	    let res = await dao.find();
 	    expect(res).toEqual([]);
 
-	    const created = await dao.create(fake${schemaName}() as any);
+	    const created = await dao.create(fake${schemaName}());
 	    expect(created).toBeDefined();
 
 	    res = await dao.find();

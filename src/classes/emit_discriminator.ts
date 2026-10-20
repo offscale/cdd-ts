@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 import type { SwaggerDefinition } from "../core/types/openapi.js";
 import { pascalCase } from "../functions/utils.js";
 import type { SwaggerParser } from "../openapi/parse.js";
@@ -75,7 +74,7 @@ export class DiscriminatorGenerator {
 				propertyName = rawDiscriminator.propertyName;
 
 				if (rawDiscriminator.mapping) {
-					mapping = {};
+					const resolvedMapping: Record<string, string> = {};
 
 					Object.entries(rawDiscriminator.mapping).forEach(
 						([key, refValue]) => {
@@ -84,10 +83,12 @@ export class DiscriminatorGenerator {
 							);
 
 							if (childModelName) {
-								mapping![key] = childModelName;
+								resolvedMapping[key] = childModelName;
 							}
 						},
 					);
+
+					mapping = resolvedMapping;
 				}
 
 				if (rawDiscriminator.defaultMapping) {
@@ -97,19 +98,17 @@ export class DiscriminatorGenerator {
 				}
 			}
 
-			if (propertyName) {
-				registry[modelName] = { propertyName };
+			registry[modelName] = { propertyName };
 
-				if (mapping && Object.keys(mapping).length > 0) {
-					registry[modelName].mapping = mapping;
-				}
-
-				if (defaultMapping) {
-					registry[modelName].defaultMapping = defaultMapping;
-				}
-
-				count++;
+			if (mapping && Object.keys(mapping).length > 0) {
+				registry[modelName].mapping = mapping;
 			}
+
+			if (defaultMapping) {
+				registry[modelName].defaultMapping = defaultMapping;
+			}
+
+			count++;
 		});
 
 		if (count > 0) {
@@ -132,8 +131,6 @@ export class DiscriminatorGenerator {
 		}
 
 		sourceFile.formatText();
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 	}
 
 	/**
@@ -161,7 +158,7 @@ export class DiscriminatorGenerator {
 
 		if (!candidate) return "";
 
-		candidate = candidate.split("?")[0]?.split("#")[0] || candidate;
+		candidate = candidate.replace(/[?#].*$/, "");
 
 		candidate = candidate.replace(/\.[^/.]+$/, "");
 

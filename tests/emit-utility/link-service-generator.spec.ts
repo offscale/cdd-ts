@@ -3,14 +3,16 @@ import { LinkServiceGenerator } from "@src/vendors/angular/utils/link-service.ge
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import {
+	type CompiledModuleExports,
+	createTestConfig,
 	createTestProject,
-	type TestValue,
-	testCast,
+	createTestSpec,
+	instantiateLinkService,
 } from "../shared/helpers.js";
 
 describe("Emitter: LinkServiceGenerator", () => {
-	const createParser = (spec: TestValue) =>
-		new SwaggerParser(testCast(spec), testCast({ options: {} }));
+	const createParser = (spec: object) =>
+		new SwaggerParser(createTestSpec(spec), createTestConfig({ options: {} }));
 
 	it("should skip generation if no links defined in spec", () => {
 		const project = createTestProject();
@@ -19,7 +21,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			info: { title: "T", version: "1" },
 			paths: {},
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 
 		new LinkServiceGenerator(parser, project).generate("/out");
 		const sourceFile = project.getSourceFile("/out/utils/link.service.ts");
@@ -45,7 +47,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 				},
 			},
 		};
-		const parser = createParser(testCast(specWithLinks));
+		const parser = createParser(specWithLinks);
 
 		new LinkServiceGenerator(parser, project).generate("/out");
 
@@ -85,13 +87,14 @@ describe("Emitter: LinkServiceGenerator", () => {
 			},
 		};
 
-		const moduleScope = {
-			exports: testCast({}),
-		};
+		const moduleScope: { exports: CompiledModuleExports } = { exports: {} };
 
 		// Returns a decorator function that does nothing, satisfying usage like @Injectable()
 
-		const mockInjectable = () => (target: TestValue) => target;
+		const mockInjectable =
+			() =>
+			<T>(target: T): T =>
+				target;
 
 		// Inject mock API_LINKS into global scope of evaluation
 		const wrappedCode = `
@@ -99,24 +102,20 @@ describe("Emitter: LinkServiceGenerator", () => {
             ${jsCode} 
         `;
 
-		testCast(
-			new Function("exports", "Service", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
-			),
+		new Function("exports", "Service", wrappedCode)(
+			moduleScope.exports,
+			mockInjectable,
 		);
 
-		const ServiceClass = moduleScope.exports.LinkService;
+		const service = instantiateLinkService(moduleScope.exports);
 
-		const service = new ServiceClass();
-
-		const result = service.resolveLink("op1", responseMock, "nextPage");
+		const result = service.resolveLink?.("op1", responseMock, "nextPage");
 
 		expect(result).toBeDefined();
 
-		expect(result.targetOperationId).toBe("op2");
+		expect(result?.targetOperationId).toBe("op2");
 
-		expect(result.parameters.id).toBe(123);
+		expect(result?.parameters?.id).toBe(123);
 	});
 
 	it("should resolve values from response headers", () => {
@@ -128,7 +127,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			components: { links: { Test: { operationId: "noop" } } },
 			paths: {},
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -162,32 +161,31 @@ describe("Emitter: LinkServiceGenerator", () => {
 			body: {},
 		};
 
-		const moduleScope = {
-			exports: testCast({}),
-		};
+		const moduleScope: { exports: CompiledModuleExports } = { exports: {} };
 
-		const mockInjectable = () => (target: TestValue) => target;
+		const mockInjectable =
+			() =>
+			<T>(target: T): T =>
+				target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		testCast(
-			new Function("exports", "Service", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
-			),
+		new Function("exports", "Service", wrappedCode)(
+			moduleScope.exports,
+			mockInjectable,
 		);
 
-		const service = new moduleScope.exports.LinkService();
+		const service = instantiateLinkService(moduleScope.exports);
 
-		const result = service.resolveLink("opHeading", responseMock, "detail");
+		const result = service.resolveLink?.("opHeading", responseMock, "detail");
 
 		expect(result).toBeDefined();
 
-		expect(result.parameters.uuid).toBe("abc-123");
+		expect(result?.parameters?.uuid).toBe("abc-123");
 
-		expect(result.parameters.static).toBe("constant");
+		expect(result?.parameters?.static).toBe("constant");
 	});
 
 	it("should resolve values from REQUEST context (including path params)", () => {
@@ -198,7 +196,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -241,28 +239,27 @@ describe("Emitter: LinkServiceGenerator", () => {
 
 		const responseMock = { status: 201, headers: {}, body: {} };
 
-		const moduleScope = {
-			exports: testCast({}),
-		};
+		const moduleScope: { exports: CompiledModuleExports } = { exports: {} };
 
-		const mockInjectable = () => (target: TestValue) => target;
+		const mockInjectable =
+			() =>
+			<T>(target: T): T =>
+				target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		testCast(
-			new Function("exports", "Service", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
-			),
+		new Function("exports", "Service", wrappedCode)(
+			moduleScope.exports,
+			mockInjectable,
 		);
 
-		const service = new moduleScope.exports.LinkService();
+		const service = instantiateLinkService(moduleScope.exports);
 
 		// Call with request arg and urlTemplate
 
-		const result = service.resolveLink(
+		const result = service.resolveLink?.(
 			"createItem",
 			responseMock,
 			"getRelated",
@@ -272,19 +269,19 @@ describe("Emitter: LinkServiceGenerator", () => {
 
 		expect(result).toBeDefined();
 
-		expect(result.parameters.u).toBe(
+		expect(result?.parameters?.u).toBe(
 			"https://api.com/v1/items/999?filter=active",
 		);
 
-		expect(result.parameters.m).toBe("POST");
+		expect(result?.parameters?.m).toBe("POST");
 
-		expect(result.parameters.q).toBe("active");
+		expect(result?.parameters?.q).toBe("active");
 
-		expect(result.parameters.h).toBe("req-99");
+		expect(result?.parameters?.h).toBe("req-99");
 
-		expect(result.parameters.b).toBe("foo");
+		expect(result?.parameters?.b).toBe("foo");
 
-		expect(result.parameters.p).toBe("999"); // extracted path param
+		expect(result?.parameters?.p).toBe("999"); // extracted path param
 	});
 
 	it("should normalize qualified parameter keys and report locations", () => {
@@ -295,7 +292,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -333,26 +330,25 @@ describe("Emitter: LinkServiceGenerator", () => {
 
 		const responseMock = { status: 200, headers: {}, body: {} };
 
-		const moduleScope = {
-			exports: testCast({}),
-		};
+		const moduleScope: { exports: CompiledModuleExports } = { exports: {} };
 
-		const mockInjectable = () => (target: TestValue) => target;
+		const mockInjectable =
+			() =>
+			<T>(target: T): T =>
+				target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		testCast(
-			new Function("exports", "Service", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
-			),
+		new Function("exports", "Service", wrappedCode)(
+			moduleScope.exports,
+			mockInjectable,
 		);
 
-		const service = new moduleScope.exports.LinkService();
+		const service = instantiateLinkService(moduleScope.exports);
 
-		const result = service.resolveLink(
+		const result = service.resolveLink?.(
 			"op1",
 			responseMock,
 			"next",
@@ -362,13 +358,13 @@ describe("Emitter: LinkServiceGenerator", () => {
 
 		expect(result).toBeDefined();
 
-		expect(result.parameters.id).toBe("123");
+		expect(result?.parameters?.id).toBe("123");
 
-		expect(result.parameters.filter).toBe("active");
+		expect(result?.parameters?.filter).toBe("active");
 
-		expect(result.parameters["x-req-id"]).toBe("req-1");
+		expect(result?.parameters?.["x-req-id"]).toBe("req-1");
 
-		expect(result.parameterLocations).toEqual({
+		expect(result?.parameterLocations).toEqual({
 			id: "path",
 			filter: "query",
 			"x-req-id": "header",
@@ -383,7 +379,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -412,30 +408,29 @@ describe("Emitter: LinkServiceGenerator", () => {
 
 		const responseMock = { status: 200, headers: {}, body: {} };
 
-		const moduleScope = {
-			exports: testCast({}),
-		};
+		const moduleScope: { exports: CompiledModuleExports } = { exports: {} };
 
-		const mockInjectable = () => (target: TestValue) => target;
+		const mockInjectable =
+			() =>
+			<T>(target: T): T =>
+				target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		testCast(
-			new Function("exports", "Service", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
-			),
+		new Function("exports", "Service", wrappedCode)(
+			moduleScope.exports,
+			mockInjectable,
 		);
 
-		const service = new moduleScope.exports.LinkService();
+		const service = instantiateLinkService(moduleScope.exports);
 
-		const result = service.resolveLink("op1", responseMock, "crossServer");
+		const result = service.resolveLink?.("op1", responseMock, "crossServer");
 
 		expect(result).toBeDefined();
 
-		expect(result.targetServer).toBe("https://eu-west.api.com/v1");
+		expect(result?.targetServer).toBe("https://eu-west.api.com/v1");
 	});
 
 	it("should omit parameters when runtime expression evaluation fails", () => {
@@ -446,7 +441,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -476,34 +471,33 @@ describe("Emitter: LinkServiceGenerator", () => {
 
 		const responseMock = { status: 200, headers: {}, body: {} };
 
-		const moduleScope = {
-			exports: testCast({}),
-		};
+		const moduleScope: { exports: CompiledModuleExports } = { exports: {} };
 
-		const mockInjectable = () => (target: TestValue) => target;
+		const mockInjectable =
+			() =>
+			<T>(target: T): T =>
+				target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		testCast(
-			new Function("exports", "Service", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
-			),
+		new Function("exports", "Service", wrappedCode)(
+			moduleScope.exports,
+			mockInjectable,
 		);
 
-		const service = new moduleScope.exports.LinkService();
+		const service = instantiateLinkService(moduleScope.exports);
 
-		const result = service.resolveLink("opMissing", responseMock, "next");
+		const result = service.resolveLink?.("opMissing", responseMock, "next");
 
 		expect(result).toBeDefined();
 
-		expect(result.parameters.ok).toBe("static");
+		expect(result?.parameters?.ok).toBe("static");
 
-		expect(Object.hasOwn(result.parameters, "missing")).toBe(false);
+		expect(Object.hasOwn(result?.parameters ?? {}, "missing")).toBe(false);
 
-		expect(Object.hasOwn(result.parameters, "templated")).toBe(false);
+		expect(Object.hasOwn(result?.parameters ?? {}, "templated")).toBe(false);
 	});
 
 	it("should decode percent-encoded JSON pointer segments in runtime expressions", () => {
@@ -514,7 +508,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -542,30 +536,29 @@ describe("Emitter: LinkServiceGenerator", () => {
 
 		const responseMock = { status: 200, headers: {}, body: { "a/b": 42 } };
 
-		const moduleScope = {
-			exports: testCast({}),
-		};
+		const moduleScope: { exports: CompiledModuleExports } = { exports: {} };
 
-		const mockInjectable = () => (target: TestValue) => target;
+		const mockInjectable =
+			() =>
+			<T>(target: T): T =>
+				target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)}; 
             ${jsCode} 
         `;
 
-		testCast(
-			new Function("exports", "Service", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
-			),
+		new Function("exports", "Service", wrappedCode)(
+			moduleScope.exports,
+			mockInjectable,
 		);
 
-		const service = new moduleScope.exports.LinkService();
+		const service = instantiateLinkService(moduleScope.exports);
 
-		const result = service.resolveLink("opPointer", responseMock, "next");
+		const result = service.resolveLink?.("opPointer", responseMock, "next");
 
 		expect(result).toBeDefined();
 
-		expect(result.parameters.value).toBe(42);
+		expect(result?.parameters?.value).toBe(42);
 	});
 
 	it("should throw validation error if link server variable default is invalid", () => {
@@ -576,7 +569,7 @@ describe("Emitter: LinkServiceGenerator", () => {
 			paths: {},
 			components: { links: { L: { operationId: "noop" } } },
 		};
-		const parser = createParser(testCast(spec));
+		const parser = createParser(spec);
 		new LinkServiceGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow(
@@ -610,27 +603,26 @@ describe("Emitter: LinkServiceGenerator", () => {
 
 		const responseMock = { status: 200, headers: {}, body: {} };
 
-		const moduleScope = {
-			exports: testCast({}),
-		};
+		const moduleScope: { exports: CompiledModuleExports } = { exports: {} };
 
-		const mockInjectable = () => (target: TestValue) => target;
+		const mockInjectable =
+			() =>
+			<T>(target: T): T =>
+				target;
 		const wrappedCode = `
             const API_LINKS = ${JSON.stringify(API_LINKS)};
             ${jsCode}
         `;
 
-		testCast(
-			new Function("exports", "Service", wrappedCode)(
-				moduleScope.exports,
-				mockInjectable,
-			),
+		new Function("exports", "Service", wrappedCode)(
+			moduleScope.exports,
+			mockInjectable,
 		);
 
-		const service = new moduleScope.exports.LinkService();
+		const service = instantiateLinkService(moduleScope.exports);
 
 		expect(() =>
-			service.resolveLink("opInvalid", responseMock, "invalidServer"),
+			service.resolveLink?.("opInvalid", responseMock, "invalidServer"),
 		).toThrow(
 			'Value "mars" for variable "region" is not in the allowed enum: earth, moon',
 		);

@@ -22,6 +22,9 @@ export interface RuntimeRequestContext {
 	path: Record<string, string | undefined>;
 	/** Optional parsed request payload. */
 	body?: OpenApiValue;
+
+	/** Additional context fields. */
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -32,6 +35,9 @@ export interface RuntimeResponseContext {
 	headers: Record<string, string | string[] | undefined>;
 	/** Optional parsed response payload. */
 	body?: OpenApiValue;
+
+	/** Additional context fields. */
+	[key: string]: OpenApiValue;
 }
 
 /**
@@ -42,6 +48,9 @@ export interface RuntimeMessageContext {
 	headers: Record<string, string | string[] | undefined>;
 	/** Optional parsed message payload. */
 	payload?: OpenApiValue;
+
+	/** Additional context fields. */
+	[key: string]: OpenApiValue;
 }
 
 /**

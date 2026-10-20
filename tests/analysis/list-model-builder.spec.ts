@@ -1,7 +1,7 @@
 import type { Resource, SwaggerDefinition } from "@src/core/types/index.js";
 import { ListModelBuilder } from "@src/vendors/angular/admin/analysis/list-model.builder.js";
 import { describe, expect, it } from "vitest";
-import { testCast } from "../shared/helpers.js";
+import { createTestResourceOp } from "../shared/helpers.js";
 
 describe("Analysis: ListModelBuilder", () => {
 	/**
@@ -14,7 +14,9 @@ describe("Analysis: ListModelBuilder", () => {
 			name: "items",
 			modelName: "Item",
 			isEditable: true,
-			operations: [testCast({ action: "list", methodName: "listItems" })],
+			operations: [
+				createTestResourceOp({ action: "list", methodName: "listItems" }),
+			],
 			formProperties: [
 				{ name: "id", schema: { type: "string" } as SwaggerDefinition },
 				{ name: "name", schema: { type: "string" } as SwaggerDefinition },
@@ -40,8 +42,8 @@ describe("Analysis: ListModelBuilder", () => {
 
 		// 'id' should be the first column, followed by 'name'.
 		expect(viewModel.columns.length).toBe(2);
-		expect(viewModel.columns[0].key).toBe("id");
-		expect(viewModel.columns[1].key).toBe("name");
+		expect(viewModel.columns[0]?.key).toBe("id");
+		expect(viewModel.columns[1]?.key).toBe("name");
 		// Verify there is only one 'id' column, proving the deduplication logic works.
 		expect(viewModel.columns.filter((c) => c.key === "id").length).toBe(1);
 	});
@@ -49,7 +51,9 @@ describe("Analysis: ListModelBuilder", () => {
 	it('should throw an error if the resource has no "list" operation', () => {
 		const builder = new ListModelBuilder();
 		const resource = createResource({
-			operations: [testCast({ action: "create", methodName: "createItem" })], // No 'list' operation
+			operations: [
+				createTestResourceOp({ action: "create", methodName: "createItem" }),
+			], // No 'list' operation
 		});
 
 		// This covers the error handling path when a list view cannot be generated.
@@ -62,13 +66,13 @@ describe("Analysis: ListModelBuilder", () => {
 		const builder = new ListModelBuilder();
 		const resource = createResource({
 			operations: [
-				testCast({ action: "list", methodName: "listItems" }),
-				testCast({
+				createTestResourceOp({ action: "list", methodName: "listItems" }),
+				createTestResourceOp({
 					action: "getInfo",
 					methodName: "getInfo",
 					isCustomCollectionAction: true,
 				}),
-				testCast({
+				createTestResourceOp({
 					action: "processItem",
 					methodName: "processItem",
 					isCustomItemAction: true,
@@ -107,7 +111,7 @@ describe("Analysis: ListModelBuilder", () => {
 		const viewModel = builder.build(resource);
 
 		expect(viewModel.idProperty).toBe("uuid");
-		expect(viewModel.columns[0].key).toBe("uuid");
+		expect(viewModel.columns[0]?.key).toBe("uuid");
 	});
 
 	it("should ensure a default id column when no usable properties exist", () => {
@@ -123,21 +127,21 @@ describe("Analysis: ListModelBuilder", () => {
 		const viewModel = builder.build(resource);
 
 		expect(viewModel.columns).toHaveLength(1);
-		expect(viewModel.columns[0].key).toBe("id");
-		expect(viewModel.columns[0].isId).toBe(true);
+		expect(viewModel.columns[0]?.key).toBe("id");
+		expect(viewModel.columns[0]?.isId).toBe(true);
 	});
 
-	it("should fall back when listProperties is undefined and formProperties are empty", () => {
+	it("should fall back when listProperties and formProperties are empty", () => {
 		const builder = new ListModelBuilder();
 		const resource = createResource({
 			formProperties: [],
-			listProperties: testCast(undefined),
+			listProperties: [],
 		});
 
 		const viewModel = builder.build(resource);
 
 		expect(viewModel.idProperty).toBe("id");
 		expect(viewModel.columns).toHaveLength(1);
-		expect(viewModel.columns[0].key).toBe("id");
+		expect(viewModel.columns[0]?.key).toBe("id");
 	});
 });

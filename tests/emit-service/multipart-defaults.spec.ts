@@ -4,7 +4,7 @@ import { SwaggerParser } from "@src/openapi/parse.js";
 import { ServiceMethodGenerator } from "@src/vendors/angular/service/service-method.generator.js";
 import { Project, Scope } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../shared/helpers.js";
+import { createTestOperation } from "../shared/helpers.js";
 
 describe("Emitter: ServiceMethodGenerator (Multipart Defaults)", () => {
 	const createTestEnv = () => {
@@ -45,7 +45,7 @@ describe("Emitter: ServiceMethodGenerator (Multipart Defaults)", () => {
 		};
 
 		const project = new Project({ useInMemoryFileSystem: true });
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(spec, config);
 
 		// Pre-generate types
 		new TypeGenerator(parser, project, config).generate("/out");
@@ -66,16 +66,16 @@ describe("Emitter: ServiceMethodGenerator (Multipart Defaults)", () => {
 
 	it("should serialize object properties in multipart using MultipartBuilder defaults", () => {
 		const { methodGen, serviceClass, parser } = createTestEnv();
-		const op = parser.operations.find(
-			(o) => o.operationId === "uploadComplex",
-		)!;
+		const op = parser.operations.find((o) => o.operationId === "uploadComplex");
+		if (!op) throw new Error("Expected uploadComplex");
 
 		// Ensure methodName is set as the parser usually does this in groupPathsByController
 		op.methodName = "uploadComplex";
 
 		methodGen.addServiceMethod(serviceClass, op);
 
-		const body = serviceClass.getMethodOrThrow("uploadComplex").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("uploadComplex").getBodyText() ?? "";
 
 		// Since metadata is an object and tags is an array, the analyzer should inject `contentType: 'application/json'`.
 		// The config object in the generated code should reflect this.
@@ -95,37 +95,36 @@ describe("Emitter: ServiceMethodGenerator (Multipart Defaults)", () => {
 
 		// Inject a new operation into the parser/spec that uses contentEncoding
 
-		const op: TestValue = testCast({
-			method: testCast("POST"),
-			path: testCast("/upload-encoding"),
-			methodName: testCast("uploadWithEncoding"),
+		const op = createTestOperation({
+			method: "POST",
+			path: "/upload-encoding",
+			methodName: "uploadWithEncoding",
 			requestBody: {
 				content: {
 					"multipart/form-data": {
-						schema: testCast({
-							type: testCast("object"),
-							properties: testCast({
-								file: testCast({
-									type: testCast("string"),
-									format: testCast("binary"),
-								}), // raw binary
-								secret: testCast({
-									type: testCast("string"),
-									contentEncoding: testCast("base64"),
-								}), // encoded text part
-							}),
-						}),
+						schema: {
+							type: "object",
+							properties: {
+								file: {
+									type: "string",
+									format: "binary",
+								}, // raw binary
+								secret: {
+									type: "string",
+									contentEncoding: "base64",
+								}, // encoded text part
+							},
+						},
 					},
 				},
 			},
-			responses: testCast({ "200": testCast({ description: testCast("ok") }) }),
+			responses: { "200": { description: "ok" } },
 		});
 
-		methodGen.addServiceMethod(serviceClass, testCast(op));
+		methodGen.addServiceMethod(serviceClass, createTestOperation(op));
 
-		const body = serviceClass
-			.getMethodOrThrow("uploadWithEncoding")
-			.getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("uploadWithEncoding").getBodyText() ?? "";
 
 		// Check that the config object passed to MultipartBuilder contains the header for 'secret'
 		expect(body).toContain('"secret":{');
@@ -135,26 +134,27 @@ describe("Emitter: ServiceMethodGenerator (Multipart Defaults)", () => {
 	it("should handle multipart/byteranges with correct media type config", () => {
 		const { methodGen, serviceClass } = createTestEnv();
 
-		const op: TestValue = testCast({
-			method: testCast("POST"),
-			path: testCast("/ranges"),
-			methodName: testCast("postRanges"),
+		const op = createTestOperation({
+			method: "POST",
+			path: "/ranges",
+			methodName: "postRanges",
 			requestBody: {
 				content: {
-					"multipart/byteranges": testCast({
-						schema: testCast({
-							type: testCast("array"),
-							items: testCast({ type: testCast("object") }),
-						}),
-					}),
+					"multipart/byteranges": {
+						schema: {
+							type: "array",
+							items: { type: "object" },
+						},
+					},
 				},
 			},
-			responses: testCast({ "200": testCast({ description: testCast("ok") }) }),
+			responses: { "200": { description: "ok" } },
 		});
 
-		methodGen.addServiceMethod(serviceClass, testCast(op));
+		methodGen.addServiceMethod(serviceClass, createTestOperation(op));
 
-		const body = serviceClass.getMethodOrThrow("postRanges").getBodyText()!;
+		const body =
+			serviceClass.getMethodOrThrow("postRanges").getBodyText() ?? "";
 
 		// Verify that the configuration object includes the mediaType override
 		expect(body).toContain('"mediaType":"multipart/byteranges"');

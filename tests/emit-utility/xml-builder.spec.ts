@@ -1,20 +1,14 @@
 import { XmlBuilderGenerator } from "@src/openapi/emit_xml_builder.js";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestProject,
+} from "../shared/helpers.js";
 
 function getXmlBuilder() {
 	const project = createTestProject();
 	new XmlBuilderGenerator(project).generate("/");
-	const sourceFile = project.getSourceFileOrThrow("/utils/xml-builder.ts");
-	const jsCode = ts.transpile(sourceFile.getText(), {
-		target: ts.ScriptTarget.ESNext,
-		module: ts.ModuleKind.CommonJS,
-	});
-	const moduleScope = { exports: {} };
-	testCast(new Function("exports", jsCode)(moduleScope.exports));
-
-	return testCast(moduleScope.exports).XmlBuilder;
+	return compileGeneratedModule(project, "/utils/xml-builder.ts").XmlBuilder;
 }
 
 describe("Utility: XmlBuilder", () => {
@@ -22,11 +16,11 @@ describe("Utility: XmlBuilder", () => {
 
 	describe("Standard (Legacy) Behavior", () => {
 		it("should serialize simple primitives", () => {
-			expect(XmlBuilder.serialize(123, "id")).toBe("<id>123</id>");
+			expect(XmlBuilder?.serialize?.(123, "id")).toBe("<id>123</id>");
 
-			expect(XmlBuilder.serialize("foo", "name")).toBe("<name>foo</name>");
+			expect(XmlBuilder?.serialize?.("foo", "name")).toBe("<name>foo</name>");
 
-			expect(XmlBuilder.serialize(true, "active")).toBe(
+			expect(XmlBuilder?.serialize?.(true, "active")).toBe(
 				"<active>true</active>",
 			);
 		});
@@ -34,7 +28,7 @@ describe("Utility: XmlBuilder", () => {
 		it("should serialize objects", () => {
 			const data = { id: 1, name: "Item" };
 
-			const xml = XmlBuilder.serialize(data, "Entity");
+			const xml = XmlBuilder?.serialize?.(data, "Entity");
 
 			expect(xml).toBe("<Entity><id>1</id><name>Item</name></Entity>");
 		});
@@ -47,7 +41,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Item", config);
+			const xml = XmlBuilder?.serialize?.(data, "Item", config);
 
 			expect(xml).toBe('<Item id="5"><val>test</val></Item>');
 		});
@@ -60,7 +54,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 
 			expect(xml).toBe("<Root><complex>val</complex></Root>");
 		});
@@ -76,7 +70,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 
 			expect(xml).toBe("<Root><tags><Tag>a</Tag><Tag>b</Tag></tags></Root>");
 		});
@@ -87,7 +81,7 @@ describe("Utility: XmlBuilder", () => {
 				properties: { tags: { wrapped: false } },
 			};
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 
 			expect(xml).toBe("<Root><tags>a</tags><tags>b</tags></Root>");
 		});
@@ -100,7 +94,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 
 			expect(xml).toBe(
 				"<Root><list><list>a</list><list>b</list></list></Root>",
@@ -118,7 +112,7 @@ describe("Utility: XmlBuilder", () => {
 				],
 			};
 
-			const xml = XmlBuilder.serialize(data, "Report", config);
+			const xml = XmlBuilder?.serialize?.(data, "Report", config);
 
 			expect(xml).toBe("<Report>start<data>42</data>end</Report>");
 		});
@@ -126,7 +120,7 @@ describe("Utility: XmlBuilder", () => {
 
 	describe("OAS 3.2 Null Handling (Appendix G)", () => {
 		it('should serialize root null as xsi:nil="true"', () => {
-			const xml = XmlBuilder.serialize(null, "Root");
+			const xml = XmlBuilder?.serialize?.(null, "Root");
 
 			expect(xml).toBe(
 				'<Root xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />',
@@ -140,7 +134,7 @@ describe("Utility: XmlBuilder", () => {
 			};
 			// Default is element
 
-			const xml = XmlBuilder.serialize(data, "Root");
+			const xml = XmlBuilder?.serialize?.(data, "Root");
 
 			expect(xml).toContain("<valid>content</valid>");
 			// Null element gets the nil attribute and namespace
@@ -162,7 +156,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Item", config);
+			const xml = XmlBuilder?.serialize?.(data, "Item", config);
 			// Should have id="123" but no attr="..."
 
 			expect(xml).toBe('<Item id="123"></Item>');
@@ -181,7 +175,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 			// Should act as empty content
 
 			expect(xml).toBe("<Root><other>val</other></Root>");
@@ -198,7 +192,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 			// Expecting valid wrapped structure with xsi definitions
 
 			expect(xml).toBe(
@@ -216,7 +210,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Node", config);
+			const xml = XmlBuilder?.serialize?.(data, "Node", config);
 
 			expect(xml).toBe('<Node id="99"><content>stuff</content></Node>');
 		});
@@ -233,7 +227,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 
 			expect(xml).toBe(
 				"<Root><list><item>1</item><item>2</item></list></Root>",
@@ -252,7 +246,7 @@ describe("Utility: XmlBuilder", () => {
 			};
 			// Expect meta's children to appear directly in Root, not wrapped in <meta>
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 
 			expect(xml).toBe(
 				"<Root><version>1.0</version><author>me</author></Root>",
@@ -271,7 +265,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Element", config);
+			const xml = XmlBuilder?.serialize?.(data, "Element", config);
 
 			expect(xml).toBe(
 				'<Element attr="attrVal">This is text content</Element>',
@@ -290,7 +284,7 @@ describe("Utility: XmlBuilder", () => {
 			// Per OAS 3.2, if nodeType is cdata, it represents a CDATA section node.
 			// It is inserted directly into the parent without a wrapper tag named after the property.
 
-			const xml = XmlBuilder.serialize(data, "Doc", config);
+			const xml = XmlBuilder?.serialize?.(data, "Doc", config);
 
 			expect(xml).toBe("<Doc><![CDATA[<html><body></body></html>]]></Doc>");
 		});
@@ -306,7 +300,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Doc", config);
+			const xml = XmlBuilder?.serialize?.(data, "Doc", config);
 
 			expect(xml).toBe("<Doc><![CDATA[<html></html>]]></Doc>");
 		});
@@ -316,7 +310,7 @@ describe("Utility: XmlBuilder", () => {
 		it("should escape special characters in text", () => {
 			const data = { text: "<&>" };
 
-			const xml = XmlBuilder.serialize(data, "R");
+			const xml = XmlBuilder?.serialize?.(data, "R");
 
 			expect(xml).toBe("<R><text>&lt;&amp;&gt;</text></R>");
 		});
@@ -325,7 +319,7 @@ describe("Utility: XmlBuilder", () => {
 			const data = { attr: '"quotes"' };
 			const config = { properties: { attr: { attribute: true } } };
 
-			const xml = XmlBuilder.serialize(data, "R", config);
+			const xml = XmlBuilder?.serialize?.(data, "R", config);
 
 			expect(xml).toBe('<R attr="&quot;quotes&quot;"></R>');
 		});
@@ -339,7 +333,7 @@ describe("Utility: XmlBuilder", () => {
 				name: "Root",
 			};
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 
 			expect(xml).toBe(
 				'<Root xmlns="http://example.com/schema"><id>1</id></Root>',
@@ -354,7 +348,7 @@ describe("Utility: XmlBuilder", () => {
 				name: "Root",
 			};
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 
 			expect(xml).toBe(
 				'<ex:Root xmlns:ex="http://example.com/schema"><id>1</id></ex:Root>',
@@ -375,7 +369,7 @@ describe("Utility: XmlBuilder", () => {
 			};
 			// Note: namespace is not declared here, just prefix used in tag name
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 
 			expect(xml).toBe("<Root><ns:Nested><val>test</val></ns:Nested></Root>");
 		});
@@ -391,7 +385,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Item", config);
+			const xml = XmlBuilder?.serialize?.(data, "Item", config);
 
 			expect(xml).toBe('<Item xsi:id="123"></Item>');
 		});
@@ -409,7 +403,7 @@ describe("Utility: XmlBuilder", () => {
 				},
 			};
 
-			const xml = XmlBuilder.serialize(data, "Root", config);
+			const xml = XmlBuilder?.serialize?.(data, "Root", config);
 			// The wrapper gets the namespace definition
 
 			expect(xml).toBe(

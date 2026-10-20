@@ -1,8 +1,12 @@
-import type { SwaggerSpec } from "@src/core/types/index.js";
+import type {
+	OpenApiValue,
+	SwaggerDefinition,
+	SwaggerSpec,
+} from "@src/core/types/index.js";
 
 import { ReferenceResolver } from "@src/openapi/parse_reference_resolver.js";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { testCast } from "../../shared/helpers.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createTestSpec } from "../../shared/helpers.js";
 
 describe("Core: ReferenceResolver", () => {
 	let cache: Map<string, SwaggerSpec>;
@@ -11,7 +15,7 @@ describe("Core: ReferenceResolver", () => {
 
 	beforeEach(() => {
 		cache = new Map();
-		cache.set(rootUri, testCast({ openapi: "3.0.0", paths: {} }));
+		cache.set(rootUri, createTestSpec({ openapi: "3.0.0", paths: {} }));
 		resolver = new ReferenceResolver(cache, rootUri);
 	});
 
@@ -22,7 +26,7 @@ describe("Core: ReferenceResolver", () => {
 	describe("indexSchemaIds", () => {
 		it("should return early for non-object specs", () => {
 			const sizeBefore = cache.size;
-			ReferenceResolver.indexSchemaIds(testCast(null), rootUri, cache);
+			ReferenceResolver.indexSchemaIds(null, rootUri, cache);
 			expect(cache.size).toBe(sizeBefore);
 		});
 
@@ -52,18 +56,18 @@ describe("Core: ReferenceResolver", () => {
 		it("should skip inherited properties and avoid re-adding anchors", () => {
 			const proto = { inherited: { $anchor: "skip" } };
 
-			const spec = testCast(Object.create(proto));
+			const spec: Record<string, OpenApiValue> = Object.create(proto);
 
-			spec.schemas = testCast({
+			spec.schemas = {
 				User: {
 					$id: "http://example.com/user",
 					$anchor: "local",
 					$dynamicAnchor: "dyn",
 				},
-			});
-			ReferenceResolver.indexSchemaIds(testCast(spec), rootUri, cache);
+			};
+			ReferenceResolver.indexSchemaIds(spec, rootUri, cache);
 			const sizeAfterFirst = cache.size;
-			ReferenceResolver.indexSchemaIds(testCast(spec), rootUri, cache);
+			ReferenceResolver.indexSchemaIds(spec, rootUri, cache);
 			expect(cache.size).toBe(sizeAfterFirst);
 			expect(cache.has("http://example.com/user#skip")).toBe(false);
 		});
@@ -71,14 +75,14 @@ describe("Core: ReferenceResolver", () => {
 
 	describe("resolveReference", () => {
 		it("should handle JSON pointer traversal", () => {
-			cache.set(rootUri, testCast({ nested: { val: 123 } }));
+			cache.set(rootUri, createTestSpec({ nested: { val: 123 } }));
 			const res = resolver.resolveReference("#/nested/val");
 			expect(res).toBe(123);
 		});
 
 		it("should return undefined and warn when traversal fails on missing property", () => {
-			const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
-			cache.set(rootUri, testCast({ nested: {} }));
+			const spy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+			cache.set(rootUri, createTestSpec({ nested: {} }));
 			const res = resolver.resolveReference("#/nested/missing");
 			expect(res).toBeUndefined();
 			expect(spy).toHaveBeenCalledWith(
@@ -87,8 +91,8 @@ describe("Core: ReferenceResolver", () => {
 		});
 
 		it("should warn if property access fails during traversal", () => {
-			const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
-			cache.set(rootUri, testCast({ a: { b: 1 } }));
+			const spy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+			cache.set(rootUri, createTestSpec({ a: { b: 1 } }));
 			const res = resolver.resolveReference("#/a/c");
 			expect(res).toBeUndefined();
 			expect(spy).toHaveBeenCalledWith(
@@ -97,8 +101,8 @@ describe("Core: ReferenceResolver", () => {
 		});
 
 		it("should return undefined and warn when traversal fails on null intermediate", () => {
-			const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
-			cache.set(rootUri, testCast({ nested: null }));
+			const spy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+			cache.set(rootUri, createTestSpec({ nested: null }));
 			const res = resolver.resolveReference("#/nested/child");
 			expect(res).toBeUndefined();
 			expect(spy).toHaveBeenCalledWith(
@@ -107,7 +111,10 @@ describe("Core: ReferenceResolver", () => {
 		});
 
 		it("should resolve references to external files in cache", () => {
-			cache.set("http://external.com/doc.json", testCast({ id: "extern" }));
+			cache.set(
+				"http://external.com/doc.json",
+				createTestSpec({ id: "extern" }),
+			);
 			const res = resolver.resolveReference("http://external.com/doc.json#/id");
 			expect(res).toBe("extern");
 		});
@@ -124,19 +131,17 @@ describe("Core: ReferenceResolver", () => {
 					},
 				},
 			};
-			cache.set(rootUri, testCast(spec));
+			cache.set(rootUri, createTestSpec(spec));
 
-			const res = testCast(
-				resolver.resolveReference(
-					"#/paths/~12.0~1repositories~1%7Busername%7D/get",
-				),
+			const res = resolver.resolveReference(
+				"#/paths/~12.0~1repositories~1%7Busername%7D/get",
 			);
 
 			expect(res?.operationId).toBe("getRepo");
 		});
 
 		it("should return undefined if external file missing from cache", () => {
-			const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+			const spy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 			const res = resolver.resolveReference("http://missing.com/doc.json");
 			expect(res).toBeUndefined();
 			expect(spy).toHaveBeenCalledWith(
@@ -144,9 +149,9 @@ describe("Core: ReferenceResolver", () => {
 			);
 		});
 
-		it("should NOT warn on invalid reference type input (not string)", () => {
-			const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
-			const res = resolver.resolveReference(testCast(123));
+		it("should NOT warn on empty reference input", () => {
+			const spy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+			const res = resolver.resolveReference("");
 			expect(res).toBeUndefined();
 			expect(spy).not.toHaveBeenCalled();
 		});
@@ -168,7 +173,7 @@ describe("Core: ReferenceResolver", () => {
 		it("should ignore inherited ref properties", () => {
 			const proto = { inherited: { $ref: "#/proto" } };
 
-			const obj = testCast(Object.create(proto));
+			const obj: Record<string, OpenApiValue> = Object.create(proto);
 			const refs = ReferenceResolver.findRefs(obj);
 			expect(refs).toEqual([]);
 		});
@@ -178,7 +183,7 @@ describe("Core: ReferenceResolver", () => {
 		it("should augment resolved object with summary/description from ref wrapper", () => {
 			cache.set(
 				rootUri,
-				testCast({
+				createTestSpec({
 					defs: { Target: { type: "string", description: "Original" } },
 				}),
 			);
@@ -188,19 +193,19 @@ describe("Core: ReferenceResolver", () => {
 				summary: "Summary",
 			};
 
-			const res = testCast(resolver.resolve(refObj));
+			const res = resolver.resolve<SwaggerDefinition>(refObj);
 
-			expect(res.type).toBe("string");
+			expect(res?.type).toBe("string");
 
-			expect(res.description).toBe("Overridden");
+			expect(res?.description).toBe("Overridden");
 
-			expect(res.summary).toBe("Summary");
+			expect(res?.summary).toBe("Summary");
 		});
 
 		it("should only override description when summary is omitted", () => {
 			cache.set(
 				rootUri,
-				testCast({
+				createTestSpec({
 					defs: { Target: { type: "string", description: "Original" } },
 				}),
 			);
@@ -209,17 +214,17 @@ describe("Core: ReferenceResolver", () => {
 				description: "Only description",
 			};
 
-			const res = testCast(resolver.resolve(refObj));
+			const res = resolver.resolve<SwaggerDefinition>(refObj);
 
-			expect(res.description).toBe("Only description");
+			expect(res?.description).toBe("Only description");
 
-			expect(res.summary).toBeUndefined();
+			expect(res?.summary).toBeUndefined();
 		});
 
 		it("should only override summary when description is omitted", () => {
 			cache.set(
 				rootUri,
-				testCast({
+				createTestSpec({
 					defs: { Target: { type: "string", description: "Original" } },
 				}),
 			);
@@ -228,11 +233,11 @@ describe("Core: ReferenceResolver", () => {
 				summary: "Only summary",
 			};
 
-			const res = testCast(resolver.resolve(refObj));
+			const res = resolver.resolve<SwaggerDefinition>(refObj);
 
-			expect(res.summary).toBe("Only summary");
+			expect(res?.summary).toBe("Only summary");
 
-			expect(res.description).toBe("Original");
+			expect(res?.description).toBe("Original");
 		});
 
 		it("should return null/undefined if input is null/undefined", () => {
@@ -264,16 +269,16 @@ describe("Core: ReferenceResolver", () => {
 				},
 			};
 
-			cache.set(rootUri, testCast(spec));
+			cache.set(rootUri, createTestSpec(spec));
 			ReferenceResolver.indexSchemaIds(spec, rootUri, cache);
 
 			const refObj = spec.components.schemas.Foo.properties.bar;
 
-			const resolved = testCast(resolver.resolve(testCast(refObj)));
+			const resolved = resolver.resolve<SwaggerDefinition>(refObj);
 
 			expect(resolved).toBeDefined();
 
-			expect(resolved.type).toBe("string");
+			expect(resolved?.type).toBe("string");
 		});
 	});
 
@@ -307,8 +312,8 @@ describe("Core: ReferenceResolver", () => {
 				},
 			};
 
-			cache.set("http://base/generic", testCast(genericSchema));
-			cache.set("http://base/specific", testCast(specificSchema));
+			cache.set("http://base/generic", createTestSpec(genericSchema));
+			cache.set("http://base/specific", createTestSpec(specificSchema));
 			ReferenceResolver.indexSchemaIds(
 				genericSchema,
 				"http://base/generic",
@@ -322,15 +327,17 @@ describe("Core: ReferenceResolver", () => {
 
 			const stack = ["http://base/specific", "http://base/generic"];
 
-			const resolved = testCast(
-				resolver.resolveReference("#item", "http://base/generic", stack),
+			const resolved = resolver.resolveReference(
+				"#item",
+				"http://base/generic",
+				stack,
 			);
 
 			expect(resolved).toBeDefined();
 
-			expect(resolved.type).toBe("number");
+			expect(resolved?.type).toBe("number");
 
-			expect(resolved.description).toBe("override number");
+			expect(resolved?.description).toBe("override number");
 		});
 
 		it("should fallback to local anchor definition if no overrides in stack", () => {
@@ -346,27 +353,29 @@ describe("Core: ReferenceResolver", () => {
 					},
 				},
 			};
-			cache.set("http://base/generic", testCast(genericSchema));
+			cache.set("http://base/generic", createTestSpec(genericSchema));
 			ReferenceResolver.indexSchemaIds(
 				genericSchema,
 				"http://base/generic",
 				cache,
 			);
 
-			const resolved = testCast(
-				resolver.resolveReference("#item", "http://base/generic", []),
+			const resolved = resolver.resolveReference(
+				"#item",
+				"http://base/generic",
+				[],
 			);
 
 			expect(resolved).toBeDefined();
 
-			expect(resolved.type).toBe("string");
+			expect(resolved?.type).toBe("string");
 		});
 
 		it("should return undefined when dynamic anchor is not found in stack", () => {
-			vi.spyOn(console, "warn").mockImplementation(() => {});
+			vi.spyOn(console, "warn").mockImplementation(() => undefined);
 			cache.set(
 				"http://base/generic",
-				testCast({ openapi: "3.0.0", paths: {} }),
+				createTestSpec({ openapi: "3.0.0", paths: {} }),
 			);
 			const resolved = resolver.resolveReference(
 				"#missing",
@@ -387,17 +396,17 @@ describe("Core: ReferenceResolver", () => {
 				},
 			};
 
-			cache.set("http://base/specific", testCast(specificSchema));
+			cache.set("http://base/specific", createTestSpec(specificSchema));
 			ReferenceResolver.indexSchemaIds(
 				specificSchema,
 				"http://base/specific",
 				cache,
 			);
 
-			const resolved = testCast(
-				resolver.resolveReference("#item", "http://base/specific", [
-					"http://base/specific#/defs/overrideItem",
-				]),
+			const resolved = resolver.resolveReference(
+				"#item",
+				"http://base/specific",
+				["http://base/specific#/defs/overrideItem"],
 			);
 
 			expect(resolved?.type).toBe("number");
@@ -406,15 +415,17 @@ describe("Core: ReferenceResolver", () => {
 
 	describe("resolveReference edge cases", () => {
 		it("should return entire document when ref has no pointer", () => {
-			const spec = testCast({ openapi: "3.0.0", paths: { "/x": {} } });
-			cache.set("http://doc.com/root.json", testCast(spec));
+			const spec = { openapi: "3.0.0", paths: { "/x": {} } };
+			cache.set("http://doc.com/root.json", createTestSpec(spec));
 			const res = resolver.resolveReference("http://doc.com/root.json");
 
 			expect(res).toBe(spec);
 		});
 
 		it("should return undefined without warning when current document is missing and ref has no file path", () => {
-			const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+			const warnSpy = vi
+				.spyOn(console, "warn")
+				.mockImplementation(() => undefined);
 			const res = resolver.resolveReference(
 				"#/missing",
 				"file:///missing.json",
@@ -432,8 +443,8 @@ describe("Core: ReferenceResolver", () => {
 
 			const customCache = new NonHasCache();
 
-			const spec = testCast({ openapi: "3.0.0", paths: {} });
-			customCache.set("http://doc.com/root.json", testCast(spec));
+			const spec = { openapi: "3.0.0", paths: {} };
+			customCache.set("http://doc.com/root.json", createTestSpec(spec));
 			const customResolver = new ReferenceResolver(
 				customCache,
 				"http://doc.com/root.json",
@@ -449,28 +460,25 @@ describe("Core: ReferenceResolver", () => {
 			expect(res).toBeUndefined();
 		});
 
-		it("should fallback to returning value if split returns empty in stripFragment", () => {
-			// This happens when there is no fragment or some weird JS edge case.
-			// A simple test to cover the `?? value` fallback.
-			// By overriding String.prototype.split temporarily we can force it.
-			const originalSplit = String.prototype.split;
-			String.prototype.split = testCast(function (
-				this: string,
-				separator: string | RegExp,
-				limit?: number,
-			) {
-				if (separator === "#" && limit === 1) return testCast({ 0: undefined }); // Mock array where index 0 is undefined
-				return originalSplit.call(this, testCast(separator), limit);
+		it("should fall back to raw $self and filePath when base URI is not a valid URL", () => {
+			const invalidBase = "not-a-valid-base-url";
+			const docSpec = createTestSpec({
+				openapi: "3.2.0",
+				$self: "relative-self",
+				paths: {},
 			});
+			const targetSpec = createTestSpec({
+				openapi: "3.2.0",
+				components: { schemas: { Target: { type: "string" } } },
+			});
+			cache.set(invalidBase, docSpec);
+			cache.set("relative-file.json", targetSpec);
 
-			cache.set("weird#context#weird", testCast(1));
-			// This will call stripFragment in ReferenceResolver.resolveReference for the dynamic schema
-			const res = resolver.resolveReference("weird#weird", rootUri, [
-				"weird#context",
-			]);
-			expect(res).toBe(1);
-
-			String.prototype.split = originalSplit;
+			const res = resolver.resolveReference(
+				"relative-file.json#/components/schemas/Target",
+				invalidBase,
+			);
+			expect(res).toEqual({ type: "string" });
 		});
 	});
 });

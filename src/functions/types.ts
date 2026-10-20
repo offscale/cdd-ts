@@ -21,6 +21,8 @@ export interface ParamSerialization {
 	explode: boolean;
 	/** Whether RFC 3986 reserved characters are allowed unencoded. */
 	allowReserved: boolean;
+	/** Whether empty values are allowed for query parameters. */
+	allowEmptyValue?: boolean;
 	/** Explicit media type for `content`-based parameter serialization. */
 	contentType?: string;
 	/** Property-level encoding map for complex parameter content. */

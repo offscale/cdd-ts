@@ -50,8 +50,9 @@ export class RoutingGenerator {
 		);
 
 		if (resources.length > 0) {
+			const firstResource = resources[0] as (typeof resources)[number];
 			routeObjects.unshift(
-				`{ path: '', pathMatch: 'full', redirectTo: '${resources[0].name}' }`,
+				`{ path: '', pathMatch: 'full', redirectTo: '${firstResource.name}' }`,
 			);
 		}
 

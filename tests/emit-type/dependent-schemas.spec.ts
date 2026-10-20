@@ -3,7 +3,7 @@ import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../shared/helpers.js";
+import { createTestSchema, createTestSpec } from "../shared/helpers.js";
 
 describe("Emitter: TypeGenerator (dependentSchemas)", () => {
 	const setup = (schema: unknown) => {
@@ -16,7 +16,7 @@ describe("Emitter: TypeGenerator (dependentSchemas)", () => {
 
 			components: { schemas: { DependentModel: schema } },
 		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 		return project.createSourceFile(
 			"/out/combined.ts",
@@ -30,25 +30,23 @@ describe("Emitter: TypeGenerator (dependentSchemas)", () => {
 	};
 
 	it("should generate an intersection type for dependentSchemas", () => {
-		const sourceFile = testCast(
-			setup({
-				type: testCast("object"),
-				properties: testCast({
-					paymentMethod: testCast({
-						type: testCast("string"),
-						enum: testCast(["credit_card", "paypal"]),
-					}),
-				}),
-				dependentSchemas: {
-					paymentMethod: testCast({
-						properties: testCast({
-							creditCardNumber: testCast({ type: testCast("string") }),
-						}),
-						required: testCast(["creditCardNumber"]),
-					}),
+		const sourceFile = setup({
+			type: "object",
+			properties: {
+				paymentMethod: {
+					type: "string",
+					enum: ["credit_card", "paypal"],
 				},
-			}),
-		);
+			},
+			dependentSchemas: {
+				paymentMethod: {
+					properties: {
+						creditCardNumber: { type: "string" },
+					},
+					required: ["creditCardNumber"],
+				},
+			},
+		});
 
 		const typeAlias = sourceFile.getTypeAliasOrThrow("DependentModel");
 		const typeText = typeAlias.getTypeNodeOrThrow().getText();
@@ -64,25 +62,23 @@ describe("Emitter: TypeGenerator (dependentSchemas)", () => {
 	});
 
 	it("should handle multiple dependentSchemas", () => {
-		const sourceFile = testCast(
-			setup({
-				type: testCast("object"),
-				properties: testCast({
-					a: testCast({ type: testCast("string") }),
-					b: testCast({ type: testCast("string") }),
-				}),
-				dependentSchemas: {
-					a: testCast({
-						properties: testCast({ c: testCast({ type: testCast("number") }) }),
-					}),
-					b: testCast({
-						properties: testCast({
-							d: testCast({ type: testCast("boolean") }),
-						}),
-					}),
+		const sourceFile = setup({
+			type: "object",
+			properties: {
+				a: { type: "string" },
+				b: { type: "string" },
+			},
+			dependentSchemas: {
+				a: {
+					properties: { c: { type: "number" } },
 				},
-			}),
-		);
+				b: {
+					properties: {
+						d: { type: "boolean" },
+					},
+				},
+			},
+		});
 
 		const typeText = sourceFile
 			.getTypeAliasOrThrow("DependentModel")
@@ -98,21 +94,19 @@ describe("Emitter: TypeGenerator (dependentSchemas)", () => {
 	});
 
 	it("should properly escape property names in dependentSchemas key", () => {
-		const sourceFile = testCast(
-			setup({
-				type: testCast("object"),
-				properties: testCast({
-					"my-prop": testCast({ type: testCast("string") }),
-				}),
-				dependentSchemas: {
-					"my-prop": testCast({
-						properties: testCast({
-							extra: testCast({ type: testCast("string") }),
-						}),
-					}),
+		const sourceFile = setup({
+			type: "object",
+			properties: {
+				"my-prop": { type: "string" },
+			},
+			dependentSchemas: {
+				"my-prop": {
+					properties: {
+						extra: { type: "string" },
+					},
 				},
-			}),
-		);
+			},
+		});
 
 		const typeText = sourceFile
 			.getTypeAliasOrThrow("DependentModel")
@@ -126,7 +120,9 @@ describe("Emitter: TypeGenerator (dependentSchemas)", () => {
 });
 
 describe("Emitter: TypeGenerator (dependentRequired)", () => {
-	const setup = (schema: TestValue) => {
+	const setup = (
+		schema: import("@src/core/types/index.js").SwaggerDefinition,
+	) => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const config: GeneratorConfig = { input: "", output: "/out", options: {} };
 		const spec = {
@@ -136,7 +132,7 @@ describe("Emitter: TypeGenerator (dependentRequired)", () => {
 
 			components: { schemas: { DependentModel: schema } },
 		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(spec, config);
 		new TypeGenerator(parser, project, config).generate("/out");
 		return project.createSourceFile(
 			"/out/combined.ts",
@@ -151,16 +147,16 @@ describe("Emitter: TypeGenerator (dependentRequired)", () => {
 
 	it("should generate an intersection type for dependentRequired", () => {
 		const sourceFile = setup(
-			testCast({
-				type: testCast("object"),
-				properties: testCast({
-					hasPhone: testCast({ type: testCast("boolean") }),
-					phoneNumber: testCast({ type: testCast("string") }),
-					phoneExtension: testCast({ type: testCast("string") }),
-				}),
-				dependentRequired: testCast({
-					hasPhone: testCast(["phoneNumber", "phoneExtension"]),
-				}),
+			createTestSchema({
+				type: "object",
+				properties: {
+					hasPhone: { type: "boolean" },
+					phoneNumber: { type: "string" },
+					phoneExtension: { type: "string" },
+				},
+				dependentRequired: {
+					hasPhone: ["phoneNumber", "phoneExtension"],
+				},
 			}),
 		);
 

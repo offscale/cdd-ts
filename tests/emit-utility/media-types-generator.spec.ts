@@ -2,10 +2,13 @@ import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { MediaTypesGenerator } from "@src/openapi/emit_media_types.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestProject,
+} from "../shared/helpers.js";
 
 const mediaTypesSpec: SwaggerSpec = {
 	openapi: "3.2.0",
@@ -26,37 +29,26 @@ const mediaTypesSpec: SwaggerSpec = {
 describe("Emitter: MediaTypesGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const parser = new SwaggerParser(spec, config);
 		new MediaTypesGenerator(parser, project).generate("/out");
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/media-types.ts");
-		const code = sourceFile.getText();
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/media-types.ts");
 
 	it("should generate registry map for media types", () => {
 		const project = runGenerator(mediaTypesSpec);
 
 		const { API_MEDIA_TYPES } = compileGeneratedFile(project);
 
-		expect(API_MEDIA_TYPES.EventStream.schema.type).toBe("string");
+		expect(API_MEDIA_TYPES?.EventStream?.schema?.type).toBe("string");
 
-		expect(API_MEDIA_TYPES.JsonLines.itemSchema.type).toBe("object");
+		expect(API_MEDIA_TYPES?.JsonLines?.itemSchema?.type).toBe("object");
 	});
 
 	it("should handle specs without mediaTypes", () => {

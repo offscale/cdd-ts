@@ -16,7 +16,7 @@ import type { SwaggerParser } from "../../openapi/parse.js";
  */
 export function generateAdvancedMiddlewares(
 	project: Project,
-	parser: SwaggerParser,
+	parser: Pick<SwaggerParser, "spec" | "schemas" | "operations">,
 	outputDir: string,
 ): void {
 	const middlewareDir = path.join(outputDir, "middlewares");
@@ -84,6 +84,11 @@ function generateCorsMiddleware(project: Project, middlewareDir: string): void {
 		namedImports: ["describe", "it", "expect", "vi"],
 	});
 	testFile.addImportDeclaration({
+		moduleSpecifier: "express",
+		isTypeOnly: true,
+		namedImports: ["Request", "Response"],
+	});
+	testFile.addImportDeclaration({
 		moduleSpecifier: "./cors.js",
 		namedImports: ["corsMiddleware"],
 	});
@@ -94,9 +99,11 @@ function generateCorsMiddleware(project: Project, middlewareDir: string): void {
 				"it('should set permissive headers and short-circuit OPTIONS requests', () => {",
 			);
 			writer.indent(() => {
-				writer.writeLine("const req = { method: 'OPTIONS' } as any;");
 				writer.writeLine(
-					"const res = { header: vi.fn(), status: vi.fn().mockReturnThis(), end: vi.fn() } as any;",
+					"const req = { method: 'OPTIONS' } as Partial<Request> as Request;",
+				);
+				writer.writeLine(
+					"const res = { header: vi.fn(), status: vi.fn().mockReturnThis(), end: vi.fn() } as Partial<Response> as Response;",
 				);
 				writer.writeLine("const next = vi.fn();");
 				writer.blankLine();
@@ -115,8 +122,12 @@ function generateCorsMiddleware(project: Project, middlewareDir: string): void {
 				"it('should set headers and call next for non-OPTIONS requests', () => {",
 			);
 			writer.indent(() => {
-				writer.writeLine("const req = { method: 'GET' } as any;");
-				writer.writeLine("const res = { header: vi.fn() } as any;");
+				writer.writeLine(
+					"const req = { method: 'GET' } as Partial<Request> as Request;",
+				);
+				writer.writeLine(
+					"const res = { header: vi.fn() } as Partial<Response> as Response;",
+				);
 				writer.writeLine("const next = vi.fn();");
 				writer.blankLine();
 				writer.writeLine("corsMiddleware(req, res, next);");
@@ -142,7 +153,7 @@ function generateCorsMiddleware(project: Project, middlewareDir: string): void {
  */
 function generateValidationMiddleware(
 	project: Project,
-	_parser: SwaggerParser,
+	_parser: Pick<SwaggerParser, "spec" | "schemas" | "operations">,
 	middlewareDir: string,
 ): void {
 	const filePath = path.join(middlewareDir, "validation.ts");
@@ -204,6 +215,11 @@ function generateValidationMiddleware(
 		namedImports: ["describe", "it", "expect", "vi"],
 	});
 	testFile.addImportDeclaration({
+		moduleSpecifier: "express",
+		isTypeOnly: true,
+		namedImports: ["Request", "Response"],
+	});
+	testFile.addImportDeclaration({
 		moduleSpecifier: "./validation.js",
 		namedImports: ["createValidationMiddleware"],
 	});
@@ -216,7 +232,9 @@ function generateValidationMiddleware(
 			writer.indent(() => {
 				writer.writeLine("const mw = createValidationMiddleware(false);");
 				writer.writeLine("const next = vi.fn();");
-				writer.writeLine("mw({} as any, {} as any, next);");
+				writer.writeLine(
+					"mw({} as Partial<Request> as Request, {} as Partial<Response> as Response, next);",
+				);
 				writer.writeLine("expect(next).toHaveBeenCalled();");
 			});
 			writer.writeLine("});");
@@ -227,10 +245,10 @@ function generateValidationMiddleware(
 			writer.indent(() => {
 				writer.writeLine("const mw = createValidationMiddleware(true);");
 				writer.writeLine(
-					"const req = { method: 'POST', headers: { 'content-type': 'application/json' }, body: 'not-an-object' } as any;",
+					"const req = { method: 'POST', headers: { 'content-type': 'application/json' }, body: 'not-an-object' } as Partial<Request> as Request;",
 				);
 				writer.writeLine(
-					"const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;",
+					"const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as Partial<Response> as Response;",
 				);
 				writer.writeLine("const next = vi.fn();");
 				writer.blankLine();
@@ -254,7 +272,7 @@ function generateValidationMiddleware(
  */
 function generateAuthMiddleware(
 	project: Project,
-	_parser: SwaggerParser,
+	_parser: Pick<SwaggerParser, "spec" | "schemas" | "operations">,
 	middlewareDir: string,
 ): void {
 	const filePath = path.join(middlewareDir, "auth.ts");
@@ -335,6 +353,11 @@ function generateAuthMiddleware(
 		namedImports: ["describe", "it", "expect", "vi"],
 	});
 	testFile.addImportDeclaration({
+		moduleSpecifier: "express",
+		isTypeOnly: true,
+		namedImports: ["Request", "Response", "NextFunction"],
+	});
+	testFile.addImportDeclaration({
 		moduleSpecifier: "./auth.js",
 		namedImports: ["createAuthMiddleware"],
 	});
@@ -347,7 +370,9 @@ function generateAuthMiddleware(
 			writer.indent(() => {
 				writer.writeLine("const mw = createAuthMiddleware(false, true);");
 				writer.writeLine("const next = vi.fn();");
-				writer.writeLine("mw({} as any, {} as any, next);");
+				writer.writeLine(
+					"mw({} as Partial<Request> as Request, {} as Partial<Response> as Response, next);",
+				);
 				writer.writeLine("expect(next).toHaveBeenCalled();");
 			});
 			writer.writeLine("});");
@@ -357,11 +382,13 @@ function generateAuthMiddleware(
 			);
 			writer.indent(() => {
 				writer.writeLine("const mw = createAuthMiddleware(true, true);");
-				writer.writeLine("const req = { headers: {} } as any;");
 				writer.writeLine(
-					"const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;",
+					"const req = { headers: {} } as Partial<Request> as Request;",
 				);
-				writer.writeLine("mw(req, res, vi.fn() as any);");
+				writer.writeLine(
+					"const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as Partial<Response> as Response;",
+				);
+				writer.writeLine("mw(req, res, vi.fn() as NextFunction);");
 				writer.writeLine("expect(res.status).toHaveBeenCalledWith(401);");
 			});
 			writer.writeLine("});");
@@ -372,12 +399,12 @@ function generateAuthMiddleware(
 			writer.indent(() => {
 				writer.writeLine("const mw = createAuthMiddleware(true, true);");
 				writer.writeLine(
-					"const req = { headers: { authorization: 'Bearer bad' } } as any;",
+					"const req = { headers: { authorization: 'Bearer bad' } } as Partial<Request> as Request;",
 				);
 				writer.writeLine(
-					"const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;",
+					"const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as Partial<Response> as Response;",
 				);
-				writer.writeLine("mw(req, res, vi.fn() as any);");
+				writer.writeLine("mw(req, res, vi.fn() as NextFunction);");
 				writer.writeLine("expect(res.status).toHaveBeenCalledWith(403);");
 			});
 			writer.writeLine("});");
@@ -396,7 +423,7 @@ function generateAuthMiddleware(
  */
 function generateWebhookTrigger(
 	project: Project,
-	_parser: SwaggerParser,
+	_parser: Pick<SwaggerParser, "spec" | "schemas" | "operations">,
 	outputDir: string,
 ): void {
 	const filePath = path.join(outputDir, "webhooks.routes.ts");

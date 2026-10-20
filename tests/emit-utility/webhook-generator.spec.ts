@@ -2,12 +2,11 @@ import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { WebhookGenerator } from "@src/functions/emit_webhook.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import {
+	compileGeneratedModule,
+	createTestConfig,
 	createTestProject,
-	type TestValue,
-	testCast,
 } from "../shared/helpers.js";
 
 const simpleWebhookSpec: SwaggerSpec = {
@@ -136,7 +135,7 @@ const componentWebhookSpec: SwaggerSpec = {
 describe("Emitter: WebhookGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({
+		const config: GeneratorConfig = createTestConfig({
 			output: "/out",
 			options: {
 				dateType: "string",
@@ -149,23 +148,8 @@ describe("Emitter: WebhookGenerator", () => {
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/webhooks.ts");
-		// Remove imports so we can transpile in isolation without file dependencies for the registry check
-		const code = sourceFile.getText().replace(/import .* from .*/g, "");
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/webhooks.ts");
 
 	it("should generate interface for simple webhook payload", () => {
 		const project = runGenerator(simpleWebhookSpec);
@@ -193,21 +177,19 @@ describe("Emitter: WebhookGenerator", () => {
 
 		expect(API_WEBHOOKS).toHaveLength(1);
 
-		expect(API_WEBHOOKS[0].name).toBe("validHook");
+		expect(API_WEBHOOKS?.[0]?.name).toBe("validHook");
 
-		expect(API_WEBHOOKS[0].scope).toBe("root");
+		expect(API_WEBHOOKS?.[0]?.scope).toBe("root");
 
 		expect(
-			API_WEBHOOKS[0].pathItem?.post?.requestBody?.content?.[
+			API_WEBHOOKS?.[0]?.pathItem?.post?.requestBody?.content?.[
 				"application/json"
 			],
 		).toBeDefined();
 
-		expect(API_WEBHOOKS[0].pathItem?.post?.responses?.["200"]).toBeDefined();
+		expect(API_WEBHOOKS?.[0]?.pathItem?.post?.responses?.["200"]).toBeDefined();
 
-		const invalid = API_WEBHOOKS.find(
-			(w: TestValue) => w.name === "invalidHook",
-		);
+		const invalid = API_WEBHOOKS?.find?.((w) => w.name === "invalidHook");
 
 		expect(invalid).toBeUndefined();
 	});
@@ -219,12 +201,12 @@ describe("Emitter: WebhookGenerator", () => {
 
 		expect(API_WEBHOOKS).toHaveLength(1);
 
-		expect(API_WEBHOOKS[0].name).toBe("componentHook");
+		expect(API_WEBHOOKS?.[0]?.name).toBe("componentHook");
 
-		expect(API_WEBHOOKS[0].scope).toBe("component");
+		expect(API_WEBHOOKS?.[0]?.scope).toBe("component");
 
 		expect(
-			API_WEBHOOKS[0].pathItem?.post?.requestBody?.content?.[
+			API_WEBHOOKS?.[0]?.pathItem?.post?.requestBody?.content?.[
 				"application/json"
 			],
 		).toBeDefined();

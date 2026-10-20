@@ -93,7 +93,7 @@ export class ListComponentGenerator {
 
 		classDecl.addProperty({
 			name: "data",
-			type: "Array<string | number | boolean | object | undefined | null>",
+			type: "Array<Record<string, string | number | boolean | undefined | null>>",
 			initializer: "[]",
 		});
 

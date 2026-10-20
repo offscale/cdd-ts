@@ -2,10 +2,13 @@ import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { RequestBodiesGenerator } from "@src/openapi/emit_request_bodies.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestProject,
+} from "../shared/helpers.js";
 
 const specWithRequestBodies: SwaggerSpec = {
 	openapi: "3.2.0",
@@ -31,37 +34,26 @@ const specWithRequestBodies: SwaggerSpec = {
 describe("Emitter: RequestBodiesGenerator", () => {
 	const runGenerator = (spec: SwaggerSpec) => {
 		const project = createTestProject();
-		const config: GeneratorConfig = testCast({ output: "/out", options: {} });
+		const config: GeneratorConfig = createTestConfig({
+			output: "/out",
+			options: {},
+		});
 		const parser = new SwaggerParser(spec, config);
 		new RequestBodiesGenerator(parser, project).generate("/out");
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/request-bodies.ts");
-		const code = sourceFile.getText();
-		const jsCode = ts.transpile(code, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/request-bodies.ts");
 
 	it("should generate registry map for request bodies", () => {
 		const project = runGenerator(specWithRequestBodies);
 
 		const { API_REQUEST_BODIES } = compileGeneratedFile(project);
 
-		expect(API_REQUEST_BODIES.CreateUser).toBeDefined();
+		expect(API_REQUEST_BODIES?.CreateUser).toBeDefined();
 
-		expect(API_REQUEST_BODIES.CreateUser.description).toBe("User payload");
+		expect(API_REQUEST_BODIES?.CreateUser?.description).toBe("User payload");
 	});
 
 	it("should handle specs without requestBodies", () => {

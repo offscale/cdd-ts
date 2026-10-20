@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 import type {
 	HeaderObject,
 	OpenApiValue,
@@ -13,6 +12,14 @@ import type {
 	SwaggerDefinition,
 } from "../core/types/index.js";
 import type { SwaggerParser } from "./parse.js";
+
+/** Resolved type hint and optional XML configuration for a response header. */
+export interface HeaderTypeInfo {
+	/** Normalized header value type hint. */
+	typeHint: string;
+	/** Optional XML deserialization configuration. */
+	xmlConfig?: Record<string, OpenApiValue> | undefined;
+}
 
 /**
  * Generates the `response-headers.ts` file containing response header metadata registries.
@@ -79,10 +86,6 @@ export class ResponseHeaderRegistryGenerator {
 							if (!headerDef) return;
 
 							const humanReadableName = headerName.toLowerCase();
-
-							if (humanReadableName === "content-type") {
-								return;
-							}
 
 							headerObjects[headerName] = headerOrRef as
 								| HeaderObject
@@ -152,21 +155,17 @@ export class ResponseHeaderRegistryGenerator {
 				docs: ["Registry of Response Headers defined in the API."],
 			});
 
-			if (headerObjectCount > 0) {
-				sourceFile.addVariableStatement({
-					isExported: true,
-					declarationKind: VariableDeclarationKind.Const,
-					declarations: [
-						{
-							name: "API_RESPONSE_HEADER_OBJECTS",
-							initializer: JSON.stringify(headerObjectsRegistry, null, 2),
-						},
-					],
-					docs: [
-						"Full Response Header Objects for reverse OpenAPI generation.",
-					],
-				});
-			}
+			sourceFile.addVariableStatement({
+				isExported: true,
+				declarationKind: VariableDeclarationKind.Const,
+				declarations: [
+					{
+						name: "API_RESPONSE_HEADER_OBJECTS",
+						initializer: JSON.stringify(headerObjectsRegistry, null, 2),
+					},
+				],
+				docs: ["Full Response Header Objects for reverse OpenAPI generation."],
+			});
 
 			sourceFile.addVariableStatement({
 				isExported: true,
@@ -187,20 +186,22 @@ export class ResponseHeaderRegistryGenerator {
 		}
 
 		sourceFile.formatText();
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 	}
 
-	private getHeaderTypeInfo(header: HeaderObject): {
-		typeHint: string;
-		xmlConfig?: Record<string, OpenApiValue>;
-	} {
+	/**
+	 * Resolves the deserialization type hint and optional XML configuration for a response header.
+	 *
+	 * @param header - HeaderObject definition to inspect.
+	 * @returns Resolved `HeaderTypeInfo`.
+	 */
+	public getHeaderTypeInfo(header: HeaderObject): HeaderTypeInfo {
 		if (header.content) {
 			const contentType = Object.keys(header.content)[0];
 
-			const normalizedContentType = contentType
-				?.split(";")[0]
-				.trim()
+			const normalizedContentType = (
+				contentType?.split(";")[0] as string | undefined
+			)
+				?.trim()
 				.toLowerCase();
 
 			if (normalizedContentType === "application/linkset+json") {
@@ -216,7 +217,11 @@ export class ResponseHeaderRegistryGenerator {
 			}
 
 			if (normalizedContentType?.includes("xml")) {
-				const schema = header.content[contentType].schema as SwaggerDefinition;
+				const schema = (
+					header.content[contentType as string] as {
+						schema?: SwaggerDefinition;
+					}
+				).schema;
 
 				if (schema) {
 					return { typeHint: "xml", xmlConfig: this.getXmlConfig(schema, 3) };
@@ -228,7 +233,8 @@ export class ResponseHeaderRegistryGenerator {
 			return { typeHint: "string" };
 		}
 
-		const schema = header.schema || header;
+		const schema =
+			header.schema ?? (header as OpenApiValue as SwaggerDefinition);
 
 		const resolvedSchema = this.parser.resolve(schema) as SwaggerDefinition;
 

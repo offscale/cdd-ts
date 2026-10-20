@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 import type { SwaggerParser } from "./parse.js";
 
 /**
@@ -42,9 +41,7 @@ export class MediaTypesGenerator {
 		const hasMediaTypes = Object.keys(mediaTypes).length > 0;
 
 		if (!hasMediaTypes) {
-			sourceFile.replaceWithText(
-				`${UTILITY_GENERATOR_HEADER_COMMENT}export { };\n`,
-			);
+			sourceFile.replaceWithText("export { };\n");
 
 			return;
 		}
@@ -62,7 +59,5 @@ export class MediaTypesGenerator {
 		});
 
 		sourceFile.formatText();
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 	}
 }

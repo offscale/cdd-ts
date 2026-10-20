@@ -29,7 +29,7 @@ export class TypeOrmGenerator implements IOrmGenerator {
 	 */
 	public generate(
 		project: Project,
-		parser: SwaggerParser,
+		parser: { schemas?: SwaggerParser["schemas"] | undefined },
 		_config: GeneratorConfig,
 		outputDir: string,
 	): void {
@@ -232,7 +232,10 @@ describe('${schemaName} Entity', () => {
 		if (definition.type === "boolean") {
 			return "boolean";
 		}
-		return "any";
+		if (definition.type === "array") {
+			return "unknown[]";
+		}
+		return "Record<string, unknown>";
 	}
 
 	/**

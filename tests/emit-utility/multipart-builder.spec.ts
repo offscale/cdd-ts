@@ -1,13 +1,48 @@
 import { MultipartBuilderGenerator } from "@src/functions/emit_multipart.js";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import {
-	createTestProject,
-	type TestValue,
-	testCast,
-} from "../shared/helpers.js";
+import { createTestProject } from "../shared/helpers.js";
 
-function getMultipartBuilder() {
+class MockBlob {
+	parts: unknown[];
+	options: { type?: string } | undefined;
+	type: string;
+
+	constructor(parts: unknown[] = [], options?: { type?: string }) {
+		this.parts = parts;
+		this.options = options;
+		this.type = options?.type || "";
+	}
+}
+
+class MockFile extends MockBlob {
+	name: string;
+
+	constructor(parts: unknown[], name: string, options?: { type?: string }) {
+		super(parts, options);
+		this.name = name;
+	}
+}
+
+class MockFormData {
+	_entries: Record<string, MockBlob & string> = {};
+
+	append(k: string, v: MockBlob & string) {
+		this._entries[k] = v;
+	}
+}
+
+interface CompiledMultipartBuilder {
+	serialize: (
+		body: unknown,
+		config?: unknown,
+	) => {
+		content: MockFormData & MockBlob;
+		headers?: Record<string, string>;
+	};
+}
+
+function getMultipartBuilder(): CompiledMultipartBuilder | undefined {
 	const project = createTestProject();
 	new MultipartBuilderGenerator(project).generate("/");
 	const sourceFile = project.getSourceFileOrThrow(
@@ -24,51 +59,21 @@ function getMultipartBuilder() {
 		module: ts.ModuleKind.CommonJS,
 	});
 
-	const moduleScope = {
-		exports: testCast({}),
+	const moduleScope: {
+		exports: { MultipartBuilder?: CompiledMultipartBuilder };
+	} = {
+		exports: {},
 	};
 
-	global.FormData = testCast(
-		class FormData {
-			_entries: Record<string, TestValue> = {};
-
-			append(k: string, v: TestValue) {
-				this._entries[k] = v;
-			}
-		},
-	);
-
-	global.Blob = testCast(
-		class Blob {
-			parts: TestValue;
-
-			options: TestValue;
-			type: string;
-
-			constructor(parts: TestValue, options: TestValue) {
-				this.parts = parts;
-
-				this.options = options;
-
-				this.type = testCast(options?.type || "");
-			}
-		},
-	);
-
-	global.File = testCast(
-		class File extends global.Blob {
-			name: string;
-
-			constructor(parts: TestValue, name: string, options: TestValue) {
-				super(testCast(parts), testCast(options));
-				this.name = name;
-			}
-		},
-	);
+	Object.assign(globalThis, {
+		FormData: MockFormData,
+		Blob: MockBlob,
+		File: MockFile,
+	});
 
 	const finalCode = `${jsCode}\nmoduleScope.exports.MultipartBuilder = MultipartBuilder;`;
 
-	testCast(new Function("moduleScope", finalCode)(moduleScope));
+	new Function("moduleScope", finalCode)(moduleScope);
 
 	return moduleScope.exports.MultipartBuilder;
 }
@@ -80,19 +85,19 @@ describe("Utility: MultipartBuilder", () => {
 		it("should return FormData when no custom headers are present", () => {
 			const body = { name: "foo", age: 10 };
 
-			const result = MultipartBuilder.serialize(body, {});
+			const result = MultipartBuilder?.serialize?.(body, {});
 
-			expect(result.content).toBeInstanceOf(global.FormData);
+			expect(result?.content).toBeInstanceOf(global.FormData);
 
-			expect(result.headers).toBeUndefined();
+			expect(result?.headers).toBeUndefined();
 		});
 
 		it("should handle arrays by appending multiple times", () => {
 			const body = { tags: ["a", "b"] };
 
-			const result = MultipartBuilder.serialize(body, {});
+			const result = MultipartBuilder?.serialize?.(body, {});
 
-			const formData = testCast(result.content);
+			const formData = result?.content;
 
 			expect(formData).toBeInstanceOf(global.FormData);
 		});
@@ -100,15 +105,15 @@ describe("Utility: MultipartBuilder", () => {
 		it("should wrap objects in JSON/Blob by default", () => {
 			const body = { meta: { id: 1 } };
 
-			const result = MultipartBuilder.serialize(body, {});
+			const result = MultipartBuilder?.serialize?.(body, {});
 
-			const formData = testCast(result.content);
+			const formData = result?.content;
 
-			const appended = formData._entries.meta;
+			const appended = formData?._entries?.meta;
 
 			expect(appended).toBeInstanceOf(global.Blob);
 
-			expect(appended.options.type).toBe("application/json");
+			expect(appended?.options?.type).toBe("application/json");
 		});
 	});
 
@@ -122,13 +127,13 @@ describe("Utility: MultipartBuilder", () => {
 				file: { headers: { "X-Custom": "123" } },
 			};
 
-			const result = MultipartBuilder.serialize(body, encoding);
+			const result = MultipartBuilder?.serialize?.(body, encoding);
 
-			expect(result.content).toBeInstanceOf(global.Blob);
+			expect(result?.content).toBeInstanceOf(global.Blob);
 
-			expect(result.headers).toBeDefined();
+			expect(result?.headers).toBeDefined();
 
-			expect(result.headers["Content-Type"]).toContain(
+			expect(result?.headers?.["Content-Type"]).toContain(
 				"multipart/form-data; boundary=",
 			);
 		});
@@ -140,16 +145,16 @@ describe("Utility: MultipartBuilder", () => {
 				doc: { headers: { "X-File": "true" } },
 			};
 
-			const result = MultipartBuilder.serialize(body, encoding);
+			const result = MultipartBuilder?.serialize?.(body, encoding);
 
-			const blob = testCast(result.content);
+			const blob = result?.content;
 
 			// Blob parts can be objects (File) or strings.
 			// We check specifically for strings to validate headers.
 
-			const stringParts = blob.parts
-				.filter((p: TestValue) => typeof p === "string")
-				.join("");
+			const stringParts = blob?.parts
+				?.filter?.((p) => typeof p === "string")
+				.join?.("");
 
 			expect(stringParts).toContain('filename="test.txt"');
 
@@ -164,19 +169,19 @@ describe("Utility: MultipartBuilder", () => {
 				tags: { style: "form", explode: false },
 			};
 
-			const result = MultipartBuilder.serialize(body, encoding);
+			const result = MultipartBuilder?.serialize?.(body, encoding);
 
-			const blob = testCast(result.content);
+			const blob = result?.content;
 
-			const stringParts = blob.parts
-				.filter((p: TestValue) => typeof p === "string")
-				.join("");
+			const stringParts = blob?.parts
+				?.filter?.((p) => typeof p === "string")
+				.join?.("");
 
 			expect(stringParts).toContain('name="tags"');
 
 			expect(stringParts).toContain("red,blue");
 
-			const matches = stringParts.match(/name="tags"/g);
+			const matches = stringParts?.match?.(/name="tags"/g);
 
 			expect(matches?.length).toBe(1);
 		});
@@ -187,13 +192,13 @@ describe("Utility: MultipartBuilder", () => {
 				meta: { style: "form", explode: true },
 			};
 
-			const result = MultipartBuilder.serialize(body, encoding);
+			const result = MultipartBuilder?.serialize?.(body, encoding);
 
-			const blob = testCast(result.content);
+			const blob = result?.content;
 
-			const stringParts = blob.parts
-				.filter((p: TestValue) => typeof p === "string")
-				.join("");
+			const stringParts = blob?.parts
+				?.filter?.((p) => typeof p === "string")
+				.join?.("");
 
 			expect(stringParts).toContain('name="a"');
 
@@ -208,13 +213,13 @@ describe("Utility: MultipartBuilder", () => {
 				meta: { style: "form", explode: false },
 			};
 
-			const result = MultipartBuilder.serialize(body, encoding);
+			const result = MultipartBuilder?.serialize?.(body, encoding);
 
-			const blob = testCast(result.content);
+			const blob = result?.content;
 
-			const stringParts = blob.parts
-				.filter((p: TestValue) => typeof p === "string")
-				.join("");
+			const stringParts = blob?.parts
+				?.filter?.((p) => typeof p === "string")
+				.join?.("");
 
 			expect(stringParts).toContain('name="meta"');
 
@@ -232,21 +237,21 @@ describe("Utility: MultipartBuilder", () => {
 				],
 			};
 
-			const result = MultipartBuilder.serialize(body, config);
+			const result = MultipartBuilder?.serialize?.(body, config);
 
-			expect(result.content).toBeInstanceOf(global.Blob);
+			expect(result?.content).toBeInstanceOf(global.Blob);
 
-			expect(result.content.type).toBe("multipart/mixed");
+			expect(result?.content?.type).toBe("multipart/mixed");
 
-			expect(result.headers["Content-Type"]).toContain("multipart/mixed");
+			expect(result?.headers?.["Content-Type"]).toContain("multipart/mixed");
 
 			// Verify parts
 
-			const blob = testCast(result.content);
+			const blob = result?.content;
 
-			const stringParts = blob.parts
-				.filter((p: TestValue) => typeof p === "string")
-				.join("");
+			const stringParts = blob?.parts
+				?.filter?.((p) => typeof p === "string")
+				.join?.("");
 
 			// Should have no Content-Disposition by default for mixed array items
 
@@ -260,7 +265,7 @@ describe("Utility: MultipartBuilder", () => {
 
 			// Verify Bodies
 
-			expect(blob.parts).toContain("item1");
+			expect(blob?.parts).toContain("item1");
 
 			expect(stringParts).toContain('{"id":2}'); // JSON stringified
 		});
@@ -271,18 +276,20 @@ describe("Utility: MultipartBuilder", () => {
 				itemEncoding: { contentType: "application/custom" },
 			};
 
-			const result = MultipartBuilder.serialize(body, config);
+			const result = MultipartBuilder?.serialize?.(body, config);
 
-			const blob = testCast(result.content);
+			const blob = result?.content;
 
-			const stringParts = blob.parts
-				.filter((p: TestValue) => typeof p === "string")
-				.join("");
+			const stringParts = blob?.parts
+				?.filter?.((p) => typeof p === "string")
+				.join?.("");
 
 			// Check that it applied to all
 			// We expect 3 occurrences of the content type
 
-			const matches = stringParts.match(/Content-Type: application\/custom/g);
+			const matches = stringParts?.match?.(
+				/Content-Type: application\/custom/g,
+			);
 
 			expect(matches?.length).toBe(3);
 		});
@@ -294,17 +301,17 @@ describe("Utility: MultipartBuilder", () => {
 				itemEncoding: { contentType: "text/rest" },
 			};
 
-			const result = MultipartBuilder.serialize(body, config);
+			const result = MultipartBuilder?.serialize?.(body, config);
 
-			const blob = testCast(result.content);
+			const blob = result?.content;
 
-			const stringParts = blob.parts
-				.filter((p: TestValue) => typeof p === "string")
-				.join("");
+			const stringParts = blob?.parts
+				?.filter?.((p) => typeof p === "string")
+				.join?.("");
 
 			expect(stringParts).toContain("Content-Type: text/prefix");
 
-			const restMatches = stringParts.match(/Content-Type: text\/rest/g);
+			const restMatches = stringParts?.match?.(/Content-Type: text\/rest/g);
 
 			expect(restMatches?.length).toBe(2); // rest1 and rest2
 		});

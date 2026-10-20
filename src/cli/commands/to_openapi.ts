@@ -47,6 +47,20 @@ export interface DocsJsonOptions {
 }
 
 /**
+ * Formats an unknown caught error value into a human-readable string.
+ *
+ * @param error - Caught error or value.
+ * @param prefixUnknown - Whether to prefix non-Error values with `"Unknown error: "`.
+ * @returns Formatted error message string.
+ */
+export function formatCliError(error: unknown, prefixUnknown = false): string {
+	if (error instanceof Error) {
+		return error.message;
+	}
+	return prefixUnknown ? `Unknown error: ${String(error)}` : String(error);
+}
+
+/**
  * Generates an OpenAPI specification from TypeScript source code, generated services, or snapshots.
  *
  * @param options - Options controlling input path, format, output path, and ORM.
@@ -62,10 +76,12 @@ export async function generateToOpenApi(
 	try {
 		({ spec } = readOpenApiSnapshot(
 			options.input,
-			fs as OpenApiValue as Parameters<typeof readOpenApiSnapshot>[1],
+			fs as Partial<Parameters<typeof readOpenApiSnapshot>[1]> as Parameters<
+				typeof readOpenApiSnapshot
+			>[1],
 		));
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = formatCliError(error);
 		const shouldFallback =
 			message.includes("No OpenAPI snapshot found") ||
 			message.includes("Unsupported snapshot file extension");
@@ -79,19 +95,21 @@ export async function generateToOpenApi(
 		try {
 			const services = parseGeneratedServices(
 				options.input,
-				fs as OpenApiValue as Parameters<typeof parseGeneratedServices>[1],
+				fs as Partial<
+					Parameters<typeof parseGeneratedServices>[1]
+				> as Parameters<typeof parseGeneratedServices>[1],
 			);
 			let schemas: Record<string, OpenApiValue> | undefined;
 
 			try {
 				schemas = parseGeneratedModels(
 					options.input,
-					fs as OpenApiValue as Parameters<typeof parseGeneratedModels>[1],
+					fs as Partial<
+						Parameters<typeof parseGeneratedModels>[1]
+					> as Parameters<typeof parseGeneratedModels>[1],
 				);
 			} catch (modelError) {
-				const modelMessage =
-					modelError instanceof Error ? modelError.message : String(modelError);
-				console.warn(`⚠️  ${modelMessage}`);
+				console.warn(`⚠️  ${formatCliError(modelError)}`);
 				console.warn("ℹ️  Continuing without reconstructed component schemas.");
 			}
 
@@ -110,51 +128,47 @@ export async function generateToOpenApi(
 			spec = buildOpenApiSpecFromServices(
 				services,
 				{},
-				schemas as OpenApiValue as Parameters<
-					typeof buildOpenApiSpecFromServices
-				>[2],
+				schemas as Parameters<typeof buildOpenApiSpecFromServices>[2],
 			);
 
 			try {
 				const metadata = parseGeneratedMetadata(
 					options.input,
-					fs as OpenApiValue as Parameters<typeof parseGeneratedMetadata>[1],
+					fs as Partial<
+						Parameters<typeof parseGeneratedMetadata>[1]
+					> as Parameters<typeof parseGeneratedMetadata>[1],
 				);
 				spec = applyReverseMetadata(
-					spec as OpenApiValue as Parameters<typeof applyReverseMetadata>[0],
+					spec as Parameters<typeof applyReverseMetadata>[0],
 					metadata,
 				);
 			} catch (metaError) {
-				const metaMessage =
-					metaError instanceof Error ? metaError.message : String(metaError);
-				console.warn(`⚠️  ${metaMessage}`);
+				console.warn(`⚠️  ${formatCliError(metaError)}`);
 				console.warn("ℹ️  Continuing without reconstructed metadata.");
 			}
 		} catch (serviceError) {
-			const serviceMessage =
-				serviceError instanceof Error
-					? serviceError.message
-					: String(serviceError);
-			console.warn(`⚠️  ${serviceMessage}`);
+			console.warn(`⚠️  ${formatCliError(serviceError)}`);
 			console.warn("ℹ️  Falling back to AST-based TypeScript scanning.");
 			const scan = scanTypeScriptProject(
 				options.input,
-				fs as OpenApiValue as Parameters<typeof scanTypeScriptProject>[1],
+				fs as Partial<
+					Parameters<typeof scanTypeScriptProject>[1]
+				> as Parameters<typeof scanTypeScriptProject>[1],
 			);
 			spec = buildOpenApiSpecFromScan(scan);
 			try {
 				const metadata = parseGeneratedMetadata(
 					options.input,
-					fs as OpenApiValue as Parameters<typeof parseGeneratedMetadata>[1],
+					fs as Partial<
+						Parameters<typeof parseGeneratedMetadata>[1]
+					> as Parameters<typeof parseGeneratedMetadata>[1],
 				);
 				spec = applyReverseMetadata(
-					spec as OpenApiValue as Parameters<typeof applyReverseMetadata>[0],
+					spec as Parameters<typeof applyReverseMetadata>[0],
 					metadata,
 				);
 			} catch (metaError) {
-				const metaMessage =
-					metaError instanceof Error ? metaError.message : String(metaError);
-				console.warn(`⚠️  ${metaMessage}`);
+				console.warn(`⚠️  ${formatCliError(metaError)}`);
 				console.warn("ℹ️  Continuing without reconstructed metadata.");
 			}
 		}
@@ -239,12 +253,7 @@ export function registerToOpenApiCommands(program: Command): void {
 			try {
 				await generateToOpenApi(options);
 			} catch (error) {
-				console.error(
-					"❌ to_openapi failed:",
-					error instanceof Error
-						? error.message
-						: `Unknown error: ${String(error)}`,
-				);
+				console.error("❌ to_openapi failed:", formatCliError(error, true));
 				process.exit(1);
 			}
 		});
@@ -287,12 +296,7 @@ export function registerToOpenApiCommands(program: Command): void {
 			try {
 				await generateDocsJson(options);
 			} catch (error) {
-				console.error(
-					"❌ to_docs_json failed:",
-					error instanceof Error
-						? error.message
-						: `Unknown error: ${String(error)}`,
-				);
+				console.error("❌ to_docs_json failed:", formatCliError(error, true));
 				process.exit(1);
 			}
 		});

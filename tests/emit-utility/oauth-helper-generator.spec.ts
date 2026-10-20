@@ -1,15 +1,19 @@
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { OAuthHelperGenerator } from "@src/vendors/angular/utils/oauth-helper.generator.js";
 import { describe, expect, it } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	createTestConfig,
+	createTestProject,
+	createTestSpec,
+} from "../shared/helpers.js";
 import { securitySpec } from "../shared/specs.js";
 
 describe("Emitter: OAuthHelperGenerator", () => {
 	const runGenerator = (spec: object) => {
 		const project = createTestProject();
 		const parser = new SwaggerParser(
-			testCast(spec),
-			testCast({ output: "/out" }),
+			createTestSpec(spec),
+			createTestConfig({ output: "/out" }),
 		);
 		new OAuthHelperGenerator(parser, project).generate("/out");
 		return project;
@@ -363,6 +367,26 @@ describe("Emitter: OAuthHelperGenerator", () => {
 						flows: {
 							password: {
 								tokenUrl: "https://third.example.com/token",
+								scopes: {},
+							},
+						},
+					},
+					Device1: {
+						type: "oauth2",
+						flows: {
+							deviceAuthorization: {
+								deviceAuthorizationUrl: "https://first.example.com/device",
+								tokenUrl: "https://fifth.example.com/token",
+								scopes: {},
+							},
+						},
+					},
+					Device2: {
+						type: "oauth2",
+						flows: {
+							deviceAuthorization: {
+								deviceAuthorizationUrl: "https://second.example.com/device",
+								tokenUrl: "https://sixth.example.com/token",
 								scopes: {},
 							},
 						},

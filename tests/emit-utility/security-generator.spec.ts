@@ -1,16 +1,20 @@
-import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
+import type {
+	GeneratorConfig,
+	SecurityScheme,
+	SwaggerSpec,
+} from "@src/core/types/index.js";
 import { SecurityGenerator } from "@src/openapi/emit_security.js";
 
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 describe("Emitter: SecurityGenerator", () => {
 	const runGenerator = (spec: Partial<SwaggerSpec>) => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const config: GeneratorConfig = { input: "", output: "/out", options: {} };
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 
 		new SecurityGenerator(parser, project).generate("/out");
 		return project;
@@ -79,24 +83,24 @@ describe("Emitter: SecurityGenerator", () => {
 	});
 
 	it("should generate HTTP security definitions (Basic, Bearer)", () => {
-		const schemes: TestValue = testCast({
-			BasicAuth: testCast({
-				type: testCast("http"),
-				scheme: testCast("basic"),
-			}),
-			BearerAuth: testCast({
-				type: testCast("http"),
-				scheme: testCast("bearer"),
-				bearerFormat: testCast("JWT"),
-			}),
-		});
+		const schemes: Record<string, SecurityScheme> = {
+			BasicAuth: {
+				type: "http",
+				scheme: "basic",
+			},
+			BearerAuth: {
+				type: "http",
+				scheme: "bearer",
+				bearerFormat: "JWT",
+			},
+		};
 
 		const project = runGenerator({
 			openapi: "3.0.0",
 			info: { title: "HTTP", version: "1.0" },
 			paths: {},
 			components: {
-				securitySchemes: testCast(schemes),
+				securitySchemes: schemes,
 			},
 		});
 
@@ -236,23 +240,21 @@ describe("Emitter: SecurityGenerator", () => {
 	});
 
 	it("should support Legacy Swagger 2.0 securityDefinitions", () => {
-		const project = runGenerator(
-			testCast({
-				swagger: "2.0",
-				info: { title: "Legacy", version: "1.0" },
-				paths: {},
-				securityDefinitions: {
-					LegacyBasic: {
-						type: "basic",
-					},
-					LegacyApiKey: {
-						type: "apiKey",
-						in: "header",
-						name: "X-Auth",
-					},
+		const project = runGenerator({
+			swagger: "2.0",
+			info: { title: "Legacy", version: "1.0" },
+			paths: {},
+			securityDefinitions: {
+				LegacyBasic: {
+					type: "basic",
 				},
-			}),
-		);
+				LegacyApiKey: {
+					type: "apiKey",
+					in: "header",
+					name: "X-Auth",
+				},
+			},
+		});
 
 		const sourceFile = project.getSourceFileOrThrow("/out/security.ts");
 		const text = sourceFile.getText();
@@ -289,10 +291,10 @@ describe("Emitter: SecurityGenerator", () => {
 
 		const cache = new Map<string, SwaggerSpec>([
 			[entryUri, spec],
-			[schemeUri, testCast(externalSchemes)],
+			[schemeUri, createTestSpec(externalSchemes)],
 		]);
 
-		const parser = new SwaggerParser(testCast(spec), config, cache, entryUri);
+		const parser = new SwaggerParser(spec, config, cache, entryUri);
 		new SecurityGenerator(parser, project).generate("/out");
 
 		const sourceFile = project.getSourceFileOrThrow("/out/security.ts");
@@ -306,7 +308,7 @@ describe("Emitter: SecurityGenerator", () => {
 	it("should generate empty array for API_SECURITY_REQUIREMENTS if security is missing but schemes exist", () => {
 		const config = { input: "", output: "/out", options: {} };
 		const parser = new SwaggerParser(
-			testCast({
+			{
 				openapi: "3.2.0",
 				info: { title: "Security", version: "1.0" },
 				paths: {},
@@ -315,11 +317,11 @@ describe("Emitter: SecurityGenerator", () => {
 						ApiKeyAuth: { type: "apiKey", in: "header", name: "X-API-KEY" },
 					},
 				},
-			}),
+			},
 			config,
 		);
 		// Force securityRequirements to be null instead of undefined to trigger the coalescing operator
-		parser.getSpec().security = testCast(null);
+		Object.assign(parser.getSpec(), { security: null });
 
 		const p = new Project({ useInMemoryFileSystem: true });
 		new SecurityGenerator(parser, p).generate("/out");

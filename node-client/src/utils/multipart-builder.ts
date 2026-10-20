@@ -90,9 +90,9 @@ export class MultipartBuilder {
 			const contentType = config.contentType;
 
 			if (Array.isArray(value)) {
-				value.forEach((v) =>
-					MultipartBuilder.appendFormData(formData, key, v, contentType),
-				);
+				value.forEach((v) => {
+					MultipartBuilder.appendFormData(formData, key, v, contentType);
+				});
 			} else {
 				MultipartBuilder.appendFormData(formData, key, value, contentType);
 			}

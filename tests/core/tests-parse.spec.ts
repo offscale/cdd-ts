@@ -1,11 +1,10 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { parseTests } from "../../src/tests/parse.js";
-import { testCast } from "../shared/helpers.js";
 
 describe("parseTests", () => {
 	it("should return an empty array if sourceFile is missing", () => {
-		expect(parseTests(testCast(null))).toEqual([]);
+		expect(parseTests(null)).toEqual([]);
 	});
 
 	it("should return an empty array if no tests are present", () => {
@@ -61,8 +60,8 @@ describe("parseTests", () => {
 		);
 		const result = parseTests(sourceFile);
 		expect(result).toHaveLength(1);
-		expect(result[0].description).toBe("name");
-		expect(result[0].children?.[0].description).toBe("`should ${name}`");
+		expect(result[0]?.description).toBe("name");
+		expect(result[0]?.children?.[0]?.description).toBe("`should ${name}`");
 	});
 
 	it("should ignore describe without enough arguments", () => {
@@ -102,8 +101,8 @@ describe("parseTests", () => {
 		);
 		const result = parseTests(sourceFile);
 		expect(result).toHaveLength(1);
-		expect(result[0].children).toHaveLength(2);
-		expect(result[0].children?.[0].description).toBe("inner");
-		expect(result[0].children?.[1].description).toBe("works outer");
+		expect(result[0]?.children).toHaveLength(2);
+		expect(result[0]?.children?.[0]?.description).toBe("inner");
+		expect(result[0]?.children?.[1]?.description).toBe("works outer");
 	});
 });

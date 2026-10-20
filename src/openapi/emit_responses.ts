@@ -5,7 +5,6 @@
  */
 import * as path from "node:path";
 import { type Project, VariableDeclarationKind } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../core/constants.js";
 import type { SwaggerParser } from "./parse.js";
 
 /**
@@ -42,9 +41,7 @@ export class ResponsesGenerator {
 		const hasResponses = Object.keys(responses).length > 0;
 
 		if (!hasResponses) {
-			sourceFile.replaceWithText(
-				`${UTILITY_GENERATOR_HEADER_COMMENT}export { };\n`,
-			);
+			sourceFile.replaceWithText("export { };\n");
 
 			return;
 		}
@@ -62,7 +59,5 @@ export class ResponsesGenerator {
 		});
 
 		sourceFile.formatText();
-
-		sourceFile.insertText(0, UTILITY_GENERATOR_HEADER_COMMENT);
 	}
 }

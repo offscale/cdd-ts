@@ -1,41 +1,41 @@
 // Mocks to satisfy both runtime execution AND TypeScript static checks.
 export function Controller(_path: string): ClassDecorator {
 	void _path;
-	return () => {};
+	return () => undefined;
 }
 
 export function Get(_path?: string): MethodDecorator {
 	void _path;
-	return () => {};
+	return () => undefined;
 }
 
 export function Post(_path?: string): MethodDecorator {
 	void _path;
-	return () => {};
+	return () => undefined;
 }
 
 export function Param(_name?: string): ParameterDecorator {
 	void _name;
-	return () => {};
+	return () => undefined;
 }
 
 export function Query(_arg?: string): MethodDecorator & ParameterDecorator {
 	void _arg;
-	return () => {};
+	return () => undefined;
 }
 
 export function Header(_name?: string): ParameterDecorator {
 	void _name;
-	return () => {};
+	return () => undefined;
 }
 
 export function Body(): ParameterDecorator {
-	return () => {};
+	return () => undefined;
 }
 
 export function HttpCode(_code: number): MethodDecorator {
 	void _code;
-	return () => {};
+	return () => undefined;
 }
 
 export interface CreateWidget {

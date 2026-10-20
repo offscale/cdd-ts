@@ -6,9 +6,11 @@
 import * as path from "node:path";
 import { ModuleKind, Project, ScriptTarget } from "ts-morph";
 import { TypeGenerator } from "./classes/emit.js";
-import { createJavyFsPolyfill } from "./cli/commands/from_openapi.js";
 import type { IClientGenerator } from "./core/generator.js";
+import type { IOrmGenerator } from "./core/orm/index.js";
+import type { IServerFrameworkGenerator } from "./core/server/index.js";
 import type { GeneratorConfig, SwaggerSpec } from "./core/types/index.js";
+import { createJavyFsPolyfill } from "./core/wasm-fs.js";
 import { isUrl } from "./functions/utils.js";
 import { SwaggerParser } from "./openapi/parse.js";
 import { AngularClientGenerator } from "./vendors/angular/angular-client.generator.js";
@@ -90,6 +92,36 @@ export function getGeneratorFactory(
 }
 
 /**
+ * Returns an ORM generator instance matching the requested ORM target.
+ *
+ * @param orm - Target ORM identifier (e.g. `"typeorm"`).
+ * @returns Matching `IOrmGenerator` or `undefined` if not supported.
+ */
+export function getOrmGeneratorFactory(
+	orm?: string,
+): IOrmGenerator | undefined {
+	if (orm === "typeorm") {
+		return new TypeOrmGenerator();
+	}
+	return undefined;
+}
+
+/**
+ * Returns a server framework generator instance matching the requested server framework.
+ *
+ * @param serverFramework - Target server framework identifier (e.g. `"express"`).
+ * @returns Matching `IServerFrameworkGenerator` or `undefined` if not supported.
+ */
+export function getServerGeneratorFactory(
+	serverFramework = "express",
+): IServerFrameworkGenerator | undefined {
+	if (serverFramework === "express") {
+		return new ExpressServerGenerator();
+	}
+	return undefined;
+}
+
+/**
  * Orchestrates the synchronous code generation process based on a configuration object.
  *
  * @param config - The generator configuration object.
@@ -104,9 +136,16 @@ export function generateFromConfigSync(
 	testConfig?: TestGeneratorConfig,
 	targetScope?: "to_sdk" | "to_sdk_cli" | "to_server",
 ): void {
-	if (targetScope === "to_server") {
-		config.options.generateServices = false;
-	}
+	const effectiveConfig: GeneratorConfig =
+		targetScope === "to_server"
+			? {
+					...config,
+					options: {
+						...config.options,
+						generateServices: false,
+					},
+				}
+			: config;
 
 	const isTestEnv = !!testConfig;
 	const fsPolyfill = createJavyFsPolyfill();
@@ -119,14 +158,12 @@ export function generateFromConfigSync(
 				target: ScriptTarget.ES2022,
 				module: ModuleKind.ESNext,
 				strict: true,
-				...config.compilerOptions,
+				...effectiveConfig.compilerOptions,
 			},
 			...(fsPolyfill ? { fileSystem: fsPolyfill } : {}),
 		});
 
-	console.log("==> TRACE: new Project() finished");
-
-	const codeOutputRoot = config.output;
+	const codeOutputRoot = effectiveConfig.output;
 
 	if (!isTestEnv) {
 		const fs = activeProject.getFileSystem();
@@ -134,48 +171,47 @@ export function generateFromConfigSync(
 			fs.mkdirSync(codeOutputRoot);
 		}
 		console.log(
-			`📡 Processing OpenAPI specification from ${isUrl(config.input) ? "URL" : "file"}: ${config.input}`,
+			`📡 Processing OpenAPI specification from ${isUrl(effectiveConfig.input) ? "URL" : "file"}: ${effectiveConfig.input}`,
 		);
 	}
 
 	try {
-		const framework = config.options.framework || "vanilla";
-		const implementation = config.options.implementation;
+		const framework = effectiveConfig.options.framework || "vanilla";
+		const implementation = effectiveConfig.options.implementation;
 
 		let swaggerParser: SwaggerParser;
 		if (isTestEnv) {
 			const docUri = "file://in-memory-spec.json";
 			const spec = testConfig.spec as SwaggerSpec;
 			const cache = new Map<string, SwaggerSpec>([[docUri, spec]]);
-			swaggerParser = new SwaggerParser(spec, config, cache, docUri);
+			swaggerParser = new SwaggerParser(spec, effectiveConfig, cache, docUri);
 		} else {
-			console.log("==> TRACE: Before SwaggerParser.create");
-			console.log("==> TRACE: Before SwaggerParser.create");
-			console.log("TRACE AWAIT 1");
-			swaggerParser = SwaggerParser.createSync(config.input, config);
-			console.log("TRACE AWAIT 2");
-			console.log("==> TRACE: After SwaggerParser.create");
-			console.log("==> TRACE: After SwaggerParser.create");
+			swaggerParser = SwaggerParser.createSync(
+				effectiveConfig.input,
+				effectiveConfig,
+			);
 		}
 
 		if (targetScope === "to_server") {
-			if (config.options.orm === "typeorm") {
-				new TypeOrmGenerator().generate(
+			const ormGenerator = getOrmGeneratorFactory(effectiveConfig.options.orm);
+			if (ormGenerator) {
+				ormGenerator.generate(
 					activeProject,
 					swaggerParser,
-					config,
+					effectiveConfig,
 					codeOutputRoot,
 				);
 			}
 
-			const serverFramework = config.options.serverFramework || "express";
-			if (serverFramework === "express") {
-				const serverGenerator = new ExpressServerGenerator();
-
-				// Generate models using TypeGenerator
-				new TypeGenerator(swaggerParser, activeProject, config).generate(
-					codeOutputRoot,
-				);
+			const serverGenerator = getServerGeneratorFactory(
+				effectiveConfig.options.serverFramework || "express",
+			);
+			if (serverGenerator) {
+				new TypeGenerator(
+					swaggerParser,
+					activeProject,
+					effectiveConfig,
+				).generate(codeOutputRoot);
 
 				const schemas = swaggerParser.schemas;
 				if (schemas && schemas.length > 0) {
@@ -194,8 +230,8 @@ export function generateFromConfigSync(
 								activeProject,
 								schema.name,
 								routesDir,
-								config.options.orm,
-								config,
+								effectiveConfig.options.orm,
+								effectiveConfig,
 								swaggerParser,
 							);
 						}
@@ -204,7 +240,7 @@ export function generateFromConfigSync(
 						activeProject,
 						swaggerParser,
 						routesDir,
-						config,
+						effectiveConfig,
 					);
 					serverGenerator.generateServerEntrypoint(
 						activeProject,
@@ -216,38 +252,33 @@ export function generateFromConfigSync(
 			}
 		} else {
 			const generator = getGeneratorFactory(framework, implementation);
-			console.log("==> TRACE: Before generator");
-			console.log("==> TRACE: Before generator");
-			console.log("TRACE AWAIT 3");
-			generator.generate(activeProject, swaggerParser, config, codeOutputRoot);
-			console.log("TRACE AWAIT 4");
-			console.log("==> TRACE: After generator");
-			console.log("==> TRACE: After generator");
+			generator.generate(
+				activeProject,
+				swaggerParser,
+				effectiveConfig,
+				codeOutputRoot,
+			);
 		}
 
 		if (targetScope === "to_sdk_cli") {
 			new CliGenerator().generate(
 				activeProject,
 				swaggerParser,
-				config,
+				effectiveConfig,
 				codeOutputRoot,
 			);
-			if (config.options.mcp) {
+			if (effectiveConfig.options.mcp) {
 				new McpGenerator().generate(
 					activeProject,
 					swaggerParser,
-					config,
+					effectiveConfig,
 					codeOutputRoot,
 				);
 			}
 		}
 
-		// ... This block is reachable when isTestEnv is true ...
-
 		if (!isTestEnv) {
-			console.log("==> TRACE: Before saveSync");
 			activeProject.saveSync();
-			console.log("==> TRACE: After saveSync");
 		}
 	} catch (error) {
 		if (!isTestEnv) {
@@ -295,11 +326,8 @@ export {
 	parseArazzoServerAst,
 	parseArazzoServerE2eSourceFile,
 } from "./arazzo/parse_server_ast.js";
-/** Re-exports `ArazzoValidationError` and `validateArazzoSpec` from `./arazzo/parse_validator.js`. */
-export {
-	ArazzoValidationError,
-	validateArazzoSpec,
-} from "./arazzo/parse_validator.js";
+/** Re-exports `validateArazzoSpec` from `./arazzo/parse_validator.js`. */
+export { validateArazzoSpec } from "./arazzo/parse_validator.js";
 /** Re-exports `generateFromArazzoSync` from `./cli/commands/from_arazzo.js`. */
 export { generateFromArazzoSync } from "./cli/commands/from_arazzo.js";
 /** Re-exports `generateFromOpenApi` from `./cli/commands/from_openapi.js`. */
@@ -315,6 +343,16 @@ export {
 	generateDocsJson,
 	generateToOpenApi,
 } from "./cli/commands/to_openapi.js";
+/** Re-exports unified error hierarchy from `./core/errors.js`. */
+export {
+	ArazzoValidationError,
+	AstReverseParseError,
+	CddError,
+	CddErrorCode,
+	GeneratorConfigurationError,
+	ReferenceResolutionError,
+	SpecValidationError,
+} from "./core/errors.js";
 /** Re-exports `IOrmGenerator` from `./core/orm/index.js`. */
 /** Re-exports `IOrmParser` from `./core/orm/index.js`. */
 export type { IOrmGenerator, IOrmParser } from "./core/orm/index.js";

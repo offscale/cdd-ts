@@ -96,7 +96,7 @@ const router = useRouter();
 const { t } = useI18n();
 const ${camelCase(resource.name)}Service = use${serviceName}();
 
-const items = ref<any[]>([]);
+const items = ref<Array<Record<string, string | number | undefined>>>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
@@ -106,8 +106,8 @@ const fetchItems = async () => {
     try {
         const response = await ${camelCase(resource.name)}Service.${listOp?.methodName}();
         items.value = response.data || response || [];
-    } catch (err: any) {
-        error.value = err.message || t('common.errorFetching', 'Error fetching data');
+    } catch (err: unknown) {
+        error.value = (err instanceof Error ? err.message : '') || t('common.errorFetching', 'Error fetching data');
     } finally {
         loading.value = false;
     }
@@ -135,8 +135,8 @@ ${
     try {
         await ${camelCase(resource.name)}Service.${deleteOp?.methodName}(id);
         await fetchItems();
-    } catch (err: any) {
-        alert(err.message || t('common.errorDeleting', 'Error deleting item'));
+    } catch (err: unknown) {
+        alert((err instanceof Error ? err.message : '') || t('common.errorDeleting', 'Error deleting item'));
     }
 };`
 		: ""

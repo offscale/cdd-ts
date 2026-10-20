@@ -3,7 +3,7 @@ import type { GeneratorConfig } from "@src/core/types/index.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { type TestValue, testCast } from "../shared/helpers.js";
+import { createTestSpec } from "../shared/helpers.js";
 
 const linkSpec = {
 	openapi: "3.0.0",
@@ -29,14 +29,14 @@ const linkSpec = {
 };
 
 describe("Emitter: Link Interface Generation", () => {
-	const runGenerator = (spec: TestValue) => {
+	const runGenerator = (spec: object) => {
 		const project = new Project({ useInMemoryFileSystem: true });
 		const config: GeneratorConfig = {
 			input: "",
 			output: "/out",
 			options: { enumStyle: "enum" },
 		};
-		const parser = new SwaggerParser(testCast(spec), config);
+		const parser = new SwaggerParser(createTestSpec(spec), config);
 		new TypeGenerator(parser, project, config).generate("/out");
 		return project.createSourceFile(
 			"/out/combined.ts",
@@ -50,7 +50,7 @@ describe("Emitter: Link Interface Generation", () => {
 	};
 
 	it("should generate generic interface for named links", () => {
-		const sourceFile = runGenerator(testCast(linkSpec));
+		const sourceFile = runGenerator(linkSpec);
 
 		const userAddressParams = sourceFile.getInterfaceOrThrow(
 			"UserAddressLinkParameters",
@@ -66,13 +66,13 @@ describe("Emitter: Link Interface Generation", () => {
 
 		const docs = userAddressParams.getJsDocs()[0];
 		// Trim usage to handle potential newlines inserted by ts-morph formatting
-		expect(docs.getDescription().trim()).toBe(
+		expect(docs?.getDescription().trim()).toBe(
 			"Parameters for the 'UserAddress' link.",
 		);
 	});
 
 	it("should handle multiple links", () => {
-		const sourceFile = runGenerator(testCast(linkSpec));
+		const sourceFile = runGenerator(linkSpec);
 
 		const anotherLinkParams = sourceFile.getInterfaceOrThrow(
 			"AnotherLinkLinkParameters",
@@ -88,7 +88,7 @@ describe("Emitter: Link Interface Generation", () => {
 			info: { title: "Old API", version: "1.0" },
 			paths: {},
 		};
-		const sourceFile = runGenerator(testCast(spec2));
+		const sourceFile = runGenerator(spec2);
 
 		const interfaces = sourceFile.getInterfaces();
 		const linkInterfaces = interfaces.filter((i) =>

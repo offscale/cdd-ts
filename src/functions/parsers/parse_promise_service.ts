@@ -49,9 +49,9 @@ export function extractPromiseHttpCall(
 	let httpMethod = "GET";
 	if (fetchMatch) {
 		const fOpts = /fetch\([^,]+,\s*([^)]+)\)/.exec(methodBody);
-		if (fOpts) {
-			const methodM = /method:\s*['"]([^'"]+)['"]/.exec(fOpts[1]!);
-			if (methodM) httpMethod = methodM[1]!.toUpperCase();
+		if (fOpts?.[1]) {
+			const methodM = /method:\s*['"]([^'"]+)['"]/.exec(fOpts[1]);
+			if (methodM?.[1]) httpMethod = methodM[1].toUpperCase();
 		}
 		if (!returnTypeHint) {
 			const obsMatch = /new Observable<([^>]+)>/.exec(methodBody);
@@ -61,8 +61,8 @@ export function extractPromiseHttpCall(
 		}
 	} else {
 		const methodM = /method:\s*['"]([^'"]+)['"]/.exec(methodBody);
-		if (methodM) {
-			httpMethod = methodM[1]!.toUpperCase();
+		if (methodM?.[1]) {
+			httpMethod = methodM[1].toUpperCase();
 		}
 		if (!returnTypeHint && axiosMatch?.[1]) {
 			returnTypeHint = axiosMatch[1];

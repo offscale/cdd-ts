@@ -1,34 +1,27 @@
 import { DocumentMetaGenerator } from "@src/openapi/emit_document_meta.js";
 import { SwaggerParser } from "@src/openapi/parse.js";
 import type { Project } from "ts-morph";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { createTestProject, testCast } from "../shared/helpers.js";
+import {
+	compileGeneratedModule,
+	createTestConfig,
+	createTestProject,
+	createTestSpec,
+} from "../shared/helpers.js";
 
 describe("Emitter: DocumentMetaGenerator", () => {
 	const runGenerator = (spec: object) => {
 		const project = createTestProject();
-		const parser = new SwaggerParser(testCast(spec), testCast({ options: {} }));
+		const parser = new SwaggerParser(
+			createTestSpec(spec),
+			createTestConfig({ options: {} }),
+		);
 		new DocumentMetaGenerator(parser, project).generate("/out");
 		return project;
 	};
 
-	const compileGeneratedFile = (project: Project) => {
-		const sourceFile = project.getSourceFileOrThrow("/out/document.ts");
-		const fileContent = sourceFile.getText();
-		const jsCode = ts.transpile(fileContent, {
-			target: ts.ScriptTarget.ES5,
-			module: ts.ModuleKind.CommonJS,
-		});
-
-		const moduleHelper = {
-			exports: testCast({}),
-		};
-
-		testCast(new Function("exports", jsCode)(moduleHelper.exports));
-
-		return moduleHelper.exports;
-	};
+	const compileGeneratedFile = (project: Project) =>
+		compileGeneratedModule(project, "/out/document.ts");
 
 	it("should emit API_DOCUMENT_META with document-level fields", () => {
 		const spec = {
@@ -42,11 +35,11 @@ describe("Emitter: DocumentMetaGenerator", () => {
 
 		const { API_DOCUMENT_META } = compileGeneratedFile(project);
 
-		expect(API_DOCUMENT_META.openapi).toBe("3.2.0");
+		expect(API_DOCUMENT_META?.openapi).toBe("3.2.0");
 
-		expect(API_DOCUMENT_META.$self).toBe("https://example.com/openapi");
+		expect(API_DOCUMENT_META?.$self).toBe("https://example.com/openapi");
 
-		expect(API_DOCUMENT_META.jsonSchemaDialect).toBe(
+		expect(API_DOCUMENT_META?.jsonSchemaDialect).toBe(
 			"https://example.com/dialect",
 		);
 	});
@@ -61,11 +54,11 @@ describe("Emitter: DocumentMetaGenerator", () => {
 
 		const { API_DOCUMENT_META } = compileGeneratedFile(project);
 
-		expect(API_DOCUMENT_META.swagger).toBe("2.0");
+		expect(API_DOCUMENT_META?.swagger).toBe("2.0");
 
-		expect(API_DOCUMENT_META.openapi).toBeUndefined();
+		expect(API_DOCUMENT_META?.openapi).toBeUndefined();
 
-		expect(API_DOCUMENT_META.jsonSchemaDialect).toBeUndefined();
+		expect(API_DOCUMENT_META?.jsonSchemaDialect).toBeUndefined();
 	});
 
 	it("should capture extensions", () => {
@@ -79,6 +72,6 @@ describe("Emitter: DocumentMetaGenerator", () => {
 
 		const { API_DOCUMENT_META } = compileGeneratedFile(project);
 
-		expect(API_DOCUMENT_META.extensions).toEqual({ "x-extra": "cool" });
+		expect(API_DOCUMENT_META?.extensions).toEqual({ "x-extra": "cool" });
 	});
 });

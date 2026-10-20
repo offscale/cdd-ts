@@ -33,7 +33,7 @@ export interface TestEmitOptions {
  * @param options - Configuration containing the suite name and test cases.
  */
 export function emitTestBlocks(
-	sourceFile: SourceFile,
+	sourceFile: SourceFile | null | undefined,
 	options: TestEmitOptions,
 ): void {
 	if (!sourceFile) {

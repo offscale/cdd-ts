@@ -57,9 +57,10 @@ export class TypeOrmParser implements IOrmParser {
 	 * @returns An OpenAPI SwaggerDefinition representing the entity.
 	 */
 	private parseEntity(cls: ClassDeclaration): SwaggerDefinition {
+		const schemaProps: Record<string, SwaggerDefinition | boolean> = {};
 		const schema: SwaggerDefinition = {
 			type: "object",
-			properties: {},
+			properties: schemaProps,
 			required: [],
 		};
 
@@ -70,7 +71,7 @@ export class TypeOrmParser implements IOrmParser {
 			if (this.isColumnProperty(prop)) {
 				const propName = prop.getName();
 				const definition = this.mapPropertyToDefinition(prop);
-				schema.properties![propName] = definition;
+				schemaProps[propName] = definition;
 
 				if (!prop.hasQuestionToken()) {
 					requiredProps.push(propName);

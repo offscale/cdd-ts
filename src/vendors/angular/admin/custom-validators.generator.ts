@@ -11,7 +11,6 @@ import {
 	type Project,
 	Scope,
 } from "ts-morph";
-import { UTILITY_GENERATOR_HEADER_COMMENT } from "../../../core/constants.js";
 
 /**
  * Generates the custom-validators.ts file using ts-morph for robust AST manipulation.
@@ -37,8 +36,6 @@ export class CustomValidatorsGenerator {
 		const sourceFile = this.project.createSourceFile(filePath, "", {
 			overwrite: true,
 		});
-
-		sourceFile.addStatements(UTILITY_GENERATOR_HEADER_COMMENT);
 
 		sourceFile.addImportDeclaration({
 			moduleSpecifier: "@angular/forms",

@@ -7,6 +7,7 @@ import {
 	topologicalSortSteps,
 	topologicalSortWorkflows,
 } from "../core/arazzo-engine.js";
+import { ArazzoValidationError } from "../core/errors.js";
 import {
 	type ArazzoComponentsObject,
 	type ArazzoCriterionObject,
@@ -23,26 +24,8 @@ import {
 	isArazzoSpec,
 } from "../core/types/index.js";
 
-/**
- * Custom error class thrown when an Arazzo document fails structural or semantic validation.
- */
-export class ArazzoValidationError extends Error {
-	/** JSON Pointer or property path where validation failed. */
-	public readonly path: string;
-
-	/**
-	 * Creates a new `ArazzoValidationError`.
-	 *
-	 * @param message - Human-readable validation failure description.
-	 * @param path - Location path in the Arazzo document where the violation occurred.
-	 */
-	public constructor(message: string, path?: string) {
-		const resolvedPath = path ?? "#";
-		super(`${message} (at ${resolvedPath})`);
-		this.name = "ArazzoValidationError";
-		this.path = resolvedPath;
-	}
-}
+/** Re-exports `ArazzoValidationError` from `../core/errors.js`. */
+export { ArazzoValidationError };
 
 const VALID_SOURCE_TYPES = new Set(["openapi", "asyncapi", "arazzo"]);
 const VALID_PARAM_LOCATIONS = new Set([
@@ -211,9 +194,9 @@ function validateSuccessAction(
 		}
 	}
 	if (resolved.criteria) {
-		resolved.criteria.forEach((c, idx) =>
-			validateCriterion(c, `${path}/criteria/${idx}`),
-		);
+		resolved.criteria.forEach((c, idx) => {
+			validateCriterion(c, `${path}/criteria/${idx}`);
+		});
 	}
 	return resolved.name;
 }
@@ -299,9 +282,9 @@ function validateFailureAction(
 		);
 	}
 	if (resolved.criteria) {
-		resolved.criteria.forEach((c, idx) =>
-			validateCriterion(c, `${path}/criteria/${idx}`),
-		);
+		resolved.criteria.forEach((c, idx) => {
+			validateCriterion(c, `${path}/criteria/${idx}`);
+		});
 	}
 	return resolved.name;
 }
@@ -361,15 +344,15 @@ function validateStep(
 	}
 
 	if (step.parameters) {
-		step.parameters.forEach((p, idx) =>
-			validateParameterOrReusable(p, components, `${path}/parameters/${idx}`),
-		);
+		step.parameters.forEach((p, idx) => {
+			validateParameterOrReusable(p, components, `${path}/parameters/${idx}`);
+		});
 	}
 
 	if (step.successCriteria) {
-		step.successCriteria.forEach((c, idx) =>
-			validateCriterion(c, `${path}/successCriteria/${idx}`),
-		);
+		step.successCriteria.forEach((c, idx) => {
+			validateCriterion(c, `${path}/successCriteria/${idx}`);
+		});
 	}
 
 	if (step.onSuccess) {
@@ -472,9 +455,9 @@ function validateWorkflow(
 		}
 	}
 
-	workflow.steps.forEach((step, idx) =>
-		validateStep(step, components, stepIds, `${path}/steps/${idx}`),
-	);
+	workflow.steps.forEach((step, idx) => {
+		validateStep(step, components, stepIds, `${path}/steps/${idx}`);
+	});
 
 	try {
 		topologicalSortSteps(workflow.steps);
@@ -483,31 +466,31 @@ function validateWorkflow(
 	}
 
 	if (workflow.parameters) {
-		workflow.parameters.forEach((p, idx) =>
-			validateParameterOrReusable(p, components, `${path}/parameters/${idx}`),
-		);
+		workflow.parameters.forEach((p, idx) => {
+			validateParameterOrReusable(p, components, `${path}/parameters/${idx}`);
+		});
 	}
 
 	if (workflow.successActions) {
-		workflow.successActions.forEach((act, idx) =>
+		workflow.successActions.forEach((act, idx) => {
 			validateSuccessAction(
 				act,
 				components,
 				stepIds,
 				`${path}/successActions/${idx}`,
-			),
-		);
+			);
+		});
 	}
 
 	if (workflow.failureActions) {
-		workflow.failureActions.forEach((act, idx) =>
+		workflow.failureActions.forEach((act, idx) => {
 			validateFailureAction(
 				act,
 				components,
 				stepIds,
 				`${path}/failureActions/${idx}`,
-			),
-		);
+			);
+		});
 	}
 }
 

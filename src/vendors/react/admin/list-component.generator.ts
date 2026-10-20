@@ -50,9 +50,10 @@ export class ListComponentGenerator {
 			`import './${resource.name}-list.css';`,
 		];
 
-		const props = resource.formProperties?.slice(0, 5) || [
-			{ name: "id", schema: { type: "string" } },
-		];
+		const props =
+			resource.formProperties.length > 0
+				? resource.formProperties.slice(0, 5)
+				: [{ name: "id", schema: { type: "string" } }];
 
 		const body = `    const { data, error, isLoading } = ${hookName}();\n    const { t } = useTranslation();\n\n    if (isLoading) return <div role="status" aria-live="polite">{t('loading', 'Loading...')}</div>;\n    if (error) return <div role="alert">{t('error_loading', 'Error loading data')}</div>;`;
 
@@ -70,7 +71,7 @@ export class ListComponentGenerator {
                         </tr>
                     </thead>
                     <tbody>
-                        {data?.map((item: any) => (
+                        {data?.map((item: Record<string, string | number | undefined>) => (
                             <tr key={item.id} className="list-item-row" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 50px' }}>
                                 ${props.map((p) => `<td>{item.${p.name}}</td>`).join("\n                                ")}
                                 <td>

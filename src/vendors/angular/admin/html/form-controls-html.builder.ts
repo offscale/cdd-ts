@@ -192,7 +192,7 @@ export function buildErrorMessages(
  * @returns Generated result (HtmlElementBuilder | null).
  */
 export function buildFormControl(
-	control: FormControlModel,
+	control: FormControlModel | null | undefined,
 ): HtmlElementBuilder | null {
 	if (!control?.schema) return null;
 
@@ -297,7 +297,9 @@ function createInput(
 
 	field.appendChild(input.selfClosing());
 
-	buildErrorMessages(control).forEach((error) => field.appendChild(error));
+	buildErrorMessages(control).forEach((error) => {
+		field.appendChild(error);
+	});
 
 	return field;
 }
@@ -528,7 +530,9 @@ function createChips(
 
 	field.appendChild(chipGrid);
 
-	buildErrorMessages(control).forEach((error) => field.appendChild(error));
+	buildErrorMessages(control).forEach((error) => {
+		field.appendChild(error);
+	});
 
 	return field;
 }
@@ -565,7 +569,7 @@ function createFormGroup(control: FormControlModel): HtmlElementBuilder {
 			.setTextContent(pascalCase(control.name)),
 	);
 
-	for (const nestedControl of control.nestedControls!) {
+	for (const nestedControl of control.nestedControls as FormControlModel[]) {
 		const builder = buildFormControl(nestedControl);
 
 		if (builder) container.appendChild(builder);
