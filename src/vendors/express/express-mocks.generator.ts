@@ -14,12 +14,14 @@ import type { SwaggerParser } from "../../openapi/parse.js";
  * @param schemaName - The name of the entity schema.
  * @param outputDir - Target routes directory.
  * @param _parser - Optional parsed OpenAPI specification.
+ * @param orm - Optional ORM identifier (`"typeorm"`).
  */
 export function generateExpressEntityMock(
 	project: Project,
 	schemaName: string,
 	outputDir: string,
 	_parser?: Pick<SwaggerParser, "schemas">,
+	orm?: string,
 ): void {
 	const fileName = schemaName.toLowerCase();
 	const mocksDir = path.join(outputDir, "..", "mocks");
@@ -33,7 +35,10 @@ export function generateExpressEntityMock(
 		namedImports: ["faker"],
 	});
 	sourceFile.addImportDeclaration({
-		moduleSpecifier: `../models/${schemaName}.js`,
+		moduleSpecifier:
+			orm === "typeorm"
+				? `../entities/${fileName}.entity.js`
+				: `../models/${schemaName}.js`,
 		namedImports: [schemaName],
 	});
 
@@ -46,7 +51,14 @@ export function generateExpressEntityMock(
 			if (typeof propDef === "boolean") continue;
 			if (propName === "id" || propName === "uuid") continue;
 
-			if (propDef.type === "string") {
+			if (Array.isArray(propDef.enum) && propDef.enum.length > 0) {
+				const enumValues = propDef.enum
+					.map((val) => JSON.stringify(val))
+					.join(", ");
+				fieldLines.push(
+					`${propName}: faker.helpers.arrayElement([${enumValues}] as const),`,
+				);
+			} else if (propDef.type === "string") {
 				if (propDef.format === "date" || propDef.format === "date-time") {
 					fieldLines.push(`${propName}: faker.date.past().toISOString(),`);
 				} else if (propName.toLowerCase().includes("email")) {

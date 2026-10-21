@@ -142,6 +142,7 @@ export function generateFromConfigSync(
 					...config,
 					options: {
 						...config.options,
+						dateType: "string",
 						generateServices: false,
 					},
 				}

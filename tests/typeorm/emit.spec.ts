@@ -31,6 +31,7 @@ describe("TypeOrmGenerator", () => {
 							price: { type: "number" },
 							publishDate: { type: "string", format: "date" },
 							phoneNumber: { type: "string" }, // to test propName.includes("phone")
+							bio: { type: "string" }, // to test default string faker.lorem.word()
 							isVerified: { type: "boolean" }, // to test faker.datatype.boolean()
 							categoryId: { type: "integer" }, // to test foreign key (propName.endsWith("Id"))
 						},

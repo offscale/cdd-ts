@@ -53,7 +53,7 @@ and then randomly selecting from this pool when generating dependent child recor
 
 	classDef.addProperty({
 		name: "entityPool",
-		type: "Record<string, Array<{ id?: number | string }>>",
+		type: "Record<string, Array<{ id: number }>>",
 		initializer: "{}",
 		docs: [
 			{
@@ -65,7 +65,7 @@ and then randomly selecting from this pool when generating dependent child recor
 
 	// Generate mapping functions
 	for (const schema of schemas) {
-		let mappingBody = `const entity = new ${schema.name}();\nconst record = entity as unknown as Record<string, unknown>;\n`;
+		let mappingBody = `const entity = new ${schema.name}();\n`;
 		const props = schema.definition.properties || {};
 		for (const [propName, propDef] of Object.entries(props)) {
 			if (
@@ -77,7 +77,7 @@ and then randomly selecting from this pool when generating dependent child recor
 
 			const type = propDef.type;
 			const format = propDef.format;
-			let fakerCall = "faker.lorem.word()";
+			let fakerCall = "{}";
 			if (type === "string") {
 				if (propName.toLowerCase().includes("email"))
 					fakerCall = "faker.internet.email()";
@@ -85,26 +85,34 @@ and then randomly selecting from this pool when generating dependent child recor
 					fakerCall = "faker.person.fullName()";
 				else if (propName.toLowerCase().includes("phone"))
 					fakerCall = "faker.phone.number()";
-				else if (format === "date-time") fakerCall = "faker.date.past()";
+				else if (format === "date-time" || format === "date")
+					fakerCall = "faker.date.past().toISOString()";
+				else fakerCall = "faker.lorem.word()";
 			} else if (type === "number" || type === "integer") {
 				fakerCall = "faker.number.int({ min: 1, max: 1000 })";
 			} else if (type === "boolean") {
 				fakerCall = "faker.datatype.boolean()";
+			} else if (type === "array") {
+				fakerCall = "[]";
 			}
 
 			// Assume if property ends with Id, it's a foreign key. We'll try to pick from pool if exists.
-			if (propName.endsWith("Id") && propName.length > 2) {
+			if (
+				propName.endsWith("Id") &&
+				propName.length > 2 &&
+				(type === "number" || type === "integer")
+			) {
 				const parentName = propName.substring(0, propName.length - 2);
 				const capitalizedParent =
 					parentName.charAt(0).toUpperCase() + parentName.slice(1);
 				mappingBody += `        if (this.entityPool['${capitalizedParent}'] && this.entityPool['${capitalizedParent}'].length > 0) {
             const pool = this.entityPool['${capitalizedParent}'];
-            record.${propName} = pool[Math.floor(Math.random() * pool.length)].id;
+            entity.${propName} = pool[Math.floor(Math.random() * pool.length)]?.id ?? ${fakerCall};
         } else {
-            record.${propName} = ${fakerCall};
+            entity.${propName} = ${fakerCall};
         }\n`;
 			} else {
-				mappingBody += `        record.${propName} = ${fakerCall};\n`;
+				mappingBody += `        entity.${propName} = ${fakerCall};\n`;
 			}
 		}
 		mappingBody += `        return entity;`;

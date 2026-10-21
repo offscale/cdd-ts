@@ -76,7 +76,7 @@ export class ExpressServerGenerator implements IServerFrameworkGenerator {
 		config?: GeneratorConfig,
 		parser?: Pick<SwaggerParser, "schemas">,
 	): void {
-		generateExpressEntityMock(project, schemaName, outputDir, parser);
+		generateExpressEntityMock(project, schemaName, outputDir, parser, orm);
 		generateExpressEntityRoute(project, schemaName, outputDir, orm);
 
 		const shouldGenerateTests = config?.options?.tests ?? false;

@@ -31,6 +31,8 @@ export function emitPackageScaffolding(
 			commander: "^14.0.0",
 		});
 	}
+	const isTypeOrmServer =
+		targetScope === "to_server" && finalConfig.options?.orm === "typeorm";
 	if (targetScope === "to_server") {
 		Object.assign(dependencies, {
 			express: "^4.21.2",
@@ -43,7 +45,7 @@ export function emitPackageScaffolding(
 			typescript: "^5.0.0",
 			"ts-node": "^10.9.2",
 		});
-		if (finalConfig.options?.orm === "typeorm") {
+		if (isTypeOrmServer) {
 			Object.assign(dependencies, {
 				typeorm: "^1.0.0",
 				"better-sqlite3": "^12.0.0",
@@ -74,6 +76,7 @@ export function emitPackageScaffolding(
 				dependencies,
 				devDependencies:
 					Object.keys(devDependencies).length > 0 ? devDependencies : undefined,
+				allowScripts: isTypeOrmServer ? { "better-sqlite3": true } : undefined,
 			},
 			null,
 			2,

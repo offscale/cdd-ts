@@ -34,6 +34,13 @@ describe("ExpressServerGenerator", () => {
 			"const repository = dataSource.getRepository(User);",
 		);
 
+		const typeormMockFile = project.getSourceFileOrThrow(
+			"/out/mocks/user.mock.ts",
+		);
+		expect(typeormMockFile.getFullText()).toContain(
+			'import { User } from "../entities/user.entity.js";',
+		);
+
 		// Check route unit test file generation
 		const routeTestFile = project.getSourceFileOrThrow(
 			"/out/routes/user.routes.spec.ts",
@@ -76,6 +83,7 @@ describe("ExpressServerGenerator", () => {
 							description: { type: "string" },
 							age: { type: "integer" },
 							createdAt: { type: "string", format: "date-time" },
+							status: { type: "string", enum: ["active", "pending"] },
 							isActive: { type: "boolean" },
 							tags: { type: "array" },
 							metadata: { type: "object" },
@@ -104,6 +112,9 @@ describe("ExpressServerGenerator", () => {
 		expect(mockText).toContain("email: faker.internet.email(),");
 		expect(mockText).toContain("age: faker.number.int({ min: 1, max: 1000 }),");
 		expect(mockText).toContain("createdAt: faker.date.past().toISOString(),");
+		expect(mockText).toContain(
+			'status: faker.helpers.arrayElement(["active", "pending"] as const),',
+		);
 		expect(mockText).toContain("isActive: faker.datatype.boolean(),");
 		expect(mockText).toContain("tags: [],");
 		expect(mockText).toContain("metadata: {},");
