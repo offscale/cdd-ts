@@ -192,4 +192,46 @@ app.get('/widgets/:id', async (req, res) => {
 		expect(spec.paths?.["/widgets/{id}"]?.get).toBeDefined();
 		expect(spec.components?.schemas?.Widget).toBeDefined();
 	});
+
+	it("should verify all markdown checklists and conformance tables are 100% checked with zero TODOs", async () => {
+		const { readFileSync } = await import("node:fs");
+		const { resolve } = await import("node:path");
+		const rootDir = process.cwd();
+		const checklistFiles = [
+			"FUTURE.md",
+			"conformance/mock-server/mock-server-plan.md",
+		];
+		for (const relPath of checklistFiles) {
+			const content = readFileSync(resolve(rootDir, relPath), "utf8");
+			expect(content).not.toMatch(/\[\s*\]/);
+		}
+
+		const conformanceFiles = [
+			"conformance/arazzo-1.1.0/client-sdk-cli.md",
+			"conformance/arazzo-1.1.0/client-sdk.md",
+			"conformance/arazzo-1.1.0/servers.md",
+			"conformance/mcp-1.0.0/client-sdk-cli.md",
+			"conformance/mcp-1.0.0/client-sdk.md",
+			"conformance/mcp-1.0.0/servers.md",
+			"conformance/openapi-3.2.0/client-sdk-cli.md",
+			"conformance/openapi-3.2.0/client-sdk.md",
+			"conformance/openapi-3.2.0/servers.md",
+			"conformance/swagger-2.0/client-sdk-cli.md",
+			"conformance/swagger-2.0/client-sdk.md",
+			"conformance/swagger-2.0/servers.md",
+		];
+		for (const relPath of conformanceFiles) {
+			const content = readFileSync(resolve(rootDir, relPath), "utf8");
+			expect(content).not.toMatch(/\[\s*\]/);
+			expect(content).not.toMatch(/\| TODO \|/);
+			for (const line of content.split("\n")) {
+				if (line.startsWith("|") && line.includes("`[")) {
+					const columns = line.split("|").map((c) => c.trim());
+					expect(columns[2]).toBe("`[x]` , `[x]`");
+					expect(columns[3]).toBe("`[x]` , `[x]`");
+					expect(columns[4]).toBe("`[x]` , `[x]`");
+				}
+			}
+		}
+	});
 });

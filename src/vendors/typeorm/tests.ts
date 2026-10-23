@@ -162,6 +162,45 @@ describe('Mock Server Integration Tests', () => {
         });
     });
 
+    describe('Category 5: Integrated Identity Provider (IdP) Full Lifecycle E2E', () => {
+        let authApp: Application;
+        beforeAll(async () => {
+            authApp = await startServer(['node', 'script.js', '--ephemeral', '--enforce-auth', '--start-auth-server']);
+        });
+        afterAll(async () => {
+            if (authApp && authApp.locals && authApp.locals.dataSource) {
+                await authApp.locals.dataSource.destroy();
+            }
+        });
+
+        it('should register a user via Auth Server, exchange credentials for a token, and access protected resources', async () => {
+            const regRes = await request(authApp).post('/auth/register').send({ username: 'e2e_user', password: 'e2e_password' });
+            expect(regRes.status).toBe(201);
+            expect(regRes.body.accessToken).toBeDefined();
+
+            const loginRes = await request(authApp).post('/auth/login').send({ username: 'e2e_user', password: 'e2e_password' });
+            expect(loginRes.status).toBe(200);
+            const token = loginRes.body.accessToken;
+            expect(token).toBeDefined();
+
+            ${schemas
+							.map(
+								(
+									schema,
+								) => `const protectedRes${schema.name} = await request(authApp).get('/${schema.name.toLowerCase()}').set('Authorization', \`Bearer \${token}\`);
+            expect(protectedRes${schema.name}.status).toBe(200);`,
+							)
+							.join("\n")}
+
+            const refreshRes = await request(authApp).post('/auth/refresh').send({ refreshToken: loginRes.body.refreshToken });
+            expect(refreshRes.status).toBe(200);
+            expect(refreshRes.body.accessToken).toBeDefined();
+
+            const logoutRes = await request(authApp).post('/auth/logout').set('Authorization', \`Bearer \${token}\`).send({ refreshToken: refreshRes.body.refreshToken });
+            expect(logoutRes.status).toBe(200);
+        });
+    });
+
 });
 `);
 

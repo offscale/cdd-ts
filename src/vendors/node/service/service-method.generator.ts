@@ -50,7 +50,7 @@ export class NodeServiceMethodGenerator extends AbstractHttpServiceMethodGenerat
 		}
 
 		lines.push(
-			`const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };`,
+			`const headers: Record<string, string> = { ...(this.auth ? this.auth.getAuthorizationHeader() : {}), ...(options?.headers as Record<string, string>) };`,
 		);
 
 		model.headerParams.forEach((p: ParamSerialization) => {

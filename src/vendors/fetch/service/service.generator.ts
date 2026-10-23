@@ -65,6 +65,10 @@ export class FetchServiceGenerator extends AbstractServiceGenerator {
 			moduleSpecifier: "../utils/server-url",
 			namedImports: ["getServerUrl"],
 		});
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "../utils/auth-session",
+			namedImports: ["SdkAuthClient"],
+		});
 		this.addOperationModelImports(sourceFile, operations);
 	}
 

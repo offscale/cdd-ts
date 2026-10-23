@@ -71,6 +71,10 @@ export class AxiosServiceGenerator extends AbstractServiceGenerator {
 			moduleSpecifier: "../utils/server-url",
 			namedImports: ["getServerUrl", "resolveServerUrl"],
 		});
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "../utils/auth-session",
+			namedImports: ["SdkAuthClient"],
+		});
 		this.addOperationModelImports(sourceFile, operations);
 	}
 
@@ -115,6 +119,13 @@ export class AxiosServiceGenerator extends AbstractServiceGenerator {
 			type: "AxiosInstance",
 		});
 
+		serviceClass.addProperty({
+			name: "auth",
+			scope: Scope.Public,
+			isReadonly: true,
+			type: "SdkAuthClient",
+		});
+
 		serviceClass.addConstructor({
 			parameters: [
 				{ name: "basePath", type: "string", hasQuestionToken: true },
@@ -127,6 +138,7 @@ export class AxiosServiceGenerator extends AbstractServiceGenerator {
 			statements: [
 				"this.basePath = basePath || getServerUrl(0, {});",
 				"this.axiosInstance = axiosInstance || axios.create();",
+				"this.auth = new SdkAuthClient(this.basePath);",
 			],
 		});
 	}

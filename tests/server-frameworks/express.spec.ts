@@ -1,5 +1,8 @@
-import { Project } from "ts-morph";
-import { describe, expect, it } from "vitest";
+import * as http from "node:http";
+import type { AddressInfo } from "node:net";
+import { Project, ts } from "ts-morph";
+import { describe, expect, it, vi } from "vitest";
+import { IdpAuthHelperGenerator } from "../../src/openapi/emit_idp_auth.js";
 import { ExpressServerGenerator } from "../../src/vendors/express/express-server.generator.js";
 import {
 	createTestConfig,
@@ -352,6 +355,242 @@ describe("ExpressServerGenerator", () => {
 		expect(entrypointFile.getFullText()).toContain(
 			'import { Command } from "commander";',
 		);
+		expect(entrypointFile.getFullText()).toContain(
+			'.option("--start-auth-server",',
+		);
+		expect(entrypointFile.getFullText()).toContain(
+			"app.use(createAuthRouter(factory.getUserDao(isEphemeral, dataSource)));",
+		);
 		expectZeroTypeScriptDiagnostics(project);
+	});
+
+	it("should generate the server entrypoint with empty schemas", () => {
+		const project = new Project({ useInMemoryFileSystem: true });
+		const generator = new ExpressServerGenerator();
+		generator.generateServerEntrypoint(project, [], "/out3");
+		const entrypointFile = project.getSourceFileOrThrow("/out3/server.ts");
+		expect(entrypointFile.getFullText()).toContain(
+			"app.use(createAuthRouter());",
+		);
+		expectZeroTypeScriptDiagnostics(project);
+	});
+
+	it("should execute full E2E lifecycle: register via Auth Server, exchange credentials for token, and access protected main API resource", async () => {
+		const project = new Project({ useInMemoryFileSystem: true });
+		const generator = new ExpressServerGenerator();
+		const dummyParser = {
+			spec: {
+				info: { title: "Test", version: "1.0" },
+				openapi: "3.0",
+				paths: {},
+			},
+			schemas: [],
+			operations: [],
+		};
+		generator.generateServerEntrypoint(
+			project,
+			["User"],
+			"/idp-e2e",
+			dummyParser,
+		);
+		new IdpAuthHelperGenerator(project).generate("/idp-sdk");
+
+		const authMwCode = project
+			.getSourceFileOrThrow("/idp-e2e/middlewares/auth.ts")
+			.getFullText();
+		const authRoutesCode = project
+			.getSourceFileOrThrow("/idp-e2e/auth.routes.ts")
+			.getFullText();
+		const sdkAuthCode = project
+			.getSourceFileOrThrow("/idp-sdk/utils/auth-session.ts")
+			.getFullText();
+
+		const transpile = (code: string): string =>
+			ts.transpileModule(code, {
+				compilerOptions: {
+					module: ts.ModuleKind.CommonJS,
+					target: ts.ScriptTarget.ES2022,
+				},
+			}).outputText;
+
+		interface MockReq {
+			method: string;
+			path: string;
+			headers: Record<string, string | undefined>;
+			body: Record<string, unknown>;
+		}
+		interface MockRes {
+			statusCode: number;
+			payload: unknown;
+			status(code: number): MockRes;
+			json(data: unknown): MockRes;
+		}
+		type MockNext = () => void;
+		type MockHandler = (
+			req: MockReq,
+			res: MockRes,
+			next: MockNext,
+		) => unknown | Promise<unknown>;
+
+		const postRoutes = new Map<string, MockHandler>();
+		const expressShim = {
+			Router: () => ({
+				post: (routePath: string, handler: MockHandler) => {
+					postRoutes.set(routePath, handler);
+				},
+			}),
+		};
+
+		const authMwExports: Record<string, unknown> = {};
+		new Function("exports", "require", transpile(authMwCode))(
+			authMwExports,
+			() => expressShim,
+		);
+
+		const authRoutesExports: Record<string, unknown> = {};
+		new Function("exports", "require", transpile(authRoutesCode))(
+			authRoutesExports,
+			(id: string) =>
+				id === "./middlewares/auth.js" ? authMwExports : expressShim,
+		);
+
+		const sdkAuthExports: Record<string, unknown> = {};
+		new Function("exports", transpile(sdkAuthCode))(sdkAuthExports);
+
+		const createAuthMiddleware = authMwExports.createAuthMiddleware as (
+			enforceAuth: boolean,
+			isEphemeral: boolean,
+		) => MockHandler;
+		const createAuthRouter = authRoutesExports.createAuthRouter as (userDao?: {
+			find(): Promise<Array<Record<string, unknown>>>;
+			create(data: Record<string, unknown>): Promise<Record<string, unknown>>;
+		}) => unknown;
+		const SdkAuthClient = sdkAuthExports.SdkAuthClient as new (
+			basePath?: string,
+		) => {
+			register(
+				username: string,
+				password: string,
+			): Promise<{ accessToken: string; refreshToken?: string }>;
+			login(
+				username: string,
+				password: string,
+			): Promise<{ accessToken: string; refreshToken?: string }>;
+			refresh(
+				refreshToken?: string,
+			): Promise<{ accessToken: string; refreshToken?: string }>;
+			logout(): Promise<void>;
+			getAuthorizationHeader(): Record<string, string>;
+		};
+
+		const persistedUsers: Array<Record<string, unknown>> = [];
+		const userDao = {
+			find: vi.fn(async () => persistedUsers),
+			create: vi.fn(async (data: Record<string, unknown>) => {
+				const created = { id: persistedUsers.length + 1, ...data };
+				persistedUsers.push(created);
+				return created;
+			}),
+		};
+
+		const authMiddleware = createAuthMiddleware(true, true);
+		createAuthRouter(userDao);
+
+		const server = http.createServer((req, res) => {
+			const chunks: Buffer[] = [];
+			req.on("data", (chunk: Buffer) => chunks.push(chunk));
+			req.on("end", async () => {
+				const raw = Buffer.concat(chunks).toString("utf-8");
+				const parsedBody = raw
+					? (JSON.parse(raw) as Record<string, unknown>)
+					: {};
+				const mockReq: MockReq = {
+					method: req.method ?? "GET",
+					path: req.url ?? "/",
+					headers: {
+						authorization:
+							typeof req.headers.authorization === "string"
+								? req.headers.authorization
+								: undefined,
+					},
+					body: parsedBody,
+				};
+				const mockRes: MockRes = {
+					statusCode: 200,
+					payload: undefined,
+					status(code: number) {
+						this.statusCode = code;
+						return this;
+					},
+					json(data: unknown) {
+						this.payload = data;
+						res.writeHead(this.statusCode, {
+							"Content-Type": "application/json",
+						});
+						res.end(JSON.stringify(data));
+						return this;
+					},
+				};
+
+				let passedAuth = false;
+				authMiddleware(mockReq, mockRes, () => {
+					passedAuth = true;
+				});
+				if (!passedAuth) {
+					return;
+				}
+				const postHandler = postRoutes.get(mockReq.path);
+				if (mockReq.method === "POST" && postHandler) {
+					await postHandler(mockReq, mockRes, vi.fn());
+					return;
+				}
+				if (mockReq.method === "GET" && mockReq.path === "/users/me") {
+					mockRes.status(200).json({ ok: true, count: persistedUsers.length });
+				}
+			});
+		});
+		await new Promise<void>((resolve) =>
+			server.listen(0, "127.0.0.1", resolve),
+		);
+		const port = (server.address() as AddressInfo).port;
+		const baseUrl = `http://127.0.0.1:${port}`;
+
+		try {
+			// 1. Unauthenticated request to protected resource is rejected with 401
+			const unauthRes = await fetch(`${baseUrl}/users/me`);
+			expect(unauthRes.status).toBe(401);
+
+			// 2. Register a new user via the integrated Auth Server using SDK helper
+			const sdkAuth = new SdkAuthClient(baseUrl);
+			const regSession = await sdkAuth.register("lifecycle_user", "s3cr3t");
+			expect(regSession.accessToken).toContain("idp-token-lifecycle_user");
+			expect(userDao.create).toHaveBeenCalledTimes(1);
+
+			// 3. Exchange credentials for a token via login
+			const loginSession = await sdkAuth.login("lifecycle_user", "s3cr3t");
+			expect(loginSession.accessToken).toBeDefined();
+
+			// 4. Access protected resource on the main API using the SDK's attached Bearer token
+			const authedRes = await fetch(`${baseUrl}/users/me`, {
+				headers: sdkAuth.getAuthorizationHeader(),
+			});
+			expect(authedRes.status).toBe(200);
+			const body = (await authedRes.json()) as { ok: boolean; count: number };
+			expect(body).toEqual({ ok: true, count: 1 });
+
+			// 5. Refresh token and logout
+			const refreshed = await sdkAuth.refresh();
+			expect(refreshed.accessToken).toBeDefined();
+			await sdkAuth.logout();
+			expect(sdkAuth.getAuthorizationHeader()).toEqual({});
+
+			// 6. Revoked token is rejected with 403
+			const revokedRes = await fetch(`${baseUrl}/users/me`, {
+				headers: { Authorization: `Bearer ${refreshed.accessToken}` },
+			});
+			expect(revokedRes.status).toBe(403);
+		} finally {
+			await new Promise<void>((resolve) => server.close(() => resolve()));
+		}
 	});
 });

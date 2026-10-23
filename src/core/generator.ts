@@ -14,6 +14,7 @@ import { pascalCase } from "../functions/utils.js";
 import { ExamplesGenerator } from "../mocks/emit.js";
 import { DocumentMetaGenerator } from "../openapi/emit_document_meta.js";
 import { HeadersGenerator } from "../openapi/emit_headers.js";
+import { IdpAuthHelperGenerator } from "../openapi/emit_idp_auth.js";
 import { InfoGenerator } from "../openapi/emit_info.js";
 import { LinkGenerator } from "../openapi/emit_link.js";
 import {
@@ -212,6 +213,7 @@ export abstract class AbstractClientGenerator implements IClientGenerator {
 		new ServerGenerator(parser, project).generate(outputRoot);
 		new ServerUrlGenerator(parser, project).generate(outputRoot);
 		new ParameterSerializerGenerator(project).generate(outputRoot);
+		new IdpAuthHelperGenerator(project).generate(outputRoot);
 		new CallbackGenerator(parser, project).generate(outputRoot);
 		new WebhookGenerator(parser, project).generate(outputRoot);
 		new LinkGenerator(parser, project).generate(outputRoot);

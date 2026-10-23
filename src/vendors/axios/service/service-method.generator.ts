@@ -39,7 +39,7 @@ export class AxiosServiceMethodGenerator extends AbstractHttpServiceMethodGenera
 		);
 
 		lines.push(
-			`axiosConfig.headers = { ...(options?.headers as Record<string, string>) };`,
+			`axiosConfig.headers = { ...(this.auth ? this.auth.getAuthorizationHeader() : {}), ...(options?.headers as Record<string, string>) };`,
 		);
 
 		model.headerParams.forEach((p: ParamSerialization) => {

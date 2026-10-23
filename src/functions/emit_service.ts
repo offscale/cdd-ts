@@ -203,11 +203,21 @@ export abstract class AbstractServiceGenerator {
 			initializer: '""',
 		});
 
+		serviceClass.addProperty({
+			name: "auth",
+			scope: Scope.Public,
+			isReadonly: true,
+			type: "SdkAuthClient",
+		});
+
 		serviceClass.addConstructor({
 			parameters: [
 				{ name: "basePath", type: "string", hasQuestionToken: true },
 			],
-			statements: ["this.basePath = basePath || getServerUrl(0, {});"],
+			statements: [
+				"this.basePath = basePath || getServerUrl(0, {});",
+				"this.auth = new SdkAuthClient(this.basePath);",
+			],
 		});
 	}
 

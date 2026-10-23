@@ -1,8 +1,10 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import type { GeneratorConfig } from "../../src/core/types/index.js";
+import { IdpAuthHelperGenerator } from "../../src/openapi/emit_idp_auth.js";
 import type { SwaggerParser } from "../../src/openapi/parse.js";
 import { McpGenerator } from "../../src/vendors/mcp/emit.js";
+import { McpParser } from "../../src/vendors/mcp/parse.js";
 import { createTestConfig, createTestSpec } from "../shared/helpers.js";
 
 describe("McpGenerator", () => {
@@ -151,5 +153,66 @@ describe("McpGenerator", () => {
 		const text = mcpFile?.getFullText();
 		expect(text).toContain("name: 'api-mcp'");
 		expect(text).toContain("version: '1.0.0'");
+	});
+
+	it("should reverse-parse generated MCP artifacts via McpParser", () => {
+		const project = new Project({ useInMemoryFileSystem: true });
+		const parser: Pick<SwaggerParser, "spec" | "operations"> = {
+			spec: {
+				info: { title: "Parsed MCP API", version: "3.1.0" },
+			},
+			operations: [
+				{
+					tags: ["Users"],
+					operationId: "listUsers",
+					path: "/users",
+					method: "GET",
+					summary: "List users",
+				},
+			],
+		};
+
+		new McpGenerator().generate(project, parser, createTestConfig({}), "/mcp");
+		project.createSourceFile(
+			"/mcp/other.ts",
+			'import { z } from "zod"; export const x = 1;',
+		);
+
+		const mcpParser = new McpParser();
+		const parsed = mcpParser.parse(project);
+		expect(parsed.serverName).toBe("Parsed MCP API");
+		expect(parsed.serverVersion).toBe("3.1.0");
+		expect(parsed.tools).toContain("list_users");
+		expect(parsed.resources).toContain("openapi_spec");
+		expect(parsed.prompts).toContain("analyze_spec");
+		expect(parsed.supportsHumanInTheLoopSampling).toBe(true);
+		expect(parsed.supportsHumanInTheLoopTools).toBe(true);
+		expect(parsed.protocolTypes).toContain("CreateMessageRequest");
+		expect(parsed.protocolTypes).toContain("CallToolRequest");
+
+		const emptyProject = new Project({ useInMemoryFileSystem: true });
+		const emptyParsed = mcpParser.parse(emptyProject);
+		expect(emptyParsed.serverName).toBe("api-mcp");
+		expect(emptyParsed.serverVersion).toBe("1.0.0");
+		expect(emptyParsed.supportsHumanInTheLoopSampling).toBe(false);
+		expect(emptyParsed.supportsHumanInTheLoopTools).toBe(false);
+	});
+
+	it("should generate utils/auth-session.ts via IdpAuthHelperGenerator", () => {
+		const project = new Project({ useInMemoryFileSystem: true });
+		const authGen = new IdpAuthHelperGenerator(project);
+		authGen.generate("/sdk-out");
+
+		const authFile = project.getSourceFileOrThrow(
+			"/sdk-out/utils/auth-session.ts",
+		);
+		const text = authFile.getFullText();
+		expect(text).toContain("export interface AuthSession");
+		expect(text).toContain("export class SdkAuthClient");
+		expect(text).toContain("async register(");
+		expect(text).toContain("async login(");
+		expect(text).toContain("async refresh(");
+		expect(text).toContain("async logout(");
+		expect(text).toContain("getAuthorizationHeader()");
 	});
 });

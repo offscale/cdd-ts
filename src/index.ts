@@ -385,10 +385,18 @@ export {
 } from "./functions/parse.js";
 /** Re-exports `serveMcp` from `./mcp_server.js`. */
 export { serveMcp } from "./mcp_server.js";
+/** Re-exports `IdpAuthHelperGenerator` from `./openapi/emit_idp_auth.js`. */
+export { IdpAuthHelperGenerator } from "./openapi/emit_idp_auth.js";
 /**
  * AST scanner utilities for reverse-generating OpenAPI specs from TypeScript.
  */
 export { parseGeneratedCliSource } from "./vendors/cli/parse.js";
+/** Re-exports `McpGenerator` from `./vendors/mcp/emit.js`. */
+export { McpGenerator } from "./vendors/mcp/emit.js";
+/** Re-exports `ParsedMcpArtifact` from `./vendors/mcp/parse.js`. */
+export type { ParsedMcpArtifact } from "./vendors/mcp/parse.js";
+/** Re-exports `McpParser` from `./vendors/mcp/parse.js`. */
+export { McpParser } from "./vendors/mcp/parse.js";
 /** Re-exports `TypeOrmGenerator` from `./vendors/typeorm/emit.js`. */
 export { TypeOrmGenerator } from "./vendors/typeorm/emit.js";
 /** Re-exports `TypeOrmParser` from `./vendors/typeorm/parse.js`. */

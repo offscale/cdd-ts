@@ -100,6 +100,9 @@ export class SdkMainIndexGenerator {
 		sourceFile.addExportDeclaration({
 			moduleSpecifier: "./utils/parameter-serializer",
 		});
+		sourceFile.addExportDeclaration({
+			moduleSpecifier: "./utils/auth-session",
+		});
 
 		sourceFile.formatText();
 	}

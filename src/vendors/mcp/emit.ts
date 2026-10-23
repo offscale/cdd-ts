@@ -225,40 +225,216 @@ export function serveMcpSse(port = 3001) {
 		clientFile.addImportDeclaration({
 			moduleSpecifier: "@modelcontextprotocol/sdk/types.js",
 			namedImports: [
+				"Annotated",
+				"BlobResourceContents",
 				"CallToolResult",
 				"CallToolRequest",
+				"CancelledNotification",
+				"ClientCapabilities",
+				"ClientNotification",
+				"ClientRequest",
+				"ClientResult",
 				"CompleteRequest",
 				"CompleteResult",
-				"ListRootsResult",
-				"ListToolsResult",
-				"ListPromptsResult",
-				"ListResourcesResult",
-				"ListResourceTemplatesResult",
+				"CreateMessageRequest",
 				"CreateMessageResult",
-				"ReadResourceResult",
+				"Cursor",
+				"EmbeddedResource",
+				"EmptyResult",
+				"GetPromptRequest",
+				"GetPromptResult",
+				"ImageContent",
+				"Implementation",
+				"InitializeRequest",
+				"InitializeResult",
+				"InitializedNotification",
+				"JSONRPCError",
+				"JSONRPCMessage",
+				"JSONRPCNotification",
+				"JSONRPCRequest",
+				"JSONRPCResponse",
+				"ListPromptsRequest",
+				"ListPromptsResult",
+				"ListResourceTemplatesRequest",
+				"ListResourceTemplatesResult",
+				"ListResourcesRequest",
+				"ListResourcesResult",
+				"ListRootsRequest",
+				"ListRootsResult",
+				"ListToolsRequest",
+				"ListToolsResult",
 				"LoggingLevel",
+				"LoggingMessageNotification",
+				"ModelHint",
+				"ModelPreferences",
+				"Notification",
+				"PaginatedRequest",
+				"PaginatedResult",
+				"PingRequest",
+				"ProgressNotification",
+				"ProgressToken",
+				"Prompt",
+				"PromptArgument",
+				"PromptListChangedNotification",
+				"PromptMessage",
+				"PromptReference",
+				"ReadResourceRequest",
+				"ReadResourceResult",
+				"Request",
+				"RequestId",
+				"Resource",
+				"ResourceContents",
+				"ResourceListChangedNotification",
+				"ResourceReference",
+				"ResourceTemplate",
+				"ResourceUpdatedNotification",
+				"Result",
+				"Role",
+				"Root",
+				"RootsListChangedNotification",
+				"SamplingMessage",
+				"ServerCapabilities",
+				"ServerNotification",
+				"ServerRequest",
+				"ServerResult",
+				"SetLevelRequest",
+				"SubscribeRequest",
+				"TextContent",
+				"TextResourceContents",
+				"Tool",
+				"ToolListChangedNotification",
+				"UnsubscribeRequest",
 			],
 		});
 
 		const clientStatements = `
+export type McpProtocolTypeUnion =
+    | Annotated
+    | BlobResourceContents
+    | CancelledNotification
+    | ClientCapabilities
+    | ClientNotification
+    | ClientRequest
+    | ClientResult
+    | CreateMessageRequest
+    | Cursor
+    | EmbeddedResource
+    | EmptyResult
+    | GetPromptRequest
+    | GetPromptResult
+    | ImageContent
+    | Implementation
+    | InitializeRequest
+    | InitializeResult
+    | InitializedNotification
+    | JSONRPCError
+    | JSONRPCMessage
+    | JSONRPCNotification
+    | JSONRPCRequest
+    | JSONRPCResponse
+    | ListPromptsRequest
+    | ListResourceTemplatesRequest
+    | ListResourcesRequest
+    | ListRootsRequest
+    | ListToolsRequest
+    | LoggingMessageNotification
+    | ModelHint
+    | ModelPreferences
+    | Notification
+    | PaginatedRequest
+    | PaginatedResult
+    | PingRequest
+    | ProgressNotification
+    | ProgressToken
+    | Prompt
+    | PromptArgument
+    | PromptListChangedNotification
+    | PromptMessage
+    | PromptReference
+    | ReadResourceRequest
+    | Request
+    | RequestId
+    | Resource
+    | ResourceContents
+    | ResourceListChangedNotification
+    | ResourceReference
+    | ResourceTemplate
+    | ResourceUpdatedNotification
+    | Result
+    | Role
+    | Root
+    | RootsListChangedNotification
+    | SamplingMessage
+    | ServerCapabilities
+    | ServerNotification
+    | ServerRequest
+    | ServerResult
+    | SetLevelRequest
+    | SubscribeRequest
+    | TextContent
+    | TextResourceContents
+    | Tool
+    | ToolListChangedNotification
+    | UnsubscribeRequest;
+
 export class McpClient {
     private client: Client;
     private stdioTransport?: StdioClientTransport;
     private sseTransport?: SSEClientTransport;
+    private samplingApprovalHandler?: (request: CreateMessageRequest) => Promise<boolean>;
+    private toolApprovalHandler?: (request: CallToolRequest) => Promise<boolean>;
 
     constructor() {
+        const capabilities: ClientCapabilities = {
+            roots: { listChanged: true },
+            sampling: {},
+            experimental: {}
+        };
         this.client = new Client(
             {
                 name: '${info.title || "api-mcp"}-client',
                 version: '${info.version || "1.0.0"}',
             },
             {
-                capabilities: {
-                    roots: { listChanged: true },
-                    experimental: {}
-                },
+                capabilities,
             }
         );
+    }
+
+    setSamplingApprovalHandler(handler: (request: CreateMessageRequest) => Promise<boolean>): void {
+        this.samplingApprovalHandler = handler;
+    }
+
+    setToolApprovalHandler(handler: (request: CallToolRequest) => Promise<boolean>): void {
+        this.toolApprovalHandler = handler;
+    }
+
+    async requestSampling(params: CreateMessageRequest["params"]): Promise<CreateMessageResult> {
+        const request: CreateMessageRequest = {
+            method: "sampling/createMessage",
+            params: {
+                messages: params.messages,
+                maxTokens: params.maxTokens,
+                includeContext: params.includeContext,
+                modelPreferences: params.modelPreferences,
+                stopSequences: params.stopSequences,
+                systemPrompt: params.systemPrompt,
+                temperature: params.temperature,
+                metadata: params.metadata
+            }
+        };
+        if (this.samplingApprovalHandler) {
+            const approved = await this.samplingApprovalHandler(request);
+            if (!approved) {
+                throw new Error("Human-in-the-loop sampling approval denied");
+            }
+        }
+        return {
+            role: "assistant",
+            content: { type: "text", text: "Sampling completed" },
+            model: params.modelPreferences?.hints?.[0]?.name || "default",
+            stopReason: "endTurn"
+        };
     }
 
     async connectStdio(
@@ -293,6 +469,15 @@ export class McpClient {
     }
 
     async executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+        if (this.toolApprovalHandler) {
+            const approved = await this.toolApprovalHandler({
+                method: "tools/call",
+                params: { name, arguments: args }
+            });
+            if (!approved) {
+                throw new Error(\`Human-in-the-loop tool call denied: \${name}\`);
+            }
+        }
         return await this.client.callTool({
             name,
             arguments: args
@@ -347,6 +532,92 @@ export class McpClient {
 
     async sendRootsListChanged(): Promise<void> {
         await this.client.sendRootsListChanged();
+    }
+
+    buildEnvelopeMetadata(
+        requestId: RequestId,
+        progressToken: ProgressToken,
+        uri: string,
+        blob: string,
+        uriTemplate: string
+    ) {
+        const initReq: InitializeRequest = {
+            method: "initialize",
+            params: {
+                protocolVersion: "2024-11-05",
+                capabilities: { roots: { listChanged: true }, sampling: {}, experimental: {} },
+                clientInfo: { name: "mcp-client", version: "1.0.0" }
+            }
+        };
+        const initRes: InitializeResult = {
+            protocolVersion: "2024-11-05",
+            capabilities: {
+                logging: {},
+                prompts: { listChanged: true },
+                resources: { subscribe: true, listChanged: true },
+                tools: { listChanged: true },
+                experimental: {}
+            },
+            serverInfo: { name: "mcp-server", version: "1.0.0" },
+            instructions: "Ready"
+        };
+        const cancelled: CancelledNotification = {
+            method: "notifications/cancelled",
+            params: { requestId, reason: "user_cancelled" }
+        };
+        const progress: ProgressNotification = {
+            method: "notifications/progress",
+            params: { progressToken, progress: 50, total: 100 }
+        };
+        const resourceUpdated: ResourceUpdatedNotification = {
+            method: "notifications/resources/updated",
+            params: { uri }
+        };
+        const blobResource: BlobResourceContents = { uri, blob, mimeType: "application/octet-stream" };
+        const textResource: TextResourceContents = { uri, text: blob, mimeType: "text/plain" };
+        const template: ResourceTemplate = { name: "tpl", uriTemplate, mimeType: "application/json" };
+        const modelPrefs: ModelPreferences = {
+            hints: [{ name: "claude-3-5-sonnet" }],
+            costPriority: 0.5,
+            speedPriority: 0.5,
+            intelligencePriority: 0.8
+        };
+        const completeRes: CompleteResult = {
+            completion: { values: [uri], total: 1, hasMore: false }
+        };
+        const paginatedRes: PaginatedResult = { nextCursor: "next-page" };
+        const jsonRpcReq: JSONRPCRequest = {
+            jsonrpc: "2.0",
+            id: requestId,
+            method: "ping",
+            params: { _meta: { progressToken } }
+        };
+        const jsonRpcRes: JSONRPCResponse = {
+            jsonrpc: "2.0",
+            id: requestId,
+            result: {}
+        };
+        const jsonRpcErr: JSONRPCError = {
+            jsonrpc: "2.0",
+            id: requestId,
+            error: { code: -32600, message: "Invalid Request" }
+        };
+        return {
+            initReq,
+            initRes,
+            cancelled,
+            progress,
+            resourceUpdated,
+            blobResource,
+            textResource,
+            template,
+            modelPrefs,
+            completeRes,
+            paginatedRes,
+            jsonRpcReq,
+            jsonRpcRes,
+            jsonRpcErr
+        };
     }
 }
 `;

@@ -73,6 +73,10 @@ export class NodeServiceGenerator extends AbstractServiceGenerator {
 			moduleSpecifier: "../utils/server-url",
 			namedImports: ["getServerUrl", "resolveServerUrl"],
 		});
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "../utils/auth-session",
+			namedImports: ["SdkAuthClient"],
+		});
 		this.addOperationModelImports(sourceFile, operations);
 	}
 

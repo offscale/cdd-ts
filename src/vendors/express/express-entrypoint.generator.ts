@@ -66,6 +66,10 @@ export function generateExpressServerEntrypoint(
 		moduleSpecifier: "./webhooks.routes.js",
 		namedImports: ["createWebhooksRouter"],
 	});
+	sourceFile.addImportDeclaration({
+		moduleSpecifier: "./auth.routes.js",
+		namedImports: ["createAuthRouter"],
+	});
 
 	for (const schema of schemas) {
 		const fileName = schema.toLowerCase();
@@ -74,6 +78,9 @@ export function generateExpressServerEntrypoint(
 			namedImports: [`create${schema}Router`],
 		});
 	}
+
+	const authSchema =
+		schemas.find((s) => s.toLowerCase() === "user") ?? schemas[0];
 
 	sourceFile.addFunction({
 		isExported: true,
@@ -110,7 +117,10 @@ export function generateExpressServerEntrypoint(
 					'.option("--strict-validation", "Enables strict OpenAPI request validation.")',
 				);
 				writer.writeLine(
-					'.option("--enforce-auth", "Enables strict authentication validation.");',
+					'.option("--enforce-auth", "Enables strict authentication validation.")',
+				);
+				writer.writeLine(
+					'.option("--start-auth-server", "Starts the integrated Identity Provider (IdP) authentication endpoints.");',
 				);
 			});
 			writer.blankLine();
@@ -125,6 +135,9 @@ export function generateExpressServerEntrypoint(
 			writer.writeLine("const isSeed = !!options.seed;");
 			writer.writeLine("const isStrict = !!options['strict-validation'];");
 			writer.writeLine("const isAuth = !!options['enforce-auth'];");
+			writer.writeLine(
+				"const isStartAuthServer = !!options['start-auth-server'];",
+			);
 			writer.writeLine("const dbUrl = process.env.DATABASE_URL;");
 			writer.blankLine();
 			writer.writeLine("app.use(createValidationMiddleware(isStrict));");
@@ -147,6 +160,17 @@ export function generateExpressServerEntrypoint(
 			writer.blankLine();
 			writer.writeLine("app.locals.dataSource = dataSource;");
 			writer.writeLine("const factory = new DaoFactory();");
+			writer.writeLine("if (isStartAuthServer) {");
+			writer.indent(() => {
+				if (authSchema) {
+					writer.writeLine(
+						`app.use(createAuthRouter(factory.get${authSchema}Dao(isEphemeral, dataSource)));`,
+					);
+				} else {
+					writer.writeLine("app.use(createAuthRouter());");
+				}
+			});
+			writer.writeLine("}");
 			writer.writeLine("app.use(createWebhooksRouter());");
 
 			for (const schema of schemas) {

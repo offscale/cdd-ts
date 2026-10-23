@@ -50,6 +50,12 @@ export class FetchServiceMethodGenerator extends AbstractHttpServiceMethodGenera
 		}
 
 		lines.push(`const headers = new Headers(options?.headers);`);
+		lines.push(
+			`const authHeaders = this.auth ? this.auth.getAuthorizationHeader() : {};`,
+		);
+		lines.push(
+			`if (authHeaders.Authorization && !headers.has('Authorization')) { headers.set('Authorization', authHeaders.Authorization); }`,
+		);
 
 		model.headerParams.forEach((p: ParamSerialization) => {
 			lines.push(

@@ -25,6 +25,7 @@ export function generateAdvancedMiddlewares(
 	generateValidationMiddleware(project, parser, middlewareDir);
 	generateAuthMiddleware(project, parser, middlewareDir);
 	generateWebhookTrigger(project, parser, outputDir);
+	generateIdpRouter(project, parser, outputDir);
 }
 
 /**
@@ -284,13 +285,41 @@ function generateAuthMiddleware(
 		moduleSpecifier: "express",
 		namedImports: ["Request", "Response", "NextFunction"],
 	});
+	sourceFile.addStatements((writer: CodeBlockWriter) => {
+		writer.writeLine(
+			"/** Active access tokens issued by the integrated Identity Provider (IdP). */",
+		);
+		writer.writeLine("export const issuedTokens = new Set<string>();");
+		writer.blankLine();
+		writer.writeLine(
+			"/** Registers a newly issued access token from the integrated IdP. */",
+		);
+		writer.writeLine(
+			"export function registerIssuedToken(token: string): void {",
+		);
+		writer.indent(() => {
+			writer.writeLine("issuedTokens.add(token);");
+		});
+		writer.writeLine("}");
+		writer.blankLine();
+		writer.writeLine(
+			"/** Revokes an access token previously issued by the integrated IdP. */",
+		);
+		writer.writeLine(
+			"export function revokeIssuedToken(token: string): void {",
+		);
+		writer.indent(() => {
+			writer.writeLine("issuedTokens.delete(token);");
+		});
+		writer.writeLine("}");
+	});
 	sourceFile.addFunction({
 		isExported: true,
 		name: "createAuthMiddleware",
 		docs: [
 			{
 				description:
-					"Hybrid Authentication Architecture. Supports both Mock Mode (hardcoded tokens) and Production Mode (Stateful ORM/DB integration).",
+					"Hybrid Authentication Architecture. Supports Mock Mode (hardcoded tokens), Production Mode, and Integrated Identity Provider (IdP) issued session tokens.",
 			},
 		],
 		parameters: [
@@ -308,6 +337,12 @@ function generateAuthMiddleware(
 				});
 				writer.writeLine("}");
 				writer.blankLine();
+				writer.writeLine("if (req.path && req.path.startsWith('/auth')) {");
+				writer.indent(() => {
+					writer.writeLine("return next();");
+				});
+				writer.writeLine("}");
+				writer.blankLine();
 				writer.writeLine("const authHeader = req.headers.authorization;");
 				writer.blankLine();
 				writer.writeLine("if (!authHeader) {");
@@ -315,6 +350,14 @@ function generateAuthMiddleware(
 					writer.writeLine(
 						'return res.status(401).json({ error: "Unauthorized: Missing Authorization header" });',
 					);
+				});
+				writer.writeLine("}");
+				writer.blankLine();
+				writer.writeLine(
+					"if (authHeader.startsWith('Bearer ') && issuedTokens.has(authHeader.slice(7))) {",
+				);
+				writer.indent(() => {
+					writer.writeLine("return next();");
 				});
 				writer.writeLine("}");
 				writer.blankLine();
@@ -359,7 +402,11 @@ function generateAuthMiddleware(
 	});
 	testFile.addImportDeclaration({
 		moduleSpecifier: "./auth.js",
-		namedImports: ["createAuthMiddleware"],
+		namedImports: [
+			"createAuthMiddleware",
+			"registerIssuedToken",
+			"revokeIssuedToken",
+		],
 	});
 	testFile.addStatements((writer: CodeBlockWriter) => {
 		writer.writeLine("describe('Auth Middleware', () => {");
@@ -406,6 +453,348 @@ function generateAuthMiddleware(
 				);
 				writer.writeLine("mw(req, res, vi.fn() as NextFunction);");
 				writer.writeLine("expect(res.status).toHaveBeenCalledWith(403);");
+			});
+			writer.writeLine("});");
+			writer.blankLine();
+			writer.writeLine(
+				"it('should allow tokens issued by the integrated IdP and reject them after revocation', () => {",
+			);
+			writer.indent(() => {
+				writer.writeLine("registerIssuedToken('idp-test-token');");
+				writer.writeLine("const mw = createAuthMiddleware(true, true);");
+				writer.writeLine("const next = vi.fn();");
+				writer.writeLine(
+					"const req = { headers: { authorization: 'Bearer idp-test-token' } } as Partial<Request> as Request;",
+				);
+				writer.writeLine(
+					"const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as Partial<Response> as Response;",
+				);
+				writer.writeLine("mw(req, res, next);");
+				writer.writeLine("expect(next).toHaveBeenCalled();");
+				writer.writeLine("revokeIssuedToken('idp-test-token');");
+				writer.writeLine("mw(req, res, vi.fn() as NextFunction);");
+				writer.writeLine("expect(res.status).toHaveBeenCalledWith(403);");
+			});
+			writer.writeLine("});");
+		});
+		writer.writeLine("});");
+	});
+	testFile.formatText();
+}
+
+/**
+ * Generates the integrated Identity Provider (IdP) / Auth Server router (`auth.routes.ts`) and its unit test (`auth.routes.spec.ts`).
+ *
+ * @param project - The `ts-morph` project.
+ * @param _parser - The parsed OpenAPI specification.
+ * @param outputDir - Target server output directory.
+ */
+function generateIdpRouter(
+	project: Project,
+	_parser: Pick<SwaggerParser, "spec" | "schemas" | "operations">,
+	outputDir: string,
+): void {
+	const filePath = path.join(outputDir, "auth.routes.ts");
+	const sourceFile = project.createSourceFile(filePath, "", {
+		overwrite: true,
+	});
+
+	sourceFile.addImportDeclaration({
+		moduleSpecifier: "express",
+		namedImports: ["Router", "Request", "Response"],
+	});
+	sourceFile.addImportDeclaration({
+		moduleSpecifier: "./middlewares/auth.js",
+		namedImports: ["registerIssuedToken", "revokeIssuedToken"],
+	});
+
+	sourceFile.addInterface({
+		name: "IdpUserDao",
+		isExported: true,
+		typeParameters: [{ name: "T", default: "Record<string, unknown>" }],
+		docs: [
+			"DAO contract shared between the main server domain logic and the integrated Identity Provider (IdP).",
+		],
+		methods: [
+			{
+				name: "find",
+				returnType: "Promise<T[]>",
+				docs: ["Retrieves all persisted user records from the underlying DAO."],
+			},
+			{
+				name: "create",
+				parameters: [{ name: "data", type: "Partial<T>" }],
+				returnType: "Promise<T>",
+				docs: ["Persists a new user record via the underlying DAO."],
+			},
+		],
+	});
+
+	sourceFile.addFunction({
+		isExported: true,
+		name: "createAuthRouter",
+		typeParameters: [{ name: "T", default: "Record<string, unknown>" }],
+		parameters: [
+			{
+				name: "userDao",
+				type: "IdpUserDao<T>",
+				hasQuestionToken: true,
+			},
+		],
+		returnType: "Router",
+		docs: [
+			{
+				description:
+					"Integrated Identity Provider (IdP) / Auth Server router exposing `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, and `POST /auth/logout` backed by the same DAO/ORM layer as the main application.",
+			},
+		],
+		statements: (writer: CodeBlockWriter) => {
+			writer.writeLine("const router = Router();");
+			writer.writeLine(
+				"const registeredUsers = new Map<string, { username: string; password: string }>();",
+			);
+			writer.writeLine("const refreshTokens = new Map<string, string>();");
+			writer.blankLine();
+			writer.writeLine(
+				"router.post('/auth/register', async (req: Request, res: Response) => {",
+			);
+			writer.indent(() => {
+				writer.writeLine(
+					"const { username, password, ...extra } = (req.body || {}) as Record<string, unknown>;",
+				);
+				writer.writeLine(
+					"if (typeof username !== 'string' || !username || typeof password !== 'string' || !password) {",
+				);
+				writer.indent(() => {
+					writer.writeLine(
+						'return res.status(400).json({ error: "Bad Request: username and password are required" });',
+					);
+				});
+				writer.writeLine("}");
+				writer.writeLine("if (registeredUsers.has(username)) {");
+				writer.indent(() => {
+					writer.writeLine(
+						'return res.status(409).json({ error: "Conflict: User already exists" });',
+					);
+				});
+				writer.writeLine("}");
+				writer.writeLine("if (userDao) {");
+				writer.indent(() => {
+					writer.writeLine("try {");
+					writer.indent(() => {
+						writer.writeLine(
+							"await userDao.create({ username, password, ...extra } as unknown as Partial<T>);",
+						);
+					});
+					writer.writeLine("} catch (_err) {");
+					writer.indent(() => {
+						writer.writeLine("// Stub mode fallback");
+					});
+					writer.writeLine("}");
+				});
+				writer.writeLine("}");
+				writer.writeLine(
+					"registeredUsers.set(username, { username, password });",
+				);
+				writer.writeLine(
+					"const accessToken = `idp-token-${username}-${Date.now()}`;",
+				);
+				writer.writeLine(
+					"const refreshToken = `idp-refresh-${username}-${Date.now()}`;",
+				);
+				writer.writeLine("registerIssuedToken(accessToken);");
+				writer.writeLine("refreshTokens.set(refreshToken, username);");
+				writer.writeLine(
+					"return res.status(201).json({ username, accessToken, refreshToken, tokenType: 'Bearer' });",
+				);
+			});
+			writer.writeLine("});");
+			writer.blankLine();
+			writer.writeLine(
+				"router.post('/auth/login', async (req: Request, res: Response) => {",
+			);
+			writer.indent(() => {
+				writer.writeLine(
+					"const { username, password } = (req.body || {}) as Record<string, unknown>;",
+				);
+				writer.writeLine(
+					"if (typeof username !== 'string' || !username || typeof password !== 'string' || !password) {",
+				);
+				writer.indent(() => {
+					writer.writeLine(
+						'return res.status(400).json({ error: "Bad Request: username and password are required" });',
+					);
+				});
+				writer.writeLine("}");
+				writer.writeLine("let record = registeredUsers.get(username);");
+				writer.writeLine("if (!record && userDao) {");
+				writer.indent(() => {
+					writer.writeLine("try {");
+					writer.indent(() => {
+						writer.writeLine("const existing = await userDao.find();");
+						writer.writeLine(
+							"const found = existing.find((u) => (u as Record<string, unknown>).username === username);",
+						);
+						writer.writeLine("if (found) {");
+						writer.indent(() => {
+							writer.writeLine(
+								"const foundPass = (found as Record<string, unknown>).password;",
+							);
+							writer.writeLine(
+								"record = { username, password: typeof foundPass === 'string' ? foundPass : password };",
+							);
+							writer.writeLine("registeredUsers.set(username, record);");
+						});
+						writer.writeLine("}");
+					});
+					writer.writeLine("} catch (_err) {");
+					writer.indent(() => {
+						writer.writeLine("// Stub mode fallback");
+					});
+					writer.writeLine("}");
+				});
+				writer.writeLine("}");
+				writer.writeLine("if (!record || record.password !== password) {");
+				writer.indent(() => {
+					writer.writeLine(
+						'return res.status(401).json({ error: "Unauthorized: Invalid credentials" });',
+					);
+				});
+				writer.writeLine("}");
+				writer.writeLine(
+					"const accessToken = `idp-token-${username}-${Date.now()}`;",
+				);
+				writer.writeLine(
+					"const refreshToken = `idp-refresh-${username}-${Date.now()}`;",
+				);
+				writer.writeLine("registerIssuedToken(accessToken);");
+				writer.writeLine("refreshTokens.set(refreshToken, username);");
+				writer.writeLine(
+					"return res.status(200).json({ username, accessToken, refreshToken, tokenType: 'Bearer' });",
+				);
+			});
+			writer.writeLine("});");
+			writer.blankLine();
+			writer.writeLine(
+				"router.post('/auth/refresh', (req: Request, res: Response) => {",
+			);
+			writer.indent(() => {
+				writer.writeLine(
+					"const { refreshToken } = (req.body || {}) as Record<string, unknown>;",
+				);
+				writer.writeLine(
+					"if (typeof refreshToken !== 'string' || !refreshTokens.has(refreshToken)) {",
+				);
+				writer.indent(() => {
+					writer.writeLine(
+						'return res.status(401).json({ error: "Unauthorized: Invalid refresh token" });',
+					);
+				});
+				writer.writeLine("}");
+				writer.writeLine(
+					"const username = refreshTokens.get(refreshToken) as string;",
+				);
+				writer.writeLine("refreshTokens.delete(refreshToken);");
+				writer.writeLine(
+					"const accessToken = `idp-token-${username}-${Date.now()}`;",
+				);
+				writer.writeLine(
+					"const newRefreshToken = `idp-refresh-${username}-${Date.now()}`;",
+				);
+				writer.writeLine("registerIssuedToken(accessToken);");
+				writer.writeLine("refreshTokens.set(newRefreshToken, username);");
+				writer.writeLine(
+					"return res.status(200).json({ username, accessToken, refreshToken: newRefreshToken, tokenType: 'Bearer' });",
+				);
+			});
+			writer.writeLine("});");
+			writer.blankLine();
+			writer.writeLine(
+				"router.post('/auth/logout', (req: Request, res: Response) => {",
+			);
+			writer.indent(() => {
+				writer.writeLine("const authHeader = req.headers.authorization;");
+				writer.writeLine(
+					"const body = (req.body || {}) as Record<string, unknown>;",
+				);
+				writer.writeLine(
+					"const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (typeof body.accessToken === 'string' ? body.accessToken : undefined);",
+				);
+				writer.writeLine("if (bearerToken) {");
+				writer.indent(() => {
+					writer.writeLine("revokeIssuedToken(bearerToken);");
+				});
+				writer.writeLine("}");
+				writer.writeLine("if (typeof body.refreshToken === 'string') {");
+				writer.indent(() => {
+					writer.writeLine("refreshTokens.delete(body.refreshToken);");
+				});
+				writer.writeLine("}");
+				writer.writeLine(
+					'return res.status(200).json({ success: true, message: "Logged out successfully" });',
+				);
+			});
+			writer.writeLine("});");
+			writer.blankLine();
+			writer.writeLine("return router;");
+		},
+	});
+	sourceFile.formatText();
+
+	const testPath = path.join(outputDir, "auth.routes.spec.ts");
+	const testFile = project.createSourceFile(testPath, "", { overwrite: true });
+	testFile.addImportDeclaration({
+		moduleSpecifier: "vitest",
+		namedImports: ["describe", "it", "expect", "vi"],
+	});
+	testFile.addImportDeclaration({
+		moduleSpecifier: "./auth.routes.js",
+		namedImports: ["createAuthRouter"],
+	});
+	testFile.addImportDeclaration({
+		moduleSpecifier: "supertest",
+		defaultImport: "request",
+	});
+	testFile.addImportDeclaration({
+		moduleSpecifier: "express",
+		defaultImport: "express",
+	});
+
+	testFile.addStatements((writer: CodeBlockWriter) => {
+		writer.writeLine("describe('Integrated IdP Auth Router', () => {");
+		writer.indent(() => {
+			writer.writeLine(
+				"it('should register, login, refresh, and logout a user via DAO', async () => {",
+			);
+			writer.indent(() => {
+				writer.writeLine(
+					"const mockDao = { find: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: 1 }) };",
+				);
+				writer.writeLine("const app = express();");
+				writer.writeLine("app.use(express.json());");
+				writer.writeLine("app.use(createAuthRouter(mockDao));");
+				writer.blankLine();
+				writer.writeLine(
+					"const regRes = await request(app).post('/auth/register').send({ username: 'alice', password: 'secret' });",
+				);
+				writer.writeLine("expect(regRes.status).toBe(201);");
+				writer.writeLine("expect(mockDao.create).toHaveBeenCalled();");
+				writer.blankLine();
+				writer.writeLine(
+					"const loginRes = await request(app).post('/auth/login').send({ username: 'alice', password: 'secret' });",
+				);
+				writer.writeLine("expect(loginRes.status).toBe(200);");
+				writer.writeLine("expect(loginRes.body.accessToken).toBeDefined();");
+				writer.blankLine();
+				writer.writeLine(
+					"const refreshRes = await request(app).post('/auth/refresh').send({ refreshToken: loginRes.body.refreshToken });",
+				);
+				writer.writeLine("expect(refreshRes.status).toBe(200);");
+				writer.blankLine();
+				writer.writeLine(
+					"const logoutRes = await request(app).post('/auth/logout').send({ accessToken: refreshRes.body.accessToken, refreshToken: refreshRes.body.refreshToken });",
+				);
+				writer.writeLine("expect(logoutRes.status).toBe(200);");
 			});
 			writer.writeLine("});");
 		});
