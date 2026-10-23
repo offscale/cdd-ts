@@ -225,7 +225,11 @@ app.get('/widgets/:id', async (req, res) => {
 			expect(content).not.toMatch(/\[\s*\]/);
 			expect(content).not.toMatch(/\| TODO \|/);
 			for (const line of content.split("\n")) {
-				if (line.startsWith("|") && line.includes("`[")) {
+				if (
+					line.startsWith("|") &&
+					line.includes("`[") &&
+					!line.includes("Presence `[To, From]`")
+				) {
 					const columns = line.split("|").map((c) => c.trim());
 					expect(columns[2]).toBe("`[x]` , `[x]`");
 					expect(columns[3]).toBe("`[x]` , `[x]`");

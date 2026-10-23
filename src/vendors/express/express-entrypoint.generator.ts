@@ -133,10 +133,14 @@ export function generateExpressServerEntrypoint(
 			writer.blankLine();
 			writer.writeLine("const isEphemeral = !!options.ephemeral;");
 			writer.writeLine("const isSeed = !!options.seed;");
-			writer.writeLine("const isStrict = !!options['strict-validation'];");
-			writer.writeLine("const isAuth = !!options['enforce-auth'];");
 			writer.writeLine(
-				"const isStartAuthServer = !!options['start-auth-server'];",
+				"const isStrict = !!(options.strictValidation ?? options['strict-validation']);",
+			);
+			writer.writeLine(
+				"const isAuth = !!(options.enforceAuth ?? options['enforce-auth']);",
+			);
+			writer.writeLine(
+				"const isStartAuthServer = !!(options.startAuthServer ?? options['start-auth-server']);",
 			);
 			writer.writeLine("const dbUrl = process.env.DATABASE_URL;");
 			writer.blankLine();

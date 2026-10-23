@@ -358,6 +358,9 @@ describe("ExpressServerGenerator", () => {
 		expect(entrypointFile.getFullText()).toContain(
 			'.option("--start-auth-server",',
 		);
+		expect(entrypointFile.getFullText()).toContain("options.strictValidation");
+		expect(entrypointFile.getFullText()).toContain("options.enforceAuth");
+		expect(entrypointFile.getFullText()).toContain("options.startAuthServer");
 		expect(entrypointFile.getFullText()).toContain(
 			"app.use(createAuthRouter(factory.getUserDao(isEphemeral, dataSource)));",
 		);
