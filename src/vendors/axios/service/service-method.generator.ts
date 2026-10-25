@@ -69,7 +69,7 @@ export class AxiosServiceMethodGenerator extends AbstractHttpServiceMethodGenera
 				);
 
 				lines.push(
-					`urlParamEntries.forEach((entry: { key: string; value: string }) => { formBody.append(entry.key, entry.value); });`,
+					`urlParamEntries.forEach((entry: { key: string; value: string }) => { formBody.append(decodeURIComponent(entry.key.replace(/\\+/g, '%20')), decodeURIComponent(entry.value.replace(/\\+/g, '%20'))); });`,
 				);
 
 				dataArgument = "formBody";

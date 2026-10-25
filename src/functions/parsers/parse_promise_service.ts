@@ -50,7 +50,9 @@ export function extractPromiseHttpCall(
 	if (fetchMatch) {
 		const fOpts = /fetch\([^,]+,\s*([^)]+)\)/.exec(methodBody);
 		if (fOpts?.[1]) {
-			const methodM = /method:\s*['"]([^'"]+)['"]/.exec(fOpts[1]);
+			const methodM =
+				/method:\s*['"]([^'"]+)['"]/.exec(fOpts[1]) ??
+				/method:\s*['"]([^'"]+)['"]/.exec(methodBody);
 			if (methodM?.[1]) httpMethod = methodM[1].toUpperCase();
 		}
 		if (!returnTypeHint) {

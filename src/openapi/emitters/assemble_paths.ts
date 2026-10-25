@@ -229,7 +229,7 @@ export function parseGeneratedServiceSource(
 
 		const operations: ReverseOperation[] = [];
 		const methodRegex = new RegExp(
-			`(?:/\\*\\*([\\s\\S]*?)\\*/\\s*)?(?:(?:public|private|protected)\\s+)?(\\w+)\\s*\\(([^)]*)\\)(?:\\s*:\\s*([^{${nl}]+))?\\s*\\{([\\s\\S]*?)${nl}\\s*\\}`,
+			`(?:/\\*\\*((?:(?!\\*/)[\\s\\S])*?)\\*/\\s*)?(?:(?:public|private|protected|async)\\s+)*(\\w+)\\s*\\(([^)]*)\\)(?:\\s*:\\s*((?:Observable|Promise)<[^${nl}]*>|[^${nl}{]+))?\\s*\\{([\\s\\S]*?)${nl}\\s*\\}(?!\\s*[;,)])`,
 			"g",
 		);
 		let methodMatch: RegExpExecArray | null = methodRegex.exec(classBody);
@@ -282,9 +282,9 @@ export function parseGeneratedServiceSource(
 }
 
 /**
- * Parses all generated `.service.ts` files from a file path or directory.
+ * Parses all generated `.service.ts` and `.client.ts` files from a file path or directory.
  *
- * @param inputPath - Path to a `.service.ts` file or directory containing service files.
+ * @param inputPath - Path to a `.service.ts` / `.client.ts` file or directory containing service/client files.
  * @param fileSystem - File system adapter.
  * @returns Array of reconstructed `ReverseService` objects.
  * @throws {Error} When no service files or operations are found.
@@ -295,9 +295,13 @@ export function parseGeneratedServices(
 ): ReverseService[] {
 	const stat = fileSystem.statSync(inputPath);
 	const files: string[] = [];
+	const isServiceOrClientFile = (name: string): boolean =>
+		(name.endsWith(".service.ts") || name.endsWith(".client.ts")) &&
+		!name.endsWith(".spec.ts") &&
+		!name.endsWith(".d.ts");
 
 	if (stat.isFile()) {
-		if (!inputPath.endsWith(".service.ts"))
+		if (!isServiceOrClientFile(inputPath))
 			throw new Error("Expected a generated service file.");
 		files.push(inputPath);
 	} else {
@@ -306,8 +310,7 @@ export function parseGeneratedServices(
 				const f = String(entry);
 				const p = path.join(dir, f);
 				if (fileSystem.statSync(p).isDirectory()) traverse(p);
-				else if (f.endsWith(".service.ts") && !f.endsWith(".spec.ts"))
-					files.push(p);
+				else if (isServiceOrClientFile(f)) files.push(p);
 			});
 		};
 		traverse(inputPath);

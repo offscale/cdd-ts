@@ -73,7 +73,7 @@ export class NodeServiceMethodGenerator extends AbstractHttpServiceMethodGenerat
 					`const urlParamEntries = ParameterSerializer.serializeUrlEncodedBody(${model.body.paramName}, ${JSON.stringify(model.body.config)});`,
 				);
 				lines.push(
-					`urlParamEntries.forEach((entry: { key: string; value: string }) => { formBody.append(entry.key, entry.value); });`,
+					`urlParamEntries.forEach((entry: { key: string; value: string }) => { formBody.append(decodeURIComponent(entry.key.replace(/\\+/g, '%20')), decodeURIComponent(entry.value.replace(/\\+/g, '%20'))); });`,
 				);
 				dataArgument = "formBody.toString()";
 				lines.push(

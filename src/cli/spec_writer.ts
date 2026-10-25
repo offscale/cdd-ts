@@ -39,8 +39,11 @@ export function writeFormattedSpec(
 	format: "json" | "yaml",
 	outputPath?: string,
 ): void {
+	const effectiveFormat = outputPath?.toLowerCase().endsWith(".json")
+		? "json"
+		: format;
 	const serialized =
-		format === "json"
+		effectiveFormat === "json"
 			? JSON.stringify(spec, null, 2)
 			: yaml.dump(spec, { noRefs: true });
 

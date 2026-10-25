@@ -191,7 +191,9 @@ export function parseGeneratedMetadata(
 		varName: string,
 	) => {
 		const p = path.join(inputPath, filename);
-		const content = readMetadataFile(p);
+		const content =
+			readMetadataFile(p) ??
+			readMetadataFile(path.join(inputPath, "src", filename));
 		if (!content) return;
 
 		const bs = String.fromCharCode(92);

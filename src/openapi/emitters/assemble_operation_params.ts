@@ -82,10 +82,10 @@ export function splitTopLevelArgs(str: string): string[] {
 				inQuote = true;
 				quoteChar = char;
 				current += char;
-			} else if (char === "{" || char === "[") {
+			} else if (char === "{" || char === "[" || char === "(" || char === "<") {
 				depth++;
 				current += char;
-			} else if (char === "}" || char === "]") {
+			} else if (char === "}" || char === "]" || char === ")" || char === ">") {
 				depth--;
 				current += char;
 			} else if (char === "," && depth === 0) {
@@ -123,7 +123,9 @@ export function extractOperationParamsAndBody(
 	httpProp: string,
 ): ExtractedOperationParamsResult {
 	let urlPath = "";
-	const urlMatch = /const url = `\${basePath}([^`]*)`/.exec(methodBody);
+	const urlMatch = /const url = (?:new URL\()?`\${basePath}([^`]*)`/.exec(
+		methodBody,
+	);
 
 	if (urlMatch) {
 		urlPath = (urlMatch[1] as string).replace(
@@ -309,6 +311,9 @@ export function extractOperationParamsAndBody(
 	const escapedHttpProp = httpProp.replace(/\W/g, "");
 	const hasBody =
 		methodBody.includes("body: ") ||
+		methodBody.includes("fetchOptions.body =") ||
+		methodBody.includes("axiosConfig.data =") ||
+		methodBody.includes("req.write(") ||
 		methodBody.includes(", body") ||
 		methodBody.includes(", payload") ||
 		methodBody.includes(", formBody") ||
@@ -318,8 +323,7 @@ export function extractOperationParamsAndBody(
 			String.raw`this\.${escapedHttpProp}\.(post|put|patch)(?:<[^>]+>)?\([^,]+,\s*[a-zA-Z0-9_]+,`,
 		).test(methodBody);
 
-	const resolvedParams = argsStrRaw
-		.split(",")
+	const resolvedParams = splitTopLevelArgs(argsStrRaw)
 		.map((arg) => {
 			const parts = arg.split(":");
 			return {

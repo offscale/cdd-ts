@@ -150,20 +150,23 @@ function resolveSnapshotFile(
 		);
 	}
 
-	const jsonPath = path.join(inputPath, SNAPSHOT_JSON);
+	const candidateDirs = [inputPath, path.join(inputPath, "src")];
+	for (const dir of candidateDirs) {
+		const jsonPath = path.join(dir, SNAPSHOT_JSON);
 
-	if (fileExists(fileSystem, jsonPath))
-		return { filePath: jsonPath, format: "json" };
+		if (fileExists(fileSystem, jsonPath))
+			return { filePath: jsonPath, format: "json" };
 
-	const yamlPath = path.join(inputPath, SNAPSHOT_YAML);
+		const yamlPath = path.join(dir, SNAPSHOT_YAML);
 
-	if (fileExists(fileSystem, yamlPath))
-		return { filePath: yamlPath, format: "yaml" };
+		if (fileExists(fileSystem, yamlPath))
+			return { filePath: yamlPath, format: "yaml" };
 
-	const ymlPath = path.join(inputPath, SNAPSHOT_YML);
+		const ymlPath = path.join(dir, SNAPSHOT_YML);
 
-	if (fileExists(fileSystem, ymlPath))
-		return { filePath: ymlPath, format: "yaml" };
+		if (fileExists(fileSystem, ymlPath))
+			return { filePath: ymlPath, format: "yaml" };
+	}
 
 	throw new Error(
 		`No OpenAPI snapshot found in directory. Expected ${SNAPSHOT_JSON} or ${SNAPSHOT_YAML}. Path: ${inputPath}`,

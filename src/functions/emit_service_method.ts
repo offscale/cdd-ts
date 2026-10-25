@@ -133,7 +133,7 @@ export abstract class AbstractHttpServiceMethodGenerator {
 				`const serialized_${p.paramName} = ParameterSerializer.serializeQueryParam(${configObj}, ${p.paramName});`,
 			);
 			lines.push(
-				`serialized_${p.paramName}.forEach((entry: { key: string; value: string }) => { ${searchParamsTarget}.append(entry.key, entry.value); });`,
+				`serialized_${p.paramName}.forEach((entry: { key: string; value: string }) => { ${searchParamsTarget}.append(decodeURIComponent(entry.key), decodeURIComponent(entry.value)); });`,
 			);
 		});
 		return lines;
