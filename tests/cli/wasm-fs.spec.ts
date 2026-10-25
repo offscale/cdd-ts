@@ -261,9 +261,101 @@ describe("cli/spec_writer & cli/scaffold", () => {
 			expect(
 				fs.existsSync(path.join(sdkDir, ".github", "workflows", "ci.yml")),
 			).toBe(true);
+
+			const sdkWithTestsDir = path.join(tmpDir, "sdk-with-tests");
+			fs.mkdirSync(sdkWithTestsDir, { recursive: true });
+			emitPackageScaffolding(
+				sdkWithTestsDir,
+				{ options: { tests: true } },
+				"to_sdk",
+			);
+			const sdkPkgJson = JSON.parse(
+				fs.readFileSync(path.join(sdkWithTestsDir, "package.json"), "utf-8"),
+			) as {
+				name: string;
+				devDependencies: Record<string, string>;
+			};
+			expect(sdkPkgJson.devDependencies.vitest).toBeDefined();
+			expect(sdkPkgJson.devDependencies.typescript).toBeDefined();
+			expect(sdkPkgJson.devDependencies["@types/node"]).toBeDefined();
+			const sdkVitestConfig = fs.readFileSync(
+				path.join(sdkWithTestsDir, "vitest.config.ts"),
+				"utf-8",
+			);
+			expect(sdkVitestConfig).toContain('include: ["src/**/*.spec.ts"]');
 		} finally {
 			stdoutSpy.mockRestore();
 			fs.rmSync(tmpDir, { recursive: true, force: true });
+		}
+	});
+
+	it("generates an SDK with --tests and executes npx vitest run successfully inside the generated SDK directory", async () => {
+		const { execFileSync } = await import("node:child_process");
+		const { generateFromOpenApi } = await import(
+			"../../src/cli/commands/from_openapi.js"
+		);
+
+		const tmpSdkDir = fs.mkdtempSync(
+			path.join(process.cwd(), "tmp-sdk-vitest-"),
+		);
+		const specPath = path.join(tmpSdkDir, "openapi.json");
+		try {
+			fs.writeFileSync(
+				specPath,
+				JSON.stringify({
+					openapi: "3.0.0",
+					info: { title: "Petstore SDK Test", version: "1.0.0" },
+					paths: {
+						"/pets": {
+							get: {
+								tags: ["pet"],
+								operationId: "listPets",
+								responses: {
+									"200": {
+										description: "ok",
+										content: {
+											"application/json": {
+												schema: { type: "array", items: { type: "object" } },
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+			);
+
+			const sdkOutDir = path.join(tmpSdkDir, "generated-sdk");
+			await generateFromOpenApi(
+				{
+					input: specPath,
+					output: sdkOutDir,
+					tests: true,
+				},
+				"to_sdk",
+			);
+
+			expect(fs.existsSync(path.join(sdkOutDir, "vitest.config.ts"))).toBe(
+				true,
+			);
+			expect(
+				fs.existsSync(path.join(sdkOutDir, "src", "integration.spec.ts")),
+			).toBe(true);
+			expect(
+				fs.existsSync(
+					path.join(sdkOutDir, "src", "services", "pet.client.spec.ts"),
+				),
+			).toBe(true);
+
+			const output = execFileSync("npx", ["vitest", "run"], {
+				cwd: sdkOutDir,
+				encoding: "utf-8",
+			});
+			expect(output).toContain("2 passed");
+			expect(output).toContain("4 passed");
+		} finally {
+			fs.rmSync(tmpSdkDir, { recursive: true, force: true });
 		}
 	});
 });

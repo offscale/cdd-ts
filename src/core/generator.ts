@@ -10,7 +10,7 @@ import { DiscriminatorGenerator } from "../classes/emit_discriminator.js";
 import { CallbackGenerator } from "../functions/emit_callback.js";
 import { ParameterSerializerGenerator } from "../functions/emit_parameter_serializer.js";
 import { WebhookGenerator } from "../functions/emit_webhook.js";
-import { pascalCase } from "../functions/utils.js";
+import { camelCase, pascalCase } from "../functions/utils.js";
 import { ExamplesGenerator } from "../mocks/emit.js";
 import { DocumentMetaGenerator } from "../openapi/emit_document_meta.js";
 import { HeadersGenerator } from "../openapi/emit_headers.js";
@@ -278,7 +278,16 @@ export abstract class AbstractClientGenerator implements IClientGenerator {
 						servicesDir,
 					);
 				}
-				hooks.afterServiceTests?.(controllerGroups, outputRoot);
+				if (hooks.afterServiceTests) {
+					hooks.afterServiceTests(controllerGroups, outputRoot);
+				} else {
+					this.generateSdkIntegrationTestEntrypoint(
+						project,
+						config,
+						controllerGroups,
+						outputRoot,
+					);
+				}
 			}
 
 			if (config.options.admin) {
@@ -293,6 +302,67 @@ export abstract class AbstractClientGenerator implements IClientGenerator {
 		new SdkMainIndexGenerator(project, config, parser).generateMainIndex(
 			outputRoot,
 		);
+	}
+
+	/**
+	 * Emits a top-level `integration.spec.ts` runner that imports and executes all generated client/service test suites.
+	 *
+	 * @param project - The active `ts-morph` project.
+	 * @param config - The generator configuration.
+	 * @param controllerGroups - Map of controller names to their operations.
+	 * @param outputRoot - The root output directory.
+	 */
+	protected generateSdkIntegrationTestEntrypoint(
+		project: Project,
+		config: GeneratorConfig,
+		controllerGroups: Record<string, PathInfo[]>,
+		outputRoot: string,
+	): void {
+		const fw = (config.options.framework || "").toLowerCase();
+		const isVanilla =
+			fw === "vanilla js" || fw === "vanilla" || fw === "vanillajs";
+		const isComposable =
+			config.options.composableTests === true || config.options.tests === true;
+		const classSuffix = isVanilla ? "Client" : "Service";
+		const fileSuffix = isVanilla ? "client" : "service";
+		const controllerNames = Object.keys(controllerGroups);
+
+		const testFilePath = path.join(outputRoot, "integration.spec.ts");
+		const sourceFile = project.createSourceFile(testFilePath, "", {
+			overwrite: true,
+		});
+
+		sourceFile.addImportDeclaration({
+			moduleSpecifier: "vitest",
+			namedImports: ["describe", "expect", "it"],
+		});
+
+		const invocationLines: string[] = [
+			"describe('SDK Integration Tests', () => {",
+			"\tit('should register SDK integration test suite', () => {",
+			"\t\texpect(true).toBe(true);",
+			"\t});",
+		];
+
+		for (const controllerName of controllerNames) {
+			const moduleSpec = `./services/${camelCase(controllerName)}.${fileSuffix}.spec.js`;
+			if (isComposable) {
+				const fnName = `test${pascalCase(controllerName)}${classSuffix}`;
+				sourceFile.addImportDeclaration({
+					moduleSpecifier: moduleSpec,
+					namedImports: [fnName],
+				});
+				invocationLines.push(`\t${fnName}();`);
+			} else {
+				sourceFile.addImportDeclaration({
+					moduleSpecifier: moduleSpec,
+				});
+			}
+		}
+
+		invocationLines.push("});");
+		sourceFile.addStatements(invocationLines.join(String.fromCharCode(10)));
+		sourceFile.formatText();
 	}
 
 	/**

@@ -57,6 +57,13 @@ export function emitPackageScaffolding(
 			});
 		}
 	}
+	if (finalConfig.options?.tests === true) {
+		Object.assign(devDependencies, {
+			vitest: "^4.1.0",
+			typescript: "^5.0.0",
+			"@types/node": "^25.0.0",
+		});
+	}
 
 	const scripts: Record<string, string> = { build: "tsc" };
 	if (targetScope === "to_server" || finalConfig.options?.tests !== false) {
@@ -153,6 +160,20 @@ export function emitPackageScaffolding(
 			"",
 		].join(NEWLINE);
 		fs.writeFileSync(path.join(targetOutputRoot, "README.md"), readmeContent);
+	} else if (finalConfig.options?.tests === true) {
+		fs.writeFileSync(
+			path.join(targetOutputRoot, "vitest.config.ts"),
+			[
+				'import { defineConfig } from "vitest/config";',
+				"",
+				"export default defineConfig({",
+				"\ttest: {",
+				'\t\tinclude: ["src/**/*.spec.ts"],',
+				"\t},",
+				"});",
+				"",
+			].join(NEWLINE),
+		);
 	}
 }
 
