@@ -444,7 +444,11 @@ export class OAuthHelperGenerator {
 		tsFile.addImportDeclarations([
 			{
 				moduleSpecifier: "@angular/core",
-				namedImports: ["Component", "OnInit", "inject"],
+				namedImports: ["Component", "DestroyRef", "OnInit", "inject"],
+			},
+			{
+				moduleSpecifier: "@angular/core/rxjs-interop",
+				namedImports: ["takeUntilDestroyed"],
 			},
 			{
 				moduleSpecifier: "@angular/router",
@@ -493,12 +497,18 @@ export class OAuthHelperGenerator {
 					isReadonly: true,
 					initializer: "inject(OAuthHelperService)",
 				},
+				{
+					name: "destroyRef",
+					scope: Scope.Private,
+					isReadonly: true,
+					initializer: "inject(DestroyRef)",
+				},
 			],
 			methods: [
 				{
 					name: "ngOnInit",
 					statements: [
-						`this.route.fragment.pipe(first()).subscribe(fragment => {`,
+						`this.route.fragment.pipe(first(), takeUntilDestroyed(this.destroyRef)).subscribe(fragment => {`,
 						`  if (fragment) {`,
 						`    const params = new URLSearchParams(fragment);`,
 						`    const accessToken = params.get('access_token');`,

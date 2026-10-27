@@ -6,7 +6,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { type Command, Option } from "commander";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import type {
 	GeneratorConfig,
 	GeneratorConfigOptions,

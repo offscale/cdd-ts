@@ -41,6 +41,16 @@ describe("E2E: Angular Generator Output", () => {
 			const audit = auditAngularSourceBestPractices(sf.getFullText());
 			expect(audit.violations, `Violations in ${sf.getFilePath()}`).toEqual([]);
 			expect(audit.compliant).toBe(true);
+
+			if (sf.getFilePath().endsWith(".component.ts")) {
+				const htmlPath = sf.getFilePath().replace(/\.ts$/, ".html");
+				if (project.getFileSystem().fileExistsSync(htmlPath)) {
+					const htmlContent = project.getFileSystem().readFileSync(htmlPath);
+					const htmlAudit = auditAngularSourceBestPractices(htmlContent);
+					expect(htmlAudit.violations, `Violations in ${htmlPath}`).toEqual([]);
+					expect(htmlAudit.compliant).toBe(true);
+				}
+			}
 		}
 	});
 

@@ -8,7 +8,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 import {
 	type ArazzoSpec,

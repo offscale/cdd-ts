@@ -1336,40 +1336,26 @@ describe("Core Utils: OpenAPI Reverse", () => {
 			merged.paths?.["/ping"]?.get?.responses?.["200"]?.headers?.["X-Xml"]
 				?.content?.["application/xml"],
 		).toBeDefined();
-		expect(
-			(
-				(
-					(
-						merged.paths?.["/ping"]?.get?.responses[
-							"200"
-						] as import("../../../src/core/types/openapi.js").SwaggerResponse
-					).headers?.[
-						"X-Xml"
-					] as import("../../../src/core/types/openapi.js").HeaderObject
-				).content?.["application/xml"]
-					?.schema as import("../../../src/core/types/openapi.js").SwaggerDefinition
-			)?.xml?.name,
-		).toBe("Root");
-		expect(
-			(
-				(
-					merged.paths?.["/ping"]?.get?.responses[
-						"200"
-					] as import("../../../src/core/types/openapi.js").SwaggerResponse
-				).headers?.[
-					"X-Linkset-Json"
-				] as import("../../../src/core/types/openapi.js").HeaderObject
-			).content?.["application/linkset+json"],
-		).toBeDefined();
-		expect(
-			(
-				(
-					merged.paths?.["/ping"]?.get?.responses[
-						"200"
-					] as import("../../../src/core/types/openapi.js").SwaggerResponse
-				).links?.next as import("../../../src/core/types/openapi.js").LinkObject
-			).operationId,
-		).toBe("listThings");
+		const pingGetResponse200 = merged.paths?.["/ping"]?.get?.responses?.[
+			"200"
+		] as
+			| import("../../../src/core/types/openapi.js").SwaggerResponse
+			| undefined;
+		const xXmlHeader = pingGetResponse200?.headers?.["X-Xml"] as
+			| import("../../../src/core/types/openapi.js").HeaderObject
+			| undefined;
+		const xXmlSchema = xXmlHeader?.content?.["application/xml"]?.schema as
+			| import("../../../src/core/types/openapi.js").SwaggerDefinition
+			| undefined;
+		expect(xXmlSchema?.xml?.name).toBe("Root");
+		const xLinksetHeader = pingGetResponse200?.headers?.["X-Linkset-Json"] as
+			| import("../../../src/core/types/openapi.js").HeaderObject
+			| undefined;
+		expect(xLinksetHeader?.content?.["application/linkset+json"]).toBeDefined();
+		const nextLink = pingGetResponse200?.links?.next as
+			| import("../../../src/core/types/openapi.js").LinkObject
+			| undefined;
+		expect(nextLink?.operationId).toBe("listThings");
 		expect(merged.components?.headers?.TraceId?.description).toBe(
 			"Trace header",
 		);
@@ -1678,7 +1664,7 @@ describe("Core Utils: OpenAPI Reverse", () => {
 				standalone: true,
 				imports: [CommonModule],
 				changeDetection: ChangeDetectionStrategy.OnPush,
-				template: '<div *ngIf="show" [ngClass]="cls"><span *ngFor="let x of list">{{ x }}</span></div>'
+				template: '<div *ngIf="show" [ngClass]="cls"><img src="/logo.png" alt="Logo" /><span>{{ new Date() }}</span><span *ngFor="let x of list">{{ x }}</span></div>'
 			})
 			export class OldComponent {
 				@Input() show = true;
@@ -1704,6 +1690,8 @@ describe("Core Utils: OpenAPI Reverse", () => {
 		expect(rules).toContain("no-signal-mutate");
 		expect(rules).toContain("no-any-type");
 		expect(rules).toContain("no-testing-ngmodules");
+		expect(rules).toContain("no-unoptimized-static-img");
+		expect(rules).toContain("no-template-global-date");
 	});
 
 	it("should cover remaining reverse emitter, metadata, parameter, response, webhook/callback, and Swagger 2.0 downgrade branches", async () => {

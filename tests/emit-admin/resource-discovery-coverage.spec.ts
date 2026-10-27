@@ -207,9 +207,9 @@ describe("Admin: resource-discovery (Coverage)", () => {
 		const prop = resource?.formProperties.find(
 			(p: FormProperty) => p.name === "inline",
 		);
-		expect((prop?.schema as SwaggerDefinition).properties).toHaveProperty(
-			"prop",
-		);
+		expect(
+			(prop?.schema as SwaggerDefinition | undefined)?.properties,
+		).toHaveProperty("prop");
 	});
 
 	it('should not classify custom actions like "addItem" as a standard "create"', () => {

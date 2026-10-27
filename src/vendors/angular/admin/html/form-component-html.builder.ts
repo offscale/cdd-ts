@@ -118,7 +118,7 @@ export function generateFormComponentHtml(
 		.setAttribute("color", "primary")
 		.setAttribute("type", "submit")
 		.setAttribute("aria-label", "Save form changes")
-		.setAttribute("[disabled]", "form.invalid || form.pristine");
+		.setAttribute("[disabled]", "disabled() || form.invalid || form.pristine");
 
 	const saveButtonContent = `\n@if (isEditMode()) { \n  <span i18n>Save Changes</span>\n} @else { \n  <span i18n>Create ${resource.modelName}</span>\n}\n`;
 

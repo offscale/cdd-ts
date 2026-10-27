@@ -13,7 +13,7 @@ export default defineConfig({
 		hookTimeout: 60000,
 		reporters: ["verbose", "junit"],
 		alias: {
-			"@src": path.resolve(__dirname, "./src"),
+			"@src": path.resolve(import.meta.dirname, "./src"),
 		},
 		outputFile: {
 			junit: "coverage/junit.xml",

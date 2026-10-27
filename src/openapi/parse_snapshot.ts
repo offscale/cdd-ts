@@ -4,7 +4,7 @@
  * @module openapi/parse_snapshot
  */
 import path from "node:path";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import type { SwaggerSpec } from "../core/types/index.js";
 
 /** Directory creation options for `SnapshotFileSystem.mkdirSync`. */

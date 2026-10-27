@@ -4,7 +4,7 @@
  * @module cli/spec_writer
  */
 import * as fs from "node:fs";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import type { OpenApiValue } from "../core/types/index.js";
 
 /**

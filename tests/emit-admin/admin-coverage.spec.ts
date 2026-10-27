@@ -339,12 +339,16 @@ describe("Admin Generators (Coverage)", () => {
 		const ops = parser.operations.filter((op) => op.path === "/upload");
 		const props = getFormProperties(ops, parser);
 		const fileProp = props.find((p) => p.name === "file");
-		expect((fileProp?.schema as SwaggerDefinition).format).toBe("binary");
-		expect((fileProp?.schema as SwaggerDefinition).description).toBe(
-			"Upload file",
+		expect((fileProp?.schema as SwaggerDefinition | undefined)?.format).toBe(
+			"binary",
 		);
+		expect(
+			(fileProp?.schema as SwaggerDefinition | undefined)?.description,
+		).toBe("Upload file");
 		const baseProp = props.find((p) => p.name === "base");
-		expect((baseProp?.schema as SwaggerDefinition).required).toContain("base");
+		expect(
+			(baseProp?.schema as SwaggerDefinition | undefined)?.required,
+		).toContain("base");
 	});
 
 	it("getFormProperties should skip array-typed formData params and tolerate unresolved array items", () => {
@@ -399,7 +403,9 @@ describe("Admin Generators (Coverage)", () => {
 		});
 		const props = getFormProperties(ops, parser);
 		const metaProp = props.find((p) => p.name === "meta");
-		expect((metaProp?.schema as SwaggerDefinition).type).toBeUndefined();
+		expect(
+			(metaProp?.schema as SwaggerDefinition | undefined)?.type,
+		).toBeUndefined();
 	});
 
 	it("resource-discovery should handle operations without parameters or method names", () => {

@@ -224,7 +224,8 @@ export function generateListComponentHtml(
 	tableContainer.appendChild(
 		_.create("mat-paginator")
 			.setAttribute("[length]", "totalItems()")
-			.setAttribute("[pageSizeOptions]", "[5, 10, 25, 100]")
+			.setAttribute("[pageSize]", "pageSize()")
+			.setAttribute("[pageSizeOptions]", "pageSizeOptions()")
 			.setAttribute("aria-label", "Select page"),
 	);
 

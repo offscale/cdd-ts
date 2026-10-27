@@ -7,7 +7,12 @@
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { Project, type SourceFile, SyntaxKind } from "ts-morph";
+import {
+	type Expression,
+	Project,
+	type SourceFile,
+	SyntaxKind,
+} from "ts-morph";
 import type {
 	ArazzoSpec,
 	ArazzoStepObject,
@@ -32,10 +37,9 @@ export function parseArazzoServerE2eSourceFile(
 	const calls = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
 	for (const call of calls) {
 		if (call.getExpression().getText() !== "describe") continue;
-		const firstArg = (call.getArguments()[0]?.getText() as string).replace(
-			/^['"]|['"]$/g,
-			"",
-		);
+		const firstArg = (call.getArguments()[0] as Expression)
+			.getText()
+			.replace(/^['"]|['"]$/g, "");
 
 		if (firstArg.startsWith("Arazzo E2E Workflows: ")) {
 			title = firstArg.slice("Arazzo E2E Workflows: ".length);

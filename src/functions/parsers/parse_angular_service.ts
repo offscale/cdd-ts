@@ -45,7 +45,9 @@ export type AngularBestPracticeRuleId =
 	| "prefer-native-control-flow"
 	| "no-signal-mutate"
 	| "no-any-type"
-	| "no-testing-ngmodules";
+	| "no-testing-ngmodules"
+	| "no-unoptimized-static-img"
+	| "no-template-global-date";
 
 /**
  * Represents a single Angular best-practice violation detected during static source inspection.
@@ -291,6 +293,26 @@ export function auditAngularSourceBestPractices(
 			rule: "no-testing-ngmodules",
 			message:
 				"Use standalone provider functions (`provideHttpClient()`, `provideHttpClientTesting()`, `provideNoopAnimations()`) instead of testing NgModules.",
+		});
+	}
+
+	if (
+		/<img\b(?![^>]*\bngSrc\b)[^>]*\bsrc\s*=\s*['"](?!data:)[^'"]+['"]/.test(
+			sourceText,
+		)
+	) {
+		violations.push({
+			rule: "no-unoptimized-static-img",
+			message:
+				"Use `NgOptimizedImage` (`ngSrc`) for static images instead of `src` (excluding inline base64 `data:` images).",
+		});
+	}
+
+	if (/\{\{[^}]*\bnew\s+Date\s*\(/.test(sourceText)) {
+		violations.push({
+			rule: "no-template-global-date",
+			message:
+				"Do not assume globals like `new Date()` are available inside Angular templates.",
 		});
 	}
 

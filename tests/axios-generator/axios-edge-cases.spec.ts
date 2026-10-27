@@ -36,6 +36,21 @@ describe("Axios Implementation Edge Cases", () => {
 					},
 					put: {
 						operationId: "putMocked", // has methodName set by analyzer usually, we will mock it
+						parameters: [
+							{
+								name: "strParam",
+								in: "query",
+								required: true,
+								schema: { type: "string" },
+							},
+						],
+						requestBody: {
+							content: {},
+						},
+						responses: { "200": { description: "OK" } },
+					},
+					patch: {
+						operationId: "patchMocked",
 						responses: { "200": { description: "OK" } },
 					},
 				},
@@ -48,6 +63,17 @@ describe("Axios Implementation Edge Cases", () => {
 
 		const ops = parser.operations;
 		if (ops[2]) ops[2].methodName = "customPutMocked"; // cover op.methodName
+		if (ops[3]) {
+			ops[3].requestBody = {} as NonNullable<PathInfo["requestBody"]>;
+		}
+		vi.spyOn(
+			(
+				testGen as unknown as {
+					mockDataGenerator: { generate: (name: string) => string };
+				}
+			).mockDataGenerator,
+			"generate",
+		).mockReturnValueOnce("raw_unquoted_val");
 
 		testGen.generateServiceTestFile(
 			"mocked",

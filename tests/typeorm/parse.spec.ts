@@ -65,49 +65,52 @@ describe("TypeOrmParser", () => {
 			"nullableNote",
 			"untypedProp",
 		]);
-		expect((userSchema.properties?.id as SwaggerDefinition).type).toBe(
-			"number",
-		);
-		expect((userSchema.properties?.firstName as SwaggerDefinition).type).toBe(
-			"string",
-		);
-		expect((userSchema.properties?.lastName as SwaggerDefinition).type).toBe(
-			"string",
-		);
-		expect((userSchema.properties?.isActive as SwaggerDefinition).type).toBe(
-			"boolean",
-		);
-		expect((userSchema.properties?.createdAt as SwaggerDefinition).type).toBe(
-			"string",
-		);
-		expect((userSchema.properties?.createdAt as SwaggerDefinition).format).toBe(
-			"date-time",
-		);
-		expect((userSchema.properties?.tags as SwaggerDefinition).type).toBe(
-			"array",
-		);
 		expect(
-			(
-				(userSchema.properties?.tags as SwaggerDefinition)
-					.items as SwaggerDefinition
-			).type,
+			(userSchema.properties?.id as SwaggerDefinition | undefined)?.type,
+		).toBe("number");
+		expect(
+			(userSchema.properties?.firstName as SwaggerDefinition | undefined)?.type,
 		).toBe("string");
-		expect((userSchema.properties?.scores as SwaggerDefinition).type).toBe(
-			"array",
-		);
+		expect(
+			(userSchema.properties?.lastName as SwaggerDefinition | undefined)?.type,
+		).toBe("string");
+		expect(
+			(userSchema.properties?.isActive as SwaggerDefinition | undefined)?.type,
+		).toBe("boolean");
+		expect(
+			(userSchema.properties?.createdAt as SwaggerDefinition | undefined)?.type,
+		).toBe("string");
+		expect(
+			(userSchema.properties?.createdAt as SwaggerDefinition | undefined)
+				?.format,
+		).toBe("date-time");
+		expect(
+			(userSchema.properties?.tags as SwaggerDefinition | undefined)?.type,
+		).toBe("array");
 		expect(
 			(
-				(userSchema.properties?.scores as SwaggerDefinition)
-					.items as SwaggerDefinition
-			).type,
+				(userSchema.properties?.tags as SwaggerDefinition | undefined)?.items as
+					| SwaggerDefinition
+					| undefined
+			)?.type,
+		).toBe("string");
+		expect(
+			(userSchema.properties?.scores as SwaggerDefinition | undefined)?.type,
+		).toBe("array");
+		expect(
+			(
+				(userSchema.properties?.scores as SwaggerDefinition | undefined)
+					?.items as SwaggerDefinition | undefined
+			)?.type,
 		).toBe("number");
 		// PhoneNumber should NOT be misclassified as "number"
-		expect((userSchema.properties?.phone as SwaggerDefinition).type).toBe(
-			"object",
-		);
-		expect((userSchema.properties?.untypedProp as SwaggerDefinition).type).toBe(
-			"object",
-		);
+		expect(
+			(userSchema.properties?.phone as SwaggerDefinition | undefined)?.type,
+		).toBe("object");
+		expect(
+			(userSchema.properties?.untypedProp as SwaggerDefinition | undefined)
+				?.type,
+		).toBe("object");
 	});
 
 	it("should fall back to object type if type is unknown", () => {
@@ -129,7 +132,9 @@ describe("TypeOrmParser", () => {
 		const schemas = parser.parse(project);
 		const schema = schemas.SomeEntity as SwaggerDefinition;
 
-		expect((schema.properties?.data as SwaggerDefinition).type).toBe("object");
+		expect(
+			(schema.properties?.data as SwaggerDefinition | undefined)?.type,
+		).toBe("object");
 	});
 
 	it("should ignore non-entity classes and non-column properties", () => {

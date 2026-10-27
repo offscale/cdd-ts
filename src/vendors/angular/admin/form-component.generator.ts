@@ -109,7 +109,7 @@ export class FormComponentGenerator {
 
 		sourceFile.addStatements(
 			[
-				`import { Component, OnInit, computed, inject, signal, DestroyRef } from '@angular/core';`,
+				`import { Component, OnInit, computed, inject, input, linkedSignal, model, output, signal, DestroyRef } from '@angular/core';`,
 				`import { takeUntilDestroyed } from '@angular/core/rxjs-interop';`,
 				`import { FormBuilder, FormGroup, FormArray, Validators, FormControl } from '@angular/forms';`,
 				`import { ActivatedRoute, Router } from '@angular/router';`,
@@ -354,10 +354,39 @@ export class FormComponentGenerator {
 				isReadonly: true,
 				initializer: "inject(DestroyRef)",
 			},
-			{ name: "id = signal<string | null>(null)" },
-			{ name: "isEditMode = computed(() => !!this.id())" },
+			{
+				name: "resourceId",
+				isReadonly: true,
+				initializer: "input<string | null>(null)",
+			},
+			{
+				name: "disabled",
+				isReadonly: true,
+				initializer: "model<boolean>(false)",
+			},
+			{
+				name: "saved",
+				isReadonly: true,
+				initializer: `output<Record<string, string | number | boolean | object | undefined | null>>()`,
+			},
+			{
+				name: "cancelled",
+				isReadonly: true,
+				initializer: "output<void>()",
+			},
+			{
+				name: "id",
+				isReadonly: true,
+				initializer: "linkedSignal(() => this.resourceId())",
+			},
+			{
+				name: "isEditMode",
+				isReadonly: true,
+				initializer: "computed(() => !!this.id())",
+			},
 			{
 				name: "formTitle",
+				isReadonly: true,
 				initializer: `computed(() => this.isEditMode() ? 'Edit ${resource.modelName}' : 'Create ${resource.modelName}')`,
 			},
 		]);
@@ -742,6 +771,7 @@ export class FormComponentGenerator {
 
 		body += `action$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
   next: () => {
+    this.saved.emit(finalPayload as Record<string, string | number | boolean | object | undefined | null>);
     this.snackBar.open(this.i18n.t('saved_successfully', '${resource.modelName} saved successfully!'), this.i18n.t('close', 'Close'), { duration: 3000 });
     this.router.navigate(['../'], { relativeTo: this.route });
   },
@@ -757,7 +787,10 @@ export class FormComponentGenerator {
 	private addOnCancelMethod(classDeclaration: ClassDeclaration): void {
 		classDeclaration.addMethod({
 			name: "onCancel",
-			statements: `this.router.navigate(['../'], { relativeTo: this.route });`,
+			statements: [
+				`this.cancelled.emit();`,
+				`this.router.navigate(['../'], { relativeTo: this.route });`,
+			],
 		});
 	}
 

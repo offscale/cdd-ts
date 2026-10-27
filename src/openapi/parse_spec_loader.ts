@@ -7,7 +7,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 import type { OpenApiValue, SwaggerSpec } from "../core/types/index.js";
 import { isUrl } from "../functions/utils.js";

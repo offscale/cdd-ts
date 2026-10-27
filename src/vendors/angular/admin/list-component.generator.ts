@@ -121,7 +121,7 @@ export class ListComponentGenerator {
 		);
 
 		sourceFile.addStatements([
-			`import { Component, viewChild, AfterViewInit, inject, signal, DestroyRef } from '@angular/core';`,
+			`import { Component, viewChild, AfterViewInit, computed, inject, input, linkedSignal, model, output, signal, DestroyRef } from '@angular/core';`,
 			`import { takeUntilDestroyed } from '@angular/core/rxjs-interop';`,
 			`import { MatPaginator, PageEvent } from '@angular/material/paginator';`,
 			`import { MatTableDataSource } from '@angular/material/table';`,
@@ -207,18 +207,55 @@ export class ListComponentGenerator {
 			},
 			{
 				name: "paginator",
+				isReadonly: true,
 				initializer: "viewChild.required(MatPaginator)",
 			},
 			{
+				name: "pageSizeOptions",
+				isReadonly: true,
+				initializer: "input<readonly number[]>([5, 10, 25, 100])",
+			},
+			{
+				name: "pageSize",
+				isReadonly: true,
+				initializer: "model<number>(10)",
+			},
+			{
+				name: "itemSelected",
+				isReadonly: true,
+				initializer: `output<${model.modelName}>()`,
+			},
+			{
+				name: "itemDeleted",
+				isReadonly: true,
+				initializer: "output<string>()",
+			},
+			{
 				name: "dataSource",
+				isReadonly: true,
 				initializer: `new MatTableDataSource<${model.modelName}>()`,
 			},
-			{ name: "totalItems", initializer: "signal(0)" },
+			{ name: "totalItems", isReadonly: true, initializer: "signal(0)" },
+			{
+				name: "hasItems",
+				isReadonly: true,
+				initializer: "computed(() => this.totalItems() > 0)",
+			},
+			{
+				name: "activePageIndex",
+				isReadonly: true,
+				initializer: "linkedSignal(() => (this.totalItems() >= 0 ? 0 : 0))",
+			},
 			{
 				name: "displayedColumns",
+				isReadonly: true,
 				initializer: JSON.stringify(model.displayedColumns),
 			},
-			{ name: "idProperty", initializer: `'${model.idProperty}'` },
+			{
+				name: "idProperty",
+				isReadonly: true,
+				initializer: `'${model.idProperty}'`,
+			},
 		]);
 	}
 
@@ -327,6 +364,7 @@ export class ListComponentGenerator {
 					statements: [
 						`if (confirm(this.i18n.t('confirm_delete', 'Are you sure you want to delete this item?'))) {`,
 						`  this.${camelCase(model.serviceName)}.${deleteOp.methodName}(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {`,
+						`    this.itemDeleted.emit(id);`,
 						`    this.snackBar.open(this.i18n.t('item_deleted', 'Item deleted successfully!'), this.i18n.t('close', 'Close'), { duration: 3000 });`,
 						`    this.refresh();`,
 						`  });`,

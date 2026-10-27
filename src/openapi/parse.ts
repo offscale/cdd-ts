@@ -720,21 +720,19 @@ export class SwaggerParser {
 					return null;
 				}
 
-				const hasProp =
-					typeof resolvedSchema === "object" &&
-					resolvedSchema.properties &&
-					resolvedSchema.properties[dPropName];
+				const dProp =
+					typeof resolvedSchema === "object"
+						? (resolvedSchema.properties?.[dPropName] as
+								| SwaggerDefinition
+								| undefined)
+						: undefined;
 
-				if (!hasProp) {
+				if (!dProp) {
 					return null;
 				}
 
-				if (
-					(resolvedSchema.properties?.[dPropName] as SwaggerDefinition)?.enum
-				) {
-					const name = (
-						resolvedSchema.properties?.[dPropName] as SwaggerDefinition
-					).enum?.[0] as string;
+				if (dProp.enum) {
+					const name = dProp.enum[0] as string;
 
 					return { name, schema: resolvedSchema };
 				}

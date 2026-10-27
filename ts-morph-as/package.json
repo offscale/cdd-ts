@@ -15,7 +15,7 @@
 	"license": "ISC",
 	"type": "module",
 	"devDependencies": {
-		"assemblyscript": "^0.28.14"
+		"assemblyscript": "^0.28"
 	},
 	"exports": {
 		".": {
@@ -24,8 +24,8 @@
 		}
 	},
 	"dependencies": {
-		"@assemblyscript/loader": "^0.28.14",
-		"as-wasi": "^0.6.0",
-		"assemblyscript-json": "^1.1.0"
+		"@assemblyscript/loader": "^0.28",
+		"as-wasi": "^0.6",
+		"assemblyscript-json": "^1.1"
 	}
 }

@@ -107,7 +107,7 @@ export interface CodeScanFileSystem {
 	 * @param encodingOrOptions - Encoding string or options value.
 	 * @returns File text content.
 	 */
-	readFileSync(filePath: string, encodingOrOptions: OpenApiValue): string;
+	readFileSync(filePath: string, encodingOrOptions: BufferEncoding): string;
 	/**
 	 * Reads the directory entries.
 	 * @param dirPath - Directory path to list.

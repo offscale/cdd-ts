@@ -168,7 +168,7 @@ export function generateDocsJson(
 			} else if (config.options.framework === "vue") {
 				finalCode += `import { use${serviceName} } from './api/services/${controller.toLowerCase()}.service';\n\n`;
 			} else {
-				finalCode += `import { Component, inject } from '@angular/core';\nimport { ${serviceName} } from './api/services/${controller.toLowerCase()}.service';\n\n`;
+				finalCode += `import { Component, inject } from '@angular/core';\nimport { firstValueFrom } from 'rxjs';\nimport { ${serviceName} } from './api/services/${controller.toLowerCase()}.service';\n\n`;
 			}
 		}
 
@@ -178,11 +178,11 @@ export function generateDocsJson(
 			} else if (config.options.framework === "vue") {
 				finalCode += `<script setup>\nimport { onMounted } from 'vue';\n\nconst service = use${serviceName}();\n\nasync function execute() {\n`;
 			} else {
-				finalCode += `@Component({\n    selector: 'app-example',\n    template: ''\n})\nexport class ExampleComponent {\n    private service = inject(${serviceName});\n\n    async execute() {\n`;
+				finalCode += `@Component({\n    selector: 'app-example',\n    host: { class: 'app-example-host' },\n    template: ''\n})\nexport class ExampleComponent {\n    private readonly service = inject(${serviceName});\n\n    async execute() {\n`;
 			}
 		}
 
-		let innerCode = `const response = await this.service.${methodName}(${args});\nconsole.log(response);`;
+		let innerCode = `const response = await firstValueFrom(this.service.${methodName}(${args}));\nconsole.log(response);`;
 		if (
 			config.options.framework === "react" ||
 			config.options.framework === "vue"

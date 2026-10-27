@@ -8,7 +8,7 @@ import { generateToOpenApi } from "@src/cli/commands/to_openapi.js";
 import type { GeneratorConfig, SwaggerSpec } from "@src/core/types/index.js";
 import { generateFromConfigSync } from "@src/index.js";
 import { parseGeneratedServices } from "@src/openapi/emitters/assemble_paths.js";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { Project } from "ts-morph";
 import ts from "typescript";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

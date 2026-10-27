@@ -6,7 +6,7 @@
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import type { ArazzoSpec } from "../core/types/index.js";
 import { parseArazzoCliAst } from "./parse_cli_ast.js";
 import { parseArazzoSdkAst } from "./parse_sdk_ast.js";
