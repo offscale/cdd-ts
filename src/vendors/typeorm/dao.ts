@@ -316,7 +316,11 @@ export function generateDaoFactory(
 			name: `get${schema}Dao`,
 			parameters: [
 				{ name: "ephemeral", type: "boolean", hasQuestionToken: true },
-				{ name: "dataSource", type: "DataSource", hasQuestionToken: true },
+				{
+					name: "dataSource",
+					type: "DataSource | null",
+					hasQuestionToken: true,
+				},
 			],
 			returnType: `I${schema}Dao`,
 			docs: [

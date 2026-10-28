@@ -173,7 +173,7 @@ jobs:
                   run().catch(e => { console.error(e); process.exit(1); });
                   EOF
                   
-                  npx tsc test-generated-servers.ts --module NodeNext --moduleResolution NodeNext || { echo "test-generated-servers compilation failed"; exit 1; }
+                  npx tsc test-generated-servers.ts --ignoreConfig --types node --module NodeNext --moduleResolution NodeNext || { echo "test-generated-servers compilation failed"; exit 1; }
                   node test-generated-servers.js || { echo "test-generated-servers execution failed"; exit 1; }
                   
                   rm -rf .test_out_swagger

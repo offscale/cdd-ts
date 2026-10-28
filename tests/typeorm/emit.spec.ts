@@ -96,6 +96,10 @@ describe("TypeOrmGenerator", () => {
 		expect(testText).toContain("const entity = new User();");
 
 		// Check DAO factory test file generation
+		const factoryFile = project.getSourceFileOrThrow("/out/dao/factory.ts");
+		expect(factoryFile.getFullText()).toContain(
+			"getUserDao(ephemeral?: boolean, dataSource?: DataSource | null): IUserDao",
+		);
 		const factoryTestFile = project.getSourceFileOrThrow(
 			"/out/dao/factory.spec.ts",
 		);

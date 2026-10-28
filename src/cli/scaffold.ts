@@ -48,7 +48,7 @@ export function emitPackageScaffolding(
 		if (isTypeOrmServer) {
 			Object.assign(dependencies, {
 				typeorm: "^1.1",
-				"better-sqlite3": "^13.0",
+				"better-sqlite3": "^12.0",
 				pg: "^8.23",
 			});
 			Object.assign(devDependencies, {

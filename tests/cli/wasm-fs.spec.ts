@@ -249,6 +249,7 @@ describe("cli/spec_writer & cli/scaffold", () => {
 			) as { name: string; dependencies: Record<string, string> };
 			expect(pkgJson.name).toBe("generated-server");
 			expect(pkgJson.dependencies.typeorm).toBeDefined();
+			expect(pkgJson.dependencies["better-sqlite3"]).toBe("^12.0");
 			expect(fs.existsSync(path.join(serverDir, "vitest.config.ts"))).toBe(
 				true,
 			);
