@@ -357,6 +357,36 @@ export {
 /** Re-exports `IOrmGenerator` from `./core/orm/index.js`. */
 /** Re-exports `IOrmParser` from `./core/orm/index.js`. */
 export type { IOrmGenerator, IOrmParser } from "./core/orm/index.js";
+/** Re-exports WebAssembly optimizer types from `./core/wasm-optimizer.js`. */
+export type {
+	JavyWasmLayoutConfig,
+	Leb128DecodeResult,
+	ParsedWasmSnapshot,
+	WasmBundleOptimizeOptions,
+	WasmBundleOptimizeResult,
+	WasmDataSegment,
+	WasmSectionEntry,
+} from "./core/wasm-optimizer.js";
+/** Re-exports WebAssembly bundle and Javy Wizer snapshot optimizer functions from `./core/wasm-optimizer.js`. */
+export {
+	assembleWasmBinary,
+	collectNonZeroMemorySegments,
+	compactJavyWasmInPlace,
+	DEFAULT_JAVY_BYTECODE_CAP_OFFSET,
+	DEFAULT_JAVY_BYTECODE_LEN_OFFSET,
+	DEFAULT_JAVY_BYTECODE_PTR_OFFSET,
+	DEFAULT_JAVY_DLMALLOC_TOP_OFFSET,
+	DEFAULT_JAVY_HEAP_BASE_OFFSET,
+	encodeWasmDataSection,
+	encodeWasmMemorySection,
+	extractWasmMemoryAndSections,
+	graftJavyBytecode,
+	optimizeWasmJsBundle,
+	patchJavyPendingJobsCheck,
+	readUnsignedLeb128,
+	writeSignedLeb128,
+	writeUnsignedLeb128,
+} from "./core/wasm-optimizer.js";
 /** Re-exports `CodeScanFileSystem` from `./functions/parse.js`. */
 /** Re-exports `CodeScanIr` from `./functions/parse.js`. */
 /** Re-exports `CodeScanOperation` from `./functions/parse.js`. */

@@ -23,9 +23,8 @@
 		"resolveJsonModule": true,
 		"allowArbitraryExtensions": true,
 		"types": ["vitest/globals", "node"],
-		"baseUrl": ".",
 		"paths": {
-			"@src/*": ["src/*"]
+			"@src/*": ["./src/*"]
 		}
 	},
 	"include": ["src/**/*.ts", "tests/**/*.ts", "vitest.config.ts"],

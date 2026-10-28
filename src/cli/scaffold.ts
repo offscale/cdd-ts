@@ -26,42 +26,42 @@ export function emitPackageScaffolding(
 
 	if (targetScope === "to_sdk_cli" || targetScope === "to_server") {
 		Object.assign(dependencies, {
-			"@modelcontextprotocol/sdk": "^1.29.0",
-			zod: "^4.4.3",
-			commander: "^14.0.0",
+			"@modelcontextprotocol/sdk": "^1.32",
+			zod: "^4.6",
+			commander: "^15.0",
 		});
 	}
 	const isTypeOrmServer =
 		targetScope === "to_server" && finalConfig.options?.orm === "typeorm";
 	if (targetScope === "to_server") {
 		Object.assign(dependencies, {
-			express: "^4.21.2",
-			"@types/express": "^5.0.0",
+			express: "^5.3",
+			"@types/express": "^5.0",
 		});
 		Object.assign(devDependencies, {
-			supertest: "^7.2.2",
-			"@types/supertest": "^7.2.0",
-			vitest: "^4.1.0",
-			typescript: "^5.0.0",
-			"ts-node": "^10.9.2",
+			supertest: "^7.3",
+			"@types/supertest": "^7.2",
+			vitest: "^5.0",
+			typescript: "^6.0",
+			"ts-node": "^10.9",
 		});
 		if (isTypeOrmServer) {
 			Object.assign(dependencies, {
-				typeorm: "^1.0.0",
-				"better-sqlite3": "^12.0.0",
-				pg: "^8.22.0",
+				typeorm: "^1.1",
+				"better-sqlite3": "^13.0",
+				pg: "^8.23",
 			});
 			Object.assign(devDependencies, {
-				"@faker-js/faker": "^10.5.0",
-				"@types/better-sqlite3": "^7.6.10",
+				"@faker-js/faker": "^10.6",
+				"@types/better-sqlite3": "^9.6",
 			});
 		}
 	}
 	if (finalConfig.options?.tests === true) {
 		Object.assign(devDependencies, {
-			vitest: "^4.1.0",
-			typescript: "^5.0.0",
-			"@types/node": "^25.0.0",
+			vitest: "^5.0",
+			typescript: "^6.0",
+			"@types/node": "^26.6",
 		});
 	}
 
@@ -96,7 +96,6 @@ export function emitPackageScaffolding(
 		compilerOptions: {
 			target: "ES2022",
 			module: "CommonJS",
-			moduleResolution: "node",
 			outDir: "dist",
 			rootDir: "src",
 			declaration: true,

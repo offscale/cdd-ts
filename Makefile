@@ -53,11 +53,7 @@ build_wasm: build
 	npx rolldown -c rolldown.config.js
 	@echo "Compiling to WebAssembly..."
 	node scripts/fix-bundle.cjs
-	@if command -v javy >/dev/null 2>&1; then \
-		javy compile bin/cdd-ts.js -o bin/cdd-ts-javy.wasm; \
-	else \
-		npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts-javy.wasm || echo "Skipping javy-cli binary compilation (remote download unavailable); bundle written to bin/cdd-ts.js"; \
-	fi
+	@node scripts/fix-bundle.cjs --compile-wasm bin/cdd-ts.js bin/cdd-ts-javy.wasm || echo "Skipping javy binary compilation (remote download unavailable); bundle written to bin/cdd-ts.js"
 
 build_docker:
 	docker build -f debian.Dockerfile -t cdd-ts:debian .
@@ -78,7 +74,7 @@ build_with_ts_go:
 	npx rolldown -c rolldown.config.js
 	@echo "Compiling to WebAssembly via javy..."
 	node scripts/fix-bundle.cjs
-	npx -y javy-cli compile bin/cdd-ts.js -o bin/cdd-ts-go-javy.wasm
+	node scripts/fix-bundle.cjs --compile-wasm bin/cdd-ts.js bin/cdd-ts-go-javy.wasm
 	@echo "build_with_ts_go completed successfully!"
 
 build_with_ts_go_assemblyscript:

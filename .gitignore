@@ -14,6 +14,7 @@ tmp*
 *.spec.js
 *.d.ts
 *.js
+!rolldown.config.js
 !wasm-stubs/*.js
 
 # Temporary evaluation & fix scripts
@@ -21,6 +22,7 @@ evaluate*.cjs
 fix*.cjs
 fix*.ts
 scripts/fix*.cjs
+!scripts/fix-bundle.cjs
 scripts/fix*.ts
 scripts/refactor*.ts
 scripts/remove*.ts
@@ -252,6 +254,7 @@ temp/
 *.pyc
 __pycache__/
 *.cjs
+!scripts/fix-bundle.cjs
 *.mjs
 test-*.ts
 test-*.js

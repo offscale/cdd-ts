@@ -105,8 +105,9 @@ export class ContentDecoderGenerator {
             else if (pad === 3) normalized += '=';
         }
 
-        if (typeof (globalThis as { Buffer?: { from: (data: string | Uint8Array, encoding?: string) => Uint8Array } }).Buffer !== 'undefined') {
-            return Uint8Array.from((globalThis as { Buffer: { from: (data: string, encoding: string) => Uint8Array } }).Buffer.from(normalized, 'base64'));
+        const globalBuffer = (globalThis as { Buffer?: { from: (data: string, encoding: string) => Uint8Array } }).Buffer;
+        if (typeof globalBuffer !== 'undefined') {
+            return Uint8Array.from(globalBuffer.from(normalized, 'base64'));
         }
         const binary = atob(normalized);
         const bytes = new Uint8Array(binary.length);
@@ -126,8 +127,9 @@ export class ContentDecoderGenerator {
         if (typeof TextDecoder !== 'undefined') {
             return new TextDecoder().decode(bytes);
         }
-        if (typeof (globalThis as { Buffer?: { from: (data: string | Uint8Array, encoding?: string) => { toString: (enc: string) => string } } }).Buffer !== 'undefined') {
-            return (globalThis as { Buffer: { from: (data: Uint8Array) => { toString: (enc: string) => string } } }).Buffer.from(bytes).toString('utf-8');
+        const globalBuffer = (globalThis as { Buffer?: { from: (data: Uint8Array) => { toString: (enc: string) => string } } }).Buffer;
+        if (typeof globalBuffer !== 'undefined') {
+            return globalBuffer.from(bytes).toString('utf-8');
         }
         let result = '';
         for (let i = 0; i < bytes.length; i++) {
