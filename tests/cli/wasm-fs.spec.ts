@@ -233,6 +233,13 @@ describe("cli/spec_writer & cli/scaffold", () => {
 			writeDocsJsonOutput({ endpoints: {} }, docsPath);
 			expect(fs.readFileSync(docsPath, "utf-8")).toContain('"endpoints"');
 
+			const docsDir = path.join(tmpDir, "docs-out-dir");
+			fs.mkdirSync(docsDir, { recursive: true });
+			writeDocsJsonOutput({ endpoints: {} }, docsDir);
+			expect(
+				fs.readFileSync(path.join(docsDir, "docs.json"), "utf-8"),
+			).toContain('"endpoints"');
+
 			writeDocsJsonOutput({ endpoints: {} });
 			expect(stdoutSpy).toHaveBeenCalled();
 
@@ -604,6 +611,39 @@ describe("cli commands & generator branch coverage", () => {
 			);
 			expect(docsObj).toBeDefined();
 
+			const arazzoFilePath = path.join(tmpDir, "arazzo.json");
+			fs.writeFileSync(
+				arazzoFilePath,
+				JSON.stringify({
+					arazzo: "1.1.0",
+					info: { title: "Workflows", version: "1.0.0" },
+					sourceDescriptions: [{ name: "api", url: "./openapi.json" }],
+					workflows: [{ workflowId: "checkoutFlow", steps: [] }],
+				}),
+			);
+			const arazzoDocs = (await generateDocsJson(
+				{
+					input: arazzoFilePath,
+					imports: true,
+					wrapping: true,
+				},
+				true,
+			)) as { workflows?: Record<string, string> };
+			expect(arazzoDocs.workflows?.checkoutFlow).toContain("checkoutFlow");
+
+			const invalidExistingFile = path.join(tmpDir, "invalid-spec.json");
+			fs.writeFileSync(invalidExistingFile, JSON.stringify({ foo: "bar" }));
+			await expect(
+				generateDocsJson(
+					{
+						input: invalidExistingFile,
+						imports: true,
+						wrapping: true,
+					},
+					true,
+				),
+			).rejects.toThrow();
+
 			// Javy WASM mode (__FsData active) branches for generateToOpenApi and generateDocsJson
 			(globalThis as { __FsData?: unknown }).__FsData = {};
 			(globalThis as { __SPEC_JSON?: unknown }).__SPEC_JSON = JSON.stringify({
@@ -614,7 +654,7 @@ describe("cli commands & generator branch coverage", () => {
 			await generateDocsJson(
 				{
 					input: specFilePath,
-					output: path.join(tmpDir, "wasm-docs.json"),
+					output: path.join(tmpDir, "wasm-docs-dir"),
 					imports: true,
 					wrapping: true,
 				},

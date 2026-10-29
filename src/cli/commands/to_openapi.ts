@@ -5,6 +5,7 @@
  */
 import * as fs from "node:fs";
 import { type Command, Option } from "commander";
+import * as yaml from "js-yaml";
 import type { GeneratorConfig, OpenApiValue } from "../../core/types/index.js";
 import { generateDocsJson as generateDocsJsonImpl } from "../../functions/docs_generator.js";
 import {
@@ -221,9 +222,34 @@ export async function generateDocsJson(
 		},
 		compilerOptions: {},
 	} as GeneratorConfig;
-	const parser = (globalThis as { __FsData?: unknown }).__FsData
-		? SwaggerParser.createSync(options.input, config)
-		: await SwaggerParser.create(options.input, config);
+	let parser: SwaggerParser;
+	try {
+		parser = (globalThis as { __FsData?: unknown }).__FsData
+			? SwaggerParser.createSync(options.input, config)
+			: await SwaggerParser.create(options.input, config);
+	} catch (error) {
+		if (fs.existsSync(options.input)) {
+			const rawContent = fs.readFileSync(options.input, "utf8");
+			const parsed = yaml.load(rawContent) as
+				| { arazzo?: string; workflows?: unknown[] }
+				| undefined;
+			if (
+				parsed &&
+				typeof parsed === "object" &&
+				(typeof parsed.arazzo === "string" || Array.isArray(parsed.workflows))
+			) {
+				parser = {
+					operations: [],
+					webhooks: [],
+					spec: parsed,
+				} as unknown as SwaggerParser;
+			} else {
+				throw error;
+			}
+		} else {
+			throw error;
+		}
+	}
 	const docsOptions = {
 		imports: options.imports !== false,
 		wrapping: options.wrapping !== false,

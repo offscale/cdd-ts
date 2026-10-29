@@ -14,7 +14,7 @@ export const existsSync = (path) => {
 };
 export const readFileSync = (path) => {
 	const p = path.toString();
-	if (p.includes("package.json")) return '{"version": "1.0.0"}';
+	if (p.includes("package.json")) return '{"version": "0.0.4"}';
 	if (
 		p.includes("spec.json") ||
 		p.includes("spec.yaml") ||

@@ -4,6 +4,7 @@
  * @module cli/spec_writer
  */
 import * as fs from "node:fs";
+import * as path from "node:path";
 import * as yaml from "js-yaml";
 import type { OpenApiValue } from "../core/types/index.js";
 
@@ -56,10 +57,10 @@ export function writeFormattedSpec(
 }
 
 /**
- * Serializes a JSON documentation object and writes it to a file or `process.stdout`.
+ * Serializes a JSON documentation object and writes it to a file (or `<outputPath>/docs.json` when `outputPath` is a directory) or `process.stdout`.
  *
  * @param docs - Documentation payload to serialize.
- * @param outputPath - Optional file path to write to; if omitted, writes to `process.stdout`.
+ * @param outputPath - Optional file or directory path to write to; if omitted, writes to `process.stdout`.
  */
 export function writeDocsJsonOutput(
 	docs: OpenApiValue,
@@ -67,7 +68,21 @@ export function writeDocsJsonOutput(
 ): void {
 	const outputStr = `${JSON.stringify(docs, null, 2)}${NEWLINE}`;
 	if (outputPath) {
-		fs.writeFileSync(outputPath, outputStr, "utf8");
+		const isExistingDir =
+			fs.existsSync(outputPath) &&
+			typeof fs.statSync === "function" &&
+			fs.statSync(outputPath).isDirectory();
+		const isJavyDir =
+			Boolean((globalThis as { __FsData?: unknown }).__FsData) &&
+			!outputPath.endsWith(".json");
+		if (isJavyDir) {
+			fs.mkdirSync(outputPath, { recursive: true });
+		}
+		const targetPath =
+			isExistingDir || isJavyDir
+				? path.join(outputPath, "docs.json")
+				: outputPath;
+		fs.writeFileSync(targetPath, outputStr, "utf8");
 	} else {
 		process.stdout.write(outputStr);
 	}

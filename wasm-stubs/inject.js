@@ -54,3 +54,7 @@ class MockURL {
 	}
 }
 globalThis.URL = MockURL;
+
+if (typeof console !== "undefined" && !console.warn) {
+	console.warn = console.error || console.log;
+}

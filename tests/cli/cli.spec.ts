@@ -462,6 +462,29 @@ describe("cli.ts", () => {
 			);
 		});
 
+		it("generates docs json and outputs to directory/docs.json when -o is an existing directory", async () => {
+			vi.spyOn(fs, "existsSync").mockReturnValueOnce(true);
+			vi.spyOn(fs, "statSync").mockReturnValueOnce({
+				isDirectory: () => true,
+				isFile: () => false,
+			} as unknown as fs.Stats);
+			await run([
+				"node",
+				"cli.js",
+				"to_docs_json",
+				"-i",
+				"spec.json",
+				"-o",
+				"out-dir",
+			]);
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			expect(fs.writeFileSync).toHaveBeenCalledWith(
+				path.join("out-dir", "docs.json"),
+				expect.stringContaining('"docs": true'),
+				"utf8",
+			);
+		});
+
 		it("fails on error", async () => {
 			const parse = await import("../../src/openapi/parse.js");
 			vi.mocked(parse.SwaggerParser.create).mockRejectedValueOnce(

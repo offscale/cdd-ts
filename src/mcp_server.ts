@@ -25,7 +25,7 @@ import {
 export async function serveMcp(): Promise<void> {
 	const mcp = new McpServer({
 		name: "cdd-ts-mcp-server",
-		version: "1.0.0",
+		version: "0.0.4",
 	});
 
 	mcp.tool(

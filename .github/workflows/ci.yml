@@ -5,8 +5,7 @@ on:
         branches:
             - master
         tags:
-            - 'v*.*.*'
-            - '*.*.*'
+            - 'v*'
 
 jobs:
     ci:
@@ -53,7 +52,7 @@ jobs:
             - name: Build ts-morph
               run: cd ../ts-morph && npm install && npm run build:node -w @ts-morph/common && npm run build:node -w ts-morph
 
-            - uses: actions/setup-node@v6
+            - uses: actions/setup-node@v7
               with:
                   node-version: 'lts/*'
                   registry-url: 'https://registry.npmjs.org'
@@ -80,7 +79,7 @@ jobs:
               run: npm run-script build
 
             - name: Setup Go
-              uses: actions/setup-go@v6
+              uses: actions/setup-go@v7
               with:
                   go-version: '>=1.22.0'
                   cache: true
@@ -188,33 +187,13 @@ jobs:
                   make build_with_ts_go_assemblyscript
 
             - name: Archive build
-              if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+              if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
               run: tar -czvf dist.tar.gz dist/
 
             - name: Upload Artifacts (Version Tag)
-              if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-              uses: ncipollo/release-action@v1
-              with:
-                  artifacts: "dist.tar.gz,bin/cdd-ts.js,bin/cdd-ts.wasm,bin/typescript-go.wasm,bin/cdd-ts-javy.wasm,bin/cdd-ts-go-javy.wasm"
-                  allowUpdates: true
-                  replacesArtifacts: true
-
-            - name: Update latest tag
-              if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              run: |
-                  gh release delete latest --cleanup-tag -y || true
-                  git push origin :refs/tags/latest || true
-                  git tag -f latest ${{ github.sha }}
-                  git push -f origin latest
-
-            - name: Create Latest Release
               if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
               uses: ncipollo/release-action@v1
               with:
-                  tag: latest
-                  name: Latest Release
                   artifacts: "dist.tar.gz,bin/cdd-ts.js,bin/cdd-ts.wasm,bin/typescript-go.wasm,bin/cdd-ts-javy.wasm,bin/cdd-ts-go-javy.wasm"
                   allowUpdates: true
                   replacesArtifacts: true

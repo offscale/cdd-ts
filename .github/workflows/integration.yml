@@ -43,7 +43,7 @@ jobs:
                   rm -rf ../ts-morph/packages/ts-morph-as && cp -r ts-morph-as ../ts-morph/packages/ts-morph-as
 
             - name: Setup Node
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@v7
               with:
                   node-version: 'lts/*'
                   cache: 'npm'
