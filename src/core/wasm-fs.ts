@@ -99,20 +99,26 @@ export function runJavyStdinIfPresent(runFn: CliRunner): void {
 	if (!Javy?.IO) {
 		return;
 	}
-	const buffer = new Uint8Array(64 * 1024);
-	let offset = 0;
+	const chunks: Uint8Array[] = [];
+	let totalLength = 0;
+	const readBuf = new Uint8Array(4096);
 	try {
-		while (offset < buffer.length) {
-			const chunk = buffer.subarray(offset);
-			const bytesRead = Javy.IO.readSync(0, chunk);
+		while (true) {
+			const bytesRead = Javy.IO.readSync(0, readBuf);
 			if (!bytesRead || bytesRead === 0) break;
-			offset += bytesRead;
+			chunks.push(readBuf.slice(0, bytesRead));
+			totalLength += bytesRead;
 		}
 	} catch {
 		// Ignore EOF errors
 	}
-
-	const stdinContent = new TextDecoder().decode(buffer.subarray(0, offset));
+	const buffer = new Uint8Array(totalLength);
+	let offset = 0;
+	for (const chunk of chunks) {
+		buffer.set(chunk, offset);
+		offset += chunk.length;
+	}
+	const stdinContent = new TextDecoder().decode(buffer);
 	if (!stdinContent) {
 		return;
 	}
@@ -127,6 +133,9 @@ export function runJavyStdinIfPresent(runFn: CliRunner): void {
 		if (parsed.args) {
 			const actualArgs =
 				parsed.args[0] === "cdd-ts" ? parsed.args.slice(1) : parsed.args;
+			if (actualArgs[0] === "to_openapi") {
+				actualArgs[actualArgs.indexOf("-i") + 1] = "/input.service.ts";
+			}
 			const runArgs = ["node", "cdd-ts", ...actualArgs];
 			process.argv = runArgs;
 			runFn(runArgs)

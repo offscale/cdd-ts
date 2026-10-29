@@ -160,6 +160,13 @@ export function generateDocsJson(
 			endpoints[path] = {};
 		}
 
+		const fwLower = (config.options.framework || "").toLowerCase();
+		const isVanilla =
+			fwLower === "vanilla" ||
+			fwLower === "vanilla js" ||
+			fwLower === "vanillajs";
+		const clientClassName = `${controller}Client`;
+
 		let finalCode = "";
 
 		if (useImports) {
@@ -167,6 +174,8 @@ export function generateDocsJson(
 				finalCode += `import { use${serviceName} } from './api/services/${controller.toLowerCase()}.service';\n\n`;
 			} else if (config.options.framework === "vue") {
 				finalCode += `import { use${serviceName} } from './api/services/${controller.toLowerCase()}.service';\n\n`;
+			} else if (isVanilla) {
+				finalCode += `import { ${clientClassName} } from './api/services/${controller.toLowerCase()}.client';\n\n`;
 			} else {
 				finalCode += `import { Component, inject } from '@angular/core';\nimport { firstValueFrom } from 'rxjs';\nimport { ${serviceName} } from './api/services/${controller.toLowerCase()}.service';\n\n`;
 			}
@@ -177,6 +186,8 @@ export function generateDocsJson(
 				finalCode += `export function ExampleComponent() {\n    const service = use${serviceName}();\n\n    async function execute() {\n`;
 			} else if (config.options.framework === "vue") {
 				finalCode += `<script setup>\nimport { onMounted } from 'vue';\n\nconst service = use${serviceName}();\n\nasync function execute() {\n`;
+			} else if (isVanilla) {
+				finalCode += `export async function execute() {\n    const client = new ${clientClassName}();\n`;
 			} else {
 				finalCode += `@Component({\n    selector: 'app-example',\n    host: { class: 'app-example-host' },\n    template: ''\n})\nexport class ExampleComponent {\n    private readonly service = inject(${serviceName});\n\n    async execute() {\n`;
 			}
@@ -188,11 +199,16 @@ export function generateDocsJson(
 			config.options.framework === "vue"
 		) {
 			innerCode = `const response = await service.${methodName}(${args});\nconsole.log(response);`;
+		} else if (isVanilla) {
+			innerCode = useWrapping
+				? `const response = await client.${methodName}(${args});\nconsole.log(response);`
+				: `const client = new ${clientClassName}();\nconst response = await client.${methodName}(${args});\nconsole.log(response);`;
 		}
 		if (useWrapping) {
+			const indent = isVanilla ? "    " : "        ";
 			innerCode = innerCode
 				.split("\n")
-				.map((l) => `        ${l}`)
+				.map((l) => `${indent}${l}`)
 				.join("\n");
 		}
 
@@ -201,6 +217,8 @@ export function generateDocsJson(
 		if (useWrapping) {
 			if (config.options.framework === "vue") {
 				finalCode += `\n}\n</script>`;
+			} else if (isVanilla) {
+				finalCode += `\n}`;
 			} else {
 				finalCode += `\n    }\n}`;
 			}

@@ -146,7 +146,7 @@ describe("core/wasm-fs", () => {
 		// 6. Valid JSON with args NOT starting with "cdd-ts" and runner rejecting
 		const failingRunner = vi.fn().mockRejectedValue(new Error("Runner failed"));
 		const payload2 = JSON.stringify({
-			args: ["to_openapi", "-i", "src"],
+			args: ["to_openapi", "-i", "/spec.json"],
 		});
 		let readDone2 = false;
 		(globalThis as { Javy?: unknown }).Javy = {
@@ -169,7 +169,7 @@ describe("core/wasm-fs", () => {
 			"cdd-ts",
 			"to_openapi",
 			"-i",
-			"src",
+			"/input.service.ts",
 		]);
 		expect(errSpy).toHaveBeenCalledWith(expect.any(Error));
 
@@ -603,6 +603,33 @@ describe("cli commands & generator branch coverage", () => {
 				true,
 			);
 			expect(docsObj).toBeDefined();
+
+			// Javy WASM mode (__FsData active) branches for generateToOpenApi and generateDocsJson
+			(globalThis as { __FsData?: unknown }).__FsData = {};
+			(globalThis as { __SPEC_JSON?: unknown }).__SPEC_JSON = JSON.stringify({
+				openapi: "3.0.0",
+				info: { title: "Docs", version: "1.0.0" },
+				paths: {},
+			});
+			await generateDocsJson(
+				{
+					input: specFilePath,
+					output: path.join(tmpDir, "wasm-docs.json"),
+					imports: true,
+					wrapping: true,
+				},
+				false,
+			);
+			await generateToOpenApi(
+				{
+					input: path.join(servicesDir, "users.service.ts"),
+					output: path.join(tmpDir, "wasm-openapi.json"),
+					format: "json",
+				},
+				false,
+			);
+			delete (globalThis as { __FsData?: unknown }).__FsData;
+			delete (globalThis as { __SPEC_JSON?: unknown }).__SPEC_JSON;
 
 			const { formatCliError } = await import(
 				"../../src/cli/commands/to_openapi.js"

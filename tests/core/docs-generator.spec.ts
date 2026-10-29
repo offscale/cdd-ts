@@ -142,6 +142,53 @@ describe("generateDocsJson", () => {
 		expect(snippet).toContain("}");
 	});
 
+	it("should generate documentation for vanilla framework with and without wrapping", () => {
+		const parser = {
+			operations: [
+				{
+					path: "/posts/{id}",
+					method: "post",
+					methodName: "createPost",
+					operationId: "createPost",
+					tags: [],
+					parameters: [{ name: "id", in: "path", required: true }],
+				},
+			],
+		};
+
+		const config: GeneratorConfig = {
+			output: "",
+			input: "",
+			options: createTestOptions({
+				framework: "vanilla",
+				imports: false,
+				wrapping: false,
+			}),
+		};
+		const wrapped = generateDocsJson(parser, config, {
+			imports: true,
+			wrapping: true,
+		});
+
+		const snippet = wrapped.endpoints["/posts/{id}"]?.post;
+		expect(snippet).toContain(
+			"import { PostsClient } from './api/services/posts.client';",
+		);
+		expect(snippet).toContain("export async function execute() {");
+		expect(snippet).toContain("    const client = new PostsClient();");
+		expect(snippet).toContain(
+			"    const response = await client.createPost({ /* arguments */ });",
+		);
+
+		const unwrapped = generateDocsJson(parser, config, {
+			imports: false,
+			wrapping: false,
+		});
+		expect(unwrapped.endpoints["/posts/{id}"]?.post).toBe(
+			"const client = new PostsClient();\nconst response = await client.createPost({ /* arguments */ });\nconsole.log(response);",
+		);
+	});
+
 	it("should generate documentation with imports and wrapping for vue", () => {
 		const parser = {
 			operations: [

@@ -73,7 +73,11 @@ export async function generateToOpenApi(
 	returnObject = false,
 ): Promise<undefined | OpenApiValue> {
 	let spec: OpenApiValue;
+	const isJavyWasm = Boolean((globalThis as { __FsData?: unknown }).__FsData);
 	try {
+		if (isJavyWasm) {
+			throw new Error("No OpenAPI snapshot found");
+		}
 		({ spec } = readOpenApiSnapshot(
 			options.input,
 			fs as Partial<Parameters<typeof readOpenApiSnapshot>[1]> as Parameters<
@@ -89,8 +93,10 @@ export async function generateToOpenApi(
 			throw error;
 		}
 
-		console.warn(`⚠️  ${message}`);
-		console.warn("ℹ️  Falling back to parsing generated service files.");
+		if (!isJavyWasm) {
+			console.warn(`⚠️  ${message}`);
+			console.warn("ℹ️  Falling back to parsing generated service files.");
+		}
 
 		try {
 			const services = parseGeneratedServices(
@@ -101,16 +107,20 @@ export async function generateToOpenApi(
 			);
 			let schemas: Record<string, OpenApiValue> | undefined;
 
-			try {
-				schemas = parseGeneratedModels(
-					options.input,
-					fs as Partial<
-						Parameters<typeof parseGeneratedModels>[1]
-					> as Parameters<typeof parseGeneratedModels>[1],
-				);
-			} catch (modelError) {
-				console.warn(`⚠️  ${formatCliError(modelError)}`);
-				console.warn("ℹ️  Continuing without reconstructed component schemas.");
+			if (!isJavyWasm) {
+				try {
+					schemas = parseGeneratedModels(
+						options.input,
+						fs as Partial<
+							Parameters<typeof parseGeneratedModels>[1]
+						> as Parameters<typeof parseGeneratedModels>[1],
+					);
+				} catch (modelError) {
+					console.warn(`⚠️  ${formatCliError(modelError)}`);
+					console.warn(
+						"ℹ️  Continuing without reconstructed component schemas.",
+					);
+				}
 			}
 
 			if (options.orm === "typeorm") {
@@ -131,20 +141,22 @@ export async function generateToOpenApi(
 				schemas as Parameters<typeof buildOpenApiSpecFromServices>[2],
 			);
 
-			try {
-				const metadata = parseGeneratedMetadata(
-					options.input,
-					fs as Partial<
-						Parameters<typeof parseGeneratedMetadata>[1]
-					> as Parameters<typeof parseGeneratedMetadata>[1],
-				);
-				spec = applyReverseMetadata(
-					spec as Parameters<typeof applyReverseMetadata>[0],
-					metadata,
-				);
-			} catch (metaError) {
-				console.warn(`⚠️  ${formatCliError(metaError)}`);
-				console.warn("ℹ️  Continuing without reconstructed metadata.");
+			if (!isJavyWasm) {
+				try {
+					const metadata = parseGeneratedMetadata(
+						options.input,
+						fs as Partial<
+							Parameters<typeof parseGeneratedMetadata>[1]
+						> as Parameters<typeof parseGeneratedMetadata>[1],
+					);
+					spec = applyReverseMetadata(
+						spec as Parameters<typeof applyReverseMetadata>[0],
+						metadata,
+					);
+				} catch (metaError) {
+					console.warn(`⚠️  ${formatCliError(metaError)}`);
+					console.warn("ℹ️  Continuing without reconstructed metadata.");
+				}
 			}
 		} catch (serviceError) {
 			console.warn(`⚠️  ${formatCliError(serviceError)}`);
@@ -179,6 +191,12 @@ export async function generateToOpenApi(
 	}
 
 	writeFormattedSpec(spec, options.format, options.output);
+	if (isJavyWasm) {
+		console.log(
+			"JAVY_FS_DUMP:" +
+				JSON.stringify((globalThis as { __FsData?: unknown }).__FsData),
+		);
+	}
 	return undefined;
 }
 
@@ -203,7 +221,9 @@ export async function generateDocsJson(
 		},
 		compilerOptions: {},
 	} as GeneratorConfig;
-	const parser = await SwaggerParser.create(options.input, config);
+	const parser = (globalThis as { __FsData?: unknown }).__FsData
+		? SwaggerParser.createSync(options.input, config)
+		: await SwaggerParser.create(options.input, config);
 	const docsOptions = {
 		imports: options.imports !== false,
 		wrapping: options.wrapping !== false,
@@ -215,6 +235,12 @@ export async function generateDocsJson(
 	}
 
 	writeDocsJsonOutput(docs, options.output);
+	if ((globalThis as { __FsData?: unknown }).__FsData) {
+		console.log(
+			"JAVY_FS_DUMP:" +
+				JSON.stringify((globalThis as { __FsData?: unknown }).__FsData),
+		);
+	}
 	return undefined;
 }
 

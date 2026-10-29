@@ -6,16 +6,19 @@ export const existsSync = (path) => {
 	if (
 		p.includes("package.json") ||
 		p.includes("spec.json") ||
-		p.includes("spec.yaml")
+		p.includes("spec.yaml") ||
+		p.includes("input.service.ts")
 	)
 		return true;
 	return !!fsData[p];
 };
 export const readFileSync = (path) => {
-	if (path.toString().includes("package.json")) return '{"version": "1.0.0"}';
+	const p = path.toString();
+	if (p.includes("package.json")) return '{"version": "1.0.0"}';
 	if (
-		path.toString().includes("spec.json") ||
-		path.toString().includes("spec.yaml")
+		p.includes("spec.json") ||
+		p.includes("spec.yaml") ||
+		p.includes("input.service.ts")
 	) {
 		if (typeof globalThis !== "undefined" && globalThis.__SPEC_JSON) {
 			return typeof globalThis.__SPEC_JSON === "string"
@@ -23,7 +26,7 @@ export const readFileSync = (path) => {
 				: JSON.stringify(globalThis.__SPEC_JSON);
 		}
 	}
-	return fsData[path] || "";
+	return fsData[p] || "";
 };
 export const writeFileSync = (path, data) => {
 	fsData[path] = data;
