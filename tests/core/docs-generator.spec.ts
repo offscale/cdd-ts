@@ -226,9 +226,9 @@ console.log(response);`,
 		);
 		expect(wrapped.operations[0]?.code).toEqual({
 			imports: "import { PostsClient } from './api/services/posts.client';",
-			wrapper_start: `export async function execute() {
-    const client = new PostsClient();`,
-			snippet: `    const response = await client.createPost({ id: 'example' });
+			wrapper_start: "export async function execute() {",
+			snippet: `    const client = new PostsClient();
+    const response = await client.createPost({ id: 'example' });
     console.log(response);`,
 			wrapper_end: "}",
 		});

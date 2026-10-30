@@ -292,9 +292,9 @@ function buildOperationSnippet(
 
 	if (isVanilla) {
 		imports = `import { ${clientClassName} } from './api/services/${controllerFile}.client';`;
-		wrapper_start = `export async function execute() {
-    const client = new ${clientClassName}();`;
-		snippet = `    const response = await client.${methodName}(${args});
+		wrapper_start = `export async function execute() {`;
+		snippet = `    const client = new ${clientClassName}();
+    const response = await client.${methodName}(${args});
     console.log(response);`;
 		wrapper_end = `}`;
 		unwrappedBody = `const client = new ${clientClassName}();
@@ -450,9 +450,9 @@ export function generateDocsJson(
 		const methodName = camelCase(wfId);
 		const args = buildWorkflowSampleArgs(wf.inputs);
 		const imports = `import { WorkflowOrchestrator } from './workflows/index';`;
-		const wrapper_start = `export async function execute() {
-    const orchestrator = new WorkflowOrchestrator();`;
-		const snippet = `    const outputs = await orchestrator.${methodName}(${args});
+		const wrapper_start = `export async function execute() {`;
+		const snippet = `    const orchestrator = new WorkflowOrchestrator();
+    const outputs = await orchestrator.${methodName}(${args});
     console.log(outputs);`;
 		const wrapper_end = `}`;
 		const unwrappedBody = `const orchestrator = new WorkflowOrchestrator();
