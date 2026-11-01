@@ -141,6 +141,16 @@ export class CliGenerator {
 		});
 
 		cliFile.saveSync();
+
+		const binCliFile = project.createSourceFile(
+			path.join(outputDir, "bin", "cli.ts"),
+			cliFile
+				.getFullText()
+				.replace("./services/index.js", "../services/index.js")
+				.replace("./mcp.js", "../mcp.js"),
+			{ overwrite: true },
+		);
+		binCliFile.saveSync();
 	}
 
 	/**

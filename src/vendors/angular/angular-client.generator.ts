@@ -15,6 +15,7 @@ import { ResponseHeaderRegistryGenerator } from "../../openapi/emit_response_hea
 import { XmlBuilderGenerator } from "../../openapi/emit_xml_builder.js";
 import { XmlParserGenerator } from "../../openapi/emit_xml_parser.js";
 import type { SwaggerParser } from "../../openapi/parse.js";
+import { McpGenerator } from "../mcp/emit.js";
 import { AdminGenerator } from "./admin/admin.generator.js";
 import { AdminTestGenerator } from "./admin/admin-test.generator.js";
 import { discoverAdminResources } from "./admin/resource-discovery.js";
@@ -179,6 +180,10 @@ export class AngularClientGenerator extends AbstractClientGenerator {
 					logger.info("✅ Admin UI tests generated.");
 				}
 			}
+		}
+
+		if (config.options.mcp) {
+			new McpGenerator().generate(project, parser, config, outputRoot);
 		}
 
 		new MainIndexGenerator(project, config, parser).generateMainIndex(

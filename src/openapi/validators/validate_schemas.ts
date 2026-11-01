@@ -22,7 +22,10 @@ export type SchemaTypeKind = "primitive" | "array" | "object" | "unknown";
  */
 export function getSchemaTypeKind(schema: OpenApiValue): SchemaTypeKind {
 	if (!schema || typeof schema !== "object") return "unknown";
-	if ("$ref" in (schema as object) || "$dynamicRef" in (schema as object))
+	if (
+		"$ref" in (schema as Record<string, OpenApiValue>) ||
+		"$dynamicRef" in (schema as Record<string, OpenApiValue>)
+	)
 		return "unknown";
 
 	const rawType = (schema as { type?: string | string[] }).type;
@@ -60,7 +63,7 @@ const XML_NODE_TYPES = new Set([
 function isPropertyRequired(
 	schema: Record<string, OpenApiValue>,
 	propName: string,
-	seen: WeakSet<object> = new WeakSet<object>(),
+	seen: WeakSet<WeakKey> = new WeakSet<WeakKey>(),
 ): boolean {
 	if (seen.has(schema)) return false;
 	seen.add(schema);
@@ -71,7 +74,10 @@ function isPropertyRequired(
 	if (Array.isArray(schema.allOf)) {
 		return (schema.allOf as OpenApiValue[]).some((sub) => {
 			if (!sub || typeof sub !== "object") return false;
-			if ("$ref" in (sub as object) || "$dynamicRef" in (sub as object))
+			if (
+				"$ref" in (sub as Record<string, OpenApiValue>) ||
+				"$dynamicRef" in (sub as Record<string, OpenApiValue>)
+			)
 				return false;
 			return isPropertyRequired(
 				sub as Record<string, OpenApiValue>,
@@ -260,7 +266,7 @@ function validateXmlObject(
 export function validateSchemaExternalDocs(
 	schema: OpenApiValue,
 	location: string,
-	seen: WeakSet<object> = new WeakSet<object>(),
+	seen: WeakSet<WeakKey> = new WeakSet<WeakKey>(),
 ): void {
 	if (schema === null || schema === undefined) return;
 	if (typeof schema !== "object") return;

@@ -301,7 +301,7 @@ export function validateComponentParameters(
 		}
 
 		if (param.content) {
-			if (Object.keys(param.content as object).length !== 1) {
+			if (Object.keys(param.content as Record<string, unknown>).length !== 1) {
 				throw new SpecValidationError(
 					`Component parameter '${name}' has an invalid 'content' map. It MUST contain exactly one entry.`,
 				);

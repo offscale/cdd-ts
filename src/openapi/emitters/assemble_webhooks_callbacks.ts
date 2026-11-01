@@ -78,7 +78,7 @@ export function applyWebhooksAndCallbacks(
 							| undefined;
 						if (opRespRec) {
 							opRespRec.headers = {
-								...((opRespRec.headers as object) || {}),
+								...((opRespRec.headers as Record<string, OpenApiValue>) || {}),
 								...headers,
 							};
 						}

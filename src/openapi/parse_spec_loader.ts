@@ -324,7 +324,7 @@ export class SpecLoader {
 
 		const operationIdLocations = new Map<string, string[]>();
 
-		const seenDocs = new Set<object>();
+		const seenDocs = new Set<WeakKey>();
 
 		const recordOperationId = (operationId: string, location: string) => {
 			const existing = operationIdLocations.get(operationId);
@@ -339,7 +339,8 @@ export class SpecLoader {
 		const isRefLike = (value: OpenApiValue): boolean =>
 			!!value &&
 			typeof value === "object" &&
-			("$ref" in (value as object) || "$dynamicRef" in (value as object));
+			("$ref" in (value as Record<string, OpenApiValue>) ||
+				"$dynamicRef" in (value as Record<string, OpenApiValue>));
 
 		const collectFromPathItem = (
 			pathItem: OpenApiValue,

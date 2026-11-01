@@ -21,6 +21,7 @@ export function emitPackageScaffolding(
 	finalConfig: Partial<GeneratorConfig>,
 	targetScope?: "to_sdk" | "to_sdk_cli" | "to_server",
 ): void {
+	fs.mkdirSync(targetOutputRoot, { recursive: true });
 	const dependencies: Record<string, string> = {};
 	const devDependencies: Record<string, string> = {};
 
@@ -65,25 +66,74 @@ export function emitPackageScaffolding(
 		});
 	}
 
-	const scripts: Record<string, string> = { build: "tsc" };
+	const scripts: Record<string, string> = {
+		build: "tsc",
+		docs: "typedoc",
+	};
 	if (targetScope === "to_server" || finalConfig.options?.tests !== false) {
 		scripts.test = "vitest run";
+	}
+
+	const githubOrg = finalConfig.options?.githubOrg;
+	const repoName = finalConfig.options?.repoName;
+	let pkgName =
+		targetScope === "to_server" ? "generated-server" : "generated-client";
+	let repository: { type: string; url: string } | undefined;
+	let bugs: { url: string } | undefined;
+	let homepage: string | undefined;
+
+	if (githubOrg) {
+		const effectiveRepo = repoName || `${githubOrg}-sdk`;
+		const shortPkgName = effectiveRepo.startsWith(`${githubOrg}-`)
+			? effectiveRepo.slice(githubOrg.length + 1)
+			: effectiveRepo;
+		pkgName = `@${githubOrg}/${shortPkgName || "sdk"}`;
+		repository = {
+			type: "git",
+			url: `https://github.com/${githubOrg}/${effectiveRepo}.git`,
+		};
+		bugs = {
+			url: `https://github.com/${githubOrg}/${effectiveRepo}/issues`,
+		};
+		homepage = `https://github.com/${githubOrg}/${effectiveRepo}#readme`;
+	} else if (repoName) {
+		pkgName = repoName;
 	}
 
 	fs.writeFileSync(
 		path.join(targetOutputRoot, "package.json"),
 		JSON.stringify(
 			{
-				name:
-					targetScope === "to_server" ? "generated-server" : "generated-client",
+				name: pkgName,
 				version: "1.0.0",
 				main: "dist/index.js",
 				types: "dist/index.d.ts",
+				...(targetScope === "to_sdk_cli" ? { bin: "./dist/cli.js" } : {}),
+				publishConfig: {
+					access: "public",
+					provenance: true,
+				},
+				...(repository ? { repository } : {}),
+				...(bugs ? { bugs } : {}),
+				...(homepage ? { homepage } : {}),
 				scripts,
 				dependencies,
 				devDependencies:
 					Object.keys(devDependencies).length > 0 ? devDependencies : undefined,
 				allowScripts: isTypeOrmServer ? { "better-sqlite3": true } : undefined,
+			},
+			null,
+			2,
+		),
+	);
+	fs.writeFileSync(
+		path.join(targetOutputRoot, "typedoc.json"),
+		JSON.stringify(
+			{
+				$schema: "https://typedoc.org/schema.json",
+				entryPoints: ["src/index.ts"],
+				out: "docs",
+				tsconfig: "tsconfig.json",
 			},
 			null,
 			2,
@@ -188,15 +238,54 @@ export function emitGithubActionsScaffolding(targetOutputRoot: string): void {
 		path.join(ghDir, "ci.yml"),
 		[
 			"name: CI",
-			"on: [push]",
+			"on:",
+			"  push:",
+			"    branches: [main, master]",
+			'    tags: ["v*"]',
+			"  pull_request:",
+			"",
+			"permissions:",
+			"  contents: write",
+			"  id-token: write",
+			"  pages: write",
+			"",
 			"jobs:",
 			"  build:",
 			"    runs-on: ubuntu-latest",
 			"    steps:",
 			"      - uses: actions/checkout@v6",
+			"      - uses: actions/setup-node@v6",
+			"        with:",
+			'          node-version: "22"',
+			'          registry-url: "https://registry.npmjs.org"',
 			"      - run: npm install",
 			"      - run: npm run build",
 			"      - run: npm test",
+			"      - name: Generate TypeDoc Documentation",
+			"        run: npx typedoc",
+			"      - name: Deploy TypeDoc to gh-pages",
+			"        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'",
+			"        uses: peaceiris/actions-gh-pages@v4",
+			"        with:",
+			"          github_token: ${{ secrets.GITHUB_TOKEN }}",
+			"          publish_dir: ./docs",
+			"          publish_branch: gh-pages",
+			"      - name: Optional GPG Tarball Signing (.asc)",
+			"        if: startsWith(github.ref, 'refs/tags/v') && env.GPG_PRIVATE_KEY != ''",
+			"        env:",
+			"          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}",
+			"          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}",
+			"        run: |",
+			"          npm pack",
+			'          echo "$GPG_PRIVATE_KEY" | gpg --batch --import',
+			"          for pkg in *.tgz; do",
+			'            gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --armor --detach-sign "$pkg"',
+			"          done",
+			"      - name: Publish to npm with Provenance",
+			"        if: startsWith(github.ref, 'refs/tags/v')",
+			"        run: npm publish --provenance --access public",
+			"        env:",
+			"          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}",
 			"",
 		].join(NEWLINE),
 	);

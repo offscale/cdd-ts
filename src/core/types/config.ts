@@ -113,7 +113,7 @@ export interface GeneratorConfigOptions {
 	/** If true, generates composable tests and mocks, useful for e2e and edge case bugs. Defaults to false. */
 	composableTests?: boolean;
 	/** If true, generates an MCP server wrapper for the generated SDK. */
-	mcp?: boolean;
+	mcp?: boolean | undefined;
 	/** If true, generates tests based on the selected framework or implementation. */
 	tests?: boolean;
 	/** A record of static headers to be added to every generated service request. */
@@ -144,6 +144,10 @@ export interface GeneratorConfigOptions {
 	noGithubActions?: boolean;
 	/** If true, disables generation of package scaffolding. */
 	noInstallablePackage?: boolean;
+	/** GitHub organization or user name for package and repository metadata. */
+	githubOrg?: string | undefined;
+	/** GitHub repository name for package and repository metadata (monorepo `<org>-sdk` vs polyrepo `<org>-sdk-ts`). */
+	repoName?: string | undefined;
 }
 
 /** Compiler options subset forwarded to ts-morph Project creation. */

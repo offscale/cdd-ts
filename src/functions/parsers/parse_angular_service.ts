@@ -209,7 +209,7 @@ export function auditAngularSourceBestPractices(
 	}
 
 	if (
-		/@Injectable\s*\(\s*\{\s*providedIn\s*:\s*['"]root['"]\s*\}\s*\)/.test(
+		/^\s*@Injectable\s*\(\s*\{\s*providedIn\s*:\s*['"]root['"]\s*\}\s*\)/m.test(
 			sourceText,
 		)
 	) {

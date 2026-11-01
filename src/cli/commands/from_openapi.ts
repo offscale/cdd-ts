@@ -86,6 +86,10 @@ export interface FromOpenApiOptions {
 	platform?: "browser" | "node";
 	/** Custom HTTP headers formatted as `Key:Value`. */
 	customHeader?: string[];
+	/** GitHub organization or user name for package and repository metadata. */
+	githubOrg?: string;
+	/** GitHub repository name for package and repository metadata. */
+	repoName?: string;
 }
 
 /** Defines the shape of the options object from the `to_sdk` command. */
@@ -245,6 +249,8 @@ export async function generateFromOpenApi(
 		if (options.orm) cliOptions.orm = options.orm;
 		if (options.int64Type) cliOptions.int64Type = options.int64Type;
 		if (options.platform) cliOptions.platform = options.platform;
+		if (options.githubOrg) cliOptions.githubOrg = options.githubOrg;
+		if (options.repoName) cliOptions.repoName = options.repoName;
 		if (options.customHeader && options.customHeader.length > 0) {
 			cliOptions.customHeaders = {};
 			for (const header of options.customHeader) {
@@ -446,6 +452,18 @@ function addCommonOptions(cmd: Command): Command {
 				"--no-installable-package",
 				"Do not generate installable package scaffolding",
 			).env("CDD_NO_INSTALLABLE_PACKAGE"),
+		)
+		.addOption(
+			new Option(
+				"--github-org <org>",
+				"GitHub organization or user name for package and repository metadata",
+			).env("GITHUB_ORG_NAME"),
+		)
+		.addOption(
+			new Option(
+				"--repo-name <name>",
+				"GitHub repository name for package and repository metadata",
+			).env("CDD_REPO_NAME"),
 		);
 }
 

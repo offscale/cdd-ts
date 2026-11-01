@@ -79,9 +79,11 @@ describe("E2E: Angular Generator Output", () => {
 		const project = await runGeneratorWithConfig(noSecuritySpec, {
 			framework: "angular",
 			tests: true,
+			mcp: true,
 		});
 
 		expect(hasFile(project, "auth.interceptor.ts")).toBe(false);
 		expect(hasFile(project, "auth.tokens.ts")).toBe(false);
+		expect(hasFile(project, "mcp-server.ts")).toBe(true);
 	});
 });

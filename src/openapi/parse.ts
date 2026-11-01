@@ -261,7 +261,7 @@ export class SwaggerParser {
 
 			try {
 				const serverBaseUri =
-					ReferenceResolver.getDocumentUri(server as object) ?? baseUri;
+					ReferenceResolver.getDocumentUri(server as WeakKey) ?? baseUri;
 
 				const resolvedUrl = new URL(rawUrl, serverBaseUri).href;
 
@@ -395,7 +395,7 @@ export class SwaggerParser {
 
 		const definitionValues = new Set<SwaggerDefinition | boolean>();
 
-		const seenDocs = new Set<object>();
+		const seenDocs = new Set<WeakKey>();
 
 		let syntheticCount = 0;
 

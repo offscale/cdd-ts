@@ -193,9 +193,51 @@ export function serveMcpSse(port = 3001) {
         console.log(\`MCP SSE Server listening on port \${port}\`);
     });
 }
+
+export async function handleMcpRequest(request: {
+    method: string;
+    id?: string | number;
+    params?: Record<string, unknown>;
+}) {
+    if (request.method === "initialize") {
+        return {
+            protocolVersion: "2024-11-05",
+            capabilities: { tools: { listChanged: true }, resources: { subscribe: true, listChanged: true }, prompts: { listChanged: true } },
+            serverInfo: { name: '${info.title || "api-mcp"}', version: '${info.version || "1.0.0"}' }
+        };
+    }
+    const { McpAdapter } = await import("./mcp-adapter.js");
+    const adapter = new McpAdapter();
+    if (request.method === "tools/list") {
+        return { tools: adapter.getTools() };
+    }
+    if (request.method === "tools/call") {
+        const toolName = String(request.params?.name ?? "");
+        const toolArgs = (request.params?.arguments ?? {}) as Record<string, unknown>;
+        return await adapter.executeTool(toolName, toolArgs);
+    }
+    throw new Error(\`Unsupported MCP method: \${request.method}\`);
+}
 `;
 		mcpFile.addStatements(statements);
 		mcpFile.saveSync();
+
+		const mcpServerFile = project.createSourceFile(
+			path.join(outputDir, "mcp-server.ts"),
+			mcpFile.getFullText(),
+			{ overwrite: true },
+		);
+		mcpServerFile.saveSync();
+
+		const srcMcpServerFile = project.createSourceFile(
+			path.join(outputDir, "src", "mcp-server.ts"),
+			mcpFile
+				.getFullText()
+				.replace("./services/index.js", "../services/index.js")
+				.replace("./mcp-adapter.js", "../mcp-adapter.js"),
+			{ overwrite: true },
+		);
+		srcMcpServerFile.saveSync();
 
 		// Generate mcp-adapter.ts for programmatic SDK integration
 		const adapterFile = project.createSourceFile(

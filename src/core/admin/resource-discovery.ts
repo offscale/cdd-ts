@@ -184,7 +184,10 @@ export function getFormProperties(
 		if (resSchema) allSchemas.push(resSchema);
 
 		op.parameters?.forEach((param) => {
-			if (param.in === "formData" && !("$ref" in (param.schema as object))) {
+			if (
+				param.in === "formData" &&
+				!("$ref" in (param.schema as Record<string, OpenApiValue>))
+			) {
 				const schemaObj = param.schema as SwaggerDefinition;
 				const prop: Partial<SwaggerDefinition> = {
 					...(typeof schemaObj.type === "string"

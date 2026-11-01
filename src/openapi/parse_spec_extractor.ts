@@ -171,10 +171,7 @@ export function extractPaths(
 		const description = objRec.description;
 
 		if (summary !== undefined || description !== undefined) {
-			const merged = { ...(resolved as object) } as Record<
-				string,
-				OpenApiValue
-			>;
+			const merged = { ...(resolved as Record<string, OpenApiValue>) };
 			if (summary !== undefined) merged.summary = summary;
 			if (description !== undefined) merged.description = description;
 			return merged as T;

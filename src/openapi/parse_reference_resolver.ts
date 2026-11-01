@@ -101,9 +101,9 @@ const stripFragment = (value: string): string => {
  * Resolves OpenAPI references ($ref and $dynamicRef) including context-aware resolution for OAS 3.1.
  */
 export class ReferenceResolver {
-	private static baseUriMap = new WeakMap<object, string>();
+	private static baseUriMap = new WeakMap<WeakKey, string>();
 
-	private static documentUriMap = new WeakMap<object, string>();
+	private static documentUriMap = new WeakMap<WeakKey, string>();
 
 	/**
 	 * Creates a new `ReferenceResolver`.
@@ -123,7 +123,7 @@ export class ReferenceResolver {
 	 * @param obj - Schema or specification object.
 	 * @returns The associated base URI, if indexed.
 	 */
-	public static getBaseUri(obj: object): string | undefined {
+	public static getBaseUri(obj: WeakKey): string | undefined {
 		return ReferenceResolver.baseUriMap.get(obj);
 	}
 
@@ -133,7 +133,7 @@ export class ReferenceResolver {
 	 * @param obj - Schema or specification object.
 	 * @returns The document URI, if indexed.
 	 */
-	public static getDocumentUri(obj: object): string | undefined {
+	public static getDocumentUri(obj: WeakKey): string | undefined {
 		return ReferenceResolver.documentUriMap.get(obj);
 	}
 
@@ -227,7 +227,7 @@ export class ReferenceResolver {
 
 			if (isDynamicRefObject(current)) refs.add(current.$dynamicRef);
 
-			for (const key in current as object) {
+			for (const key in current as Record<string, OpenApiValue>) {
 				if (Object.hasOwn(current, key)) {
 					traverse((current as Record<string, OpenApiValue>)[key]);
 				}
@@ -266,14 +266,14 @@ export class ReferenceResolver {
 
 		if (isRefObject(obj)) {
 			const baseUri =
-				ReferenceResolver.getBaseUri(obj as object) ?? this.entryDocumentUri;
+				ReferenceResolver.getBaseUri(obj as WeakKey) ?? this.entryDocumentUri;
 
 			resolved = this.resolveReference<T>(obj.$ref, baseUri, resolutionStack);
 
 			refObj = obj;
 		} else if (isDynamicRefObject(obj)) {
 			const baseUri =
-				ReferenceResolver.getBaseUri(obj as object) ?? this.entryDocumentUri;
+				ReferenceResolver.getBaseUri(obj as WeakKey) ?? this.entryDocumentUri;
 
 			resolved = this.resolveReference<T>(
 				obj.$dynamicRef,

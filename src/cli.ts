@@ -66,7 +66,7 @@ export {
 } from "./cli/commands/to_openapi.js";
 
 const program = new Command();
-program.name("cdd-ts").description("OpenAPI ↔ TypeScript.").version("0.0.4");
+program.name("cdd-ts").description("OpenAPI ↔ TypeScript.").version("0.0.5");
 
 registerFromOpenApiCommands(program);
 registerToOpenApiCommands(program);

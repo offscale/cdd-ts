@@ -395,6 +395,9 @@ export class ServiceGenerator extends AbstractServiceGenerator {
 			name: className,
 			isExported: true,
 			decorators: [{ name: "Service", arguments: [] }],
+			docs: [
+				`Angular HTTP service (@Service() / @Injectable({ providedIn: 'root' })) for ${controllerName} operations.`,
+			],
 		});
 
 		this.addPropertiesAndHelpers(serviceClass);

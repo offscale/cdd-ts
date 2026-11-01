@@ -43,7 +43,7 @@ export type UnknownPayload =
 	| string
 	| number
 	| boolean
-	| object
+	| Record<string, unknown>
 	| undefined
 	| null;
 

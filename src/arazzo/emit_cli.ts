@@ -137,5 +137,14 @@ export class ArazzoCliGenerator {
 		});
 
 		cliFile.formatText();
+
+		const binCliFile = this.project.createSourceFile(
+			path.join(outputDir, "bin", "cli.ts"),
+			cliFile
+				.getFullText()
+				.replace("./workflows/index.js", "../workflows/index.js"),
+			{ overwrite: true },
+		);
+		binCliFile.formatText();
 	}
 }

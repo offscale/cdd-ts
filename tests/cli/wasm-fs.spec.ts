@@ -194,7 +194,7 @@ describe("core/wasm-fs", () => {
 
 describe("cli/spec_writer & cli/scaffold", () => {
 	it("loads package version and falls back to 1.0.0 when missing or invalid", () => {
-		expect(loadPackageVersion(import.meta.url)).toBe("0.0.4");
+		expect(loadPackageVersion(import.meta.url)).toBe("0.0.5");
 		expect(loadPackageVersion("file:///non-existent/dir/mod.js")).toBe("1.0.0");
 
 		const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cdd-pkg-ver-"));
@@ -269,6 +269,93 @@ describe("cli/spec_writer & cli/scaffold", () => {
 			expect(
 				fs.existsSync(path.join(sdkDir, ".github", "workflows", "ci.yml")),
 			).toBe(true);
+			const ciYmlContent = fs.readFileSync(
+				path.join(sdkDir, ".github", "workflows", "ci.yml"),
+				"utf-8",
+			);
+			expect(ciYmlContent).toContain("npm publish --provenance");
+			expect(ciYmlContent).toContain("gpg --batch");
+			expect(ciYmlContent).toContain("peaceiris/actions-gh-pages");
+			expect(ciYmlContent).toContain("npx typedoc");
+			expect(fs.existsSync(path.join(sdkDir, "typedoc.json"))).toBe(true);
+
+			// Monorepo (@acme/sdk), Polyrepo (@acme/sdk-ts), custom repo, empty shortPkgName, and repoName-only branches
+			const monoDir = path.join(tmpDir, "mono");
+			fs.mkdirSync(monoDir, { recursive: true });
+			emitPackageScaffolding(
+				monoDir,
+				{ options: { githubOrg: "acme" } },
+				"to_sdk_cli",
+			);
+			const monoPkg = JSON.parse(
+				fs.readFileSync(path.join(monoDir, "package.json"), "utf-8"),
+			) as {
+				name: string;
+				bin?: string;
+				publishConfig?: { access: string; provenance: boolean };
+				repository?: { url: string };
+				bugs?: { url: string };
+				homepage?: string;
+			};
+			expect(monoPkg.name).toBe("@acme/sdk");
+			expect(monoPkg.bin).toBe("./dist/cli.js");
+			expect(monoPkg.publishConfig).toEqual({
+				access: "public",
+				provenance: true,
+			});
+			expect(monoPkg.repository?.url).toBe(
+				"https://github.com/acme/acme-sdk.git",
+			);
+			expect(monoPkg.bugs?.url).toBe("https://github.com/acme/acme-sdk/issues");
+			expect(monoPkg.homepage).toBe("https://github.com/acme/acme-sdk#readme");
+
+			const polyDir = path.join(tmpDir, "poly");
+			fs.mkdirSync(polyDir, { recursive: true });
+			emitPackageScaffolding(
+				polyDir,
+				{ options: { githubOrg: "acme", repoName: "acme-sdk-ts" } },
+				"to_sdk",
+			);
+			const polyPkg = JSON.parse(
+				fs.readFileSync(path.join(polyDir, "package.json"), "utf-8"),
+			) as { name: string };
+			expect(polyPkg.name).toBe("@acme/sdk-ts");
+
+			const customRepoDir = path.join(tmpDir, "custom-repo");
+			fs.mkdirSync(customRepoDir, { recursive: true });
+			emitPackageScaffolding(
+				customRepoDir,
+				{ options: { githubOrg: "acme", repoName: "custom-pkg" } },
+				"to_sdk",
+			);
+			const customRepoPkg = JSON.parse(
+				fs.readFileSync(path.join(customRepoDir, "package.json"), "utf-8"),
+			) as { name: string };
+			expect(customRepoPkg.name).toBe("@acme/custom-pkg");
+
+			const emptyShortDir = path.join(tmpDir, "empty-short");
+			fs.mkdirSync(emptyShortDir, { recursive: true });
+			emitPackageScaffolding(
+				emptyShortDir,
+				{ options: { githubOrg: "acme", repoName: "acme-" } },
+				"to_sdk",
+			);
+			const emptyShortPkg = JSON.parse(
+				fs.readFileSync(path.join(emptyShortDir, "package.json"), "utf-8"),
+			) as { name: string };
+			expect(emptyShortPkg.name).toBe("@acme/sdk");
+
+			const repoOnlyDir = path.join(tmpDir, "repo-only");
+			fs.mkdirSync(repoOnlyDir, { recursive: true });
+			emitPackageScaffolding(
+				repoOnlyDir,
+				{ options: { repoName: "standalone-sdk" } },
+				"to_sdk",
+			);
+			const repoOnlyPkg = JSON.parse(
+				fs.readFileSync(path.join(repoOnlyDir, "package.json"), "utf-8"),
+			) as { name: string };
+			expect(repoOnlyPkg.name).toBe("standalone-sdk");
 
 			const sdkWithTestsDir = path.join(tmpDir, "sdk-with-tests");
 			fs.mkdirSync(sdkWithTestsDir, { recursive: true });
@@ -565,15 +652,63 @@ describe("cli commands & generator branch coverage", () => {
 				workflows: [
 					{
 						workflowId: "wf1",
+						summary: "Workflow 1",
+						inputs: {
+							type: "object",
+							properties: { userId: { type: "string" } },
+						},
 						steps: [{ stepId: "s1", operationId: "op1" }],
+					},
+					{
+						workflowId: "wf2",
+						description: "Workflow 2 desc",
+						steps: [{ stepId: "s2", operationId: "op2" }],
+					},
+					{
+						workflowId: "wf3",
+						steps: [{ stepId: "s3", operationId: "op3" }],
 					},
 				],
 			};
 			const arazzoOutCli = path.join(tmpDir, "arazzo-cli");
 			const arazzoOutServer = path.join(tmpDir, "arazzo-server");
-			generateFromArazzoSync(arazzoSpec, arazzoOutCli, "cli", false);
-			generateFromArazzoSync(arazzoSpec, arazzoOutServer, "server", false);
+			const arazzoOutSdkCombo = path.join(tmpDir, "arazzo-sdk-combo");
+			generateFromArazzoSync(arazzoSpec, arazzoOutCli, "cli", false, {
+				framework: "angular",
+				mcp: true,
+				githubOrg: "acme",
+				repoName: "acme-sdk-ts",
+			});
+			generateFromArazzoSync(arazzoSpec, arazzoOutServer, "server", false, {
+				repoName: "acme-server",
+			});
+			generateFromArazzoSync(arazzoSpec, arazzoOutSdkCombo, "sdk", false, {
+				githubOrg: "acme",
+			});
 			expect(fs.existsSync(path.join(arazzoOutCli, "workflows"))).toBe(true);
+			expect(fs.existsSync(path.join(arazzoOutCli, "bin", "cli.ts"))).toBe(
+				true,
+			);
+			expect(
+				fs.existsSync(
+					path.join(arazzoOutCli, "workflows", "workflows.service.ts"),
+				),
+			).toBe(true);
+			expect(
+				fs.existsSync(path.join(arazzoOutCli, "src", "mcp-server.ts")),
+			).toBe(true);
+			expect(fs.existsSync(path.join(arazzoOutCli, "package.json"))).toBe(true);
+			await generateFromOpenApi(
+				{
+					input: "http://example.com/api.json",
+					output: path.join(tmpDir, "out-github-meta"),
+					githubOrg: "acme",
+					repoName: "acme-sdk-ts",
+					framework: "angular",
+					mcp: true,
+				},
+				"to_sdk_cli",
+			);
 			const prevCwd = process.cwd();
 			process.chdir(tmpDir);
 			try {

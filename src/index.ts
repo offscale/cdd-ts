@@ -29,7 +29,7 @@ import { VueClientGenerator } from "./vendors/vue/vue-client.generator.js";
  */
 export type TestGeneratorConfig = {
 	/** The pre-parsed OpenAPI specification object. */
-	spec: SwaggerSpec | Record<string, unknown> | object;
+	spec: SwaggerSpec | Record<string, unknown> | WeakKey;
 };
 
 /**
